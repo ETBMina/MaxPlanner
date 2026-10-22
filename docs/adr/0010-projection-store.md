@@ -58,4 +58,7 @@ store.Connect()
 ## Verification
 - Presentation tests with a test scheduler covering load races, ordering, gaps, filter regrouping, selection restore, and 100-cycle subscription disposal.
 - Spike 5 evidence: `docs/evidence/phase-0/platform-controls/` (20–25).
-- Open point: working set rose 228 → 293 MB over 10 navigation cycles with the mutator running. That hints at, but does not prove, retention. The T-11 100-cycle navigation test in Phase 2 must settle it.
+- Former open point (spike 5): working set rose 228 → 293 MB over 10 navigation cycles with the mutator running.
+- **Phase 2 result (2026-10-22), settled for the slice pages:** page ViewModels are created on first visit and retained, so navigation adds no subscriptions.
+  - Presentation test `SliceBehaviourTests.A_hundred_navigation_cycles_keep_the_live_subscription_count_stable_and_disposal_releases_it`: 100 Board → Grid → Checklists cycles keep `ActiveCacheSubscriptions` at 19 (Grid 2, Board 8 columns × 2, Checklists 1); disposing the workspace returns it to 0.
+  - Real app (Debug build, fixture dataset of 5 tasks / 3 Subtask cards, `winapp ui` invoking the nav items 300 times): the log reported 19 live subscriptions on every navigation; working set 245 → 252 MiB (process) and 245 → 251 MiB (log) across the run. That is a 6–7 MiB rise on a small dataset, not a growth trend measured over several runs; it does not prove or rule out retention at the T-11 fixture size, which Phase 17 measures. Evidence: `docs/evidence/phase-2/2026-10-22/slice-results.json`.

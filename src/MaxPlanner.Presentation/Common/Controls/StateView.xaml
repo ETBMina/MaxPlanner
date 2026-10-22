@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MaxPlanner.Presentation.Common.Controls.StateView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    IsTabStop="False">
+    <Grid>
+        <!-- Populated: the page's own content. -->
+        <ContentPresenter x:Name="BodyPresenter" Content="{x:Bind Body, Mode=OneWay}" />
+
+        <!-- Loading (design §2.5): shown only after 300 ms, and never with placeholder zero values. -->
+        <StackPanel
+            x:Name="LoadingPanel"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="12"
+            Visibility="Collapsed">
+            <ProgressRing
+                x:Name="LoadingRing"
+                Width="32"
+                Height="32"
+                IsActive="False" />
+            <TextBlock
+                x:Name="LoadingText"
+                HorizontalAlignment="Center"
+                AutomationProperties.LiveSetting="Polite"
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="{x:Bind LoadingMessage, Mode=OneWay}" />
+        </StackPanel>
+
+        <!-- Empty, Filtered-empty, and Error share one layout; glyph, text, and actions differ. -->
+        <ScrollViewer x:Name="MessagePanel" Visibility="Collapsed">
+            <StackPanel
+                MaxWidth="480"
+                Margin="16,24"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+                <FontIcon
+                    x:Name="MessageGlyph"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="48"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                <FontIcon
+                    x:Name="ErrorGlyph"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="48"
+                    Foreground="{ThemeResource ErrorTextBrush}"
+                    Glyph="&#xE783;"
+                    Visibility="Collapsed" />
+                <TextBlock
+                    x:Name="MessageTitle"
+                    HorizontalAlignment="Center"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="MessageText"
+                    HorizontalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+                <Expander
+                    x:Name="ErrorDetails"
+                    x:Uid="StateView_ErrorDetails"
+                    HorizontalAlignment="Stretch"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        IsTextSelectionEnabled="True"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ErrorDetailsText, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                </Expander>
+                <Button
+                    x:Name="ActionButton"
+                    HorizontalAlignment="Center"
+                    Click="OnActionClick"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Visibility="Collapsed" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

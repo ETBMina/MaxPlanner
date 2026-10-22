@@ -20,6 +20,12 @@
                 IsOpen="{x:Bind ViewModel.IsResyncing, Mode=OneWay}"
                 Severity="Warning" />
             <InfoBar
+                x:Uid="Shell_SaveFailedInfoBar"
+                AutomationProperties.AutomationId="Shell_SaveFailedInfoBar"
+                IsOpen="{x:Bind SaveStatus.IsFailureNoticeOpen, Mode=TwoWay}"
+                Message="{x:Bind local:ShellView.FailureText(SaveStatus.FailureMessage, SaveStatus.FailureDetails), Mode=OneWay}"
+                Severity="Error" />
+            <InfoBar
                 x:Uid="Shell_BackupFailedInfoBar"
                 AutomationProperties.AutomationId="Shell_BackupFailedInfoBar"
                 IsOpen="{x:Bind ViewModel.IsBackupWarningOpen, Mode=TwoWay}"
@@ -92,82 +98,134 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Pre-Phase-2 ready state: a summary of the loaded dataset until the NavigationView pages exist. -->
-        <ScrollViewer
+        <!--
+            Ready: the adaptive NavigationView (design §2.2). Auto display mode gives Left (expanded) at L, LeftCompact
+            at M and LeftMinimal at S; at S the title bar's pane toggle opens the overlay pane (MainWindow).
+        -->
+        <NavigationView
+            x:Name="Nav"
             Grid.Row="1"
-            AutomationProperties.AutomationId="Shell_ReadySummary"
+            AlwaysShowHeader="False"
+            AutomationProperties.AutomationId="Shell_Nav"
+            AutomationProperties.LandmarkType="Navigation"
+            CompactModeThresholdWidth="640"
+            DisplayModeChanged="OnNavDisplayModeChanged"
+            ExpandedModeThresholdWidth="1008"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="True"
+            PaneDisplayMode="Auto"
+            SelectionChanged="OnNavSelectionChanged"
             Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReady), Mode=OneWay}">
-            <Border
-                MaxWidth="560"
-                Margin="16,24"
-                Padding="24"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="{ThemeResource OverlayCornerRadius}">
-                <StackPanel Spacing="16">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Uid="Shell_NavDashboardItem" AutomationProperties.AutomationId="Shell_NavDashboardItem" Tag="Dashboard">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xF246;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="Shell_NavBoardItem" AutomationProperties.AutomationId="Shell_NavBoardItem" Tag="Board">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xECA5;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="Shell_NavGridItem" AutomationProperties.AutomationId="Shell_NavGridItem" Tag="Grid">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xF0E2;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="Shell_NavCalendarItem" AutomationProperties.AutomationId="Shell_NavCalendarItem" Tag="Calendar">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE787;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="Shell_NavChecklistsItem" AutomationProperties.AutomationId="Shell_NavChecklistsItem" Tag="Checklists">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE9D5;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="32" />
+                </Grid.RowDefinitions>
+
+                <!-- Retained page views; the content swaps without recreating their ViewModels (AC-17). -->
+                <ContentControl
+                    x:Name="PageHost"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    AutomationProperties.LandmarkType="Main"
+                    IsTabStop="False" />
+
+                <!-- Status bar (design §2.8): page summary left, actual save status right. -->
+                <Grid
+                    Grid.Row="1"
+                    Padding="16,0"
+                    Background="{ThemeResource LayerFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,0"
+                    ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <TextBlock
-                        x:Uid="Shell_ReadyTitle"
-                        AutomationProperties.AutomationId="Shell_ReadyTitle"
-                        AutomationProperties.HeadingLevel="Level1"
-                        Style="{StaticResource SubtitleTextBlockStyle}"
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        x:Uid="Shell_ReadyDescription"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource BodyTextBlockStyle}"
-                        TextWrapping="Wrap" />
-                    <Grid ColumnSpacing="24" RowSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <TextBlock x:Uid="Shell_TaskCountLabel" Style="{StaticResource BodyTextBlockStyle}" />
+                        x:Name="StatusSummaryText"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Shell_StatusSummary"
+                        AutomationProperties.Name="{x:Bind ViewModel.StatusSummary, Mode=OneWay}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.StatusSummary, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="NoWrap"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.StatusSummary, Mode=OneWay}" />
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Shell_SaveStatus"
+                        Orientation="Horizontal"
+                        Spacing="6">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="14"
+                            Glyph="&#xE73E;"
+                            Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsSettled), Mode=OneWay}" />
+                        <ProgressRing
+                            Width="16"
+                            Height="16"
+                            IsActive="{x:Bind SaveStatus.IsSaving, Mode=OneWay}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsSaving), Mode=OneWay}" />
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="14"
+                            Glyph="&#xE895;"
+                            Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsResyncing), Mode=OneWay}" />
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="14"
+                            Foreground="{ThemeResource ErrorTextBrush}"
+                            Glyph="&#xE783;"
+                            Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsFailed), Mode=OneWay}" />
                         <TextBlock
-                            Grid.Column="1"
-                            AutomationProperties.AutomationId="Shell_TaskCountText"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind ViewModel.TaskCountText, Mode=OneWay}" />
-                        <TextBlock
-                            x:Uid="Shell_ChangeRequestCountLabel"
-                            Grid.Row="1"
-                            Style="{StaticResource BodyTextBlockStyle}" />
-                        <TextBlock
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            AutomationProperties.AutomationId="Shell_ChangeRequestCountText"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ChangeRequestCountText, Mode=OneWay}" />
-                        <TextBlock
-                            x:Uid="Shell_ReviewCountLabel"
-                            Grid.Row="2"
-                            Style="{StaticResource BodyTextBlockStyle}" />
-                        <TextBlock
-                            Grid.Row="2"
-                            Grid.Column="1"
-                            AutomationProperties.AutomationId="Shell_ReviewCountText"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ReviewCountText, Mode=OneWay}" />
-                    </Grid>
-                    <StackPanel Spacing="4">
-                        <TextBlock x:Uid="Shell_DataFolderLabel" Style="{StaticResource CaptionTextBlockStyle}" />
-                        <TextBlock
-                            AutomationProperties.AutomationId="Shell_DataFolderText"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            IsTextSelectionEnabled="True"
+                            x:Name="SaveStatusText"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="Shell_SaveStatusText"
+                            AutomationProperties.LiveSetting="Polite"
                             Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.DataFolderPath, Mode=OneTime}"
-                            TextWrapping="Wrap" />
+                            Text="{x:Bind SaveStatus.Text, Mode=OneWay}"
+                            Visibility="{x:Bind common:BindFunctions.Collapsed(SaveStatus.IsFailed), Mode=OneWay}" />
+                        <!-- Failed: the link text opens the App InfoBar with the message and the operation id. -->
+                        <HyperlinkButton
+                            Padding="4,0"
+                            AutomationProperties.AutomationId="Shell_SaveStatusDetailsButton"
+                            Command="{x:Bind SaveStatus.ShowDetailsCommand, Mode=OneWay}"
+                            Content="{x:Bind SaveStatus.Text, Mode=OneWay}"
+                            FontSize="12"
+                            Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsFailed), Mode=OneWay}" />
                     </StackPanel>
-                </StackPanel>
-            </Border>
-        </ScrollViewer>
+                </Grid>
+            </Grid>
+        </NavigationView>
     </Grid>
 </UserControl>

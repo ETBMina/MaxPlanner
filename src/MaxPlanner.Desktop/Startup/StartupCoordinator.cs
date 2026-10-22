@@ -30,6 +30,7 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
     private readonly ILocalizedStrings _strings;
     private readonly IDataFolderLauncher _dataFolder;
     private readonly IScheduler _uiScheduler;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly SqliteDatasetOptions _datasetOptions;
     private readonly Action _requestClose;
     private readonly ILogger _logger;
@@ -47,6 +48,7 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         ILocalizedStrings strings,
         IDataFolderLauncher dataFolder,
         IScheduler uiScheduler,
+        IUiDispatcher uiDispatcher,
         TimeProvider time,
         Action requestClose,
         ILogger<StartupCoordinator> logger)
@@ -57,6 +59,7 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         _strings = strings;
         _dataFolder = dataFolder;
         _uiScheduler = uiScheduler;
+        _uiDispatcher = uiDispatcher;
         _requestClose = requestClose;
         _logger = logger;
         _datasetOptions = new SqliteDatasetOptions(time, context.LoggerFactory);
@@ -127,6 +130,8 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         }
 
         _readySubscription?.Dispose();
+        _shell.PropertyChanged -= OnShellPropertyChanged;
+        _shell.DetachWorkspace();
         if (_session is not null)
         {
             await _session.DisposeAsync();
@@ -207,6 +212,8 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         _session = DatasetSession.Create(_appServices, dataset);
         var store = _session.Store;
         _shell.AttachStore(store, _uiScheduler);
+        _shell.AttachWorkspace(_session.CreateWorkspace(_uiScheduler, _uiDispatcher, _strings));
+        _shell.PropertyChanged += OnShellPropertyChanged;
         _readySubscription = store.State
             .Where(state => state.Status == ProjectionStatus.Ready)
             .Take(1)
@@ -215,6 +222,18 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         var elapsedMs = _context.ElapsedMilliseconds;
         Log.DatasetOpened(_logger, dataset.Id.Value, dataset.SchemaVersion, StartupContext.AppVersion, elapsedMs);
         store.Start();
+    }
+
+    // T-11 / AC-17 evidence: every navigation logs the live store subscriptions and the working set, so a
+    // navigation run shows whether either grows (ADR 0010 open point).
+    private void OnShellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ShellViewModel.CurrentPage) && _session is { } session)
+        {
+            var page = _shell.CurrentPage.ToString();
+            var workingSetMiB = Environment.WorkingSet / (1024 * 1024);
+            Log.Navigated(_logger, page, session.Store.ActiveCacheSubscriptions, workingSetMiB);
+        }
     }
 
     private void OnFirstReady()
@@ -279,5 +298,8 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
 
         [LoggerMessage(EventId = 5009, Level = LogLevel.Error, Message = "The daily backup failed unexpectedly.")]
         public static partial void BackupDefect(ILogger logger, Exception exception);
+
+        [LoggerMessage(EventId = 5010, Level = LogLevel.Information, Message = "Navigated to {Page:l}; live store subscriptions {Subscriptions}; working set {WorkingSetMiB} MiB.")]
+        public static partial void Navigated(ILogger logger, string page, int subscriptions, long workingSetMiB);
     }
 }

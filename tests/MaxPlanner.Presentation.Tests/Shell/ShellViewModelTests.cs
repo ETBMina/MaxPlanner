@@ -68,7 +68,7 @@ public sealed class ShellViewModelTests
 
     [Fact]
     [Trait("Req", "T-07")]
-    public void Store_loading_maps_to_starting_and_ready_maps_to_ready_with_counts()
+    public void Store_loading_maps_to_starting_and_ready_maps_to_ready()
     {
         using var h = new StoreHarness();
         var shell = NewShell();
@@ -82,13 +82,6 @@ public sealed class ShellViewModelTests
 
         shell.State.Should().Be(ShellState.Ready);
         shell.IsEditingBlocked.Should().BeFalse();
-        shell.TaskCountText.Should().Be("2");
-        shell.ChangeRequestCountText.Should().Be("1");
-        shell.ReviewCountText.Should().Be("1");
-
-        h.Publish(Change(4) with { UpsertedTasks = [Task("Three")] });
-
-        shell.TaskCountText.Should().Be("3");
     }
 
     [Fact]
@@ -120,7 +113,7 @@ public sealed class ShellViewModelTests
         var strings = new FakeStrings()
             .With("Shell_LoadFailedStorageMessage", "{0} Retry.")
             .With("StorageFailure_Busy", "Busy.");
-        var shell = new ShellViewModel(strings, _dataFolder);
+        var shell = new ShellViewModel(strings, _dataFolder, new FakePreferencesStore());
         using var attached = shell.AttachStore(h.Store, ImmediateScheduler.Instance);
         h.Store.Start();
         h.Scheduler.RunAll();
@@ -152,10 +145,13 @@ public sealed class ShellViewModelTests
         shell.IsEditingBlocked.Should().BeFalse();
 
         shell.BeginShutdown();
-        h.Publish(Change(2) with { UpsertedTasks = [Task()] });
 
+        // A sequence gap makes the store resynchronize; the closing shell no longer follows it.
+        h.Publish(Change(3));
+
+        h.Status.Should().Be(Presentation.Common.Store.ProjectionStatus.Resyncing);
         shell.IsEditingBlocked.Should().BeTrue();
-        shell.TaskCountText.Should().Be("0");
+        shell.IsResyncing.Should().BeFalse();
     }
 
     [Theory]
@@ -188,7 +184,7 @@ public sealed class ShellViewModelTests
     public void A_failed_daily_backup_is_reported_as_a_warning_with_its_cause()
     {
         var strings = new FakeStrings().With("Shell_BackupFailedMessage", "{0} Continue.").With("StorageFailure_DiskFull", "Full.");
-        var shell = new ShellViewModel(strings, _dataFolder);
+        var shell = new ShellViewModel(strings, _dataFolder, new FakePreferencesStore());
 
         shell.ReportBackupFailed(StorageFailureKind.DiskFull);
 
@@ -219,5 +215,5 @@ public sealed class ShellViewModelTests
 
     private static RecoveryInfo Info(RecoveryKind kind) => new(kind, @"C:\app\data", @"C:\app\data\backups");
 
-    private ShellViewModel NewShell() => new(new FakeStrings(), _dataFolder);
+    private ShellViewModel NewShell() => new(new FakeStrings(), _dataFolder, new FakePreferencesStore());
 }

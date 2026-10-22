@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    App-wide theme resources (design §3 rule 2, §6.1). Light and Dark redirect to platform brushes;
+    HighContrast uses only SystemColor*Brush without opacity. Merged by the Desktop App.xaml.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <StaticResource x:Key="ChipStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
+            <StaticResource x:Key="ChipForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="ChipSecondaryForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="ServiceChipBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
+            <StaticResource x:Key="SquadChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="CountChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="PriorityLevel1ChipBackgroundBrush" ResourceKey="SystemFillColorCriticalBackgroundBrush" />
+            <StaticResource x:Key="PriorityLevel2ChipBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
+            <StaticResource x:Key="PriorityMidChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
+            <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemFillColorCriticalBrush" />
+            <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
+            <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
+            <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <StaticResource x:Key="ChipStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
+            <StaticResource x:Key="ChipForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="ChipSecondaryForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="ServiceChipBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
+            <StaticResource x:Key="SquadChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="CountChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="PriorityLevel1ChipBackgroundBrush" ResourceKey="SystemFillColorCriticalBackgroundBrush" />
+            <StaticResource x:Key="PriorityLevel2ChipBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
+            <StaticResource x:Key="PriorityMidChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
+            <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemFillColorCriticalBrush" />
+            <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
+            <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
+            <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <!-- Design §3 rule 3: chips render as ButtonFace with ButtonText border and text; glyphs carry meaning. -->
+            <StaticResource x:Key="ChipStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="ChipForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="ChipSecondaryForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="ServiceChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="SquadChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CountChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PriorityLevel1ChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PriorityLevel2ChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PriorityMidChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Chip anatomy (design §6.1): corner radius 4, padding 6x2, caption text, optional 12-epx glyph. -->
+    <Style x:Key="ChipBorderStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ChipStrokeBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="ServiceChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ServiceChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="SquadChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource SquadChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="CountChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CountChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="PriorityLevel1ChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource PriorityLevel1ChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="PriorityLevel2ChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource PriorityLevel2ChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="PriorityMidChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource PriorityMidChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="PriorityLowestChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource PriorityLowestChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="ChipTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource ChipForegroundBrush}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="MaxLines" Value="1" />
+    </Style>
+    <Style x:Key="ChipGlyphStyle" TargetType="FontIcon">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource ChipForegroundBrush}" />
+    </Style>
+
+    <!-- Card surfaces (design §3): card fill with a 1-px stroke; nested surfaces use the secondary fill. -->
+    <Style x:Key="CardBorderStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="SecondaryCardBorderStyle" BasedOn="{StaticResource CardBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+    </Style>
+
+    <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->
+    <Style x:Key="PageTitleTextStyle" BasedOn="{StaticResource TitleTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style x:Key="PageSubtitleTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+</ResourceDictionary>

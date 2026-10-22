@@ -1,4 +1,5 @@
 using System.Globalization;
+using MaxPlanner.Application.Preferences;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Shell;
 
@@ -52,4 +53,23 @@ internal sealed class FakeRecoveryActions : IRecoveryActions
     }
 
     public void CloseApp() => CloseCount++;
+}
+
+/// <summary>Preferences kept in memory; <see cref="Updates"/> counts saves the app would schedule.</summary>
+internal sealed class FakePreferencesStore(UiPreferences? initial = null) : IUiPreferencesStore
+{
+    public UiPreferences Current { get; private set; } = initial ?? UiPreferences.Default;
+
+    public int Updates { get; private set; }
+
+    public PreferencesLoadResult Load() => new(Current, PreferencesRecovery.None);
+
+    public void Update(Func<UiPreferences, UiPreferences> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        Current = change(Current);
+        Updates++;
+    }
+
+    public Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

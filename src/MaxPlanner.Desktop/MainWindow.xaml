@@ -22,6 +22,7 @@
         </TitleBar>
 
         <shell:ShellView
+            x:Name="ShellContent"
             Grid.Row="1"
             ViewModel="{x:Bind ViewModel, Mode=OneTime}" />
     </Grid>

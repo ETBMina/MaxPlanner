@@ -60,6 +60,10 @@ public sealed class ReadModelComposer
             task.Rank,
             task.ChecklistItems.Count(i => i.IsCompleted),
             task.ChecklistItems.Count,
+            [.. task.ChecklistItems
+                .OrderBy(i => i.Rank)
+                .ThenBy(i => i.Id.Value)
+                .Select(i => new ChecklistItemReadModel(i.Id, i.Text.Value, i.IsCompleted, i.Rank))],
             subtaskCardCount,
             task.CustomValues,
             task.CreatedAtUtc,

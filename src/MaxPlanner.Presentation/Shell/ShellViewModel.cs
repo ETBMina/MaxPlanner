@@ -1,4 +1,4 @@
-using System.Globalization;
+using System.ComponentModel;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -8,29 +8,31 @@ using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
+using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Shell;
 
 /// <summary>
 /// Window-level state around the pages: startup progress, the recovery page, the store's lifecycle
-/// (ready, resyncing, faulted), and app-wide notices (design §2.7). Use it on the UI thread.
+/// (ready, resyncing, faulted), app-wide notices (design §2.7), and navigation between the pages of the
+/// open dataset (design §2.2). Use it on the UI thread.
 /// </summary>
-/// <remarks>
-/// Until Phase 2 adds the NavigationView, the ready state shows a summary of the loaded dataset
-/// (record counts from the projection store) rather than pages.
-/// </remarks>
 public sealed partial class ShellViewModel : ObservableObject, IDisposable
 {
     private readonly ILocalizedStrings _strings;
     private readonly IDataFolderLauncher _dataFolder;
+    private readonly IUiPreferencesStore _preferences;
     private readonly SerialDisposable _storeSubscription = new();
     private WorkspaceProjectionStore? _store;
+    private IPageViewModel? _summarySource;
     private bool _isShuttingDown;
 
-    public ShellViewModel(ILocalizedStrings strings, IDataFolderLauncher dataFolder)
+    public ShellViewModel(ILocalizedStrings strings, IDataFolderLauncher dataFolder, IUiPreferencesStore preferences)
     {
         _strings = strings ?? throw new ArgumentNullException(nameof(strings));
         _dataFolder = dataFolder ?? throw new ArgumentNullException(nameof(dataFolder));
+        _preferences = preferences ?? throw new ArgumentNullException(nameof(preferences));
+        CurrentPage = AppPages.FromKey(preferences.Current.ActivePage);
     }
 
     [ObservableProperty]
@@ -58,14 +60,20 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsEditingBlocked { get; private set; } = true;
 
+    /// <summary>The pages of the open dataset; null until a dataset has opened.</summary>
     [ObservableProperty]
-    public partial string TaskCountText { get; private set; } = "0";
+    public partial WorkspaceViewModel? Workspace { get; private set; }
 
+    /// <summary>
+    /// The visible page. B-04: Dashboard on first run, then the last active page, persisted in
+    /// <c>configuration.json</c>.
+    /// </summary>
     [ObservableProperty]
-    public partial string ChangeRequestCountText { get; private set; } = "0";
+    public partial AppPage CurrentPage { get; private set; }
 
+    /// <summary>The current page's status-bar summary (design §2.8); empty for pages not built yet.</summary>
     [ObservableProperty]
-    public partial string ReviewCountText { get; private set; } = "0";
+    public partial string StatusSummary { get; private set; } = string.Empty;
 
     /// <summary>Bound two-way: the user may close the notice.</summary>
     [ObservableProperty]
@@ -118,20 +126,54 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Follows <paramref name="store"/>'s lifecycle and record counts until disposed or replaced. Store
-    /// notifications arrive on the store scheduler and are moved to <paramref name="uiScheduler"/> first.
+    /// Follows <paramref name="store"/>'s lifecycle until disposed or replaced. Store notifications arrive on
+    /// the store scheduler and are moved to <paramref name="uiScheduler"/> first.
     /// </summary>
     public IDisposable AttachStore(WorkspaceProjectionStore store, IScheduler uiScheduler)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(uiScheduler);
         _store = store;
-        var subscriptions = new CompositeDisposable(
-            store.State.ObserveOn(uiScheduler).Subscribe(state => Apply(state, store)),
-            store.Committed.ObserveOn(uiScheduler).Subscribe(_ => UpdateCounts(store)));
-        _storeSubscription.Disposable = subscriptions;
-        return subscriptions;
+        var subscription = store.State.ObserveOn(uiScheduler).Subscribe(Apply);
+        _storeSubscription.Disposable = subscription;
+        return subscription;
     }
+
+    /// <summary>Shows the pages of the opened dataset. The shell does not own (or dispose) the workspace.</summary>
+    public void AttachWorkspace(WorkspaceViewModel workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        Workspace = workspace;
+        ActivatePage(CurrentPage);
+    }
+
+    /// <summary>
+    /// Shows <paramref name="page"/>. Its ViewModel is created on the first visit and kept afterwards, so
+    /// repeated navigation never adds subscriptions (AC-17).
+    /// </summary>
+    public void NavigateTo(AppPage page)
+    {
+        if (page == CurrentPage)
+        {
+            return;
+        }
+
+        CurrentPage = page;
+        _preferences.Update(p => p with { ActivePage = AppPages.Key(page) });
+        ActivatePage(page);
+    }
+
+    /// <summary>The localized page name, e.g. for the placeholder of a page not built yet.</summary>
+    public string PageTitle(AppPage page) => _strings.GetString($"Page_{page}_Title");
+
+    /// <summary>The retained ViewModel of a built page, created on first use; null for pages not built yet.</summary>
+    public IPageViewModel? PageViewModel(AppPage page) => Workspace is not { } workspace ? null : page switch
+    {
+        AppPage.Board => workspace.Board,
+        AppPage.Grid => workspace.Grid,
+        AppPage.Checklists => workspace.Checklists,
+        _ => null,
+    };
 
     public void ReportPreferencesRecovery(PreferencesRecovery recovery)
     {
@@ -157,12 +199,50 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     {
         _isShuttingDown = true;
         IsEditingBlocked = true;
+        Workspace?.BeginClose();
         _storeSubscription.Disposable = null;
     }
 
-    public void Dispose() => _storeSubscription.Dispose();
+    /// <summary>The dataset is closing; its pages are about to be disposed and must no longer be shown.</summary>
+    public void DetachWorkspace()
+    {
+        SetSummarySource(null);
+        Workspace = null;
+    }
 
-    private void Apply(ProjectionState state, WorkspaceProjectionStore store)
+    public void Dispose()
+    {
+        SetSummarySource(null);
+        _storeSubscription.Dispose();
+    }
+
+    private void ActivatePage(AppPage page) => SetSummarySource(PageViewModel(page));
+
+    private void SetSummarySource(IPageViewModel? page)
+    {
+        if (_summarySource is not null)
+        {
+            _summarySource.PropertyChanged -= OnPagePropertyChanged;
+        }
+
+        _summarySource = page;
+        if (page is not null)
+        {
+            page.PropertyChanged += OnPagePropertyChanged;
+        }
+
+        StatusSummary = page?.Summary ?? string.Empty;
+    }
+
+    private void OnPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IPageViewModel.Summary) && sender is IPageViewModel page)
+        {
+            StatusSummary = page.Summary;
+        }
+    }
+
+    private void Apply(ProjectionState state)
     {
         switch (state.Status)
         {
@@ -171,7 +251,6 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
                 IsEditingBlocked = true;
                 break;
             case ProjectionStatus.Ready:
-                UpdateCounts(store);
                 FailureMessage = null;
                 CanRetry = false;
                 IsResyncing = false;
@@ -195,13 +274,6 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void UpdateCounts(WorkspaceProjectionStore store)
-    {
-        TaskCountText = store.Tasks.Count.ToString("N0", CultureInfo.CurrentCulture);
-        ChangeRequestCountText = store.ChangeRequests.Count.ToString("N0", CultureInfo.CurrentCulture);
-        ReviewCountText = store.ReviewItems.Count.ToString("N0", CultureInfo.CurrentCulture);
-    }
-
     [RelayCommand(CanExecute = nameof(CanRetry))]
     private void Retry()
     {
@@ -211,6 +283,27 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenDataFolder() => _dataFolder.OpenDataFolder();
+}
+
+/// <summary>The NavigationView destinations (design §2.2). Dashboard, Calendar and Settings are not built in Phase 2.</summary>
+public enum AppPage
+{
+    Dashboard,
+    Board,
+    Grid,
+    Calendar,
+    Checklists,
+    Settings,
+}
+
+public static class AppPages
+{
+    /// <summary>The <c>configuration.json</c> key (UiPreferences.KnownPageKeys).</summary>
+    public static string Key(AppPage page) => page.ToString().ToLowerInvariant();
+
+    /// <summary>B-04: an unknown or missing saved page opens the Dashboard.</summary>
+    public static AppPage FromKey(string? key) =>
+        Enum.GetValues<AppPage>().FirstOrDefault(p => string.Equals(Key(p), key, StringComparison.Ordinal), AppPage.Dashboard);
 }
 
 public enum ShellState

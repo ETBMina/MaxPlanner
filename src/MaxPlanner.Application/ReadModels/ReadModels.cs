@@ -22,7 +22,11 @@ public sealed record InheritedCrValues(
     PersonId? OwnerId,
     string? OwnerName);
 
+/// <summary>A checklist item as views display it; listed in explicit item order (B-09).</summary>
+public sealed record ChecklistItemReadModel(ChecklistItemId Id, string Text, bool IsCompleted, long Rank);
+
 /// <summary>A task row/card as every view displays it (T-05, B-07).</summary>
+/// <param name="ChecklistItems">Every checklist item of the task, ordered by rank then ID.</param>
 public sealed record TaskReadModel(
     TaskId Id,
     BoardCardKind Kind,
@@ -45,6 +49,7 @@ public sealed record TaskReadModel(
     long Rank,
     int ChecklistDone,
     int ChecklistTotal,
+    IReadOnlyList<ChecklistItemReadModel> ChecklistItems,
     int SubtaskCardCount,
     IReadOnlyDictionary<FieldId, CustomValue> CustomValues,
     DateTimeOffset CreatedAtUtc,

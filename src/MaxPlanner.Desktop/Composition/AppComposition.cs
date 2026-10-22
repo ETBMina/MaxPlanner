@@ -53,6 +53,7 @@ internal static class AppComposition
             sp.GetRequiredService<ILocalizedStrings>(),
             sp.GetRequiredService<IDataFolderLauncher>(),
             sp.GetRequiredService<IScheduler>(),
+            sp.GetRequiredService<IUiDispatcher>(),
             sp.GetRequiredService<TimeProvider>(),
             requestClose,
             sp.GetRequiredService<ILogger<StartupCoordinator>>()));

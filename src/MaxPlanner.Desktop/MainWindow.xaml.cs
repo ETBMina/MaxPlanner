@@ -18,6 +18,10 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon("Assets/AppIcon.ico");
         Title = new ResourceLoader().GetString("AppDisplayName");
         ApplyBackdrop();
+
+        // Design §2.1: in LeftMinimal (S) the pane toggle lives in the title bar and opens the overlay pane.
+        ShellContent.TitleBarPaneToggleChanged += (_, _) => AppTitleBar.IsPaneToggleButtonVisible = ShellContent.IsTitleBarPaneToggleVisible;
+        AppTitleBar.PaneToggleRequested += (_, _) => ShellContent.TogglePane();
     }
 
     public ShellViewModel ViewModel { get; }

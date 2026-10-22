@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-22T22:41:27.2970508+03:00",
+  "configuration": "Debug (MAXPLANNER_DEBUG_HOOKS=1)",
+  "root": "C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-829cbd",
+  "exits": [
+    "2026-10-22T22:41:22.619+03:00 [INF] MaxPlanner.Desktop.Program: Exiting with code 0 after 151109 ms.\r",
+    "2026-10-22T22:41:27.257+03:00 [INF] MaxPlanner.Desktop.Program: Exiting with code 0 after 4456 ms.\r"
+  ],
+  "passed": 16,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Grid: rows for tasks and Subtask cards, linked title locked",
+      "status": "PASS",
+      "detail": "8 rows; linked title read-only; status summary '8 rows · tasks and Subtask cards · archived hidden'"
+    },
+    {
+      "name": "Grid: title edit commits through the cell and the save status reports Saved",
+      "status": "PASS",
+      "detail": "title saved; status bar: Saved"
+    },
+    {
+      "name": "Grid: status edit to In Progress sets the start date (B-04)",
+      "status": "PASS",
+      "detail": "start date 10/22/2026"
+    },
+    {
+      "name": "Board: the card is in In Progress with the new title, without reload",
+      "status": "PASS",
+      "detail": "Update onboarding copy v2, Mobile Banking, no CR, Medium priority, General, Checklist 1/3 | 8 cards in 8 columns"
+    },
+    {
+      "name": "Checklists: the group header shows the new title",
+      "status": "PASS",
+      "detail": "1 of 3 done"
+    },
+    {
+      "name": "Checklists: Add an item through the box and button; blank shows an inline error",
+      "status": "PASS",
+      "detail": "blank: 'Item text is required.'; after add: 0 of 2 done"
+    },
+    {
+      "name": "Checklists: checking an item updates progress (AC-06)",
+      "status": "PASS",
+      "detail": "Renew the TLS certificate, Platform, no CR, Low priority, General, Checklist 1/2"
+    },
+    {
+      "name": "Failure: a disk-full commit keeps the editor and draft, shows the error and the App InfoBar",
+      "status": "PASS",
+      "detail": "error 'Your change isn't saved. The drive is full.'; draft kept; InfoBar open"
+    },
+    {
+      "name": "Failure: the other pages still show the committed title",
+      "status": "PASS",
+      "detail": "Checklists header unchanged"
+    },
+    {
+      "name": "Failure: retrying the kept draft saves it",
+      "status": "PASS",
+      "detail": "saved after retry"
+    },
+    {
+      "name": "Saving: the editor stays open with progress while the command runs",
+      "status": "PASS",
+      "detail": "Saving… with the editor open, then saved and closed"
+    },
+    {
+      "name": "Conflict: a genuine stale revision keeps the draft and shows the saved value; Use mine saves it",
+      "status": "PASS",
+      "detail": "error 'This task changed elsewhere after you started editing. Your change isn't saved.'; 'Saved now: Update onboarding copy v2'; 'Your change: Onboarding copy, final'; Use mine saved the draft"
+    },
+    {
+      "name": "Responsive: breakpoints follow the window width (500 / 640 / 1008 / 1600 epx)",
+      "status": "PASS",
+      "detail": "500 epx -> 750x1084 px, pane width 48 epx, nav toggle in pane: 1 | 640 epx -> 960x1084 px, pane width 48 epx, nav toggle in pane: 1 | 1008 epx -> 1512x1084 px, pane width 320 epx, nav toggle in pane: 1 | 1600 epx -> 1724x1084 px, pane width 320 epx, nav toggle in pane: 1"
+    },
+    {
+      "name": "Window minimum: PreferredMinimumWidth/Height units (design §2.1)",
+      "status": "PASS",
+      "detail": "requested 200x200 epx; window kept at 500x500 physical px at scale 1.5 (750 = units are physical pixels; 1125 = epx)"
+    },
+    {
+      "name": "AC-17: 100 navigation cycles keep the live store subscriptions stable",
+      "status": "PASS",
+      "detail": "subscriptions 19 over 300 navigations; log working set 245 -> 251 MiB; process working set 245 -> 252 MiB"
+    },
+    {
+      "name": "Relaunch: the edits are shown after closing and reopening the same data folder",
+      "status": "PASS",
+      "detail": "after relaunch: title and status persisted; 2 startups in the log"
+    }
+  ]
+}

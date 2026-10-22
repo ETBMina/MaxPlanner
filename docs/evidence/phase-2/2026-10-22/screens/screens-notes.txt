@@ -1,0 +1,28 @@
+01-grid-populated-dark.png
+02-grid-editing-dark.png
+03-grid-saving-dark.png
+04-grid-error-disk-full-dark.png
+05-grid-conflict-dark.png
+06-board-after-live-status-move-dark.png
+07-checklists-after-live-title-change-dark.png
+08-placeholder-dashboard-dark.png
+10-grid-500epx-dark.png
+width 500 epx: window 750x1350 px (scale 1.5); nav pane 0 epx; page host x=51 w=485 epx
+10-grid-640epx-dark.png
+width 640 epx: window 960x1350 px (scale 1.5); nav pane 0 epx; page host x=51 w=625 epx
+10-grid-1008epx-dark.png
+width 1008 epx: window 1512x1350 px (scale 1.5); nav pane 48 epx; page host x=125 w=944 epx
+10-grid-1600epx-dark.png
+width 1600 epx: window 2400x1350 px (scale 1.5); nav pane 320 epx; page host x=533 w=1264 epx
+10-board-500epx-dark.png
+10-board-640epx-dark.png
+10-board-1008epx-dark.png
+10-board-1600epx-dark.png
+10-checklists-500epx-dark.png
+10-checklists-640epx-dark.png
+10-checklists-1008epx-dark.png
+10-checklists-1600epx-dark.png
+minimum: requested 300x300 px, window kept at 750x750 px (scale 1.5); PreferredMinimumWidth/Height set to 750
+09-grid-light.png
+09-board-light.png
+09-checklists-light.png

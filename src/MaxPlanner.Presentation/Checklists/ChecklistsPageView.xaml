@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MaxPlanner.Presentation.Checklists.ChecklistsPageView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:local="using:MaxPlanner.Presentation.Checklists"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="OpenItemTemplate" x:DataType="local:ChecklistItemViewModel">
+            <CheckBox
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id.Value), Mode=OneTime}"
+                Checked="OnItemToggled"
+                Tag="{x:Bind Mode=OneTime}"
+                Unchecked="OnItemToggled"
+                IsChecked="{x:Bind IsChecked, Mode=OneWay}"
+                IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}">
+                <TextBlock Text="{x:Bind Text, Mode=OneWay}" TextWrapping="Wrap" />
+            </CheckBox>
+        </DataTemplate>
+
+        <!-- Completed items show strikethrough and sit in the Completed section, so color is never the only cue. -->
+        <DataTemplate x:Key="CompletedItemTemplate" x:DataType="local:ChecklistItemViewModel">
+            <CheckBox
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id.Value), Mode=OneTime}"
+                Checked="OnItemToggled"
+                Tag="{x:Bind Mode=OneTime}"
+                Unchecked="OnItemToggled"
+                IsChecked="{x:Bind IsChecked, Mode=OneWay}"
+                IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}">
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind Text, Mode=OneWay}"
+                    TextDecorations="Strikethrough"
+                    TextWrapping="Wrap" />
+            </CheckBox>
+        </DataTemplate>
+
+        <DataTemplate x:Key="GroupTemplate" x:DataType="local:ChecklistGroupViewModel">
+            <!-- ItemsRepeater does not set DataContext for x:Bind templates; Tag carries the group for the handlers. -->
+            <Border
+                Padding="16"
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_TaskGroup_', Key.Value), Mode=OneTime}"
+                Tag="{x:Bind Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind Title, Mode=OneWay}"
+                Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_GroupTitle_', Key.Value), Mode=OneTime}"
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Title, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <Border
+                        HorizontalAlignment="Left"
+                        Style="{StaticResource ServiceChipStyle}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE90F;" Style="{StaticResource ChipGlyphStyle}" />
+                            <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Reference, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_Progress_', Key.Value), Mode=OneTime}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ProgressText, Mode=OneWay}" />
+                        <ProgressBar
+                            AutomationProperties.Name="{x:Bind ProgressText, Mode=OneWay}"
+                            Maximum="100"
+                            Value="{x:Bind ProgressPercent, Mode=OneWay}" />
+                    </StackPanel>
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasToggleError), Mode=OneWay}">
+                        <FontIcon
+                            FontSize="12"
+                            Foreground="{ThemeResource ErrorTextBrush}"
+                            Glyph="&#xE783;" />
+                        <TextBlock
+                            AutomationProperties.LiveSetting="Assertive"
+                            Foreground="{ThemeResource ErrorTextBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ToggleError, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ItemsRepeater ItemTemplate="{StaticResource OpenItemTemplate}" ItemsSource="{x:Bind OpenItems, Mode=OneTime}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="2" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Uid="Checklists_AddItemBox"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_AddItemBox_', Key.Value), Mode=OneTime}"
+                            IsEnabled="{x:Bind common:BindFunctions.Not(IsAdding), Mode=OneWay}"
+                            KeyDown="OnAddBoxKeyDown"
+                            MaxLength="2000"
+                            Text="{x:Bind NewItemText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button
+                            x:Uid="Checklists_AddItemButton"
+                            Grid.Column="1"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_AddItemButton_', Key.Value), Mode=OneTime}"
+                            Command="{x:Bind AddItemCommand}">
+                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                        </Button>
+                    </Grid>
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasNewItemError), Mode=OneWay}">
+                        <FontIcon
+                            FontSize="12"
+                            Foreground="{ThemeResource ErrorTextBrush}"
+                            Glyph="&#xE783;" />
+                        <TextBlock
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_AddItemError_', Key.Value), Mode=OneTime}"
+                            AutomationProperties.LiveSetting="Assertive"
+                            Foreground="{ThemeResource ErrorTextBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind NewItemError, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Expander
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_CompletedExpander_', Key.Value), Mode=OneTime}"
+                        Header="{x:Bind CompletedHeader, Mode=OneWay}"
+                        IsExpanded="False"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasCompleted), Mode=OneWay}">
+                        <ItemsRepeater ItemTemplate="{StaticResource CompletedItemTemplate}" ItemsSource="{x:Bind CompletedItems, Mode=OneTime}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Spacing="2" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </Expander>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Page header (design §2.3). The Checklists/Reviews SelectorBar, search, and New to-do arrive with Phase 8. -->
+        <StackPanel
+            x:Name="HeaderRoot"
+            Padding="32,24,32,12"
+            Spacing="2">
+            <TextBlock
+                x:Name="PageTitle"
+                x:Uid="Checklists_PageTitle"
+                AutomationProperties.AutomationId="Checklists_PageTitle"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource PageTitleTextStyle}" />
+            <TextBlock
+                AutomationProperties.AutomationId="Checklists_PageSubtitle"
+                Style="{StaticResource PageSubtitleTextStyle}"
+                Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
+        </StackPanel>
+
+        <controls:StateView
+            x:Uid="Checklists_StateView"
+            Grid.Row="1"
+            EmptyGlyph="&#xE9D5;"
+            PageKey="Checklists"
+            State="{x:Bind ViewModel.State, Mode=OneWay}">
+            <!-- The outer ScrollViewer gives the repeaters their viewport, so both levels virtualize (design §4.5). -->
+            <ScrollViewer x:Name="GroupsScroller" AutomationProperties.AutomationId="Checklists_Groups">
+                <!--
+                    Phase 2 deviation from design §4.5: one virtualizing column, because UniformGridLayout sizes
+                    every group like the first one and clipped taller groups. A variable-height multi-column
+                    virtualizing layout is Phase 8 work (implementation-plan 2g).
+                -->
+                <ItemsRepeater
+                    x:Name="GroupsRepeater"
+                    MaxWidth="880"
+                    Margin="32,0,32,24"
+                    HorizontalAlignment="Left"
+                    ItemTemplate="{StaticResource GroupTemplate}"
+                    ItemsSource="{x:Bind ViewModel.Groups, Mode=OneTime}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Spacing="12" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+            </ScrollViewer>
+        </controls:StateView>
+    </Grid>
+</UserControl>

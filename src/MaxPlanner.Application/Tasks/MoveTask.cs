@@ -69,12 +69,7 @@ public sealed class MoveTask
             return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
         }
 
-        var rank = command.Placement switch
-        {
-            BetweenPlacement between => RankPolicy.Between(between.BeforeRank, between.AfterRank)
-                ?? RenumberColumn(tx, target, new BoardCardKey(BoardCardKind.Task, task.Id.Value), between.BeforeRank),
-            _ => RankPolicy.After(tx.Tasks.MaxBoardRank(target.Id)),
-        };
+        var rank = BoardColumnRanks.RankFor(tx, target, new BoardCardKey(BoardCardKind.Task, task.Id.Value), command.Placement);
 
         var moved = task.MoveTo(current, target, rank, command.Start, command.End, tx.LocalToday, tx.UtcNow);
         if (moved.Error is { } invalid)
@@ -86,13 +81,25 @@ public sealed class MoveTask
         tx.Changes.UpsertTask(moved.Value);
         return TxResult.Commit(moved.Value.Revision);
     }
+}
+
+/// <summary>Rank assignment for a card entering a Board column; shared by task and Subtask card moves (B-07, B-16.5).</summary>
+internal static class BoardColumnRanks
+{
+    /// <summary>The rank for <paramref name="moved"/> at <paramref name="placement"/> in <paramref name="column"/>.</summary>
+    public static long RankFor(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey moved, BoardPlacement placement) => placement switch
+    {
+        BetweenPlacement between => RankPolicy.Between(between.BeforeRank, between.AfterRank)
+            ?? RenumberColumn(tx, column, moved, between.BeforeRank),
+        _ => RankPolicy.After(tx.Tasks.MaxBoardRank(column.Id)),
+    };
 
     /// <summary>
     /// B-07: when two neighbours have no free rank between them, the full destination column (cards hidden
     /// by filters included) is respaced in this same transaction. Only cards whose rank changes are
     /// written; the moved card's new rank is returned for its own move.
     /// </summary>
-    private static long RenumberColumn(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey moved, long? beforeRank)
+    public static long RenumberColumn(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey moved, long? beforeRank)
     {
         var cards = tx.Tasks.ListBoardColumn(column.Id).Where(c => c.Key != moved).ToList();
         var index = beforeRank is { } before ? cards.FindLastIndex(c => c.Rank <= before) + 1 : 0;

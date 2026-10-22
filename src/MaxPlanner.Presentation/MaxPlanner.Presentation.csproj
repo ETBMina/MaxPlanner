@@ -16,4 +16,8 @@
     <PackageReference Include="DynamicData" />
     <PackageReference Include="System.Reactive" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MaxPlanner.Presentation.Tests" />
+  </ItemGroup>
 </Project>

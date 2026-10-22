@@ -34,6 +34,33 @@ internal static class TransactionGuards
         return error is null;
     }
 
+    /// <summary>
+    /// Loads a Subtask card with its parent task and checks the card's revision. A card whose parent is
+    /// archived is read-only (B-16.6), which is reported as a rule violation.
+    /// </summary>
+    public static bool TryLoadEditableSubtaskCard(
+        IWriteTransaction tx,
+        SubtaskCardId id,
+        long? expectedRevision,
+        [NotNullWhen(true)] out SubtaskCard? card,
+        [NotNullWhen(false)] out AppError? error)
+    {
+        card = tx.SubtaskCards.Find(id);
+        if (card is null)
+        {
+            error = NotFound(tx, EntityKind.SubtaskCard, id.Value);
+            return false;
+        }
+
+        error = RevisionConflict(EntityKind.SubtaskCard, id.Value, expectedRevision, card.Revision);
+        if (error is null && tx.Tasks.Find(card.ParentTaskId) is { IsArchived: true })
+        {
+            error = new ValidationFailedError(new DomainError(DomainErrorCodes.ArchivedReadOnly, "Parent"));
+        }
+
+        return error is null;
+    }
+
     public static bool TryLoadChangeRequest(
         IWriteTransaction tx,
         ChangeRequestId id,

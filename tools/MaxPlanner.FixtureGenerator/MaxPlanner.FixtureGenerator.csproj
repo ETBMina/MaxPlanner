@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Development tool: creates disposable datasets through the real use cases. Never part of the portable ZIP
+       (publish-portable.ps1 publishes only MaxPlanner.Desktop). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>MaxPlanner.FixtureGenerator</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MaxPlanner.Application\MaxPlanner.Application.csproj" />
+    <ProjectReference Include="..\..\src\MaxPlanner.Infrastructure\MaxPlanner.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- People have no use case until Phase 10; the tool inserts the lookup rows directly (see Program.cs). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+</Project>
