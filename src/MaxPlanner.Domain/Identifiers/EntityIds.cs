@@ -72,3 +72,8 @@ public readonly record struct DatasetId(Guid Value)
 {
     public override string ToString() => Value.ToString();
 }
+
+public readonly record struct FieldOptionId(Guid Value)
+{
+    public override string ToString() => Value.ToString();
+}

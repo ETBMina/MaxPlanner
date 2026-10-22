@@ -250,6 +250,16 @@ docs/  adr/  schemas/transfer-v1.schema.json  samples/  deployment-guide.md  use
 **Phase 1. Integrity.**
 - *Build:* Domain and policies (incl. Subtask card, Review, Owner, cascade); Application ports, errors, change sets and ledger; the SQLite writer/readers, schema, constraints, migration M0001 with seed defaults, tombstones, startup probe/lock/recovery, preferences, logging and daily backup; the projection store handoff and resync.
 - *Test:* use **real temp SQLite files** for uniqueness and FKs, rollback, ledger replay, conflicts, cascade atomicity under fault injection, migration failure, newer schema, corrupt file and load-time races.
+- *Slices (branch `phase-1/integrity`), each ending with a green build and tests:*
+
+| Slice | Content | Status |
+|---|---|---|
+| 1a | Domain: text values and limits (B-02.10), dates/ranges, lookups with semantic flags, entities (Task, ChecklistItem, SubtaskCard, ChangeRequest, CrTaskLink, ReviewItem, GeneralTodo), and policies: dates (B-04), overdue (B-15), title inheritance (D3), link-once (D4), cascade scope (D5), rank (B-07), review completion (B-17) | Done: 40 Domain tests; full suite 78/78, 0 warnings. Custom values are deferred to 1b. |
+| 1b | Domain: calendar lane layout (B-08.6–9), copy-task policy (B-06), lookup removal (B-04), custom values (B-11) | Done. Built by the `winui:winui-dev` agent, verified here: 189/189 tests, 0 warnings. The agent found and fixed a calendar lane bug (lanes not reused). Owner follow-ups are in: no chevron for hidden-day spill, long-item pop-out (shortened Subtitle + full Notes), copy "Keep current status". Domain `Rehydrate` factories with corrupt-row checks are ready for 1d. |
+| 1c | Application: ports, typed errors, `CommittedChangeSet`, operation ledger contract, read-model composers, first use cases (create/update/move task, create CR, link, cascade delete, checklist and Subtask card operations) | Done (agent-built, reviewed here). An in-memory coordinator fake is the executable spec for 1d. Not yet implemented: Copy use case, lookup-removal and field-definition use cases, new people/tags on save (B-02.6), default-owner offer (B-11), change-feed port (1e). |
+| 1d | Infrastructure: schema M0001 + seed (B-04 defaults), ordered writer worker, readers, row mappers, ledger, tombstones, migration runner, newer-schema refusal; fault-injection tests. **Must:** implement the 1c ports to pass the same contract the in-memory fake encodes, and order Board rank ties with the .NET `Guid` comparison (SQLite's byte-wise BLOB order differs), so renumbering never swaps tied cards. | Pending |
+| 1e | Presentation projection store: snapshot/sequence handoff, resync on gap, composer integration | Pending |
+| 1f | Desktop startup coordinator, recovery page for missing/corrupt data, `configuration.json` preferences, bounded logging, daily backup | Pending |
 
 **Phase 2. Vertical slice.**
 - *Build:* the shell (Mica, theme) and a minimal Grid edit → persist → Board card and Checklists update without reload.

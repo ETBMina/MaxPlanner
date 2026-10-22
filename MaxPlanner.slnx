@@ -10,6 +10,8 @@
     <Project Path="src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MaxPlanner.Domain.Tests/MaxPlanner.Domain.Tests.csproj" />
+    <Project Path="tests/MaxPlanner.Application.Tests/MaxPlanner.Application.Tests.csproj" />
     <Project Path="tests/MaxPlanner.Infrastructure.Tests/MaxPlanner.Infrastructure.Tests.csproj" />
     <Project Path="tests/MaxPlanner.Infrastructure.Tests.CrashWriter/MaxPlanner.Infrastructure.Tests.CrashWriter.csproj" />
     <Project Path="tests/MaxPlanner.Presentation.Tests/MaxPlanner.Presentation.Tests.csproj" />
