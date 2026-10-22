@@ -1,6 +1,7 @@
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Domain.Tasks;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
 
@@ -58,13 +59,25 @@ public sealed record ChangeRequest
     /// <summary>Typed custom values by field, including values of deactivated fields (B-11).</summary>
     public IReadOnlyDictionary<FieldId, CustomValue> CustomValues { get; private init; } = CustomValue.NoValues;
 
+    /// <summary>
+    /// Unknown imported content kept for lossless export and backup (T-05). Never shown or edited, and kept
+    /// unchanged by every edit.
+    /// </summary>
+    public PreservedMetadata Preserved { get; private init; } = PreservedMetadata.Empty;
+
     public DateTimeOffset CreatedAtUtc { get; private init; }
 
     public DateTimeOffset UpdatedAtUtc { get; private init; }
 
     public long Revision { get; private init; }
 
-    public static ChangeRequest Create(ChangeRequestId id, ChangeRequestContent content, CrStatusDefinition status, DateTimeOffset nowUtc)
+    /// <param name="preserved">Unknown content from an import; null (the default) for none.</param>
+    public static ChangeRequest Create(
+        ChangeRequestId id,
+        ChangeRequestContent content,
+        CrStatusDefinition status,
+        DateTimeOffset nowUtc,
+        PreservedMetadata? preserved = null)
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(status);
@@ -72,6 +85,7 @@ public sealed record ChangeRequest
         {
             Id = id,
             StatusId = status.Id,
+            Preserved = preserved ?? PreservedMetadata.Empty,
             CreatedAtUtc = nowUtc,
             UpdatedAtUtc = nowUtc,
             Revision = 1,
@@ -81,23 +95,32 @@ public sealed record ChangeRequest
     /// <summary>
     /// Rebuilds a stored CR exactly as persisted, without a revision bump. The content's value types
     /// already enforce the field rules (required owner, both-or-neither planned dates, valid URL); the
-    /// audit values are checked here so a corrupt row is reported.
+    /// audit values and preserved metadata are checked here so a corrupt row is reported.
     /// </summary>
     public static DomainResult<ChangeRequest> Rehydrate(
         ChangeRequestId id,
         ChangeRequestContent content,
         CrStatusId statusId,
+        PreservedMetadata preserved,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         long revision)
     {
         ArgumentNullException.ThrowIfNull(content);
+        ArgumentNullException.ThrowIfNull(preserved);
+        if (preserved.PreLinkTitle is not null)
+        {
+            // Only a task has a title from before it was linked (ADR 0005).
+            return DomainResult.Failure<ChangeRequest>(DomainErrorCodes.InvalidStoredValue, "Preserved");
+        }
+
         return StoredRecord.CheckAudit(createdAtUtc, updatedAtUtc, revision) is { } audit
             ? DomainResult.Failure<ChangeRequest>(audit)
             : DomainResult.Success(new ChangeRequest
             {
                 Id = id,
                 StatusId = statusId,
+                Preserved = preserved,
                 CreatedAtUtc = createdAtUtc,
                 UpdatedAtUtc = updatedAtUtc,
                 Revision = revision,

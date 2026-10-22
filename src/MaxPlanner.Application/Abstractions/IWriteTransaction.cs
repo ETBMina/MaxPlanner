@@ -18,6 +18,10 @@ namespace MaxPlanner.Application.Abstractions;
 /// visible to later reads in the same transaction and are discarded on rollback. Stores enforce
 /// storage constraints (primary/unique keys, foreign keys) and throw when a use case violates them;
 /// use cases check business rules first so such a throw indicates a defect.
+/// <para>An <c>Update</c> must be given a record that was loaded (<c>Find</c>) or written earlier in the
+/// same transaction, with a higher revision than that state. Stores guard the write with the revision
+/// they last saw in this transaction and throw otherwise, so a stale entity (for example one taken
+/// from a read model) can never overwrite newer data.</para>
 /// </remarks>
 public interface IWriteTransaction
 {

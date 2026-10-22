@@ -17,7 +17,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void Writer_uses_wal_full_sync_and_enforced_foreign_keys()
     {
         using var db = new TempDatabase();
-        using var writer = db.Factory.OpenWriter();
+        using var writer = db.Factory.OpenWriter(createIfMissing: true);
 
         SpikeSchema.Text(writer, "PRAGMA journal_mode;").Should().Be("wal");
         SpikeSchema.Scalar(writer, "PRAGMA synchronous;").Should().Be(2, "2 = FULL");
@@ -29,7 +29,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void Cr_number_uniqueness_is_enforced_on_the_normalized_value()
     {
         using var db = new TempDatabase();
-        using var writer = db.Factory.OpenWriter();
+        using var writer = db.Factory.OpenWriter(createIfMissing: true);
         SpikeSchema.Create(writer);
         InsertCr(writer, Guid.NewGuid(), "CR-105");
 
@@ -44,7 +44,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void A_cr_links_many_tasks_but_each_task_links_at_most_once_and_never_to_a_missing_cr()
     {
         using var db = new TempDatabase();
-        using var writer = db.Factory.OpenWriter();
+        using var writer = db.Factory.OpenWriter(createIfMissing: true);
         SpikeSchema.Create(writer);
         var cr = Guid.NewGuid();
         InsertCr(writer, cr, "CR-1");
@@ -68,7 +68,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void A_failed_statement_inside_a_transaction_rolls_back_the_whole_logical_operation()
     {
         using var db = new TempDatabase();
-        using var writer = db.Factory.OpenWriter();
+        using var writer = db.Factory.OpenWriter(createIfMissing: true);
         SpikeSchema.Create(writer);
         InsertCr(writer, Guid.NewGuid(), "CR-1");
 
@@ -88,7 +88,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void A_reader_transaction_sees_one_snapshot_including_its_commit_sequence_while_the_writer_continues()
     {
         using var db = new TempDatabase();
-        using var writer = db.Factory.OpenWriter();
+        using var writer = db.Factory.OpenWriter(createIfMissing: true);
         SpikeSchema.Create(writer);
         SpikeSchema.CommitTask(writer, Guid.NewGuid());
 
@@ -113,7 +113,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public async Task Online_backup_during_continuous_writes_produces_a_consistent_valid_copy()
     {
         using var db = new TempDatabase();
-        using (var setup = db.Factory.OpenWriter())
+        using (var setup = db.Factory.OpenWriter(createIfMissing: true))
         {
             SpikeSchema.Create(setup);
         }
@@ -121,7 +121,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
         using var stop = new CancellationTokenSource();
         var writerTask = Task.Run(() =>
         {
-            using var writer = db.Factory.OpenWriter();
+            using var writer = db.Factory.OpenWriter(createIfMissing: true);
             var commits = 0;
             while (!stop.IsCancellationRequested)
             {
@@ -159,7 +159,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void Single_row_commits_under_full_sync_stay_well_inside_the_save_budget()
     {
         using var db = new TempDatabase();
-        using var writer = db.Factory.OpenWriter();
+        using var writer = db.Factory.OpenWriter(createIfMissing: true);
         SpikeSchema.Create(writer);
         for (var i = 0; i < 20; i++)
         {
@@ -188,7 +188,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
     public void Killing_the_writer_process_mid_stream_leaves_a_valid_database_with_every_acknowledged_commit()
     {
         using var db = new TempDatabase();
-        using (var setup = db.Factory.OpenWriter())
+        using (var setup = db.Factory.OpenWriter(createIfMissing: true))
         {
             SpikeSchema.Create(setup);
         }
@@ -217,7 +217,7 @@ public sealed class SqliteEngineSpikeTests(ITestOutputHelper output)
         }
 
         SqliteConnection.ClearAllPools();
-        using var reopened = db.Factory.OpenWriter();
+        using var reopened = db.Factory.OpenWriter(createIfMissing: true);
         SpikeSchema.Text(reopened, "PRAGMA integrity_check;").Should().Be("ok");
         var sequence = SpikeSchema.Scalar(reopened, "SELECT commit_sequence FROM app_metadata;");
         var rows = SpikeSchema.Scalar(reopened, "SELECT COUNT(*) FROM tasks;");

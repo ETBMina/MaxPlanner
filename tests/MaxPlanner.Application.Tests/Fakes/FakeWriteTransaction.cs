@@ -13,6 +13,7 @@ namespace MaxPlanner.Application.Tests.Fakes;
 /// <summary>
 /// Stores over a transaction's working copy. They enforce the same primary-key, unique, and foreign-key
 /// constraints as the SQLite schema by throwing, so a use case that skips a business check fails here too.
+/// Updates follow the same revision rule as the SQLite stores (<see cref="FakeRevisionGuard"/>).
 /// </summary>
 internal sealed class FakeWriteTransaction : IWriteTransaction
 {
@@ -56,7 +57,9 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
     private sealed class TaskStore(InMemoryDataset data, Action<string> beforeWrite) : ITaskStore
     {
-        public TaskItem? Find(TaskId id) => data.Tasks.GetValueOrDefault(id);
+        private readonly FakeRevisionGuard _revisions = new("task");
+
+        public TaskItem? Find(TaskId id) => _revisions.Seen(data.Tasks.GetValueOrDefault(id), t => t.Id.Value, t => t.Revision);
 
         public void Insert(TaskItem task)
         {
@@ -65,11 +68,14 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"task {task.Id} already exists");
             }
+
+            _revisions.Seen(task, t => t.Id.Value, t => t.Revision);
         }
 
         public void Update(TaskItem task)
         {
             beforeWrite("tasks.update");
+            _revisions.CheckUpdate(task.Id.Value, task.Revision);
             data.Tasks[task.Id] = data.Tasks.ContainsKey(task.Id) ? task : throw Constraint($"task {task.Id} does not exist");
         }
 
@@ -85,6 +91,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"task {id} does not exist");
             }
+
+            _revisions.Forget(id.Value);
         }
 
         public long? MaxBoardRank(TaskStatusId status) => Column(status).Select(c => (long?)c.Rank).Max();
@@ -103,7 +111,9 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
     private sealed class SubtaskCardStore(InMemoryDataset data, Action<string> beforeWrite) : ISubtaskCardStore
     {
-        public SubtaskCard? Find(SubtaskCardId id) => data.SubtaskCards.GetValueOrDefault(id);
+        private readonly FakeRevisionGuard _revisions = new("Subtask card");
+
+        public SubtaskCard? Find(SubtaskCardId id) => _revisions.Seen(data.SubtaskCards.GetValueOrDefault(id), c => c.Id.Value, c => c.Revision);
 
         public void Insert(SubtaskCard card)
         {
@@ -112,11 +122,14 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"Subtask card {card.Id} exists or has no parent");
             }
+
+            _revisions.Seen(card, c => c.Id.Value, c => c.Revision);
         }
 
         public void Update(SubtaskCard card)
         {
             beforeWrite("subtask-cards.update");
+            _revisions.CheckUpdate(card.Id.Value, card.Revision);
             data.SubtaskCards[card.Id] = data.SubtaskCards.ContainsKey(card.Id) ? card : throw Constraint($"Subtask card {card.Id} does not exist");
         }
 
@@ -127,32 +140,40 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"Subtask card {id} does not exist");
             }
+
+            _revisions.Forget(id.Value);
         }
 
         public IReadOnlyList<SubtaskCard> ListByParent(TaskId parentTaskId) =>
-            [.. data.SubtaskCards.Values.Where(c => c.ParentTaskId == parentTaskId).OrderBy(c => c.Rank).ThenBy(c => c.Id.Value)];
+            [.. data.SubtaskCards.Values.Where(c => c.ParentTaskId == parentTaskId).OrderBy(c => c.Rank).ThenBy(c => c.Id.Value)
+                .Select(c => _revisions.Seen(c, card => card.Id.Value, card => card.Revision))];
     }
 
     private sealed class ChangeRequestStore(InMemoryDataset data, Action<string> beforeWrite) : IChangeRequestStore
     {
-        public ChangeRequest? Find(ChangeRequestId id) => data.ChangeRequests.GetValueOrDefault(id);
+        private readonly FakeRevisionGuard _revisions = new("CR");
+
+        public ChangeRequest? Find(ChangeRequestId id) => _revisions.Seen(data.ChangeRequests.GetValueOrDefault(id), c => c.Id.Value, c => c.Revision);
 
         public ChangeRequest? FindByNormalizedNumber(string normalizedNumber) =>
-            data.ChangeRequests.Values.SingleOrDefault(c => c.Number.Normalized == normalizedNumber);
+            _revisions.Seen(ByNumber(normalizedNumber), c => c.Id.Value, c => c.Revision);
 
         public void Insert(ChangeRequest changeRequest)
         {
             beforeWrite("change-requests.insert");
-            if (FindByNormalizedNumber(changeRequest.Number.Normalized) is not null || !data.ChangeRequests.TryAdd(changeRequest.Id, changeRequest))
+            if (ByNumber(changeRequest.Number.Normalized) is not null || !data.ChangeRequests.TryAdd(changeRequest.Id, changeRequest))
             {
                 throw Constraint($"CR {changeRequest.Id} or number {changeRequest.Number} already exists");
             }
+
+            _revisions.Seen(changeRequest, c => c.Id.Value, c => c.Revision);
         }
 
         public void Update(ChangeRequest changeRequest)
         {
             beforeWrite("change-requests.update");
-            if (FindByNormalizedNumber(changeRequest.Number.Normalized) is { } other && other.Id != changeRequest.Id)
+            _revisions.CheckUpdate(changeRequest.Id.Value, changeRequest.Revision);
+            if (ByNumber(changeRequest.Number.Normalized) is { } other && other.Id != changeRequest.Id)
             {
                 throw Constraint($"number {changeRequest.Number} is used by CR {other.Id}");
             }
@@ -174,7 +195,12 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"CR {id} does not exist");
             }
+
+            _revisions.Forget(id.Value);
         }
+
+        private ChangeRequest? ByNumber(string normalizedNumber) =>
+            data.ChangeRequests.Values.SingleOrDefault(c => c.Number.Normalized == normalizedNumber);
     }
 
     private sealed class LinkStore(InMemoryDataset data, Action<string> beforeWrite) : ILinkStore
@@ -205,7 +231,9 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
     private sealed class ReviewStore(InMemoryDataset data, Action<string> beforeWrite) : IReviewStore
     {
-        public ReviewItem? Find(ReviewItemId id) => data.Reviews.GetValueOrDefault(id);
+        private readonly FakeRevisionGuard _revisions = new("review item");
+
+        public ReviewItem? Find(ReviewItemId id) => _revisions.Seen(data.Reviews.GetValueOrDefault(id), r => r.Id.Value, r => r.Revision);
 
         public void Insert(ReviewItem item)
         {
@@ -214,11 +242,14 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"review {item.Id} already exists");
             }
+
+            _revisions.Seen(item, r => r.Id.Value, r => r.Revision);
         }
 
         public void Update(ReviewItem item)
         {
             beforeWrite("reviews.update");
+            _revisions.CheckUpdate(item.Id.Value, item.Revision);
             data.Reviews[item.Id] = data.Reviews.ContainsKey(item.Id) ? item : throw Constraint($"review {item.Id} does not exist");
         }
 
@@ -229,6 +260,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"review {id} does not exist");
             }
+
+            _revisions.Forget(id.Value);
         }
 
         public long? MaxRank() => data.Reviews.Values.Select(r => (long?)r.Rank).Max();
@@ -236,7 +269,9 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
     private sealed class GeneralTodoStore(InMemoryDataset data, Action<string> beforeWrite) : IGeneralTodoStore
     {
-        public GeneralTodo? Find(GeneralTodoId id) => data.GeneralTodos.GetValueOrDefault(id);
+        private readonly FakeRevisionGuard _revisions = new("General to-do");
+
+        public GeneralTodo? Find(GeneralTodoId id) => _revisions.Seen(data.GeneralTodos.GetValueOrDefault(id), t => t.Id.Value, t => t.Revision);
 
         public void Insert(GeneralTodo todo)
         {
@@ -245,11 +280,14 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"to-do {todo.Id} already exists");
             }
+
+            _revisions.Seen(todo, t => t.Id.Value, t => t.Revision);
         }
 
         public void Update(GeneralTodo todo)
         {
             beforeWrite("general-todos.update");
+            _revisions.CheckUpdate(todo.Id.Value, todo.Revision);
             data.GeneralTodos[todo.Id] = data.GeneralTodos.ContainsKey(todo.Id) ? todo : throw Constraint($"to-do {todo.Id} does not exist");
         }
 
@@ -260,6 +298,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             {
                 throw Constraint($"to-do {id} does not exist");
             }
+
+            _revisions.Forget(id.Value);
         }
 
         public long? MaxRank() => data.GeneralTodos.Values.Select(t => (long?)t.Rank).Max();

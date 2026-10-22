@@ -9,7 +9,7 @@ if (args.Length != 1)
     return 2;
 }
 
-using var writer = new SqliteConnectionFactory(args[0]).OpenWriter();
+using var writer = new SqliteConnectionFactory(args[0]).OpenWriter(createIfMissing: false);
 for (long sequence = 1; ; sequence++)
 {
     using (var transaction = writer.BeginTransaction(deferred: false))

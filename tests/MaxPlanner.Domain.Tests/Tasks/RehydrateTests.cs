@@ -88,14 +88,19 @@ public sealed class RehydrateTests
             new Dictionary<FieldId, CustomValue> { [Points] = new NumberCustomValue(8) });
         var status = new CrStatusId(Guid.NewGuid());
 
-        var cr = ChangeRequest.Rehydrate(Cr, content, status, Created, Now, 9).Value;
+        var preserved = new PreservedMetadata(null, ["CR-7-legacy"], """{"jira":"MP-7"}""");
+
+        var cr = ChangeRequest.Rehydrate(Cr, content, status, preserved, Created, Now, 9).Value;
 
         cr.Revision.Should().Be(9);
         cr.StatusId.Should().Be(status);
         cr.TaskNumber!.Value.Should().Be("007");
         cr.Planned!.DurationDays.Should().Be(3);
         cr.CustomValues[Points].Should().Be(new NumberCustomValue(8));
-        ChangeRequest.Rehydrate(Cr, content, status, Created, Now, 0).Error!.Code.Should().Be(DomainErrorCodes.InvalidStoredValue);
+        cr.Preserved.Should().BeSameAs(preserved);
+        ChangeRequest.Rehydrate(Cr, content, status, preserved, Created, Now, 0).Error!.Code.Should().Be(DomainErrorCodes.InvalidStoredValue);
+        ChangeRequest.Rehydrate(Cr, content, status, preserved with { PreLinkTitle = "Only tasks are linked" }, Created, Now, 9).Error
+            .Should().Be(new DomainError(DomainErrorCodes.InvalidStoredValue, "Preserved"));
     }
 
     [Fact]

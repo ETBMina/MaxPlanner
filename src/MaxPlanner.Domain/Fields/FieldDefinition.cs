@@ -53,7 +53,18 @@ public sealed record FieldKey
 
     public string Normalized { get; }
 
-    public static DomainResult<FieldKey> Create(string? raw)
+    public static DomainResult<FieldKey> Create(string? raw) =>
+        Parse(raw).Bind(key => ReservedKeys.Contains(key.Display.Replace("_", string.Empty, StringComparison.Ordinal).Replace("-", string.Empty, StringComparison.Ordinal).ToLowerInvariant())
+            ? DomainResult.Failure<FieldKey>(DomainErrorCodes.ReservedKey, "Key")
+            : DomainResult.Success(key));
+
+    /// <summary>
+    /// Rebuilds a stored key. The identifier format is still checked, but not the reserved-name list: that is
+    /// a creation rule, and a later version may reserve a name an existing field already uses.
+    /// </summary>
+    public static DomainResult<FieldKey> Rehydrate(string? raw) => Parse(raw);
+
+    private static DomainResult<FieldKey> Parse(string? raw)
     {
         var text = TextRules.RequiredLine(raw, DomainLimits.FieldKey, "Key");
         if (!text.IsSuccess)
@@ -62,13 +73,8 @@ public sealed record FieldKey
         }
 
         var key = text.Value;
-        if (!char.IsAsciiLetter(key[0]) || !key.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-'))
-        {
-            return DomainResult.Failure<FieldKey>(DomainErrorCodes.InvalidKey, "Key");
-        }
-
-        return ReservedKeys.Contains(key.Replace("_", string.Empty, StringComparison.Ordinal).Replace("-", string.Empty, StringComparison.Ordinal).ToLowerInvariant())
-            ? DomainResult.Failure<FieldKey>(DomainErrorCodes.ReservedKey, "Key")
+        return !char.IsAsciiLetter(key[0]) || !key.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-')
+            ? DomainResult.Failure<FieldKey>(DomainErrorCodes.InvalidKey, "Key")
             : DomainResult.Success(new FieldKey(key));
     }
 
@@ -155,6 +161,67 @@ public sealed record FieldDefinition
         return defaultValue is not null && CustomFieldPolicy.ValidateValue(definition, defaultValue) is { } invalid
             ? DomainResult.Failure<FieldDefinition>(invalid with { Field = "DefaultValue" })
             : DomainResult.Success(definition);
+    }
+
+    /// <summary>
+    /// Rebuilds a stored definition exactly as persisted, including <see cref="IsActive"/> and the stored option
+    /// order. Creation rules (reserved keys, duplicate option labels, default-value text limits) are not re-run;
+    /// structural invariants are checked so a corrupt row is reported instead of loaded.
+    /// </summary>
+    /// <remarks>
+    /// Checked: Lookup kinds have options and other kinds have none, option IDs are distinct, and a default
+    /// value has the field's kind (a Lookup default must name one of the options).
+    /// </remarks>
+    public static DomainResult<FieldDefinition> Rehydrate(
+        FieldId id,
+        FieldKey key,
+        FieldTarget target,
+        LookupName label,
+        FieldKind kind,
+        bool isRequired,
+        CustomValue? defaultValue,
+        int displayOrder,
+        IReadOnlyList<FieldOption> options,
+        bool isActive)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(label);
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (!Enum.IsDefined(target))
+        {
+            return DomainResult.Failure<FieldDefinition>(DomainErrorCodes.InvalidStoredValue, "Target");
+        }
+
+        if (!Enum.IsDefined(kind))
+        {
+            return DomainResult.Failure<FieldDefinition>(DomainErrorCodes.InvalidStoredValue, "Kind");
+        }
+
+        if ((kind == FieldKind.Lookup) != (options.Count > 0) || options.DistinctBy(o => o.Id).Count() != options.Count)
+        {
+            return DomainResult.Failure<FieldDefinition>(DomainErrorCodes.InvalidStoredValue, "Options");
+        }
+
+        if (defaultValue is not null
+            && (defaultValue.Kind != kind || (defaultValue is LookupCustomValue lookup && options.All(o => o.Id != lookup.OptionId))))
+        {
+            return DomainResult.Failure<FieldDefinition>(DomainErrorCodes.InvalidStoredValue, "DefaultValue");
+        }
+
+        return DomainResult.Success(new FieldDefinition
+        {
+            Id = id,
+            Key = key,
+            Target = target,
+            Label = label,
+            Kind = kind,
+            IsRequired = isRequired,
+            DefaultValue = defaultValue,
+            DisplayOrder = displayOrder,
+            Options = [.. options],
+            IsActive = isActive,
+        });
     }
 
     /// <summary>B-11 design default: removal deactivates the definition and keeps every stored value.</summary>

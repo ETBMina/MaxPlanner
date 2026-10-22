@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Migration scripts ship inside the assembly; the resource name is fixed by SchemaMigrations.ReadEmbeddedSql. -->
+    <EmbeddedResource Include="Persistence\Schema\*.sql" LogicalName="MaxPlanner.Infrastructure.Persistence.Schema.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="MaxPlanner.Infrastructure.Tests" />
   </ItemGroup>
 </Project>

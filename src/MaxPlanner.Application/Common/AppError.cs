@@ -97,3 +97,14 @@ public sealed record UnsupportedSchemaError(int FoundVersion, int SupportedVersi
 {
     public override string Code => "unsupported-schema";
 }
+
+/// <summary>
+/// T-09: upgrading the dataset failed. The failed step was rolled back, the data is still at
+/// <paramref name="CurrentVersion"/>, and a safety backup taken before the upgrade is kept.
+/// </summary>
+/// <param name="CurrentVersion">The schema version the dataset still has.</param>
+/// <param name="FailedVersion">The migration that failed.</param>
+public sealed record MigrationFailedError(int CurrentVersion, int FailedVersion) : AppError
+{
+    public override string Code => "migration-failed";
+}
