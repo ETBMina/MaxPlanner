@@ -1,0 +1,14 @@
+<Project>
+  <!-- Keep the repository-wide settings (warnings as errors, analyzers, lock files). -->
+  <Import Project="..\..\Directory.Build.props" />
+
+  <!-- Spike 4.5 payload baseline: "-p:PayloadBaseline=true" builds the same app without the Toolkit package.
+       It uses separate obj/bin folders and lock file so the main restore graph and packages.lock.json stay untouched. -->
+  <PropertyGroup Condition="'$(PayloadBaseline)' == 'true'">
+    <BaseIntermediateOutputPath>obj-baseline\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin-baseline\</BaseOutputPath>
+    <NuGetLockFilePath>obj-baseline\packages.lock.json</NuGetLockFilePath>
+    <!-- The regular obj\ and bin\ folders are no longer the intermediate/output paths, so keep them out of the globs. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

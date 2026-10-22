@@ -1,0 +1,26 @@
+Resolved packages (obj/project.assets.json, target net10.0-windows10.0.26100.0/win-x64), restore 2026-10-22
+CommunityToolkit.Common/8.2.1
+CommunityToolkit.Mvvm/8.4.2
+CommunityToolkit.WinUI.Controls.SettingsControls/8.2.251219
+CommunityToolkit.WinUI.Extensions/8.2.251219
+CommunityToolkit.WinUI.Helpers/8.2.251219
+CommunityToolkit.WinUI.Triggers/8.2.251219
+DynamicData/9.5.0
+Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100
+Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer/0.7.1
+Microsoft.Windows.SDK.BuildTools/10.0.28000.2705
+Microsoft.WindowsAppSDK.Base/2.0.4
+Microsoft.WindowsAppSDK.Foundation/2.3.12
+Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.9
+Microsoft.WindowsAppSDK.WinUI/2.3.9
+Microsoft.WindowsAppSDK/1.6.250108002
+System.Reactive/7.0.0
+
+Declared dependencies:
+CommunityToolkit.WinUI.Controls.SettingsControls/8.2.251219 -> {"CommunityToolkit.WinUI.Triggers":"8.2.251219","Microsoft.WindowsAppSDK":"1.6.250108002"}
+CommunityToolkit.WinUI.Extensions/8.2.251219 -> {"CommunityToolkit.Common":"8.2.1","Microsoft.WindowsAppSDK":"1.6.250108002"}
+CommunityToolkit.WinUI.Helpers/8.2.251219 -> {"CommunityToolkit.WinUI.Extensions":"8.2.251219","Microsoft.WindowsAppSDK":"1.6.250108002"}
+CommunityToolkit.WinUI.Triggers/8.2.251219 -> {"CommunityToolkit.WinUI.Helpers":"8.2.251219","Microsoft.WindowsAppSDK":"1.6.250108002"}
+DynamicData/9.5.0 -> {"System.Reactive":"6.1.0"}
+
+Restore log entries (NU1608/NU1605/NU1107 etc.): none

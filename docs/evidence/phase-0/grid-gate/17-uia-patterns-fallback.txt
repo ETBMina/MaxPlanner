@@ -1,0 +1,10 @@
+Table: ControlType=ControlType.List Name='Tasks' AutomationId='Grid_Table' Class='ListView'
+  Patterns: SelectionPattern, ScrollPattern, ScrollItemPattern, ItemContainerPattern
+  First child: ControlType.ListItem 'Subtask card Migrate rounding #10000, unlinked, Done, Low priority'
+Row: ControlType=ControlType.ListItem Name='Task Add fee rules #9996, unlinked, Backlog, Critical priority' AutomationId='Grid_Row_0000270c000000000000000000000000' Class='ListViewItem'
+  Patterns: SelectionItemPattern, ScrollItemPattern, VirtualizedItemPattern
+  First child: ControlType.Group 'Task'
+Cell: ControlType=ControlType.Group Name='Fallback ok' AutomationId='Grid_Cell_0000270c000000000000000000000000_Title' Class='NamedContainerAutomationPeer'
+  Patterns: ScrollItemPattern
+  First child: ControlType.Text 'Fallback ok'
+Column header items: 

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- T-04: Domain has no project or third-party package references. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>MaxPlanner.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

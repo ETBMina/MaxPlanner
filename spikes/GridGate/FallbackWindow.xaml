@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="GridGate.FallbackWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GridGate">
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="RootGrid" Padding="12" RowSpacing="8">
+        <Grid.Resources>
+            <!-- Each cell is a focusable ContentControl so keyboard focus and UIA can address individual cells. -->
+            <Style x:Key="FallbackCellStyle" TargetType="ContentControl">
+                <Setter Property="IsTabStop" Value="True" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="8,0" />
+            </Style>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button AutomationProperties.AutomationId="Gate_MeasureButton" Click="OnMeasure" Content="Measure" />
+            <Button AutomationProperties.AutomationId="Gate_ScrollStressButton" Click="OnScrollStress" Content="Scroll stress x5" />
+        </StackPanel>
+
+        <InfoBar
+            x:Name="StatusInfoBar"
+            Grid.Row="1"
+            AutomationProperties.AutomationId="Gate_StatusInfoBar"
+            IsClosable="False"
+            IsOpen="True"
+            Message="ListView fallback. F2 or double-click edits Title/Status; values containing 'fail' fail to save." />
+
+        <Grid Grid.Row="2" RowSpacing="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid
+                Padding="12,0,0,0"
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,0,0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="280" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="190" />
+                    <ColumnDefinition Width="130" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Padding="8,10" AutomationProperties.AutomationId="Grid_Header_Kind" FontWeight="SemiBold" Text="Kind" />
+                <TextBlock Grid.Column="1" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_CrNumber" FontWeight="SemiBold" Text="CR Number" />
+                <TextBlock Grid.Column="2" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_Squad" FontWeight="SemiBold" Text="Squad" />
+                <TextBlock Grid.Column="3" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_Owner" FontWeight="SemiBold" Text="Owner" />
+                <TextBlock Grid.Column="4" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_Title" FontWeight="SemiBold" Text="Title" />
+                <TextBlock Grid.Column="5" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_Service" FontWeight="SemiBold" Text="Service" />
+                <TextBlock Grid.Column="6" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_Status" FontWeight="SemiBold" Text="Status" />
+                <TextBlock Grid.Column="7" Padding="8,10" AutomationProperties.AutomationId="Grid_Header_StartDate" FontWeight="SemiBold" Text="Start Date" />
+            </Grid>
+
+            <!-- Bounded star row keeps ItemsStackPanel virtualization active. -->
+            <ListView
+                x:Name="List"
+                Grid.Row="1"
+                AutomationProperties.AutomationId="Grid_Table"
+                AutomationProperties.Name="Tasks"
+                SelectionMode="Single">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="MinHeight" Value="44" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:TaskRowViewModel">
+                        <Grid Height="44">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="280" />
+                                <ColumnDefinition Width="140" />
+                                <ColumnDefinition Width="190" />
+                                <ColumnDefinition Width="130" />
+                            </Grid.ColumnDefinitions>
+                            <ContentControl AutomationProperties.Name="{x:Bind KindText, Mode=OneWay}" KeyDown="OnCellKeyDown" Style="{StaticResource FallbackCellStyle}" Tag="Kind">
+                                <TextBlock Text="{x:Bind KindText, Mode=OneWay}" />
+                            </ContentControl>
+                            <ContentControl Grid.Column="1" AutomationProperties.Name="{x:Bind Committed.CrNumber, Mode=OneWay}" KeyDown="OnCellKeyDown" Style="{StaticResource FallbackCellStyle}" Tag="CrNumber">
+                                <TextBlock Text="{x:Bind Committed.CrNumber, Mode=OneWay}" />
+                            </ContentControl>
+                            <ContentControl Grid.Column="2" AutomationProperties.Name="{x:Bind Committed.Squad, Mode=OneWay}" KeyDown="OnCellKeyDown" Style="{StaticResource FallbackCellStyle}" Tag="Squad">
+                                <TextBlock Text="{x:Bind Committed.Squad, Mode=OneWay}" />
+                            </ContentControl>
+                            <ContentControl Grid.Column="3" AutomationProperties.Name="{x:Bind Committed.Owner, Mode=OneWay}" KeyDown="OnCellKeyDown" Style="{StaticResource FallbackCellStyle}" Tag="Owner">
+                                <TextBlock Text="{x:Bind Committed.Owner, Mode=OneWay}" />
+                            </ContentControl>
+                            <ContentControl
+                                Grid.Column="4"
+                                AutomationProperties.Name="{x:Bind Committed.Title, Mode=OneWay}"
+                                DoubleTapped="OnCellDoubleTapped"
+                                KeyDown="OnCellKeyDown"
+                                PreviewKeyDown="OnCellPreviewKeyDown"
+                                Style="{StaticResource FallbackCellStyle}"
+                                Tag="Title">
+                                <Grid ColumnSpacing="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Committed.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" Visibility="{x:Bind TitleDisplayVisibility, Mode=OneWay}" />
+                                    <TextBox
+                                        AutomationProperties.AutomationId="Grid_CellEditor"
+                                        AutomationProperties.FullDescription="{x:Bind ErrorMessage, Mode=OneWay}"
+                                        AutomationProperties.Name="Title"
+                                        IsReadOnly="{x:Bind IsSaving, Mode=OneWay}"
+                                        Text="{x:Bind DraftTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Visibility="{x:Bind TitleEditorVisibility, Mode=OneWay}" />
+                                    <ProgressRing Grid.Column="1" Width="12" Height="12" IsActive="{x:Bind IsSaving, Mode=OneWay}" />
+                                    <FontIcon
+                                        Grid.Column="2"
+                                        AutomationProperties.AutomationId="Grid_CellErrorIcon"
+                                        AutomationProperties.Name="{x:Bind ErrorMessage, Mode=OneWay}"
+                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                        Glyph="&#xE783;"
+                                        ToolTipService.ToolTip="{x:Bind ErrorMessage, Mode=OneWay}"
+                                        Visibility="{x:Bind ErrorVisibility, Mode=OneWay}" />
+                                </Grid>
+                            </ContentControl>
+                            <ContentControl Grid.Column="5" AutomationProperties.Name="{x:Bind Committed.Service, Mode=OneWay}" KeyDown="OnCellKeyDown" Style="{StaticResource FallbackCellStyle}" Tag="Service">
+                                <TextBlock Text="{x:Bind Committed.Service, Mode=OneWay}" />
+                            </ContentControl>
+                            <ContentControl
+                                Grid.Column="6"
+                                AutomationProperties.Name="{x:Bind Committed.Status, Mode=OneWay}"
+                                DoubleTapped="OnCellDoubleTapped"
+                                KeyDown="OnCellKeyDown"
+                                PreviewKeyDown="OnCellPreviewKeyDown"
+                                Style="{StaticResource FallbackCellStyle}"
+                                Tag="Status">
+                                <Grid>
+                                    <TextBlock Text="{x:Bind Committed.Status, Mode=OneWay}" Visibility="{x:Bind StatusDisplayVisibility, Mode=OneWay}" />
+                                    <ComboBox
+                                        HorizontalAlignment="Stretch"
+                                        AutomationProperties.AutomationId="Grid_CellEditor"
+                                        AutomationProperties.Name="Status"
+                                        ItemsSource="{x:Bind StatusOptions, Mode=OneWay}"
+                                        SelectedItem="{x:Bind DraftStatus, Mode=TwoWay}"
+                                        Visibility="{x:Bind StatusEditorVisibility, Mode=OneWay}" />
+                                </Grid>
+                            </ContentControl>
+                            <ContentControl Grid.Column="7" AutomationProperties.Name="{x:Bind StartDateText, Mode=OneWay}" KeyDown="OnCellKeyDown" Style="{StaticResource FallbackCellStyle}" Tag="StartDate">
+                                <TextBlock Text="{x:Bind StartDateText, Mode=OneWay}" />
+                            </ContentControl>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+
+        <TextBox
+            x:Name="EventLogBox"
+            Grid.Row="3"
+            Height="120"
+            AcceptsReturn="True"
+            AutomationProperties.AutomationId="Gate_EventLog"
+            FontFamily="Consolas"
+            FontSize="11"
+            Header="Event log (newest first)"
+            IsReadOnly="True"
+            TextWrapping="NoWrap" />
+    </Grid>
+</Window>

@@ -1,0 +1,21 @@
+Spike 4.1 variant B: Toolkit + direct Microsoft.WindowsAppSDK 1.6.250108002 reference with ExcludeAssets=all (spikes/PlatformControls/PlatformControls.csproj).
+Command: dotnet build PlatformControls.slnx -c Release -p:Platform=x64 --no-incremental
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  PlatformControls -> D:\Engineering\Projects\C#\MaxPlanner\spikes\PlatformControls\bin\Release\net10.0-windows10.0.26100.0\win-x64\PlatformControls.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:11.83
+
+
+Assets contributed by Microsoft.WindowsAppSDK/1.6.250108002 in project.assets.json after ExcludeAssets=all:
+  compile: 1  runtime: 1  native: 1  build: 1
+  (raw: {"type":"package","dependencies":{"Microsoft.Web.WebView2":"1.0.2651.64","Microsoft.Windows.SDK.BuildTools":"10.0.22621.756"},"compile":{"lib/net6.0-windows10.0.18362.0/_._":{"related":".xml"}},"runtime":{"lib/net6.0-windows10.0.18362.0/_._":{"related":".xml"}},"native":{"runtimes/win-x64/native/_._":{}},"build":{"buildTransitive/_._":{}}})
+
+dotnet publish PlatformControls.csproj -c Release -r win-x64 -p:Platform=x64 -o publish  -> exit 0, no warnings
+Published Microsoft.WinUI.dll file version 3.0.0.2609 = microsoft.windowsappsdk.winui 2.3.9 (the 1.6 metapackage copy is 3.0.0.2501).
+Toolkit assembly references: SettingsControls/Helpers/Triggers -> Microsoft.WinUI 3.0.0.0 (same identity as 2.3.9); Extensions -> Microsoft.Windows.ApplicationModel.Resources.Projection 1.6.0.0 while 2.0.0.0 ships (higher version binds on .NET; no load error observed in 4.4 runs).

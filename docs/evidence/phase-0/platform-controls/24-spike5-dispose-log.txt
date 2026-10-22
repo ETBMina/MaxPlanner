@@ -1,0 +1,31 @@
+Spike 5.6 disposal run 2026-10-22T10:43:48.8586606+03:00 hwnd=1442686 pid=35668
+10:43:49.084 initial pipeline: pipeline build #1: variant A (plain) moves=Move | disposed=False | items=10000 | initial bind 106.1 ms | change sets bound=1 | filterHasObservers=True comparerHasObservers=True | store Connect() subscriptions=1
+10:43:49.397 initial store:    Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=Stopped ticks=0 recordsUpdated=0 | changes after dispose: 0 | dropped UI work: 0
+10:43:52.398 running:  changes='collection changes: add=0 remove=0 replace=0 move=2 reset=1 | touching tracked row=0 last=none' row5='Item 00005'
+10:43:53.892 disposed: pipeline='pipeline build #1: variant A (plain) moves=Move | disposed=True | items=10000 | initial bind 106.1 ms | change sets bound=15 | filterHasObservers=False comparerHasObservers=False | store Connect() subscriptions=0'
+10:43:54.181 disposed: store='Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=20 recordsUpdated=146 | changes after dispose: 0 | dropped UI work: 0'
+10:43:57.920 3 s after dispose (mutator still running): changes='collection changes: add=0 remove=0 replace=0 move=2 reset=1 | touching tracked row=0 last=none' row5='Item 00005' store='Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=38 recordsUpdated=236 | changes after dispose: 0 | dropped UI work: 0'
+10:43:57.938 UI frozen after dispose: changes unchanged=True row5 unchanged=True
+10:43:59.665 rebuilt: pipeline='pipeline build #2: variant A (plain) moves=Move | disposed=False | items=10000 | initial bind 24.1 ms | change sets bound=7 | filterHasObservers=True comparerHasObservers=True | store Connect() subscriptions=1'
+10:44:04.196 cycle 1 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=58 recordsUpdated=370 | changes after dispose: 0 | dropped UI work: 0
+10:44:04.227 cycle 1 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=69 recordsUpdated=452 | changes after dispose: 0 | dropped UI work: 0
+10:44:08.813 cycle 2 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=80 recordsUpdated=520 | changes after dispose: 0 | dropped UI work: 0
+10:44:08.831 cycle 2 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=91 recordsUpdated=603 | changes after dispose: 0 | dropped UI work: 0
+10:44:15.234 cycle 3 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=112 recordsUpdated=748 | changes after dispose: 0 | dropped UI work: 0
+10:44:15.251 cycle 3 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=121 recordsUpdated=818 | changes after dispose: 0 | dropped UI work: 0
+10:44:19.572 cycle 4 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=132 recordsUpdated=888 | changes after dispose: 0 | dropped UI work: 0
+10:44:19.587 cycle 4 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=142 recordsUpdated=963 | changes after dispose: 0 | dropped UI work: 0
+10:44:23.921 cycle 5 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=153 recordsUpdated=1030 | changes after dispose: 0 | dropped UI work: 0
+10:44:23.939 cycle 5 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=164 recordsUpdated=1113 | changes after dispose: 0 | dropped UI work: 0
+10:44:28.441 cycle 6 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=175 recordsUpdated=1180 | changes after dispose: 0 | dropped UI work: 0
+10:44:28.460 cycle 6 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=185 recordsUpdated=1255 | changes after dispose: 0 | dropped UI work: 0
+10:44:34.875 cycle 7 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=196 recordsUpdated=1322 | changes after dispose: 0 | dropped UI work: 0
+10:44:34.892 cycle 7 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=217 recordsUpdated=1455 | changes after dispose: 0 | dropped UI work: 0
+10:44:39.215 cycle 8 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=227 recordsUpdated=1515 | changes after dispose: 0 | dropped UI work: 0
+10:44:39.229 cycle 8 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=237 recordsUpdated=1590 | changes after dispose: 0 | dropped UI work: 0
+10:44:43.646 cycle 9 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=248 recordsUpdated=1661 | changes after dispose: 0 | dropped UI work: 0
+10:44:43.664 cycle 9 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=259 recordsUpdated=1740 | changes after dispose: 0 | dropped UI work: 0
+10:44:50.007 cycle 10 away: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 0 | mutator: mode=OtherRows ticks=280 recordsUpdated=1889 | changes after dispose: 0 | dropped UI work: 0
+10:44:50.024 cycle 10 back: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=OtherRows ticks=290 recordsUpdated=1964 | changes after dispose: 0 | dropped UI work: 0
+10:44:50.057 working set before cycles=228.2 MB after 10 cycles=293.3 MB (indicative only; no forced GC in the app)
+10:44:50.830 final store: Store: 10000 records, cache load 6.6 ms | active Connect() subscriptions: 1 | mutator: mode=Stopped ticks=293 recordsUpdated=1988 | changes after dispose: 0 | dropped UI work: 0

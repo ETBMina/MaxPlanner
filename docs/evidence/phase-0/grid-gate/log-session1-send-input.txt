@@ -1,0 +1,62 @@
+00:58:41.036 ColumnPropertyChanged Kind.DesiredWidth (index 0).
+00:58:41.055 ColumnPropertyChanged CrNumber.DesiredWidth (index 1).
+00:58:41.061 ColumnPropertyChanged TaskNumber.DesiredWidth (index 2).
+00:58:41.064 ColumnPropertyChanged Squad.DesiredWidth (index 3).
+00:58:41.066 ColumnPropertyChanged Owner.DesiredWidth (index 4).
+00:58:41.069 ColumnPropertyChanged Title.DesiredWidth (index 5).
+00:58:41.071 ColumnPropertyChanged Service.DesiredWidth (index 6).
+00:58:41.074 ColumnPropertyChanged Status.DesiredWidth (index 7).
+00:58:41.077 ColumnPropertyChanged Priority.DesiredWidth (index 8).
+00:58:41.081 ColumnPropertyChanged StartDate.DesiredWidth (index 9).
+00:58:41.085 ColumnPropertyChanged EndDate.DesiredWidth (index 10).
+00:58:41.088 ColumnPropertyChanged Notes.DesiredWidth (index 11).
+00:58:41.092 ColumnPropertyChanged Tags.DesiredWidth (index 12).
+00:58:41.384 ColumnPropertyChanged Kind.ActualWidth (index 0).
+00:58:41.396 ColumnPropertyChanged CrNumber.ActualWidth (index 1).
+00:58:41.397 ColumnPropertyChanged TaskNumber.ActualWidth (index 2).
+00:58:41.399 ColumnPropertyChanged Squad.ActualWidth (index 3).
+00:58:41.401 ColumnPropertyChanged Owner.ActualWidth (index 4).
+00:58:41.403 ColumnPropertyChanged Title.ActualWidth (index 5).
+00:58:41.404 ColumnPropertyChanged Service.ActualWidth (index 6).
+00:58:41.407 ColumnPropertyChanged Status.ActualWidth (index 7).
+00:58:41.408 ColumnPropertyChanged Priority.ActualWidth (index 8).
+00:58:41.410 ColumnPropertyChanged StartDate.ActualWidth (index 9).
+00:58:41.411 ColumnPropertyChanged EndDate.ActualWidth (index 10).
+00:58:41.414 ColumnPropertyChanged Notes.ActualWidth (index 11).
+00:58:41.416 ColumnPropertyChanged Tags.ActualWidth (index 12).
+00:58:41.421 ColumnPropertyChanged Kind.DesiredWidth (index 0).
+00:58:41.424 ColumnPropertyChanged Title.DesiredWidth (index 5).
+00:58:41.426 ColumnPropertyChanged Service.DesiredWidth (index 6).
+00:58:41.429 ColumnPropertyChanged Tags.DesiredWidth (index 12).
+00:58:41.746 Loaded 10,000 rows; default layout captured.
+00:58:41.820 ColumnPropertyChanged Squad.DesiredWidth (index 3).
+00:58:41.823 ColumnPropertyChanged Owner.DesiredWidth (index 4).
+00:58:41.826 ColumnPropertyChanged Title.DesiredWidth (index 5).
+00:58:41.834 ColumnPropertyChanged Title.DesiredWidth (index 5).
+00:58:41.841 ColumnPropertyChanged Service.DesiredWidth (index 6).
+00:58:41.844 ColumnPropertyChanged Notes.DesiredWidth (index 11).
+00:58:41.862 ColumnPropertyChanged Squad.DesiredWidth (index 3).
+00:58:41.865 ColumnPropertyChanged Owner.DesiredWidth (index 4).
+00:58:41.874 ColumnPropertyChanged Title.DesiredWidth (index 5).
+00:58:47.064 BeginningEdit Title row Add fee rules #9996 via KeyRoutedEventArgs.
+00:58:48.163 CellEditEnding Commit Title: cancelled to keep editor open; saving (intent None).
+00:58:48.479 Saved Title = 'Renamed A' after 311 ms.
+00:58:48.494 CellEditEnded Title Commit.
+00:58:48.497 Editor closed via internal EndCellEditing: True; IsEditing=False.
+00:58:52.547 BeginningEdit Title row Renamed A via KeyRoutedEventArgs.
+00:58:53.656 CellEditEnding Commit Title: cancelled to keep editor open; saving (intent None).
+00:58:53.975 Save failed: Couldn't save Title: simulated storage error (value contains "fail"). (editor kept open, draft intact).
+00:58:56.651 CellEditEnding Cancel Title: draft restored to committed value.
+00:58:56.654 CellEditEnded Title Cancel.
+00:59:26.730 BeginningEdit cancelled: Title is read-only for Task Migrate fee rules #9999.
+01:00:28.441 BeginningEdit Title row Refactor fee rules #9995 via DoubleTappedRoutedEventArgs.
+01:00:30.561 CellEditEnding Commit Title: unchanged, editor closes.
+01:00:30.577 CellEditEnded Title Commit.
+01:00:30.579 BeginningEdit Service row Refactor fee rules #9995 via KeyRoutedEventArgs.
+01:00:30.618 ColumnPropertyChanged Service.DesiredWidth (index 6).
+01:00:31.385 CellEditEnding Commit Service: unchanged, editor closes.
+01:00:31.388 CellEditEnded Service Commit.
+01:00:31.390 BeginningEdit Status row Refactor fee rules #9995 via KeyRoutedEventArgs.
+01:01:20.836 CellEditEnding Cancel Title: draft restored to committed value.
+01:01:20.838 CellEditEnded Title Cancel.
+01:01:21.191 BeginningEdit Title row Refactor fee rules #9995 via KeyRoutedEventArgs.

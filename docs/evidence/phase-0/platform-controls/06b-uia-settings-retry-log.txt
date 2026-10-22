@@ -1,0 +1,22 @@
+focus OpenDataFolderButton: Focused btn-settingsopendat-aa16
+focused: Settings_OpenDataFolderButton|Button|Open folder
+after tab focused: hasFocus=false
+after space status: Import, export and restore card clicked (1).
+after enter status: Import, export and restore card clicked (2).
+windows after menu invoke: 1117398:PopupHost:247x327, 1247554:Platform Controls spike:1777x1290
+search 'Set as default' (-a pid): count=2 MenuItem mnu-setasdefault-1a59 'Set as default'; Text lbl-textblock-1a58 'Set as default'
+focus OpenDataFolderButton: Focused btn-settingsopendat-aa16
+--- after Tab from Open folder (card expected focused):
+FocusedElement: ControlType=ControlType.Button Name='Open folder' AutomationId='Settings_OpenDataFolderButton' Class='Button' Pid=30036 HasKeyboardFocus=True IsKeyboardFocusable=True Rect=1654,1246,149,48
+  Patterns: InvokePattern, ScrollItemPattern
+  Ancestors: Group['Settings_DataLocationCard'] < Pane[''] < Custom['Shell_Nav'] < Pane[''] < Pane[''] < Window[''] < Pane['']
+Element[Settings_DataPageCard]: ControlType=ControlType.Button Name='Import, export and restore' AutomationId='Settings_DataPageCard' Class='SettingsCard' Pid=30036 HasKeyboardFocus=False IsKeyboardFocusable=True Rect=329,1329,1500,104
+  Patterns: InvokePattern, ScrollItemPattern
+  Ancestors: Pane[''] < Custom['Shell_Nav'] < Pane[''] < Pane[''] < Window[''] < Pane['']
+--- after Shift+Tab (Open folder button expected focused):
+FocusedElement: ControlType=ControlType.Button Name='Import, export and restore' AutomationId='Settings_DataPageCard' Class='SettingsCard' Pid=30036 HasKeyboardFocus=True IsKeyboardFocusable=True Rect=329,1329,1500,104
+  Patterns: InvokePattern, ScrollItemPattern
+  Ancestors: Pane[''] < Custom['Shell_Nav'] < Pane[''] < Pane[''] < Window[''] < Pane['']
+--- read-only pattern acquisition probe (no Invoke call):
+Settings_DataPageCard IsInvokePatternAvailable=True TryGetCurrentPattern(Invoke)=True patternObject=True
+Settings_OpenDataFolderButton IsInvokePatternAvailable=True TryGetCurrentPattern(Invoke)=True patternObject=True

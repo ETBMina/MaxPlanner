@@ -1,0 +1,35 @@
+DynamicData 9.5.0 API check (reflection over lib/net10.0/DynamicData.dll, the asset resolved for net10.0-windows10.0.26100.0; also confirmed with winapp find-api members DynamicData.ObservableCacheEx --project-dir spikes/PlatformControls).
+
+ObservableCacheEx overloads present:
+  Filter(IObservable`1[IChangeSet`2[TObject,TKey]] source, IObservable`1[Func`2[TObject,Boolean]] predicateChanged, Boolean suppressEmptyChangeSets)
+  Filter(IObservable`1[IChangeSet`2[TObject,TKey]] source, IObservable`1[Func`2[TObject,Boolean]] predicateChanged, IObservable`1[Reactive.Unit] reapplyFilter, Boolean suppressEmptyChangeSets)
+  Filter(IObservable`1[IChangeSet`2[TObject,TKey]] source, IObservable`1[TState] predicateState, Func`3[TState,TObject,Boolean] predicate, Boolean suppressEmptyChangeSets)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, Collections.ObjectModel.ReadOnlyObservableCollection`1[TObject]& readOnlyObservableCollection, Binding.SortAndBindOptions options)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, Collections.ObjectModel.ReadOnlyObservableCollection`1[TObject]& readOnlyObservableCollection, IComparer`1[TObject] comparer, Binding.SortAndBindOptions options)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, Collections.ObjectModel.ReadOnlyObservableCollection`1[TObject]& readOnlyObservableCollection, IComparer`1[TObject] comparer)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, Collections.ObjectModel.ReadOnlyObservableCollection`1[TObject]& readOnlyObservableCollection, IObservable`1[IComparer`1[TObject]] comparerChanged, Binding.SortAndBindOptions options)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, Collections.ObjectModel.ReadOnlyObservableCollection`1[TObject]& readOnlyObservableCollection, IObservable`1[IComparer`1[TObject]] comparerChanged)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, Collections.ObjectModel.ReadOnlyObservableCollection`1[TObject]& readOnlyObservableCollection)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, IList`1[TObject] targetList, Binding.SortAndBindOptions options)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, IList`1[TObject] targetList, IComparer`1[TObject] comparer, Binding.SortAndBindOptions options)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, IList`1[TObject] targetList, IComparer`1[TObject] comparer)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, IList`1[TObject] targetList, IObservable`1[IComparer`1[TObject]] comparerChanged, Binding.SortAndBindOptions options)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, IList`1[TObject] targetList, IObservable`1[IComparer`1[TObject]] comparerChanged)
+  SortAndBind(IObservable`1[IChangeSet`2[TObject,TKey]] source, IList`1[TObject] targetList)
+  TransformWithInlineUpdate(IObservable`1[IChangeSet`2[TSource,TKey]] source, Func`2[TSource,TDestination] transformFactory, Action`2[TDestination,TSource] updateAction, Action`1[Kernel.Error`2[TSource,TKey]] errorHandler, Boolean transformOnRefresh)
+  TransformWithInlineUpdate(IObservable`1[IChangeSet`2[TSource,TKey]] source, Func`2[TSource,TDestination] transformFactory, Action`2[TDestination,TSource] updateAction, Action`1[Kernel.Error`2[TSource,TKey]] errorHandler)
+  TransformWithInlineUpdate(IObservable`1[IChangeSet`2[TSource,TKey]] source, Func`2[TSource,TDestination] transformFactory, Action`2[TDestination,TSource] updateAction, Boolean transformOnRefresh)
+  TransformWithInlineUpdate(IObservable`1[IChangeSet`2[TSource,TKey]] source, Func`2[TSource,TDestination] transformFactory, Action`2[TDestination,TSource] updateAction)
+
+SortAndBindOptions properties: 
+Int32 ResetThreshold, Boolean UseReplaceForUpdates, Boolean UseBinarySearch, Int32 InitialCapacity, Boolean ResetOnFirstTimeLoad, IScheduler Scheduler
+
+Used by the spike (Projection/ProjectionView.cs):
+  SourceCache<ItemRecord, Guid>.Connect()
+    .Filter(IObservable<Func<ItemRecord,bool>> predicateChanged)            // BehaviorSubject
+    .ObserveOn(DispatcherQueueScheduler)                                      // custom Rx LocalScheduler (Rx 7 ships none for WinUI 3)
+    .TransformWithInlineUpdate(Func<ItemRecord,ItemViewModel>, Action<ItemViewModel,ItemRecord>)
+    .SortAndBind(out ReadOnlyObservableCollection<ItemViewModel>, IObservable<IComparer<ItemViewModel>> comparerChanged)
+  Variant C target: .SortAndBind(IList<ItemViewModel> targetList, IObservable<IComparer<ItemViewModel>>) with an ObservableCollectionExtended subclass.
+All names exist as specified; no substitutions were needed.
+Rx 7.0.0 resolved asset lib/net8.0-windows10.0.19041/System.Reactive.dll: schedulers include CoreDispatcherScheduler (UWP), DispatcherScheduler (WPF), ControlScheduler (WinForms); no WinUI DispatcherQueue scheduler.

@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\eng\WinUI.Common.props" />
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>PlatformControls</AssemblyName>
+    <RootNamespace>PlatformControls</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Required by LibraryImport source-generated P/Invoke marshalling (matches src/MaxPlanner.Desktop). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Mirrors src/MaxPlanner.Desktop (ADR 0003 / T-03): portable, self-contained, no trimming/AOT/single-file. -->
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishAot>false</PublishAot>
+    <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="DynamicData" />
+    <PackageReference Include="System.Reactive" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PayloadBaseline)' != 'true'">
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <!-- Spike 4.1 variant B: the Toolkit 8.2.251219 packages depend on the Microsoft.WindowsAppSDK 1.6.250108002
+         metapackage, whose buildTransitive targets and Microsoft.WinUI.dll 1.6 collide with the 2.x component
+         packages (variant A fails to build: MSB4011 + MSIX tooling error). Referencing the metapackage directly with
+         ExcludeAssets="all" keeps it in the graph for version resolution but contributes no build/compile/runtime assets.
+         VersionOverride is used only because the spike may not edit Directory.Packages.props. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" VersionOverride="1.6.250108002" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Payload baseline (spike 4.5): drop the Toolkit-based Settings page; everything else is identical. -->
+  <PropertyGroup Condition="'$(PayloadBaseline)' == 'true'">
+    <DefineConstants>$(DefineConstants);PAYLOAD_BASELINE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PayloadBaseline)' == 'true'">
+    <Page Remove="Settings\**\*.xaml" />
+    <Compile Remove="Settings\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="obj-baseline\**;bin-baseline\**;publish*\**" />
+    <Page Remove="obj-baseline\**;bin-baseline\**;publish*\**" />
+    <None Remove="obj-baseline\**;bin-baseline\**;publish*\**" />
+  </ItemGroup>
+</Project>

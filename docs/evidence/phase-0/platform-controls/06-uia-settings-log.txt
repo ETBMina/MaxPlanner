@@ -1,0 +1,1572 @@
+Spike 4 UIA run 2026-10-22T10:15:58.5523666+03:00 hwnd=1247554
+> winapp ui get-property Settings_ThemeCombo --json -w 1247554   (exit 0)
+{
+  "elementId": "cmb-settingsthemeco-a9fd",
+  "element": {
+    "type": "ComboBox",
+    "name": "App theme",
+    "automationId": "Settings_ThemeCombo",
+    "className": "ComboBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1548,
+    "y": 568,
+    "width": 261,
+    "height": 59,
+    "selector": "cmb-settingsthemeco-a9fd",
+    "expandState": "collapsed",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "App theme",
+    "AutomationId": "Settings_ThemeCombo",
+    "ControlType": "ComboBox",
+    "ClassName": "ComboBox",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1548,568,261,59",
+    "HasKeyboardFocus": "True",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "ExpandCollapseState": "Collapsed",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_ThemeCard --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingsthemeca-a9fe",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_ThemeCard",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 546,
+    "width": 1500,
+    "height": 104,
+    "selector": "grp-settingsthemeca-a9fe",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_ThemeCard",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "329,546,1500,104",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesExpander --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa02",
+  "element": {
+    "type": "Group",
+    "name": "Task statuses",
+    "automationId": "Settings_TaskStatusesExpander",
+    "className": "SettingsExpander",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 741,
+    "width": 1500,
+    "height": 106,
+    "selector": "grp-settingstasksta-aa02",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": "Task statuses",
+    "AutomationId": "Settings_TaskStatusesExpander",
+    "ControlType": "Group",
+    "ClassName": "SettingsExpander",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "329,741,1500,106",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_ShowCompletedCard --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingsshowcom-aa08",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_ShowCompletedCard",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 853,
+    "width": 1500,
+    "height": 106,
+    "selector": "grp-settingsshowcom-aa08",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_ShowCompletedCard",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "329,853,1500,106",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_DataLocationCard --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingsdataloc-aa11",
+  "element": {
+    "type": "Group",
+    "name": "Open folder",
+    "automationId": "Settings_DataLocationCard",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 1050,
+    "width": 1500,
+    "height": 103,
+    "selector": "grp-settingsdataloc-aa11",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": "Open folder",
+    "AutomationId": "Settings_DataLocationCard",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "329,1050,1500,103",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_DataPageCard --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingsdatapag-aa17",
+  "element": {
+    "type": "Button",
+    "name": "Import, export and restore",
+    "automationId": "Settings_DataPageCard",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 1159,
+    "width": 1500,
+    "height": 103,
+    "selector": "btn-settingsdatapag-aa17",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "Import, export and restore",
+    "AutomationId": "Settings_DataPageCard",
+    "ControlType": "Button",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "329,1159,1500,103",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+### PASS  Cards expose names/roles  Settings_ThemeCard=[Group ''] Settings_TaskStatusesExpander=[Group 'Task statuses'] Settings_ShowCompletedCard=[Group ''] Settings_DataLocationCard=[Group 'Open folder'] Settings_DataPageCard=[Button 'Import, export and restore']
+> winapp ui get-property Settings_ThemeCombo --json -w 1247554   (exit 0)
+{
+  "elementId": "cmb-settingsthemeco-a9fd",
+  "element": {
+    "type": "ComboBox",
+    "name": "App theme",
+    "automationId": "Settings_ThemeCombo",
+    "className": "ComboBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1548,
+    "y": 568,
+    "width": 261,
+    "height": 59,
+    "selector": "cmb-settingsthemeco-a9fd",
+    "expandState": "collapsed",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "App theme",
+    "AutomationId": "Settings_ThemeCombo",
+    "ControlType": "ComboBox",
+    "ClassName": "ComboBox",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1548,568,261,59",
+    "HasKeyboardFocus": "True",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "ExpandCollapseState": "Collapsed",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_ShowCompletedToggle --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingsshowcom-aa0f",
+  "element": {
+    "type": "Button",
+    "name": "Show completed items",
+    "automationId": "Settings_ShowCompletedToggle",
+    "className": "ToggleSwitch",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1696,
+    "y": 891,
+    "width": 107,
+    "height": 30,
+    "selector": "btn-settingsshowcom-aa0f",
+    "toggleState": "off",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "Show completed items",
+    "AutomationId": "Settings_ShowCompletedToggle",
+    "ControlType": "Button",
+    "ClassName": "ToggleSwitch",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1696,891,107,30",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "ToggleState": "Off",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_OpenDataFolderButton --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingsopendat-aa16",
+  "element": {
+    "type": "Button",
+    "name": "Open folder",
+    "automationId": "Settings_OpenDataFolderButton",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1654,
+    "y": 1078,
+    "width": 149,
+    "height": 47,
+    "selector": "btn-settingsopendat-aa16",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "Open folder",
+    "AutomationId": "Settings_OpenDataFolderButton",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1654,1078,149,47",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+### PASS  Inner controls named by Toolkit header  Settings_ThemeCombo=[ComboBox 'App theme'] Settings_ShowCompletedToggle=[Button 'Show completed items'] Settings_OpenDataFolderButton=[Button 'Open folder']
+> winapp ui search Task statuses --type Button --root Settings_TaskStatusesExpander --json -w 1247554   (exit 0)
+{
+  "matchCount": 1,
+  "hasMore": false,
+  "matches": [
+    {
+      "type": "Button",
+      "name": "Task statuses",
+      "automationId": "",
+      "className": "Microsoft.UI.Xaml.Controls.Expander",
+      "isEnabled": true,
+      "isOffscreen": false,
+      "x": 329,
+      "y": 741,
+      "width": 1500,
+      "height": 106,
+      "selector": "btn-taskstatuses-aa07",
+      "expandState": "collapsed",
+      "isInvokable": true
+    }
+  ]
+}
+> winapp ui get-property btn-taskstatuses-aa07 -p ExpandCollapseState --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-taskstatuses-aa07",
+  "element": {
+    "type": "Button",
+    "name": "Task statuses",
+    "className": "Microsoft.UI.Xaml.Controls.Expander",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 741,
+    "width": 1500,
+    "height": 106,
+    "selector": "btn-taskstatuses-aa07",
+    "expandState": "collapsed",
+    "isInvokable": true
+  },
+  "properties": {
+    "ExpandCollapseState": "Collapsed"
+  }
+}
+> winapp ui invoke btn-taskstatuses-aa07 --action expand -w 1247554   (exit 0)
+Requested expand on btn-taskstatuses-aa07; performed expand via 
+ExpandCollapsePattern
+> winapp ui get-property btn-taskstatuses-aa07 -p ExpandCollapseState --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-taskstatuses-aa07",
+  "element": {
+    "type": "Button",
+    "name": "Task statuses",
+    "className": "Microsoft.UI.Xaml.Controls.Expander",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 741,
+    "width": 1500,
+    "height": 722,
+    "selector": "btn-taskstatuses-aa07",
+    "expandState": "expanded",
+    "isInvokable": true
+  },
+  "properties": {
+    "ExpandCollapseState": "Expanded"
+  }
+}
+### PASS  Expander header exposes ExpandCollapse and expands via UIA  header=btn-taskstatuses-aa07 before=Collapsed after=Expanded
+> winapp ui get-property Settings_TaskStatusesRow_backlog --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa1f",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_backlog",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 847,
+    "width": 1496,
+    "height": 75,
+    "selector": "grp-settingstasksta-aa1f",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_backlog",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,847,1496,75",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_backlog --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa25",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Backlog",
+    "automationId": "Settings_TaskStatusesRowMenu_backlog",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1702,
+    "y": 863,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa25",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status Backlog",
+    "AutomationId": "Settings_TaskStatusesRowMenu_backlog",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1702,863,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_todo --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa28",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_todo",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 922,
+    "width": 1496,
+    "height": 78,
+    "selector": "grp-settingstasksta-aa28",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_todo",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,922,1496,78",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_todo --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa2c",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status To do",
+    "automationId": "Settings_TaskStatusesRowMenu_todo",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 941,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa2c",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status To do",
+    "AutomationId": "Settings_TaskStatusesRowMenu_todo",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,941,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_inprogress --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa2f",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_inprogress",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 1000,
+    "width": 1496,
+    "height": 78,
+    "selector": "grp-settingstasksta-aa2f",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_inprogress",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,1000,1496,78",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_inprogress --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa34",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status In progress",
+    "automationId": "Settings_TaskStatusesRowMenu_inprogress",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1019,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa34",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status In progress",
+    "AutomationId": "Settings_TaskStatusesRowMenu_inprogress",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,1019,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_blocked --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa37",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_blocked",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 1078,
+    "width": 1496,
+    "height": 77,
+    "selector": "grp-settingstasksta-aa37",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_blocked",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,1078,1496,77",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_blocked --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa3b",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Blocked",
+    "automationId": "Settings_TaskStatusesRowMenu_blocked",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1097,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa3b",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status Blocked",
+    "AutomationId": "Settings_TaskStatusesRowMenu_blocked",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,1097,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_review --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa3e",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_review",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 1155,
+    "width": 1496,
+    "height": 78,
+    "selector": "grp-settingstasksta-aa3e",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_review",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,1155,1496,78",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_review --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa42",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Review",
+    "automationId": "Settings_TaskStatusesRowMenu_review",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1175,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa42",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status Review",
+    "AutomationId": "Settings_TaskStatusesRowMenu_review",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,1175,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_qa --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa45",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_qa",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 1233,
+    "width": 1496,
+    "height": 78,
+    "selector": "grp-settingstasksta-aa45",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_qa",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,1233,1496,78",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_qa --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa49",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status QA",
+    "automationId": "Settings_TaskStatusesRowMenu_qa",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1252,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa49",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status QA",
+    "AutomationId": "Settings_TaskStatusesRowMenu_qa",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,1252,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_done --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa4c",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_done",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 1311,
+    "width": 1496,
+    "height": 78,
+    "selector": "grp-settingstasksta-aa4c",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_done",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,1311,1496,78",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_done --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa51",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Done",
+    "automationId": "Settings_TaskStatusesRowMenu_done",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1331,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa51",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status Done",
+    "AutomationId": "Settings_TaskStatusesRowMenu_done",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,1331,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRow_cancelled --json -w 1247554   (exit 0)
+{
+  "elementId": "grp-settingstasksta-aa54",
+  "element": {
+    "type": "Group",
+    "automationId": "Settings_TaskStatusesRow_cancelled",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 331,
+    "y": 1389,
+    "width": 1496,
+    "height": 73,
+    "selector": "grp-settingstasksta-aa54",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": null,
+    "AutomationId": "Settings_TaskStatusesRow_cancelled",
+    "ControlType": "Group",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "331,1389,1496,73",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "False",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesRowMenu_cancelled --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingstasksta-aa59",
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Cancelled",
+    "automationId": "Settings_TaskStatusesRowMenu_cancelled",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1409,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa59",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "More actions for status Cancelled",
+    "AutomationId": "Settings_TaskStatusesRowMenu_cancelled",
+    "ControlType": "Button",
+    "ClassName": "Button",
+    "IsEnabled": "True",
+    "IsOffscreen": "False",
+    "BoundingRectangle": "1703,1409,58,42",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui get-property Settings_TaskStatusesAddBox --json -w 1247554   (exit 0)
+{
+  "elementId": "txt-settingstasksta-aa5e",
+  "element": {
+    "type": "Edit",
+    "name": "New status name",
+    "automationId": "Settings_TaskStatusesAddBox",
+    "className": "TextBox",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "txt-settingstasksta-aa5e",
+    "isInvokable": false
+  },
+  "properties": {
+    "Name": "New status name",
+    "AutomationId": "Settings_TaskStatusesAddBox",
+    "ControlType": "Edit",
+    "ClassName": "TextBox",
+    "IsEnabled": "True",
+    "IsOffscreen": "True",
+    "BoundingRectangle": "0,0,0,0",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "True",
+    "Value": "",
+    "IsReadOnly": "False",
+    "FontWeight": "400",
+    "FontName": "Segoe UI Variable",
+    "FontSize": "10.5",
+    "ForegroundColor": "16777215",
+    "IsItalic": "False",
+    "StrikethroughStyle": "0"
+  }
+}
+### PASS  Expanded rows and inner controls reachable with custom AutomationIds  backlog=[Group ''; menu 'More actions for status Backlog'] todo=[Group ''; menu 'More actions for status To do'] inprogress=[Group ''; menu 'More actions for status In progress'] blocked=[Group ''; menu 'More actions for status Blocked'] review=[Group ''; menu 'More actions for status Review'] qa=[Group ''; menu 'More actions for status QA'] done=[Group ''; menu 'More actions for status Done'] cancelled=[Group ''; menu 'More actions for status Cancelled'] addBox=[Edit 'New status name']
+> winapp ui scroll-into-view Settings_TaskStatusesRowMenu_cancelled -w 1247554   (exit 0)
+[WARNING] - Element position unchanged after ScrollIntoView — the element may 
+already be visible or the container didn't respond.
+Scrolled btn-settingstasksta-aa59 into view
+> winapp ui screenshot -o D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\07-expander-expanded.png -w 1247554   (exit 0)
+Screenshot of "Platform Controls spike" (PID 30036) saved to D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\07-expander-expanded.png (1759x1281, 103KB)
+### PASS  Expanded screenshot  saved 07-expander-expanded.png
+> winapp ui invoke Settings_TaskStatusesRowMenu_inprogress -w 1247554   (exit 0)
+Invoked btn-settingstasksta-aa34 via InvokePattern
+> winapp ui search Set as default -w 1117398 --json
+{
+  "matchCount": 0,
+  "hasMore": false,
+  "matches": []
+}
+> winapp ui screenshot -o D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\08-row-menu-open.png --capture-screen -w 1247554   (exit 0)
+Screenshot of "Platform Controls spike" (PID 30036) saved to D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\08-row-menu-open.png (1777x1290, 134KB)
+> winapp ui send-keys esc -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+### FAIL  Row menu button opens MenuFlyout via UIA invoke  menu item not found in popup 1117398
+> winapp ui invoke Settings_ShowCompletedToggle --action toggle -w 1247554   (exit 0)
+Requested toggle on btn-settingsshowcom-aa0f; performed toggle via TogglePattern
+> winapp ui get-property Settings_ShowCompletedToggle -p ToggleState --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingsshowcom-aa0f",
+  "element": {
+    "type": "Button",
+    "name": "Show completed items",
+    "automationId": "Settings_ShowCompletedToggle",
+    "className": "ToggleSwitch",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "btn-settingsshowcom-aa0f",
+    "toggleState": "on",
+    "isInvokable": true
+  },
+  "properties": {
+    "ToggleState": "On"
+  }
+}
+### PASS  ToggleSwitch in card toggles via UIA  ToggleState after toggle=On
+> winapp ui get-property Settings_DataPageCard --json -w 1247554   (exit 0)
+{
+  "elementId": "btn-settingsdatapag-aa17",
+  "element": {
+    "type": "Button",
+    "name": "Import, export and restore",
+    "automationId": "Settings_DataPageCard",
+    "className": "SettingsCard",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "btn-settingsdatapag-aa17",
+    "isInvokable": true
+  },
+  "properties": {
+    "Name": "Import, export and restore",
+    "AutomationId": "Settings_DataPageCard",
+    "ControlType": "Button",
+    "ClassName": "SettingsCard",
+    "IsEnabled": "True",
+    "IsOffscreen": "True",
+    "BoundingRectangle": "0,0,0,0",
+    "HasKeyboardFocus": "False",
+    "IsKeyboardFocusable": "True",
+    "IsPassword": "False",
+    "FontWeight": "Unavailable",
+    "FontName": "Unavailable",
+    "FontSize": "Unavailable",
+    "ForegroundColor": "Unavailable",
+    "IsItalic": "Unavailable",
+    "StrikethroughStyle": "Unavailable"
+  }
+}
+> winapp ui invoke Settings_DataPageCard -w 1247554   (exit 1)
+❌ Element btn-settingsdatapag-aa17 (Button) does not support any invoke pattern. No invokable ancestor was found either — this element is display-only and cannot be activated.
+### FAIL  Clickable card (IsClickEnabled) exposes UIA Invoke  ControlType=Button Name='Import, export and restore' but UIA invoke failed: winapp ui invoke Settings_DataPageCard failed (exit 1): ❌ Element btn-settingsdatapag-aa17 (Button) does not support any invoke pattern. No invokable ancestor was found either — this element is display-only and cannot be activated.
+> winapp ui focus Settings_DataPageCard -w 1247554   (exit 1)
+❌ Target window is not in the foreground — refusing to focus to avoid acting on the wrong window. Activate the intended window manually, check for a blocking dialog, then retry.
+### FAIL  Clickable card activates from keyboard (focus + space/enter, post-message)  winapp ui focus Settings_DataPageCard failed (exit 1): ❌ Target window is not in the foreground — refusing to focus to avoid acting on the wrong window. Activate the intended window manually, check for a blocking dialog, then retry.
+> winapp ui focus Settings_ThemeCombo -w 1247554   (exit 0)
+Focused cmb-settingsthemeco-a9fd
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "ComboBox",
+    "name": "App theme",
+    "automationId": "Settings_ThemeCombo",
+    "className": "ComboBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1548,
+    "y": 568,
+    "width": 261,
+    "height": 59,
+    "selector": "cmb-settingsthemeco-a9fd",
+    "expandState": "collapsed",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "Task statuses",
+    "className": "Microsoft.UI.Xaml.Controls.Expander",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 329,
+    "y": 741,
+    "width": 1500,
+    "height": 722,
+    "selector": "btn-taskstatuses-aa07",
+    "expandState": "expanded",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Backlog",
+    "automationId": "Settings_TaskStatusesRowMenu_backlog",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1702,
+    "y": 863,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa25",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "More actions for status In progress",
+    "automationId": "Settings_TaskStatusesRowMenu_inprogress",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1019,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa34",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Blocked",
+    "automationId": "Settings_TaskStatusesRowMenu_blocked",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1097,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa3b",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Review",
+    "automationId": "Settings_TaskStatusesRowMenu_review",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1175,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa42",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "More actions for status QA",
+    "automationId": "Settings_TaskStatusesRowMenu_qa",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1252,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa49",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "More actions for status Cancelled",
+    "automationId": "Settings_TaskStatusesRowMenu_cancelled",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1703,
+    "y": 1390,
+    "width": 58,
+    "height": 42,
+    "selector": "btn-settingstasksta-aa59",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "Add",
+    "automationId": "Settings_TaskStatusesAddButton",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1685,
+    "y": 1385,
+    "width": 76,
+    "height": 48,
+    "selector": "btn-settingstasksta-aa68",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "Show completed items",
+    "automationId": "Settings_ShowCompletedToggle",
+    "className": "ToggleSwitch",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1696,
+    "y": 1402,
+    "width": 107,
+    "height": 30,
+    "selector": "btn-settingsshowcom-aa0f",
+    "toggleState": "on",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Button",
+    "name": "Open folder",
+    "automationId": "Settings_OpenDataFolderButton",
+    "className": "Button",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1654,
+    "y": 1385,
+    "width": 149,
+    "height": 48,
+    "selector": "btn-settingsopendat-aa16",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "TabItem",
+    "name": "Settings (spike 4)",
+    "automationId": "Shell_NavSettingsItem",
+    "className": "Microsoft.UI.Xaml.Controls.NavigationViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 207,
+    "y": 271,
+    "width": 206,
+    "height": 72,
+    "selector": "tab-shellnavsetting-a9ef",
+    "isInvokable": true
+  }
+}
+> winapp ui send-keys tab -w 1247554   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json -w 1247554   (exit 0)
+{
+  "hasFocus": false
+}
+### PASS  Keyboard Tab traversal (post-message to spike HWND)  Settings_ThemeCombo|ComboBox|App theme -> |Button|Task statuses -> Settings_TaskStatusesRowMenu_backlog|Button|More actions for status Backlog -> || -> Settings_TaskStatusesRowMenu_inprogress|Button|More actions for status In progress -> Settings_TaskStatusesRowMenu_blocked|Button|More actions for status Blocked -> Settings_TaskStatusesRowMenu_review|Button|More actions for status Review -> Settings_TaskStatusesRowMenu_qa|Button|More actions for status QA -> || -> Settings_TaskStatusesRowMenu_cancelled|Button|More actions for status Cancelled -> || -> Settings_TaskStatusesAddButton|Button|Add -> Settings_ShowCompletedToggle|Button|Show completed items -> Settings_OpenDataFolderButton|Button|Open folder -> || -> Shell_NavSettingsItem|TabItem|Settings (spike 4) -> ||
+> winapp ui invoke cmb-settingsthemeco-a9fd --action expand -w 1247554   (exit 0)
+Requested expand on cmb-settingsthemeco-a9fd; performed expand via 
+ExpandCollapsePattern
+> winapp ui search Light --type ListItem -w 1051950 --json
+{
+  "matchCount": 1,
+  "hasMore": false,
+  "matches": [
+    {
+      "type": "ListItem",
+      "name": "Light",
+      "automationId": "",
+      "className": "ComboBoxItem",
+      "isEnabled": true,
+      "isOffscreen": false,
+      "x": 1633,
+      "y": 436,
+      "width": 211,
+      "height": 50,
+      "selector": "itm-light-18da",
+      "isInvokable": true
+    }
+  ]
+}
+> winapp ui get-property cmb-settingsthemeco-a9fd -p ExpandCollapseState --json -w 1247554   (exit 0)
+{
+  "elementId": "cmb-settingsthemeco-a9fd",
+  "element": {
+    "type": "ComboBox",
+    "name": "App theme",
+    "automationId": "Settings_ThemeCombo",
+    "className": "ComboBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1617,
+    "y": 375,
+    "width": 192,
+    "height": 59,
+    "selector": "cmb-settingsthemeco-a9fd",
+    "expandState": "collapsed",
+    "isInvokable": true
+  },
+  "properties": {
+    "ExpandCollapseState": "Collapsed"
+  }
+}
+> winapp ui scroll-into-view Settings_ActualThemeText -w 1247554   (exit 0)
+Scrolled lbl-settingsactualt-a9f8 into view
+> winapp ui get-value Settings_ActualThemeText --json -w 1247554   (exit 0)
+{
+  "elementId": "lbl-settingsactualt-a9f8",
+  "text": "Requested theme: Light; actual theme: Light"
+}
+> winapp ui screenshot -o D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\09-theme-light.png -w 1247554   (exit 0)
+Screenshot of "Platform Controls spike" (PID 30036) saved to D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\09-theme-light.png (1759x1281, 104KB)
+> winapp ui get-value cmb-settingsthemeco-a9fd --json -w 1247554   (exit 0)
+{
+  "elementId": "cmb-settingsthemeco-a9fd",
+  "text": "Light"
+}
+### PASS  Theme Light via ComboBox selection (root RequestedTheme)  Requested theme: Light; actual theme: Light; combo value=Light
+> winapp ui invoke cmb-settingsthemeco-a9fd --action expand -w 1247554   (exit 0)
+Requested expand on cmb-settingsthemeco-a9fd; performed expand via 
+ExpandCollapsePattern
+> winapp ui search Dark --type ListItem -w 1051950 --json
+{
+  "matchCount": 1,
+  "hasMore": false,
+  "matches": [
+    {
+      "type": "ListItem",
+      "name": "Dark",
+      "automationId": "",
+      "className": "ComboBoxItem",
+      "isEnabled": true,
+      "isOffscreen": false,
+      "x": 1633,
+      "y": 544,
+      "width": 211,
+      "height": 50,
+      "selector": "itm-dark-18dc",
+      "isInvokable": true
+    }
+  ]
+}
+> winapp ui get-property cmb-settingsthemeco-a9fd -p ExpandCollapseState --json -w 1247554   (exit 0)
+{
+  "elementId": "cmb-settingsthemeco-a9fd",
+  "element": {
+    "type": "ComboBox",
+    "name": "App theme",
+    "automationId": "Settings_ThemeCombo",
+    "className": "ComboBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1617,
+    "y": 482,
+    "width": 192,
+    "height": 59,
+    "selector": "cmb-settingsthemeco-a9fd",
+    "expandState": "collapsed",
+    "isInvokable": true
+  },
+  "properties": {
+    "ExpandCollapseState": "Collapsed"
+  }
+}
+> winapp ui scroll-into-view Settings_ActualThemeText -w 1247554   (exit 0)
+[WARNING] - Element position unchanged after ScrollIntoView — the element may 
+already be visible or the container didn't respond.
+Scrolled lbl-settingsactualt-a9f8 into view
+> winapp ui get-value Settings_ActualThemeText --json -w 1247554   (exit 0)
+{
+  "elementId": "lbl-settingsactualt-a9f8",
+  "text": "Requested theme: Dark; actual theme: Dark"
+}
+> winapp ui screenshot -o D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\10-theme-dark.png -w 1247554   (exit 0)
+Screenshot of "Platform Controls spike" (PID 30036) saved to D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\10-theme-dark.png (1759x1281, 104KB)
+> winapp ui get-value cmb-settingsthemeco-a9fd --json -w 1247554   (exit 0)
+{
+  "elementId": "cmb-settingsthemeco-a9fd",
+  "text": "Dark"
+}
+### PASS  Theme Dark via ComboBox selection (root RequestedTheme)  Requested theme: Dark; actual theme: Dark; combo value=Dark
+
+==== SUMMARY
+PASS  Cards expose names/roles  Settings_ThemeCard=[Group ''] Settings_TaskStatusesExpander=[Group 'Task statuses'] Settings_ShowCompletedCard=[Group ''] Settings_DataLocationCard=[Group 'Open folder'] Settings_DataPageCard=[Button 'Import, export and restore']
+PASS  Inner controls named by Toolkit header  Settings_ThemeCombo=[ComboBox 'App theme'] Settings_ShowCompletedToggle=[Button 'Show completed items'] Settings_OpenDataFolderButton=[Button 'Open folder']
+PASS  Expander header exposes ExpandCollapse and expands via UIA  header=btn-taskstatuses-aa07 before=Collapsed after=Expanded
+PASS  Expanded rows and inner controls reachable with custom AutomationIds  backlog=[Group ''; menu 'More actions for status Backlog'] todo=[Group ''; menu 'More actions for status To do'] inprogress=[Group ''; menu 'More actions for status In progress'] blocked=[Group ''; menu 'More actions for status Blocked'] review=[Group ''; menu 'More actions for status Review'] qa=[Group ''; menu 'More actions for status QA'] done=[Group ''; menu 'More actions for status Done'] cancelled=[Group ''; menu 'More actions for status Cancelled'] addBox=[Edit 'New status name']
+PASS  Expanded screenshot  saved 07-expander-expanded.png
+FAIL  Row menu button opens MenuFlyout via UIA invoke  menu item not found in popup 1117398
+PASS  ToggleSwitch in card toggles via UIA  ToggleState after toggle=On
+FAIL  Clickable card (IsClickEnabled) exposes UIA Invoke  ControlType=Button Name='Import, export and restore' but UIA invoke failed: winapp ui invoke Settings_DataPageCard failed (exit 1): ❌ Element btn-settingsdatapag-aa17 (Button) does not support any invoke pattern. No invokable ancestor was found either — this element is display-only and cannot be activated.
+FAIL  Clickable card activates from keyboard (focus + space/enter, post-message)  winapp ui focus Settings_DataPageCard failed (exit 1): ❌ Target window is not in the foreground — refusing to focus to avoid acting on the wrong window. Activate the intended window manually, check for a blocking dialog, then retry.
+PASS  Keyboard Tab traversal (post-message to spike HWND)  Settings_ThemeCombo|ComboBox|App theme -> |Button|Task statuses -> Settings_TaskStatusesRowMenu_backlog|Button|More actions for status Backlog -> || -> Settings_TaskStatusesRowMenu_inprogress|Button|More actions for status In progress -> Settings_TaskStatusesRowMenu_blocked|Button|More actions for status Blocked -> Settings_TaskStatusesRowMenu_review|Button|More actions for status Review -> Settings_TaskStatusesRowMenu_qa|Button|More actions for status QA -> || -> Settings_TaskStatusesRowMenu_cancelled|Button|More actions for status Cancelled -> || -> Settings_TaskStatusesAddButton|Button|Add -> Settings_ShowCompletedToggle|Button|Show completed items -> Settings_OpenDataFolderButton|Button|Open folder -> || -> Shell_NavSettingsItem|TabItem|Settings (spike 4) -> ||
+PASS  Theme Light via ComboBox selection (root RequestedTheme)  Requested theme: Light; actual theme: Light; combo value=Light
+PASS  Theme Dark via ComboBox selection (root RequestedTheme)  Requested theme: Dark; actual theme: Dark; combo value=Dark

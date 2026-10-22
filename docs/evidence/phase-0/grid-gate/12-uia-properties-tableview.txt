@@ -1,0 +1,25 @@
+===== Grid_Table
+  Name: Tasks
+  AutomationId: Grid_Table
+  ControlType: DataGrid
+  ClassName: TableView
+  IsKeyboardFocusable: False
+  FontName: Unavailable
+===== Grid_Row_0000270c000000000000000000000000
+  Name: Task Add fee rules #9996, unlinked, Backlog, Critical priority
+  AutomationId: Grid_Row_0000270c000000000000000000000000
+  ControlType: DataItem
+  ClassName: ListViewItem
+  IsKeyboardFocusable: True
+  HelpText: Kind: GridGate.TaskRowViewModel, CR Number: 
+  FontName: Unavailable
+===== Grid_Cell_0000270c000000000000000000000000_Title
+  Name: Title, Row 5
+  AutomationId: Grid_Cell_0000270c000000000000000000000000_Title
+  ControlType: Custom
+  ClassName: TableViewCell
+  IsKeyboardFocusable: True
+  HelpText: Title
+  FontName: Unavailable
+===== Grid_Header_Title
+❌ No element found matching 'Grid_Header_Title'. The UI may have changed — re-run 'winapp ui inspect' or 'winapp ui search' to find current elements. Prefer targeting by AutomationId (set via AutomationProperties.AutomationId in XAML) — these survive layout changes.

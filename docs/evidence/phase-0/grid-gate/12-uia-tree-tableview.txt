@@ -1,0 +1,40 @@
+Grid_Table DataGrid "Tasks" [scroll:vh] (143,377 2120x878)
+  Grid_Row_00002710000000000000000000000000 DataItem "Subtask card Migrate 
+rounding #10000, unlinked, Done, Low priority" (145,427 2098x62)
+    hdi-rowheader-9631 HeaderItem "Row 1" (145,427 24x60)
+    Grid_Cell_00002710000000000000000000000000_Kind Custom "Kind, Row 1" 
+(171,427 165x60)
+      lbl-subtaskcard-9632 Text "Subtask card" (174,443 157x27)
+    Grid_Cell_00002710000000000000000000000000_CrNumber Custom "CR Number, Row 
+1" (336,427 165x60)
+      lbl-9634 Text (338,443 156x27)
+    Grid_Cell_00002710000000000000000000000000_TaskNumber Custom "Task Number, 
+Row 1" (501,427 165x60)
+      lbl-9636 Text (504,443 157x27)
+    Grid_Cell_00002710000000000000000000000000_Squad Custom "Squad, Row 1" 
+(666,427 195x60)
+      lbl-general-9638 Text "General" (669,443 187x27)
+    Grid_Cell_00002710000000000000000000000000_Owner Custom "Owner, Row 1" 
+(861,427 179x60)
+      lbl-963a Text (864,443 172x27)
+    Grid_Cell_00002710000000000000000000000000_Title Custom "Title, Row 1" 
+(1040,427 390x60)
+      lbl-migraterounding-963c Text "Migrate rounding #10000" (1043,443 235x27)
+    Grid_Cell_00002710000000000000000000000000_Service Custom "Service, Row 1" 
+(1431,427 210x60)
+      lbl-onboarding-963e Text "Onboarding" (1434,443 202x27)
+    Grid_Cell_00002710000000000000000000000000_Status Custom "Status, Row 1" 
+(1641,427 225x60)
+      lbl-done-9640 Text "Done" (1644,443 217x27)
+    Grid_Cell_00002710000000000000000000000000_Priority Custom "Priority, Row 1"
+(1866,427 180x60)
+      lbl-low-9642 Text "Low" (1869,443 171x27)
+    Grid_Cell_00002710000000000000000000000000_StartDate Custom "Start Date, Row
+1" (2046,427 196x60)
+      lbl-7222026-9644 Text "7/22/2026" (2049,443 193x27)
+    Grid_Cell_00002710000000000000000000000000_EndDate Custom "End Date, Row 1" 
+[offscreen]
+      lbl-822026-9646 Text "8/2/2026" [offscreen]
+    Grid_Cell_00002710000000000000000000000000_Notes Custom "Notes, Row 1" [
+offscreen]
+      lbl-9648 Text [offscreen]

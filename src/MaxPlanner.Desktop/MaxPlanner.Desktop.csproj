@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\eng\WinUI.Common.props" />
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>MaxPlanner</AssemblyName>
+    <RootNamespace>MaxPlanner.Desktop</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <!-- Program.Main runs single-instance, probe, and lock checks before XAML starts (ADR 0013). -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!-- Required by LibraryImport source-generated P/Invoke marshalling (NativeMethods). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- ADR 0003 / T-03: portable, self-contained, no trimming/AOT/single-file. -->
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishAot>false</PublishAot>
+    <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MaxPlanner.Presentation\MaxPlanner.Presentation.csproj" />
+    <ProjectReference Include="..\MaxPlanner.Application\MaxPlanner.Application.csproj" />
+    <ProjectReference Include="..\MaxPlanner.Infrastructure\MaxPlanner.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

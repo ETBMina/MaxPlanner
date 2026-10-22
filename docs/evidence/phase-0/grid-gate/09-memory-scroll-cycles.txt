@@ -1,0 +1,18 @@
+baseline               WS=  322 MB Private=  244 MB | Rows=10000; realized row containers=67; workingSet=323 MB; managed=21 MB; verticalOffset=0
+after cycle 1          WS=  402 MB Private=  334 MB | Rows=10000; realized row containers=77; workingSet=420 MB; managed=36 MB; verticalOffset=415057
+after cycle 2          WS=  479 MB Private=  439 MB | Rows=10000; realized row containers=87; workingSet=480 MB; managed=66 MB; verticalOffset=415553
+after cycle 3          WS=  493 MB Private=  449 MB | Rows=10000; realized row containers=96; workingSet=494 MB; managed=63 MB; verticalOffset=417165
+after cycle 4          WS=  549 MB Private=  517 MB | Rows=10000; realized row containers=106; workingSet=550 MB; managed=93 MB; verticalOffset=414313
+after cycle 5          WS=  560 MB Private=  524 MB | Rows=10000; realized row containers=115; workingSet=561 MB; managed=79 MB; verticalOffset=416710
+at bottom              WS=  560 MB Private=  524 MB | Rows=10000; realized row containers=115; workingSet=561 MB; managed=79 MB; verticalOffset=416710
+cycle ms (52 ScrollPattern calls each, includes CLI process start): 16254, 18367, 18157, 19726, 20068
+after cycle 6          WS=  651 MB Private=  628 MB | Rows=10000; realized row containers=124; workingSet=651 MB; managed=107 MB; verticalOffset=0
+after cycle 7          WS=  674 MB Private=  652 MB | Rows=10000; realized row containers=130; workingSet=675 MB; managed=107 MB; verticalOffset=0
+after cycle 8          WS=  716 MB Private=  689 MB | Rows=10000; realized row containers=138; workingSet=717 MB; managed=104 MB; verticalOffset=0
+after cycle 9          WS=  727 MB Private=  689 MB | Rows=10000; realized row containers=143; workingSet=728 MB; managed=108 MB; verticalOffset=0
+after cycle 10         WS=  739 MB Private=  690 MB | Rows=10000; realized row containers=150; workingSet=740 MB; managed=115 MB; verticalOffset=0
+after cycle 11         WS=  766 MB Private=  715 MB | Rows=10000; realized row containers=156; workingSet=767 MB; managed=113 MB; verticalOffset=0
+after cycle 12         WS=  785 MB Private=  730 MB | Rows=10000; realized row containers=162; workingSet=785 MB; managed=125 MB; verticalOffset=0
+after cycle 13         WS=  807 MB Private=  744 MB | Rows=10000; realized row containers=166; workingSet=808 MB; managed=103 MB; verticalOffset=0
+after cycle 14         WS=  844 MB Private=  790 MB | Rows=10000; realized row containers=172; workingSet=845 MB; managed=125 MB; verticalOffset=0
+after cycle 15         WS=  866 MB Private=  807 MB | Rows=10000; realized row containers=177; workingSet=867 MB; managed=126 MB; verticalOffset=0

@@ -1,0 +1,44 @@
+Phase 0 spikes 4 and 5: platform controls and projection pipeline. Evidence index, 2026-10-22.
+Spike source: spikes/PlatformControls (PlatformControls.slnx, not part of MaxPlanner.slnx). Imports eng/WinUI.Common.props
+(net10.0-windows10.0.26100.0, x64, unpackaged, WinAppSDK 2.5.1 component packages), SelfContained + WindowsAppSDKSelfContained.
+Runs: local desktop, published Release exe (spikes/PlatformControls/publish) unless stated. No Windows Sandbox run.
+Input: UIA patterns only (invoke/select/expand/toggle), focus, set-value, scroll-into-view, get-*, screenshots, and
+post-message keys to the spike's own HWND. No mouse, no send-input. Scripts: spikes/PlatformControls/tools/*.ps1.
+Build: Debug and Release 0 warnings / 0 errors under the repository TreatWarningsAsErrors + analyzers + WinUIAnalyzer; no suppressions.
+
+SPIKE 4: CommunityToolkit.WinUI.Controls.SettingsControls 8.2.251219 on WinAppSDK 2.5.1
+4.1 restore/build/publish   PARTIAL  01-resolved-packages.txt, 02-build-variantA-asis-FAILS.txt, 03-build-publish-variantB.txt, 04-published-settings-launch.png
+     Restore is clean (no NU1608/NU1605 entries), but the Toolkit depends on the Microsoft.WindowsAppSDK 1.6.250108002
+     METAPACKAGE, which the component-package set does not lift. As-is, the build FAILS (MSB4011 duplicate imports +
+     MSIX build-tools error). Variant B (direct Microsoft.WindowsAppSDK 1.6.250108002 reference with ExcludeAssets="all")
+     builds warning-free, publishes, and the published exe renders the page. Payload carries WinUI 2.3.9 Microsoft.WinUI.dll.
+4.2 themes                   PASS (runtime Light/Dark) / static-only (High Contrast)  09-theme-light.png, 10-theme-dark.png, 11-high-contrast-static-evidence.txt
+4.3 UI Automation            PASS with one Toolkit defect  06-uia-settings-log.txt, 06b-uia-settings-retry-log.txt, 07-expander-expanded.png, 08-row-menu-open.png
+     Expander header ExpandCollapse works; rows/inner controls reachable; custom AutomationIds applied via x:Bind; Tab
+     traversal (post-message) walks header -> row menus -> add box/button -> toggle -> Open folder -> clickable card -> nav.
+     Defect: clickable SettingsCard (IsClickEnabled) is exposed as Button and advertises Invoke, but its peer
+     (SettingsCardAutomationPeer : ButtonBaseAutomationPeer) implements no IInvokeProvider -> WinApp invoke fails
+     (Arg_InvalidCastException / "does not support any invoke pattern"). Keyboard Space/Enter activation works.
+     Non-clickable SettingsCards are unnamed Groups (Data location card is named "Open folder" from its content).
+4.4 crashes / XAML errors    PASS (after markup fix)  12-debug-output-summary.txt, 12-debug-*-run.txt, 12-debug-*-firstchance.log
+     No managed exceptions, no type-resolution or assembly-load errors. Settings-idle equals the no-Toolkit Blank baseline.
+     One real XamlParseException found on first launch: DefaultSettingsExpanderItemStyle not resolvable from page scope
+     (fixed by merging the Toolkit SettingsExpander.xaml dictionary).
+4.5 payload                  PASS  13-payload-delta.txt  (+5 files, +480 KiB, +0.27 %; baseline = -p:PayloadBaseline=true)
+Layout landmine              05-layout-maxwidth-finding.txt, 05a-layout-maxwidth-overflow-before-fix.png
+
+SPIKE 5: DynamicData 9.5.0 + System.Reactive 7.0.0 projection in a virtualized ListView (10,000 records)
+5.1 build/run                PASS  01-resolved-packages.txt, 25-dynamicdata-api-check.txt, 12-debug-projection-idle-*.txt/log
+5.2 other-row updates        PARTIAL (focus, draft, scroll PASS; selection FAIL without mitigation)
+     20-spike5-variant{A,B,C,R}-uia-log.txt, 23-variant{A,B,C,R}-inapp-log.txt, 21-variant*-after-other-rows.png
+5.3 same-row title update    PASS  same logs; vm#/element#/container# ids unchanged, title 'STORE rev N' in place, draft kept
+5.4 re-sort                  PASS (others) / behaviour recorded (focused row)  22-variant*-after-move-focused.png, 23-*-inapp-log.txt
+5.5 timings                  RECORDED  footer/pipeline/latency lines in 20-*-uia-log.txt and 23-*-inapp-log.txt
+5.6 disposal                 PASS  24-spike5-dispose-log.txt, 24-spike5-dispose-inapp-log.txt
+
+Variant key (spikes/PlatformControls/Projection): A = TransformWithInlineUpdate + SortAndBind(out ROOC) (Move notifications);
+B = A with Update converted to Refresh; C = A with moves reported as Remove+Insert (RemoveInsertObservableCollection);
+D = intended B + Remove+Insert, but its toggle sequence ended on Move (PipelineText "build #4 ... moves=Move"), so D duplicates B;
+R = A + selection re-applied from view-model state after each applied change set (the recommended shape).
+The first variant-A attempt (not kept) showed that UIA Invoke on a WinUI Button moves keyboard focus to the button; the
+scenario therefore starts the mutator before focusing the row.

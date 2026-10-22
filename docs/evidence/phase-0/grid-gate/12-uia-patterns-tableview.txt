@@ -1,0 +1,14 @@
+Table: ControlType=ControlType.DataGrid Name='Tasks' AutomationId='Grid_Table' Class='TableView'
+  Patterns: ScrollPattern, GridPattern, TablePattern, ScrollItemPattern, ItemContainerPattern
+  GridPattern: RowCount=10000 ColumnCount=13
+  TablePattern: RowOrColumnMajor=RowMajor ColumnHeaders=
+  First child: ControlType.DataItem 'Subtask card Migrate rounding #10000, unlinked, Done, Low priority'
+Row: ControlType=ControlType.DataItem Name='Task Add fee rules #9996, unlinked, Backlog, Critical priority' AutomationId='Grid_Row_0000270c000000000000000000000000' Class='ListViewItem'
+  Patterns: ScrollItemPattern, VirtualizedItemPattern
+  First child: ControlType.HeaderItem 'Row 5'
+Cell: ControlType=ControlType.Custom Name='Title, Row 5' AutomationId='Grid_Cell_0000270c000000000000000000000000_Title' Class='TableViewCell'
+  Patterns: GridItemPattern, SelectionItemPattern, TableItemPattern, ScrollItemPattern
+  GridItemPattern: Row=4 Column=5 ContainingGrid='Grid_Table'
+  TableItemPattern: ColumnHeaderItems=Title RowHeaderItems=Row 5
+  First child: ControlType.Text 'Add fee rules #9996'
+Column header items: 

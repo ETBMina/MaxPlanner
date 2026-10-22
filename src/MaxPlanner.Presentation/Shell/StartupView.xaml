@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MaxPlanner.Presentation.Shell.StartupView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Spacing="12">
+        <ProgressRing
+            AutomationProperties.AutomationId="Shell_StartupProgressRing"
+            IsActive="{x:Bind ViewModel.IsStarting, Mode=OneWay}" />
+        <!-- Spike 6 (ADR 0014): this x:Uid resolves from the Presentation library's own Resources.resw. -->
+        <TextBlock
+            x:Uid="Shell_StartupText"
+            AutomationProperties.AutomationId="Shell_StartupText"
+            HorizontalAlignment="Center"
+            Style="{StaticResource BodyTextBlockStyle}" />
+    </StackPanel>
+</UserControl>

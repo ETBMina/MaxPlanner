@@ -1,0 +1,16 @@
+≡ƒöÄ Resolving project...
+≡ƒöÄ PlatformControls.csproj  ┬╖  Release | x64  ┬╖  PlatformControls.slnx
+Γ£à Launched PlatformControls (PID: 33172)
+Full debug log: 
+C:\Users\Guardiola\AppData\Local\Temp\winapp-dumps\debug-33172-20261022-102141.l
+og
+
+==== SUMMARY
+label=settings-exercised args='' pid=33172 debugLog=C:\Users\Guardiola\AppData\Local\Temp\winapp-dumps\debug-33172-20261022-102141.log
+15 x OutputDebugString
+13 x 0x40080202
+4 x 0xE06D7363
+2 x 0x40080201
+1 x 0x04242420
+1 x 0x80000003
+1 x 0x8001010D

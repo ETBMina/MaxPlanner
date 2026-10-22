@@ -1,0 +1,83 @@
+01:01:39.382 ColumnPropertyChanged Kind.DesiredWidth (index 0).
+01:01:39.394 ColumnPropertyChanged CrNumber.DesiredWidth (index 1).
+01:01:39.403 ColumnPropertyChanged TaskNumber.DesiredWidth (index 2).
+01:01:39.407 ColumnPropertyChanged Squad.DesiredWidth (index 3).
+01:01:39.409 ColumnPropertyChanged Owner.DesiredWidth (index 4).
+01:01:39.413 ColumnPropertyChanged Title.DesiredWidth (index 5).
+01:01:39.416 ColumnPropertyChanged Service.DesiredWidth (index 6).
+01:01:39.419 ColumnPropertyChanged Status.DesiredWidth (index 7).
+01:01:39.423 ColumnPropertyChanged Priority.DesiredWidth (index 8).
+01:01:39.426 ColumnPropertyChanged StartDate.DesiredWidth (index 9).
+01:01:39.429 ColumnPropertyChanged EndDate.DesiredWidth (index 10).
+01:01:39.433 ColumnPropertyChanged Notes.DesiredWidth (index 11).
+01:01:39.436 ColumnPropertyChanged Tags.DesiredWidth (index 12).
+01:01:39.576 ColumnPropertyChanged Kind.ActualWidth (index 0).
+01:01:39.577 ColumnPropertyChanged CrNumber.ActualWidth (index 1).
+01:01:39.578 ColumnPropertyChanged TaskNumber.ActualWidth (index 2).
+01:01:39.579 ColumnPropertyChanged Squad.ActualWidth (index 3).
+01:01:39.579 ColumnPropertyChanged Owner.ActualWidth (index 4).
+01:01:39.580 ColumnPropertyChanged Title.ActualWidth (index 5).
+01:01:39.581 ColumnPropertyChanged Service.ActualWidth (index 6).
+01:01:39.582 ColumnPropertyChanged Status.ActualWidth (index 7).
+01:01:39.583 ColumnPropertyChanged Priority.ActualWidth (index 8).
+01:01:39.584 ColumnPropertyChanged StartDate.ActualWidth (index 9).
+01:01:39.584 ColumnPropertyChanged EndDate.ActualWidth (index 10).
+01:01:39.585 ColumnPropertyChanged Notes.ActualWidth (index 11).
+01:01:39.586 ColumnPropertyChanged Tags.ActualWidth (index 12).
+01:01:39.589 ColumnPropertyChanged Kind.DesiredWidth (index 0).
+01:01:39.590 ColumnPropertyChanged Title.DesiredWidth (index 5).
+01:01:39.592 ColumnPropertyChanged Service.DesiredWidth (index 6).
+01:01:39.593 ColumnPropertyChanged Tags.DesiredWidth (index 12).
+01:01:39.789 Loaded 10,000 rows; default layout captured.
+01:01:39.825 ColumnPropertyChanged Squad.DesiredWidth (index 3).
+01:01:39.827 ColumnPropertyChanged Owner.DesiredWidth (index 4).
+01:01:39.828 ColumnPropertyChanged Title.DesiredWidth (index 5).
+01:01:39.831 ColumnPropertyChanged Title.DesiredWidth (index 5).
+01:01:39.835 ColumnPropertyChanged Service.DesiredWidth (index 6).
+01:01:39.837 ColumnPropertyChanged Notes.DesiredWidth (index 11).
+01:01:39.844 ColumnPropertyChanged Squad.DesiredWidth (index 3).
+01:01:39.845 ColumnPropertyChanged Owner.DesiredWidth (index 4).
+01:01:39.849 ColumnPropertyChanged Title.DesiredWidth (index 5).
+01:01:46.994 BeginningEdit Title row Refactor fee rules #9995 via KeyRoutedEventArgs.
+01:01:47.827 CellEditEnding Commit Title: cancelled to keep editor open; saving (intent Next).
+01:01:48.148 Save failed: Couldn't save Title: simulated storage error (value contains "fail"). (editor kept open, draft intact).
+01:01:50.534 CellEditEnding Commit Title: cancelled to keep editor open; saving (intent Next).
+01:01:50.845 Saved Title = 'Tab fixed B' after 307 ms.
+01:01:50.848 CellEditEnded Title Commit.
+01:01:50.850 Editor closed via internal EndCellEditing: True; IsEditing=False.
+01:01:50.852 Moved to row 5 column Service.
+01:02:15.083 BeginningEdit Notes row Fix card limits #9997 via KeyRoutedEventArgs.
+01:02:16.209 ColumnPropertyChanged Notes.DesiredWidth (index 11).
+01:02:31.978 Saved Notes = 'Line onel' after 303 ms.
+01:02:31.993 CellEditEnded Notes Commit.
+01:02:31.995 Editor closed via internal EndCellEditing: True; IsEditing=False.
+01:02:48.271 BeginningEdit Status row Add fee rules #9996 via KeyRoutedEventArgs.
+01:02:52.577 ColumnPropertyChanged Status.DesiredWidth (index 7).
+01:02:57.134 ColumnPropertyChanged Status.DesiredWidth (index 7).
+01:02:58.813 CellEditEnding Commit Status: unchanged, editor closes.
+01:02:58.817 CellEditEnded Status Commit.
+01:02:58.818 BeginningEdit Status row Tab fixed B via KeyRoutedEventArgs.
+01:03:02.876 CellEditEnding Cancel Status: draft restored to committed value.
+01:03:02.879 CellEditEnded Status Cancel.
+01:03:21.341 BeginningEdit Status row Add fee rules #9996 via KeyRoutedEventArgs.
+01:03:42.416 ColumnPropertyChanged Status.DesiredWidth (index 7).
+01:04:02.661 CellEditEnding Commit Status: cancelled to keep editor open; saving (intent Next).
+01:04:02.971 Saved Status = 'Review' after 306 ms.
+01:04:02.973 CellEditEnded Status Commit.
+01:04:02.975 Editor closed via internal EndCellEditing: True; IsEditing=False.
+01:04:02.977 Moved to row 4 column Priority.
+01:04:17.473 BeginningEdit Status row Add fee rules #9996 via KeyRoutedEventArgs.
+01:04:18.902 ColumnPropertyChanged Status.DesiredWidth (index 7).
+01:04:25.370 CellEditEnding Cancel Status: draft restored to committed value.
+01:04:25.373 CellEditEnded Status Cancel.
+01:04:36.840 BeginningEdit Status row Add fee rules #9996 via KeyRoutedEventArgs.
+01:04:56.522 CellEditEnding Commit Status: cancelled to keep editor open; saving (intent Next).
+01:04:56.835 Save failed: Couldn't save Status: simulated storage error (value contains "fail"). (editor kept open, draft intact).
+01:05:02.245 CellEditEnding Cancel Status: draft restored to committed value.
+01:05:02.247 CellEditEnded Status Cancel.
+01:05:18.044 BeginningEdit StartDate row Add fee rules #9996 via KeyRoutedEventArgs.
+01:05:20.431 CellEditEnding Commit StartDate: unchanged, editor closes.
+01:05:20.433 CellEditEnded StartDate Commit.
+01:05:20.434 BeginningEdit StartDate row Tab fixed B via KeyRoutedEventArgs.
+01:05:41.475 CellEditEnding Cancel StartDate: draft restored to committed value.
+01:05:41.477 CellEditEnded StartDate Cancel.

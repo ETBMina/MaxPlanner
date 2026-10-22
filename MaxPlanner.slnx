@@ -1,0 +1,18 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/MaxPlanner.Domain/MaxPlanner.Domain.csproj" />
+    <Project Path="src/MaxPlanner.Application/MaxPlanner.Application.csproj" />
+    <Project Path="src/MaxPlanner.Infrastructure/MaxPlanner.Infrastructure.csproj" />
+    <Project Path="src/MaxPlanner.Presentation/MaxPlanner.Presentation.csproj" />
+    <Project Path="src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MaxPlanner.Infrastructure.Tests/MaxPlanner.Infrastructure.Tests.csproj" />
+    <Project Path="tests/MaxPlanner.Infrastructure.Tests.CrashWriter/MaxPlanner.Infrastructure.Tests.CrashWriter.csproj" />
+    <Project Path="tests/MaxPlanner.Presentation.Tests/MaxPlanner.Presentation.Tests.csproj" />
+    <Project Path="tests/MaxPlanner.Architecture.Tests/MaxPlanner.Architecture.Tests.csproj" />
+  </Folder>
+</Solution>

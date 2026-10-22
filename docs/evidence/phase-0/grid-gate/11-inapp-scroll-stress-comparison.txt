@@ -1,0 +1,35 @@
+=== TableView (WinUI.TableView 1.5.1, 13 template columns), in-app ChangeView stress, no UIA client
+01:20:29.129 Stress start: Rows=10000; realized row containers=67; workingSet=325 MB; private=247 MB; managed=34 MB; verticalOffset=0
+01:20:45.271 Stress cycle 1: 15831 ms, frames=241, avg gap=66.0 ms, max gap=244 ms, gaps>50ms=174; Rows=10000; realized row containers=69; workingSet=460 MB; private=425 MB; managed=58 MB; verticalOffset=0
+01:21:02.958 Stress cycle 2: 17631 ms, frames=238, avg gap=75.6 ms, max gap=450 ms, gaps>50ms=208; Rows=10000; realized row containers=69; workingSet=526 MB; private=504 MB; managed=78 MB; verticalOffset=0
+01:21:21.099 Stress cycle 3: 17861 ms, frames=236, avg gap=76.0 ms, max gap=324 ms, gaps>50ms=212; Rows=10000; realized row containers=69; workingSet=552 MB; private=540 MB; managed=88 MB; verticalOffset=0
+01:21:37.124 Stress cycle 4: 15855 ms, frames=239, avg gap=67.5 ms, max gap=418 ms, gaps>50ms=188; Rows=10000; realized row containers=69; workingSet=618 MB; private=624 MB; managed=105 MB; verticalOffset=0
+01:21:53.809 Stress cycle 5: 16636 ms, frames=238, avg gap=70.7 ms, max gap=460 ms, gaps>50ms=204; Rows=10000; realized row containers=69; workingSet=680 MB; private=694 MB; managed=119 MB; verticalOffset=0
+01:21:55.720 Stress end after forced GC: Rows=10000; realized row containers=69; workingSet=672 MB; private=686 MB; managed=73 MB; verticalOffset=0
+
+=== ListView fallback (8 columns), same probe
+01:22:03.231 Stress start: Rows=10000; realized row containers=61; workingSet=220 MB; private=150 MB; managed=9 MB; verticalOffset=0
+01:22:12.689 Stress cycle 1: 9413 ms, frames=308, avg gap=30.9 ms, max gap=228 ms, gaps>50ms=18; Rows=10000; realized row containers=62; workingSet=237 MB; private=166 MB; managed=11 MB; verticalOffset=0
+01:22:21.183 Stress cycle 2: 8411 ms, frames=364, avg gap=23.3 ms, max gap=124 ms, gaps>50ms=14; Rows=10000; realized row containers=62; workingSet=238 MB; private=167 MB; managed=9 MB; verticalOffset=0
+01:22:29.515 Stress cycle 3: 8282 ms, frames=405, avg gap=20.6 ms, max gap=105 ms, gaps>50ms=15; Rows=10000; realized row containers=62; workingSet=239 MB; private=167 MB; managed=13 MB; verticalOffset=0
+01:22:38.252 Stress cycle 4: 8622 ms, frames=353, avg gap=24.6 ms, max gap=115 ms, gaps>50ms=16; Rows=10000; realized row containers=62; workingSet=235 MB; private=164 MB; managed=10 MB; verticalOffset=0
+01:22:47.662 Stress cycle 5: 9326 ms, frames=285, avg gap=33.1 ms, max gap=136 ms, gaps>50ms=25; Rows=10000; realized row containers=62; workingSet=240 MB; private=168 MB; managed=9 MB; verticalOffset=0
+01:22:47.853 Stress end after forced GC: Rows=10000; realized row containers=62; workingSet=234 MB; private=162 MB; managed=9 MB; verticalOffset=0
+
+=== Run 2 (with PropertyChanged subscriber diagnostic) - TableView
+01:23:18.297 Stress start: Rows=10000; realized row containers=67; PropertyChanged subscribers=10871; workingSet=322 MB; private=244 MB; managed=28 MB; verticalOffset=0
+01:23:33.493 Stress cycle 1: 15068 ms, frames=237, avg gap=64.5 ms, max gap=349 ms, gaps>50ms=149; Rows=10000; realized row containers=69; PropertyChanged subscribers=17241; workingSet=483 MB; private=447 MB; managed=67 MB; verticalOffset=0
+01:23:48.112 Stress cycle 2: 14565 ms, frames=238, avg gap=61.8 ms, max gap=365 ms, gaps>50ms=153; Rows=10000; realized row containers=69; PropertyChanged subscribers=21739; workingSet=587 MB; private=578 MB; managed=92 MB; verticalOffset=0
+01:24:04.435 Stress cycle 3: 16027 ms, frames=239, avg gap=67.3 ms, max gap=506 ms, gaps>50ms=204; Rows=10000; realized row containers=69; PropertyChanged subscribers=23975; workingSet=653 MB; private=654 MB; managed=105 MB; verticalOffset=0
+01:24:17.983 Stress cycle 4: 13500 ms, frames=240, avg gap=57.5 ms, max gap=358 ms, gaps>50ms=140; Rows=10000; realized row containers=69; PropertyChanged subscribers=28447; workingSet=773 MB; private=802 MB; managed=138 MB; verticalOffset=0
+01:24:30.974 Stress cycle 5: 12946 ms, frames=239, avg gap=54.3 ms, max gap=328 ms, gaps>50ms=137; Rows=10000; realized row containers=69; PropertyChanged subscribers=32581; workingSet=870 MB; private=926 MB; managed=176 MB; verticalOffset=0
+01:24:32.745 Stress end after forced GC: Rows=10000; realized row containers=69; PropertyChanged subscribers=32581; workingSet=844 MB; private=901 MB; managed=91 MB; verticalOffset=0
+
+=== Run 2 - ListView fallback
+01:24:40.258 Stress start: Rows=10000; realized row containers=61; PropertyChanged subscribers=61; workingSet=221 MB; private=151 MB; managed=9 MB; verticalOffset=0
+01:24:47.885 Stress cycle 1: 7524 ms, frames=652, avg gap=11.8 ms, max gap=230 ms, gaps>50ms=14; Rows=10000; realized row containers=62; PropertyChanged subscribers=16; workingSet=239 MB; private=166 MB; managed=10 MB; verticalOffset=0
+01:24:55.365 Stress cycle 2: 7429 ms, frames=634, avg gap=11.8 ms, max gap=92 ms, gaps>50ms=11; Rows=10000; realized row containers=62; PropertyChanged subscribers=16; workingSet=239 MB; private=167 MB; managed=9 MB; verticalOffset=0
+01:25:02.792 Stress cycle 3: 7396 ms, frames=583, avg gap=12.8 ms, max gap=69 ms, gaps>50ms=16; Rows=10000; realized row containers=62; PropertyChanged subscribers=20; workingSet=237 MB; private=164 MB; managed=11 MB; verticalOffset=0
+01:25:10.305 Stress cycle 4: 7453 ms, frames=630, avg gap=11.9 ms, max gap=63 ms, gaps>50ms=13; Rows=10000; realized row containers=62; PropertyChanged subscribers=14; workingSet=240 MB; private=167 MB; managed=11 MB; verticalOffset=0
+01:25:17.781 Stress cycle 5: 7412 ms, frames=648, avg gap=11.5 ms, max gap=68 ms, gaps>50ms=12; Rows=10000; realized row containers=62; PropertyChanged subscribers=20; workingSet=242 MB; private=168 MB; managed=12 MB; verticalOffset=0
+01:25:17.923 Stress end after forced GC: Rows=10000; realized row containers=62; PropertyChanged subscribers=20; workingSet=238 MB; private=165 MB; managed=10 MB; verticalOffset=0

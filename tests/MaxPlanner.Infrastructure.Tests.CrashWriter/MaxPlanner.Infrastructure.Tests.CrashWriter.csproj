@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Helper process for the kill-mid-write durability test; it is killed on purpose. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MaxPlanner.Infrastructure\MaxPlanner.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

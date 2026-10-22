@@ -1,0 +1,20 @@
+Grid selection gate spike (ADR 0004 / T-08) - evidence index, 2026-10-22
+Spike source: spikes/GridGate (GridGate.slnx). Candidate: WinUI.TableView 1.5.1. Fallback: --fallback (ListView + header Grid).
+Runs: local desktop, published Release exe (spikes/GridGate/publish). Windows Sandbox failed to start (E_ACCESSDENIED), so no clean-VM run.
+Input: until the user's "no mouse" instruction, send-input/click were used (log-session1). Afterwards only UIA patterns
+(invoke/select/expand/set-value/get-*) and post-message keys (log-session2, fallback logs).
+
+C1 publish/launch      01-published-launch.png, 18-published-runtime-modules.txt, 19-resolved-packages.txt
+C2 keyboard editing    log-session1-send-input.txt (F2, double-click 01:00:28, Enter, Esc), 03-*.png,
+                       04a/04b-*.png (Tab fail stays / Tab success moves), 05a/05b-*.png (Notes Enter newline, Save button),
+                       06-combobox-tab-commit.png, 06b-*.png, 07a-datepicker-open.png (Enter on unchanged moved down + began edit)
+C3 async commit        02-enter-commit-async.mp4 + .frames (frame t=1390 ms: editor open, "Saving Title..."), log-session2-editing.txt
+C4 draft binding       same logs: committed text changes only after "Saved"; Esc restores committed value
+C5 virtualization      09-memory-scroll-cycles.txt (UIA-driven), 11-inapp-scroll-stress-comparison.txt (in-app, no UIA; TableView vs fallback)
+C6 UI Automation       12-uia-patterns-tableview.txt, 12-uia-properties-tableview.txt, 12-uia-tree-tableview.txt,
+                       07b/07c/08a-*.png (header/body horizontal desync after UIA ScrollPattern or editor scroll)
+C7 column layout       13-layout-roundtrip.txt, 13a/13b/13c-*.png
+C8 themes              14-theme-light.png, 14-theme-dark.png, 15-high-contrast-static-evidence.txt
+C9 x:Bind in templates build is warning-free with WinUIAnalyzer; OneWay updates visible in 03/04b/05b screenshots
+Fallback C2/C3/C5/C6   10-fallback-launch.png, 16a/16b-*.png, log-fallback-editing.txt, 11-*.txt, 17-uia-patterns-fallback.txt
+UIA probe script       spikes/GridGate/tools/Get-UiaPatterns.ps1

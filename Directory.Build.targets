@@ -1,0 +1,8 @@
+<Project>
+  <!-- T-03: trimming, Native AOT, and single-file publishing stay disabled until an ADR proves them on the published artifact. -->
+  <Target Name="MaxPlannerGuardPortablePublishSettings" BeforeTargets="Build;Publish">
+    <Error Condition="'$(PublishTrimmed)' == 'true'" Text="PublishTrimmed must stay false (T-03, ADR 0003)." />
+    <Error Condition="'$(PublishAot)' == 'true'" Text="PublishAot must stay false (T-03, ADR 0003)." />
+    <Error Condition="'$(PublishSingleFile)' == 'true'" Text="PublishSingleFile must stay false (T-03, ADR 0003)." />
+  </Target>
+</Project>

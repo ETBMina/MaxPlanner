@@ -1,0 +1,1777 @@
+Spike 5 UIA run variant=D target=30 2026-10-22T10:38:41.2326849+03:00 hwnd=1772798
+> winapp ui get-property Projection_UpdatesAsRefreshToggle -p ToggleState --json   (exit 0)
+{
+  "elementId": "btn-projectionupdat-6c80",
+  "element": {
+    "type": "Button",
+    "name": "Treat inline updates as Refresh",
+    "automationId": "Projection_UpdatesAsRefreshToggle",
+    "className": "ToggleSwitch",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1135,
+    "y": 474,
+    "width": 255,
+    "height": 60,
+    "selector": "btn-projectionupdat-6c80",
+    "toggleState": "off",
+    "isInvokable": true
+  },
+  "properties": {
+    "ToggleState": "Off"
+  }
+}
+> winapp ui invoke Projection_UpdatesAsRefreshToggle --action toggle-on   (exit 0)
+Requested toggle-on on btn-projectionupdat-6c80; performed toggle via 
+TogglePattern
+> winapp ui get-property Projection_MovesAsRemoveInsertToggle -p ToggleState --json   (exit 0)
+{
+  "elementId": "btn-projectionmoves-6c83",
+  "element": {
+    "type": "Button",
+    "name": "Report sort moves as Remove and Insert",
+    "automationId": "Projection_MovesAsRemoveInsertToggle",
+    "className": "ToggleSwitch",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 1402,
+    "y": 474,
+    "width": 311,
+    "height": 60,
+    "selector": "btn-projectionmoves-6c83",
+    "toggleState": "off",
+    "isInvokable": true
+  },
+  "properties": {
+    "ToggleState": "Off"
+  }
+}
+> winapp ui invoke Projection_MovesAsRemoveInsertToggle --action toggle-on   (exit 0)
+Requested toggle-on on btn-projectionmoves-6c83; performed toggle via 
+TogglePattern
+> winapp ui get-value Projection_PipelineText --json   (exit 0)
+{
+  "elementId": "lbl-projectionpipel-6c70",
+  "text": "pipeline build #4: variant B (Update\u2192Refresh) moves=Move | disposed=False | items=10000 | initial bind 6.8 ms | change sets bound=1 | filterHasObservers=True comparerHasObservers=True | store Connect() subscriptions=1"
+}
+> winapp ui scroll-into-view Projection_Row_00000026000000000000000000000000   (exit 0)
+Scrolled itm-projectionrow00-7188 into view
+> winapp ui invoke Projection_Row_0000001e000000000000000000000000 --action select   (exit 0)
+Requested select on itm-projectionrow00-714f; performed select via 
+SelectionItemPattern
+> winapp ui invoke Projection_StartOtherRowsButton --action invoke   (exit 0)
+Requested invoke on btn-projectionstart-6c77; performed invoke via InvokePattern
+> winapp ui focus Projection_DraftBox_0000001e000000000000000000000000   (exit 0)
+Focused txt-projectiondraft-714e
+> winapp ui set-value Projection_DraftBox_0000001e000000000000000000000000 user draft 30   (exit 0)
+Set value on txt-projectiondraft-714e
+> winapp ui send-keys abc   (exit 0)
+⚠ Input via --via post-message may not reach WinUI 3 / UWP / XAML controls — 
+they are windowless and ignore posted WM_CHAR/WM_KEYDOWN, so keys can be 
+silently dropped even though this command reports success. Use --via send-input 
+if the input does not take effect.
+✅ Posted 1 key action(s) via post-message
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Edit",
+    "name": "Draft title for item 00030",
+    "automationId": "Projection_DraftBox_0000001e000000000000000000000000",
+    "className": "TextBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 948,
+    "y": 772,
+    "width": 800,
+    "height": 48,
+    "selector": "txt-projectiondraft-714e",
+    "value": "abcuser draft 30",
+    "isInvokable": false
+  }
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 10"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 826,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2621366448244538"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1053.3 ViewportHeight=479 ExtentHeight=406670 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=30 lastContainer#216 containerPrepares=4 inlineUpdates=1 title=\u0027Item 00030 \u00B7 STORE rev 10\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=3 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"before","time":"10:38:51.061","focusedId":"Projection_DraftBox_0000001e000000000000000000000000","focusedSlug":"txt-projectiondraft-714e","focusedValue":"abcuser draft 30","draft":"abcuser draft 30","title":"Item 00030 · STORE rev 10","rowSelected":"False","scrollPct":"0.2621366448244538","scrollText":"scroll: VerticalOffset=1053.3 ViewportHeight=479 ExtentHeight=406670 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=30 lastContainer#216 containerPrepares=4 inlineUpdates=1 title='Item 00030 · STORE rev 10' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=3 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 20"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 900,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.26226655501877244"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=31 lastContainer#216 containerPrepares=6 inlineUpdates=2 title=\u0027Item 00030 \u00B7 STORE rev 20\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=6 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-1","time":"10:38:53.822","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 20","rowSelected":"False","scrollPct":"0.26226655501877244","scrollText":"scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=31 lastContainer#216 containerPrepares=6 inlineUpdates=2 title='Item 00030 · STORE rev 20' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=6 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 30"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 948,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2621029268991073"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1050.7 ViewportHeight=479 ExtentHeight=406667 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=33 lastContainer#216 containerPrepares=9 inlineUpdates=4 title=\u0027Item 00030 \u00B7 STORE rev 40\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=8 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-2","time":"10:38:56.488","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 30","rowSelected":"False","scrollPct":"0.2621029268991073","scrollText":"scroll: VerticalOffset=1050.7 ViewportHeight=479 ExtentHeight=406667 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=33 lastContainer#216 containerPrepares=9 inlineUpdates=4 title='Item 00030 · STORE rev 40' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=8 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 50"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 1071,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2622666451735074"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=34 lastContainer#216 containerPrepares=12 inlineUpdates=5 title=\u0027Item 00030 \u00B7 STORE rev 50\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=11 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-3","time":"10:38:59.201","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 50","rowSelected":"False","scrollPct":"0.2622666451735074","scrollText":"scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=34 lastContainer#216 containerPrepares=12 inlineUpdates=5 title='Item 00030 · STORE rev 50' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=11 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 60"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 1131,
+    "width": 1679,
+    "height": 61,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.26079340216278857"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1064.7 ViewportHeight=479 ExtentHeight=406681 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=35 lastContainer#216 containerPrepares=14 inlineUpdates=6 title=\u0027Item 00030 \u00B7 STORE rev 60\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=14 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-4","time":"10:39:01.882","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 60","rowSelected":"False","scrollPct":"0.26079340216278857","scrollText":"scroll: VerticalOffset=1064.7 ViewportHeight=479 ExtentHeight=406681 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=35 lastContainer#216 containerPrepares=14 inlineUpdates=6 title='Item 00030 · STORE rev 60' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=14 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 70"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 1192,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2622666451735074"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=37 lastContainer#216 containerPrepares=17 inlineUpdates=8 title=\u0027Item 00030 \u00B7 STORE rev 80\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=16 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-5","time":"10:39:04.601","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 70","rowSelected":"False","scrollPct":"0.2622666451735074","scrollText":"scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=37 lastContainer#216 containerPrepares=17 inlineUpdates=8 title='Item 00030 · STORE rev 80' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=16 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 80"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2621029268991073"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1064.7 ViewportHeight=479 ExtentHeight=406681 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=38 lastContainer#216 containerPrepares=19 inlineUpdates=9 title=\u0027Item 00030 \u00B7 STORE rev 90\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=19 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-6","time":"10:39:07.305","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 80","rowSelected":"False","scrollPct":"0.2621029268991073","scrollText":"scroll: VerticalOffset=1064.7 ViewportHeight=479 ExtentHeight=406681 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=38 lastContainer#216 containerPrepares=19 inlineUpdates=9 title='Item 00030 · STORE rev 90' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=19 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 100"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2621367950825882"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1057.3 ViewportHeight=479 ExtentHeight=406674 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=39 lastContainer#216 containerPrepares=22 inlineUpdates=10 title=\u0027Item 00030 \u00B7 STORE rev 100\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=21 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-7","time":"10:39:09.966","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 100","rowSelected":"False","scrollPct":"0.2621367950825882","scrollText":"scroll: VerticalOffset=1057.3 ViewportHeight=479 ExtentHeight=406674 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=39 lastContainer#216 containerPrepares=22 inlineUpdates=10 title='Item 00030 · STORE rev 100' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=21 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 110"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2622666451735074"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=40 lastContainer#216 containerPrepares=24 inlineUpdates=11 title=\u0027Item 00030 \u00B7 STORE rev 110\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=24 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-8","time":"10:39:12.607","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 110","rowSelected":"False","scrollPct":"0.2622666451735074","scrollText":"scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=40 lastContainer#216 containerPrepares=24 inlineUpdates=11 title='Item 00030 · STORE rev 110' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=24 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 120"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2604660055786575"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1062.0 ViewportHeight=479 ExtentHeight=406679 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=42 lastContainer#216 containerPrepares=27 inlineUpdates=13 title=\u0027Item 00030 \u00B7 STORE rev 130\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=27 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-9","time":"10:39:15.284","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 120","rowSelected":"False","scrollPct":"0.2604660055786575","scrollText":"scroll: VerticalOffset=1062.0 ViewportHeight=479 ExtentHeight=406679 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=42 lastContainer#216 containerPrepares=27 inlineUpdates=13 title='Item 00030 · STORE rev 130' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=27 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 140"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.2622666451735074"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=43 lastContainer#216 containerPrepares=30 inlineUpdates=14 title=\u0027Item 00030 \u00B7 STORE rev 140\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=29 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"other-rows-10","time":"10:39:18.181","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 140","rowSelected":"False","scrollPct":"0.2622666451735074","scrollText":"scroll: VerticalOffset=1065.3 ViewportHeight=479 ExtentHeight=406682 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=43 lastContainer#216 containerPrepares=30 inlineUpdates=14 title='Item 00030 · STORE rev 140' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=29 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 150"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.25997491166662207"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1059.3 ViewportHeight=479 ExtentHeight=406676 firstVisible=25 lastVisible=37"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=44 lastContainer#216 containerPrepares=32 inlineUpdates=15 title=\u0027Item 00030 \u00B7 STORE rev 150\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=31 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"after-other-rows","time":"10:39:20.452","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 150","rowSelected":"False","scrollPct":"0.25997491166662207","scrollText":"scroll: VerticalOffset=1059.3 ViewportHeight=479 ExtentHeight=406676 firstVisible=25 lastVisible=37","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=44 lastContainer#216 containerPrepares=32 inlineUpdates=15 title='Item 00030 · STORE rev 150' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=31 reset=1 | touching tracked row=0 last=none"}
+> winapp ui screenshot -o D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\21-variantD-after-other-rows.png   (exit 0)
+Screenshot of "Platform Controls spike" (PID 10440) saved to D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\21-variantD-after-other-rows.png (1759x1281, 239KB)
+> winapp ui get-value Projection_LatencyText --json   (exit 0)
+{
+  "elementId": "lbl-projectionlaten-6c75",
+  "text": "store\u2192UI inline-update latency: n=1327 last=4.08 ms avg=2.16 ms p95=5.69 ms max=11.54 ms"
+}
+> winapp ui invoke Projection_StopButton --action invoke   (exit 0)
+Requested invoke on btn-projectionstopb-6c7b; performed invoke via InvokePattern
+> winapp ui get-value Shell_StoreStatusText --json   (exit 0)
+{
+  "elementId": "lbl-shellstorestatu-6c82",
+  "text": "Store: 10000 records, cache load 6.0 ms | active Connect() subscriptions: 1 | mutator: mode=Stopped ticks=166 recordsUpdated=1359 | changes after dispose: 0 | dropped UI work: 0"
+}
+> winapp ui invoke Projection_StartMoveFocusedButton --action invoke   (exit 0)
+Requested invoke on btn-projectionstart-6c79; performed invoke via InvokePattern
+> winapp ui focus Projection_DraftBox_0000001e000000000000000000000000   (exit 0)
+Focused txt-projectiondraft-714e
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": true,
+  "element": {
+    "type": "Edit",
+    "name": "Draft title for item 00030",
+    "automationId": "Projection_DraftBox_0000001e000000000000000000000000",
+    "className": "TextBox",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 948,
+    "y": 1230,
+    "width": 800,
+    "height": 48,
+    "selector": "txt-projectiondraft-714e",
+    "value": "abcuser draft 30",
+    "isInvokable": false
+  }
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 160"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 1224,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.3472814783782537"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1410.7 ViewportHeight=479 ExtentHeight=406682 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=45 lastContainer#216 containerPrepares=34 inlineUpdates=16 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=33 reset=1 | touching tracked row=0 last=none"
+}
+SNAP {"label":"before-move-focused","time":"10:39:25.766","focusedId":"Projection_DraftBox_0000001e000000000000000000000000","focusedSlug":"txt-projectiondraft-714e","focusedValue":"abcuser draft 30","draft":"abcuser draft 30","title":"Item 00030 · STORE rev 160","rowSelected":"False","scrollPct":"0.3472814783782537","scrollText":"scroll: VerticalOffset=1410.7 ViewportHeight=479 ExtentHeight=406682 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=45 lastContainer#216 containerPrepares=34 inlineUpdates=16 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=33 reset=1 | touching tracked row=0 last=none"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 160"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": true,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.3472814783782537"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1410.7 ViewportHeight=479 ExtentHeight=406682 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=48 lastContainer#216 containerPrepares=37 inlineUpdates=17 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=38 reset=1 | touching tracked row=1 last=Move old@47 new@45"
+}
+SNAP {"label":"move-focused-1","time":"10:39:28.566","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 160","rowSelected":"False","scrollPct":"0.3472814783782537","scrollText":"scroll: VerticalOffset=1410.7 ViewportHeight=479 ExtentHeight=406682 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=48 lastContainer#216 containerPrepares=37 inlineUpdates=17 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=38 reset=1 | touching tracked row=1 last=Move old@47 new@45"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "txt-projectiondraft-714e",
+  "text": "abcuser draft 30"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectiontitle-7149",
+  "text": "Item 00030 \u00B7 STORE rev 160"
+}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 0)
+{
+  "elementId": "itm-projectionrow00-714f",
+  "element": {
+    "type": "ListItem",
+    "name": "Item 00030",
+    "automationId": "Projection_Row_0000001e000000000000000000000000",
+    "className": "ListViewItem",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 87,
+    "y": 1224,
+    "width": 1679,
+    "height": 60,
+    "selector": "itm-projectionrow00-714f",
+    "isInvokable": true
+  },
+  "properties": {
+    "IsSelected": "False"
+  }
+}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.34564214139001315"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1401.3 ViewportHeight=479 ExtentHeight=406293 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=48 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=50 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-2","time":"10:39:31.272","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"abcuser draft 30","title":"Item 00030 · STORE rev 160","rowSelected":"False","scrollPct":"0.34564214139001315","scrollText":"scroll: VerticalOffset=1401.3 ViewportHeight=479 ExtentHeight=406293 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=48 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=50 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=60 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.34466455323152373"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1400.0 ViewportHeight=479 ExtentHeight=406671 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=75 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=77 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-3","time":"10:39:34.082","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=60 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.34466455323152373","scrollText":"scroll: VerticalOffset=1400.0 ViewportHeight=479 ExtentHeight=406671 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=75 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=77 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=85 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.34515969032766514"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1404.7 ViewportHeight=479 ExtentHeight=406487 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=106 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=109 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-4","time":"10:39:37.988","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=85 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.34515969032766514","scrollText":"scroll: VerticalOffset=1404.7 ViewportHeight=479 ExtentHeight=406487 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=106 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=109 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=126 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.3436832418251982"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1397.3 ViewportHeight=479 ExtentHeight=406669 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=147 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=152 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-5","time":"10:39:42.109","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=126 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.3436832418251982","scrollText":"scroll: VerticalOffset=1397.3 ViewportHeight=479 ExtentHeight=406669 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=147 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=152 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=165 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.3446663462382431"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1393.4 ViewportHeight=479 ExtentHeight=406285 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=186 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=187 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-6","time":"10:39:47.126","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=165 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.3446663462382431","scrollText":"scroll: VerticalOffset=1393.4 ViewportHeight=479 ExtentHeight=406285 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=186 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=187 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=200 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.34368046717763984"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1394.1 ViewportHeight=479 ExtentHeight=406286 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=220 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=224 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-7","time":"10:39:51.926","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=200 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.34368046717763984","scrollText":"scroll: VerticalOffset=1394.1 ViewportHeight=479 ExtentHeight=406286 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=220 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=224 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=236 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.34491010417973084"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1392.7 ViewportHeight=479 ExtentHeight=405716 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=257 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=261 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-8","time":"10:39:56.527","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=236 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.34491010417973084","scrollText":"scroll: VerticalOffset=1392.7 ViewportHeight=479 ExtentHeight=405716 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=257 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=261 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=269 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.3449916704330957"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1395.3 ViewportHeight=479 ExtentHeight=406667 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=283 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=285 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"move-focused-9","time":"10:40:00.896","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=269 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.3449916704330957","scrollText":"scroll: VerticalOffset=1395.3 ViewportHeight=479 ExtentHeight=406667 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=283 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=285 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui get-focused --json   (exit 0)
+{
+  "hasFocus": false
+}
+> winapp ui get-value Projection_DraftBox_0000001e000000000000000000000000 --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=299 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_TitleText_0000001e000000000000000000000000 --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_TitleText_0000001e000000000000000000000000\u0027","selector":"Projection_TitleText_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_Row_0000001e000000000000000000000000 -p IsSelected --json   (exit 1)
+{"error":{"code":"element_not_found","message":"No element found matching \u0027Projection_Row_0000001e000000000000000000000000\u0027","selector":"Projection_Row_0000001e000000000000000000000000"}}
+> winapp ui get-property Projection_List -p ScrollVerticalPercent --json   (exit 0)
+{
+  "elementId": "lst-projectionlist-6c86",
+  "element": {
+    "type": "List",
+    "name": "Projected items",
+    "automationId": "Projection_List",
+    "className": "ListView",
+    "isEnabled": true,
+    "isOffscreen": false,
+    "x": 85,
+    "y": 570,
+    "width": 1683,
+    "height": 723,
+    "selector": "lst-projectionlist-6c86",
+    "scrollDir": "v",
+    "isInvokable": false
+  },
+  "properties": {
+    "ScrollVerticalPercent": "0.3449936465835039"
+  }
+}
+> winapp ui get-value Projection_ScrollText --json   (exit 0)
+{
+  "elementId": "lbl-projectionscrol-6c73",
+  "text": "scroll: VerticalOffset=1392.7 ViewportHeight=479 ExtentHeight=406095 firstVisible=34 lastVisible=46"
+}
+> winapp ui get-value Projection_FocusText --json   (exit 0)
+{
+  "elementId": "lbl-projectionfocus-6c71",
+  "text": "focused: TextBox \u0027Projection_DraftBox_0000001e000000000000000000000000\u0027 element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=318 inlineUpdates=19 title=\u0027Item 00030 \u00B7 STORE rev 160\u0027 draft=\u0027abcuser draft 30\u0027"
+}
+> winapp ui get-value Projection_SelectionText --json   (exit 0)
+{
+  "elementId": "lbl-projectionselec-6c72",
+  "text": "selected: none (index=-1)"
+}
+> winapp ui get-value Projection_ChangesText --json   (exit 0)
+{
+  "elementId": "lbl-projectionchang-6c74",
+  "text": "collection changes: add=0 remove=0 replace=0 move=322 reset=1 | touching tracked row=2 last=Move old@50 new@9999"
+}
+SNAP {"label":"after-move-focused","time":"10:40:03.884","focusedId":null,"focusedSlug":null,"focusedValue":null,"draft":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=299 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","title":"<not in UIA tree>","rowSelected":"<not in UIA tree>","scrollPct":"0.3449936465835039","scrollText":"scroll: VerticalOffset=1392.7 ViewportHeight=479 ExtentHeight=406095 firstVisible=34 lastVisible=46","focusText":"focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=318 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'","selection":"selected: none (index=-1)","changes":"collection changes: add=0 remove=0 replace=0 move=322 reset=1 | touching tracked row=2 last=Move old@50 new@9999"}
+> winapp ui screenshot -o D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\22-variantD-after-move-focused.png   (exit 0)
+Screenshot of "Platform Controls spike" (PID 10440) saved to D:\Engineering\Projects\C#\MaxPlanner\docs\evidence\phase-0\platform-controls\22-variantD-after-move-focused.png (1759x1281, 244KB)
+> winapp ui invoke Projection_StopButton --action invoke   (exit 0)
+Requested invoke on btn-projectionstopb-6c7b; performed invoke via InvokePattern
+
+==== SUMMARY
+pipeline: pipeline build #4: variant B (Update→Refresh) moves=Move | disposed=False | items=10000 | initial bind 6.8 ms | change sets bound=1 | filterHasObservers=True comparerHasObservers=True | store Connect() subscriptions=1
+focus setup: other-rows=uia-focus move-focused=uia-focus
+store: Store: 10000 records, cache load 6.0 ms | active Connect() subscriptions: 1 | mutator: mode=Stopped ticks=166 recordsUpdated=1359 | changes after dispose: 0 | dropped UI work: 0
+latency: store→UI inline-update latency: n=1327 last=4.08 ms avg=2.16 ms p95=5.69 ms max=11.54 ms
+OTHER-ROWS: focus ids seen: 
+Projection_DraftBox_0000001e000000000000000000000000
+OTHER-ROWS: focus slugs seen: 
+txt-projectiondraft-714e
+OTHER-ROWS: drafts seen: 
+abcuser draft 30
+OTHER-ROWS: row IsSelected seen: 
+False
+OTHER-ROWS: ScrollVerticalPercent seen: 
+0.2621366448244538, 0.26226655501877244, 0.2621029268991073, 0.2622666451735074, 0.26079340216278857, 0.2621367950825882, 0.2604660055786575, 0.25997491166662207
+OTHER-ROWS: scroll text seen: 
+scroll: VerticalOffset=1053.3 ExtentHeight=406670 firstVisible=25 lastVisible=37 || scroll: VerticalOffset=1065.3 ExtentHeight=406682 firstVisible=25 lastVisible=37 || scroll: VerticalOffset=1050.7 ExtentHeight=406667 firstVisible=25 lastVisible=37 || scroll: VerticalOffset=1064.7 ExtentHeight=406681 firstVisible=25 lastVisible=37 || scroll: VerticalOffset=1057.3 ExtentHeight=406674 firstVisible=25 lastVisible=37 || scroll: VerticalOffset=1062.0 ExtentHeight=406679 firstVisible=25 lastVisible=37 || scroll: VerticalOffset=1059.3 ExtentHeight=406676 firstVisible=25 lastVisible=37
+OTHER-ROWS: committed titles seen: 
+Item 00030 · STORE rev 10 | Item 00030 · STORE rev 20 | Item 00030 · STORE rev 30 | Item 00030 · STORE rev 50 | Item 00030 · STORE rev 60 | Item 00030 · STORE rev 70 | Item 00030 · STORE rev 80 | Item 00030 · STORE rev 100 | Item 00030 · STORE rev 110 | Item 00030 · STORE rev 120 | Item 00030 · STORE rev 140 | Item 00030 · STORE rev 150
+OTHER-ROWS: before focusText: focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=30 lastContainer#216 containerPrepares=4 inlineUpdates=1 title='Item 00030 · STORE rev 10' draft='abcuser draft 30'
+OTHER-ROWS: after  focusText: focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=44 lastContainer#216 containerPrepares=32 inlineUpdates=15 title='Item 00030 · STORE rev 150' draft='abcuser draft 30'
+OTHER-ROWS: after  changes:   collection changes: add=0 remove=0 replace=0 move=31 reset=1 | touching tracked row=0 last=none
+MOVE-FOCUSED: before focusText: focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=45 lastContainer#216 containerPrepares=34 inlineUpdates=16 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'
+MOVE-FOCUSED: move-focused-1 focused= draft='abcuser draft 30' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=48 lastContainer#216 containerPrepares=37 inlineUpdates=17 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1410.7 ViewportHeight=479 ExtentHeight=406682 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-2 focused= draft='abcuser draft 30' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=48 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1401.3 ViewportHeight=479 ExtentHeight=406293 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-3 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=60 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=75 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1400.0 ViewportHeight=479 ExtentHeight=406671 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-4 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=85 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=106 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1404.7 ViewportHeight=479 ExtentHeight=406487 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-5 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=126 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=147 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1397.3 ViewportHeight=479 ExtentHeight=406669 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-6 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=165 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=186 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1393.4 ViewportHeight=479 ExtentHeight=406285 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-7 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=200 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=220 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1394.1 ViewportHeight=479 ExtentHeight=406286 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-8 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=236 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=257 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1392.7 ViewportHeight=479 ExtentHeight=405716 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: move-focused-9 focused= draft='focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=269 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30'' | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=283 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | scroll: VerticalOffset=1395.3 ViewportHeight=479 ExtentHeight=406667 firstVisible=34 lastVisible=46
+MOVE-FOCUSED: after focused= | focused: TextBox 'Projection_DraftBox_0000001e000000000000000000000000' element#250 container#216 | tracked item 00030 vm#30030 index=9999 lastContainer#216 containerPrepares=318 inlineUpdates=19 title='Item 00030 · STORE rev 160' draft='abcuser draft 30' | collection changes: add=0 remove=0 replace=0 move=322 reset=1 | touching tracked row=2 last=Move old@50 new@9999

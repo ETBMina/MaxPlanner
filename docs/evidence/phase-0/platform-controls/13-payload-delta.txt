@@ -1,0 +1,19 @@
+Spike 4.5 payload: dotnet publish -c Release -r win-x64 -p:Platform=x64 (self-contained, WindowsAppSDKSelfContained, no trim/AOT/single-file).
+With Toolkit:    spikes/PlatformControls/publish           files=459 bytes=181,336,954
+Without Toolkit: spikes/PlatformControls/publish-baseline  files=454 bytes=180,845,403  (-p:PayloadBaseline=true: same app minus the Toolkit package and its Settings page)
+Delta: files=+5 bytes=+491,551 (+480 KiB, +0.272 %)
+
+Files only in the Toolkit build:
+  CommunityToolkit.Common.dll                                                34,952
+  CommunityToolkit.WinUI.Controls.SettingsControls.dll                      106,320
+  CommunityToolkit.WinUI.Extensions.dll                                     129,360
+  CommunityToolkit.WinUI.Helpers.dll                                         76,624
+  CommunityToolkit.WinUI.Triggers.dll                                        31,568
+
+Files only in the baseline: 0
+
+Files present in both with different size:
+  PlatformControls.deps.json                         with=    41,565 without=    37,886 delta=    3,679
+  PlatformControls.dll                               with=   269,312 without=   240,128 delta=   29,184
+  PlatformControls.pdb                               with=    93,148 without=    54,236 delta=   38,912
+  PlatformControls.pri                               with= 2,230,760 without= 2,189,808 delta=   40,952

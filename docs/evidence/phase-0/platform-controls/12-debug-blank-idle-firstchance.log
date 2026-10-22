@@ -1,0 +1,16 @@
+﻿First-chance exception: Breakpoint (0x80000003) at 0x7FFBC3E826C9
+First-chance exception: Exception (0x04242420) at 0x7FFBC128408A
+[Debug] onecoreuap\windows\frameworkudk\mrtcore.cpp(388)\Microsoft.Internal.FrameworkUdk.System.dll!00007FFB7109E67F: (caller: 00007FFAD77776D2) ReturnHr(1) tid(84a0) 80073D54 The process has no package identity.
+First-chance exception: Exception (0x40080201) at 0x7FFBC128408A
+[Debug] onecore\internal\sdk\inc\wil/resource.h(967)\dwmcorei.dll!00007FFA82B01436: (caller: 00007FFA82B09E25) ReturnNt(1) tid(7ecc) C0000022 
+[Debug] onecoreuap\windows\frameworkudk\warppal.cpp(783)\Microsoft.Internal.WarpPal.dll!00007FFBBB76EFBC: (caller: 00007FFB710E917F) ReturnHr(1) tid(7ecc) 80004002 No such interface supported
+[Debug] onecoreuap\windows\frameworkudk\mrtcore.cpp(388)\Microsoft.Internal.FrameworkUdk.System.dll!00007FFB7109E67F: (caller: 00007FFAD77776D2) ReturnHr(2) tid(84a0) 80073D54 The process has no package identity.
+[Debug] onecoreuap\windows\frameworkudk\warppal.cpp(783)\Microsoft.Internal.WarpPal.dll!00007FFBBB76EFBC: (caller: 00007FFB710E917F) ReturnHr(2) tid(84a0) 80004002 No such interface supported
+[Debug] onecoreuap\windows\frameworkudk\warppal.cpp(783)\Microsoft.Internal.WarpPal.dll!00007FFBBB76EFBC: (caller: 00007FFB710E917F) ReturnHr(3) tid(84a0) 80004002 No such interface supported
+[Debug] onecoreuap\windows\frameworkudk\warppal.cpp(783)\Microsoft.Internal.WarpPal.dll!00007FFBBB76EFBC: (caller: 00007FFBBCA28E2A) ReturnHr(4) tid(7ecc) 80004002 No such interface supported
+First-chance exception: Exception (0x8001010D) at 0x7FFBC128408A
+First-chance exception: C++ Exception (0xE06D7363) at 0x7FFBC128408A
+[CrashDump] Saved first-chance context for thread 10300 (0xE06D7363) at 0x7FFBC128408A
+First-chance exception: C++ Exception (0xE06D7363) at 0x7FFBC128408A
+First-chance exception: C++ Exception (0xE06D7363) at 0x7FFBC128408A
+First-chance exception: C++ Exception (0xE06D7363) at 0x7FFBC128408A

@@ -1,0 +1,24 @@
+🔎 Resolving project...
+🔎 PlatformControls.csproj  ·  Release | x64  ·  PlatformControls.slnx
+🔧 Building PlatformControls.csproj (Release | x64)...
+   dotnet build 
+D:\Engineering\Projects\C#\MaxPlanner\spikes\PlatformControls\PlatformControls.c
+sproj -c Release -r win-x64 -v minimal -tl:off -p:Platform=x64 
+-p:SolutionDir=D:\Engineering\Projects\C#\MaxPlanner\spikes\PlatformControls\ 
+-p:SolutionPath=D:\Engineering\Projects\C#\MaxPlanner\spikes\PlatformControls\Pl
+atformControls.slnx -p:SolutionName=PlatformControls 
+-p:SolutionFileName=PlatformControls.slnx -p:SolutionExt=.slnx
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  PlatformControls -> D:\Engineering\Projects\C#\MaxPlanner\spikes\PlatformControls\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64\PlatformControls.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:09.41
+✅ Built PlatformControls in 9.7s
+✅ Launched PlatformControls (PID: 22632)
+Full debug log: 
+C:\Users\Guardiola\AppData\Local\Temp\winapp-dumps\debug-22632-20261022-101941.l
+og

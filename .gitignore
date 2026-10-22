@@ -1,0 +1,31 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+TestResults/
+test-results.json
+ui-test-artifacts/
+BenchmarkDotNet.Artifacts/
+# Alternate output folders used by spike comparison builds (e.g. bin-baseline, publish-baseline).
+bin-*/
+obj-*/
+publish-*/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.rsuser
+
+# Portable app data is created at runtime beside the EXE; never commit a dataset (T-03.8).
+**/data/
+*.db
+*.db-wal
+*.db-shm
+
+# WinApp CLI local state
+.winapp/
+AppX/

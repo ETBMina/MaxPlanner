@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Spike 9 (ADR 0016): ViewModels are tested in-process without starting XAML. The project uses
+       the WinUI props only so it can reference the WinUI Presentation library. Self-contained
+       Windows App SDK keeps the test run independent of an installed Windows App Runtime. -->
+  <Import Project="..\..\eng\WinUI.Common.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MaxPlanner.Presentation\MaxPlanner.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <Using Include="Xunit" />
+    <PackageReference Include="AwesomeAssertions" />
+  </ItemGroup>
+</Project>

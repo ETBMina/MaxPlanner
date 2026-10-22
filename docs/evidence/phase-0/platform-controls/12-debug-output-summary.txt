@@ -1,0 +1,24 @@
+Spike 4.4: runs under `winapp run spikes/PlatformControls/PlatformControls.csproj -c Release --arch x64 -p Platform=x64 --debug-output`
+(local, unpackaged, Release build with variant B package graph). Driver: tools/Run-DebugBaseline.ps1 (UIA patterns only; closed via the
+title-bar Close button's InvokePattern). Raw logs: 12-debug-*-run.txt (CLI output) and 12-debug-*-firstchance.log (debugger log copy).
+
+First-chance exception / OutputDebugString counts per run:
+  blank-idle          (start on Blank page, no Toolkit control created):  4 x 0xE06D7363, 1 x 0x40080201, 1 x 0x8001010D, 1 x 0x80000003, 1 x 0x04242420, 7 debug strings
+  settings-idle       (start on Toolkit Settings page, no interaction):    4 x 0xE06D7363, 1 x 0x40080201, 1 x 0x8001010D, 1 x 0x80000003, 1 x 0x04242420, 9 debug strings
+  settings-exercised  (expand expander, toggle, theme Light/Dark/System via ComboBox popup, row MenuFlyout open/Esc, navigate away and back):
+                      4 x 0xE06D7363, 13 x 0x40080202, 2 x 0x40080201, 1 x 0x8001010D, 1 x 0x80000003, 1 x 0x04242420, 15 debug strings
+  projection-idle     (start on spike 5 page; no Toolkit):                 252 x 0xE06D7363 (see spike 5 notes), otherwise as blank
+  full session        (12-debug-output-run.txt: Settings exercise + Projection + back): no crash, clean exit
+
+Interpretation:
+  - Settings-idle equals the no-Toolkit Blank baseline: the Toolkit page adds no first-chance exceptions at load.
+  - 0x40080201/0x40080202 are WinRT RoOriginateError notifications (non-fatal) raised by platform XAML during popup/theme/flyout
+    operations; 0x8001010D, E_NOINTERFACE probes, RPC_E_WRONG_THREAD and "process has no package identity" (MRT, unpackaged) appear
+    in the Blank baseline too or are platform-internal.
+  - No managed exception (no 0xE0434352), no XamlParseException, no type-resolution or assembly-load failure from the Toolkit's
+    WinAppSDK 1.6 compile against the 2.3.9 runtime.
+
+The one real XAML failure seen in this spike was a markup issue, found on the first published launch before this run:
+  XamlParseException "Cannot find a Resource with the Name/Key DefaultSettingsExpanderItemStyle" (ItemsFooter style taken from the
+  find-ui sample). Fix: merge ms-appx:///CommunityToolkit.WinUI.Controls.SettingsControls/SettingsExpander/SettingsExpander.xaml into
+  the page resources (it is not visible to page StaticResource lookup otherwise).

@@ -1,0 +1,24 @@
+Published exe: D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\GridGate.exe (PID 38300), responding=True
+Publish folder: 453 files, 171.3 MB (excluding spike logs)
+
+Runtime modules loaded (path proves origin):
+clrjit.dll                                                   D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\clrjit.dll
+coreclr.dll                                                  D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\coreclr.dll
+hostfxr.dll                                                  D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\hostfxr.dll
+hostpolicy.dll                                               D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\hostpolicy.dll
+Microsoft.UI.Composition.OSSupport.dll                       D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.Composition.OSSupport.dll
+Microsoft.UI.dll                                             D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.dll
+Microsoft.UI.Input.dll                                       D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.Input.dll
+Microsoft.UI.Windowing.Core.dll                              D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.Windowing.Core.dll
+Microsoft.UI.Windowing.dll                                   D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.Windowing.dll
+Microsoft.UI.Xaml.Controls.dll                               D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.Xaml.Controls.dll
+Microsoft.UI.Xaml.dll                                        D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.UI.Xaml.dll
+Microsoft.Windows.ApplicationModel.Resources.dll             D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.Windows.ApplicationModel.Resources.dll
+Microsoft.Windows.ApplicationModel.Resources.Projection.dll  D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.Windows.ApplicationModel.Resources.Projection.dll
+Microsoft.Windows.SDK.NET.dll                                D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.Windows.SDK.NET.dll
+Microsoft.WindowsAppRuntime.dll                              D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\Microsoft.WindowsAppRuntime.dll
+System.Private.CoreLib.dll                                   D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\System.Private.CoreLib.dll
+WinUI.TableView.dll                                          D:\Engineering\Projects\C#\MaxPlanner\spikes\GridGate\publish\WinUI.TableView.dll
+
+Modules loaded from outside the publish folder and C:\WINDOWS:
+(none)

@@ -1,0 +1,18 @@
+Spike 4 layout finding (a markup landmine for design.md 4.6 "cards max width 1000"; not caused by the 1.6/2.x mismatch).
+
+Markup before fix:
+  <ScrollViewer><StackPanel MaxWidth="1000" Margin="36,16,36,36" HorizontalAlignment="Stretch"> ...SettingsCards... </StackPanel></ScrollViewer>
+
+Published exe, window 1185 DIP wide (1482 px at 125%). UIA bounds (winapp ui inspect -d 9):
+  Window client pane           1482 px wide
+  Shell_Nav (NavigationView)   1670 px wide -> wider than the window; content clipped on the right
+  Settings_ThemeCard           1230 px wide, Settings_ThemeCombo starts 1017 px into the card (cut off); other cards 1041 px
+  Settings_ShowCompletedToggle and Settings_OpenDataFolderButton reported [offscreen]
+Blank and Projection pages inside the same NavigationView: Shell_Nav 1482 px (fits), so the Settings page drove the excess width.
+
+Bisection:
+  1. ScrollViewer HorizontalScrollBarVisibility/HorizontalScrollMode = Disabled: still overflows (2001 px nav in a 1778 px window at 150%).
+  2. MaxWidth removed: fits.
+  3. Toolkit sample shape ScrollViewer > Grid > StackPanel MaxWidth=1000: fits (final markup in spikes/PlatformControls/Settings/SettingsSpikePage.xaml).
+
+Screenshots: before fix 05a-layout-maxwidth-overflow-before-fix.png; after fix 04-published-settings-launch.png and 05b-*.png.

@@ -1,0 +1,25 @@
+Source: spikes/GridGate/obj/project.assets.json (restore with central package management + transitive pinning)
+Target net10.0-windows10.0.26100.0
+  CommunityToolkit.Mvvm/8.4.2
+  Microsoft.Web.WebView2/1.0.3719.77
+  Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100
+  Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer/0.7.1
+  Microsoft.Windows.SDK.BuildTools/10.0.28000.2705
+  Microsoft.WindowsAppSDK.Base/2.0.4                                     deps={'Microsoft.Windows.SDK.BuildTools': '10.0.26100.4654', 'Microsoft.Windows.SDK.BuildTools.MSIX': '1.7.251221100'}
+  Microsoft.WindowsAppSDK.Foundation/2.3.12                              deps={'Microsoft.WindowsAppSDK.Base': '2.0.4', 'Microsoft.WindowsAppSDK.InteractiveExperiences': '2.1.8'}
+  Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.9                   deps={'Microsoft.WindowsAppSDK.Base': '2.0.4'}
+  Microsoft.WindowsAppSDK.WinUI/2.3.9                                    deps={'Microsoft.Web.WebView2': '1.0.3719.77', 'Microsoft.WindowsAppSDK.Base': '2.0.4', 'Microsoft.WindowsAppSDK.Foundation': '2.3.12', 'Microsoft.WindowsAppSDK.InteractiveExperiences': '2.1.8'}
+  WinUI.TableView/1.5.1                                                  deps={'Microsoft.WindowsAppSDK.WinUI': '1.8.260528001'}
+Target net10.0-windows10.0.26100.0/win-x64
+  CommunityToolkit.Mvvm/8.4.2
+  Microsoft.Web.WebView2/1.0.3719.77
+  Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100
+  Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer/0.7.1
+  Microsoft.Windows.SDK.BuildTools/10.0.28000.2705
+  Microsoft.WindowsAppSDK.Base/2.0.4                                     deps={'Microsoft.Windows.SDK.BuildTools': '10.0.26100.4654', 'Microsoft.Windows.SDK.BuildTools.MSIX': '1.7.251221100'}
+  Microsoft.WindowsAppSDK.Foundation/2.3.12                              deps={'Microsoft.WindowsAppSDK.Base': '2.0.4', 'Microsoft.WindowsAppSDK.InteractiveExperiences': '2.1.8'}
+  Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.9                   deps={'Microsoft.WindowsAppSDK.Base': '2.0.4'}
+  Microsoft.WindowsAppSDK.WinUI/2.3.9                                    deps={'Microsoft.Web.WebView2': '1.0.3719.77', 'Microsoft.WindowsAppSDK.Base': '2.0.4', 'Microsoft.WindowsAppSDK.Foundation': '2.3.12', 'Microsoft.WindowsAppSDK.InteractiveExperiences': '2.1.8'}
+  WinUI.TableView/1.5.1                                                  deps={'Microsoft.WindowsAppSDK.WinUI': '1.8.260528001'}
+
+Note: WinUI.TableView 1.5.1 declares Microsoft.WindowsAppSDK.WinUI >= 1.8.260528001; NuGet resolved the centrally pinned 2.3.9 (higher version satisfies the >= range). No NU1605/NU1608 warnings were raised.

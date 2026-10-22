@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PlatformControls.Settings.SettingsSpikePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:local="using:PlatformControls.Settings">
+    <Page.Resources>
+        <ResourceDictionary>
+            <!-- DefaultSettingsExpanderItemStyle (used by ItemsFooter) lives in the Toolkit's SettingsExpander dictionary;
+                 the control's Generic.xaml style does not make it visible to page-level StaticResource lookups. -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///CommunityToolkit.WinUI.Controls.SettingsControls/SettingsExpander/SettingsExpander.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="SettingsSectionHeaderTextBlockStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+                <Setter Property="Margin" Value="1,28,0,6" />
+            </Style>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <!-- design.md 4.6: cards max width 1000. The cap sits on a StackPanel inside a Grid (Toolkit sample shape);
+             a MaxWidth StackPanel placed directly in the ScrollViewer overflowed the window (spike 4 evidence 05). -->
+        <Grid>
+        <StackPanel MaxWidth="1000" Margin="36,16,36,36" HorizontalAlignment="Stretch" Spacing="4">
+            <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="Settings" />
+            <TextBlock x:Name="ActualThemeText" AutomationProperties.AutomationId="Settings_ActualThemeText" Style="{StaticResource CaptionTextBlockStyle}" />
+
+            <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" Text="Appearance" />
+            <controls:SettingsCard
+                AutomationProperties.AutomationId="Settings_ThemeCard"
+                Description="Applies immediately."
+                Header="App theme">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE790;" />
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="ThemeCombo" AutomationProperties.AutomationId="Settings_ThemeCombo" SelectedIndex="0" SelectionChanged="OnThemeSelectionChanged">
+                    <ComboBoxItem Content="Use system setting" />
+                    <ComboBoxItem Content="Light" />
+                    <ComboBoxItem Content="Dark" />
+                </ComboBox>
+            </controls:SettingsCard>
+
+            <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" Text="Workflow" />
+            <controls:SettingsExpander
+                x:Name="TaskStatusesExpander"
+                AutomationProperties.AutomationId="Settings_TaskStatusesExpander"
+                Description="8 statuses. Names must be unique; at least one status is required."
+                Header="Task statuses"
+                ItemsSource="{x:Bind Statuses, Mode=OneTime}">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE9D5;" />
+                </controls:SettingsExpander.HeaderIcon>
+                <controls:SettingsExpander.ItemTemplate>
+                    <DataTemplate x:DataType="local:StatusRow">
+                        <controls:SettingsCard AutomationProperties.AutomationId="{x:Bind RowAutomationId, Mode=OneTime}" Description="{x:Bind CountText, Mode=OneTime}" Header="{x:Bind Name, Mode=OneTime}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ItemsRepeater VerticalAlignment="Center" ItemsSource="{x:Bind Flags, Mode=OneTime}">
+                                    <ItemsRepeater.Layout>
+                                        <StackLayout Orientation="Horizontal" Spacing="4" />
+                                    </ItemsRepeater.Layout>
+                                    <ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <Border
+                                                Padding="8,2"
+                                                Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="{ThemeResource ControlCornerRadius}">
+                                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Mode=OneTime}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsRepeater.ItemTemplate>
+                                </ItemsRepeater>
+                                <Button AutomationProperties.AutomationId="{x:Bind MenuAutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind MenuName, Mode=OneTime}" Style="{StaticResource SubtleButtonStyle}" ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneTime}">
+                                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Text="Rename" />
+                                            <MenuFlyoutItem Text="Set as default" />
+                                            <ToggleMenuFlyoutItem Text="Completed" />
+                                            <MenuFlyoutSeparator />
+                                            <MenuFlyoutItem Text="Move up" />
+                                            <MenuFlyoutItem Text="Move down" />
+                                            <MenuFlyoutItem Text="Remove…" />
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </StackPanel>
+                        </controls:SettingsCard>
+                    </DataTemplate>
+                </controls:SettingsExpander.ItemTemplate>
+                <controls:SettingsExpander.ItemsFooter>
+                    <controls:SettingsCard Header="Add status" Style="{StaticResource DefaultSettingsExpanderItemStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox MinWidth="200" AutomationProperties.AutomationId="Settings_TaskStatusesAddBox" AutomationProperties.Name="New status name" PlaceholderText="Status name" />
+                            <Button AutomationProperties.AutomationId="Settings_TaskStatusesAddButton" Content="Add" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.ItemsFooter>
+            </controls:SettingsExpander>
+
+            <controls:SettingsCard
+                AutomationProperties.AutomationId="Settings_ShowCompletedCard"
+                Description="Show completed items in checklists by default."
+                Header="Show completed items">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE73A;" />
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="ShowCompletedToggle" AutomationProperties.AutomationId="Settings_ShowCompletedToggle" />
+            </controls:SettingsCard>
+
+            <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" Text="Data" />
+            <controls:SettingsCard AutomationProperties.AutomationId="Settings_DataLocationCard" Header="Data location">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8B7;" />
+                </controls:SettingsCard.HeaderIcon>
+                <controls:SettingsCard.Description>
+                    <TextBlock IsTextSelectionEnabled="True" Text="D:\Apps\MaxPlanner\data" />
+                </controls:SettingsCard.Description>
+                <Button AutomationProperties.AutomationId="Settings_OpenDataFolderButton" Click="OnOpenDataFolderClick" Content="Open folder" />
+            </controls:SettingsCard>
+            <controls:SettingsCard
+                AutomationProperties.AutomationId="Settings_DataPageCard"
+                Click="OnDataPageCardClick"
+                Description="Import, export and restore your data."
+                Header="Import, export and restore"
+                IsClickEnabled="True">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8B5;" />
+                </controls:SettingsCard.HeaderIcon>
+            </controls:SettingsCard>
+
+            <TextBlock
+                x:Name="ClickStatusText"
+                Margin="0,12,0,0"
+                AutomationProperties.AutomationId="Settings_ClickStatusText"
+                AutomationProperties.LiveSetting="Polite"
+                Text="No card clicked yet." />
+        </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

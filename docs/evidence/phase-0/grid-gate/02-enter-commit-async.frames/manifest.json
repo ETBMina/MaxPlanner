@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "startedUtc": "2026-10-21T21:57:38.0473188+00:00",
+  "completedUtc": "2026-10-21T21:57:42.0650201+00:00",
+  "stopReason": "duration_elapsed",
+  "requested": {
+    "durationSec": 4,
+    "fps": 20,
+    "maxEdge": 1280
+  },
+  "timing": {
+    "elapsedMs": 4009,
+    "sampleCount": 80,
+    "imageCount": 12,
+    "repeatedSampleCount": 68,
+    "achievedFps": 19.955101022698926,
+    "cadenceRatio": 0.9977550511349463
+  },
+  "video": {
+    "path": "D:\\Engineering\\Projects\\C#\\MaxPlanner\\docs\\evidence\\phase-0\\grid-gate\\02-enter-commit-async.mp4",
+    "status": "complete",
+    "codec": "h264",
+    "frameCount": 80,
+    "fileSize": 422108
+  },
+  "frames": {
+    "format": "jpeg",
+    "quality": 85,
+    "index": "frames.ndjson",
+    "width": 1280,
+    "height": 746,
+    "truncated": false,
+    "byteLimit": 1073741824
+  }
+}

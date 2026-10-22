@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PlatformControls.Projection.ProjectionPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PlatformControls.Projection">
+
+    <Grid Padding="24,12,24,12" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="Projection" />
+
+        <!-- Declared before the command row so initial keyboard focus lands on inert selectable text, not on a Start
+             button that a stray keystroke could activate when the spike window takes foreground at launch. -->
+        <StackPanel Grid.Row="1" Spacing="2">
+            <TextBlock x:Name="PipelineText" AutomationProperties.AutomationId="Projection_PipelineText" IsTextSelectionEnabled="True" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="FocusText" AutomationProperties.AutomationId="Projection_FocusText" IsTextSelectionEnabled="True" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="SelectionText" AutomationProperties.AutomationId="Projection_SelectionText" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="ScrollText" AutomationProperties.AutomationId="Projection_ScrollText" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="ChangesText" AutomationProperties.AutomationId="Projection_ChangesText" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="LatencyText" AutomationProperties.AutomationId="Projection_LatencyText" Style="{StaticResource CaptionTextBlockStyle}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+            <Button AutomationProperties.AutomationId="Projection_StartOtherRowsButton" Click="OnStartOtherRowsClick" Content="Start: update other rows" />
+            <Button AutomationProperties.AutomationId="Projection_StartMoveFocusedButton" Click="OnStartMoveFocusedClick" Content="Start: re-sort focused row" />
+            <Button AutomationProperties.AutomationId="Projection_StopButton" Click="OnStopClick" Content="Stop" />
+            <Button AutomationProperties.AutomationId="Projection_DisposeButton" Click="OnDisposeClick" Content="Dispose pipeline" />
+            <Button AutomationProperties.AutomationId="Projection_RebuildButton" Click="OnRebuildClick" Content="Rebuild pipeline" />
+            <ToggleSwitch
+                x:Name="UpdatesAsRefreshToggle"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="Projection_UpdatesAsRefreshToggle"
+                AutomationProperties.Name="Treat inline updates as Refresh"
+                OffContent="Updates as Update"
+                OnContent="Updates as Refresh"
+                Toggled="OnUpdatesAsRefreshToggled" />
+            <ToggleSwitch
+                x:Name="MovesAsRemoveInsertToggle"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="Projection_MovesAsRemoveInsertToggle"
+                AutomationProperties.Name="Report sort moves as Remove and Insert"
+                OffContent="Moves as Move"
+                OnContent="Moves as Remove+Insert"
+                Toggled="OnUpdatesAsRefreshToggled" />
+            <ToggleSwitch
+                x:Name="RestoreSelectionToggle"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="Projection_RestoreSelectionToggle"
+                AutomationProperties.Name="Restore selection after change sets"
+                OffContent="No selection restore"
+                OnContent="Restore selection" />
+
+            <!-- Test harness: focuses a row's draft TextBox in-app when UIA focus is refused because the window is not foreground. -->
+            <TextBox x:Name="FocusTargetBox" Width="80" VerticalAlignment="Center" AutomationProperties.AutomationId="Projection_FocusTargetBox" AutomationProperties.Name="Row number to focus" Text="30" />
+            <Button AutomationProperties.AutomationId="Projection_FocusTargetButton" Click="OnFocusTargetClick" Content="Focus draft" />
+        </StackPanel>
+
+        <!-- The ListView sits in a star row, so its viewport is bounded and virtualization stays active. -->
+        <ListView
+            x:Name="ItemsList"
+            Grid.Row="3"
+            AutomationProperties.AutomationId="Projection_List"
+            AutomationProperties.Name="Projected items"
+            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            ContainerContentChanging="OnContainerContentChanging"
+            CornerRadius="{ThemeResource ControlCornerRadius}"
+            SelectionChanged="OnSelectionChanged"
+            SelectionMode="Single">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:ItemViewModel">
+                    <Grid Padding="0,4" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="260" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind InstanceText, Mode=OneTime}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" AutomationProperties.AutomationId="{x:Bind TitleAutomationId, Mode=OneTime}" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{x:Bind Status, Mode=OneWay}" />
+                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="{x:Bind RankText, Mode=OneWay}" />
+                        <TextBox
+                            Grid.Column="4"
+                            AutomationProperties.AutomationId="{x:Bind DraftAutomationId, Mode=OneTime}"
+                            AutomationProperties.Name="{x:Bind DraftName, Mode=OneTime}"
+                            Text="{x:Bind Draft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="PlatformControls.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Platform Controls spike">
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <!-- Spike 4.2: the theme switch sets RequestedTheme on this root element. -->
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <NavigationView
+            x:Name="Nav"
+            AutomationProperties.AutomationId="Shell_Nav"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            PaneDisplayMode="Top"
+            SelectionChanged="OnNavSelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="SettingsItem" AutomationProperties.AutomationId="Shell_NavSettingsItem" Content="Settings (spike 4)" Tag="settings" />
+                <NavigationViewItem x:Name="ProjectionItem" AutomationProperties.AutomationId="Shell_NavProjectionItem" Content="Projection (spike 5)" Tag="projection" />
+                <NavigationViewItem x:Name="BlankItem" AutomationProperties.AutomationId="Shell_NavBlankItem" Content="Blank" Tag="blank" />
+            </NavigationView.MenuItems>
+            <Frame x:Name="ContentFrame" />
+        </NavigationView>
+
+        <TextBlock
+            x:Name="StoreStatusText"
+            Grid.Row="1"
+            Margin="16,4,16,8"
+            AutomationProperties.AutomationId="Shell_StoreStatusText"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            TextWrapping="Wrap" />
+    </Grid>
+</Window>

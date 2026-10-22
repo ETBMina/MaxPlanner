@@ -1,0 +1,19 @@
+Spike 4.2 High Contrast: static evidence from CommunityToolkit.WinUI.Controls.SettingsControls 8.2.251219.
+The package ships no loose .xaml. Its compiled XAML (SettingsCard.xbf, SettingsExpander.xbf, Themes/Generic.xbf) is embedded in
+lib/net9.0-windows10.0.19041/CommunityToolkit.WinUI.Controls.SettingsControls.pri
+(makepri dump: Files/CommunityToolkit.WinUI.Controls.SettingsControls/{SettingsCard/SettingsCard.xbf, SettingsExpander/SettingsExpander.xbf, Themes/Generic.xbf}).
+
+The UTF-16 string table of the embedded XBF lists, in order, the SettingsCard theme dictionaries:
+  ... SettingsCardBorderBrushPressed SettingsCardBorderBrushDisabled  Default  Light  SystemColorButtonFaceColorBrush
+      SystemColorHighlightTextColorBrush SystemControlBackgroundBaseLowBrush SystemColorButtonTextColorBrush
+      SystemColorHighlightColorBrush SystemControlDisabledBaseMediumLowBrush SystemControlDisabledTransparentBrush  HighContrast
+      DefaultSettingsCardStyle ...
+=> Theme dictionary keys present: Default, Light, HighContrast. The HighContrast dictionary maps the card brushes to system colors
+   (SystemColorButtonFaceColorBrush, SystemColorButtonTextColorBrush, SystemColorHighlightColorBrush, SystemColorHighlightTextColorBrush).
+Card brush keys defined per theme: SettingsCardBackground(/PointerOver/Pressed/Disabled), SettingsCardBorderBrush(/PointerOver/Pressed/Disabled),
+  SettingsCardForeground(/PointerOver/Pressed/Disabled).
+Fluent brushes referenced for Default/Light: CardBackgroundFillColorDefaultBrush, CardStrokeColorDefaultBrush, ControlFillColor*Brush,
+  ControlStrokeColorDefaultBrush, TextFillColor{Primary,Secondary,Disabled}Brush.
+
+Not done at runtime: a High Contrast run needs the system contrast theme switched (a system setting); it is left for the manual
+accessibility pass (design.md 8) together with Narrator. Light and Dark runtime switching: 09-theme-light.png, 10-theme-dark.png.
