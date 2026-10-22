@@ -40,6 +40,21 @@ store.Connect()
 - **Selection rule:** the ListView clears the selection when another row moves above the selected row. Selection lives in ViewModel state and is restored after each change set (about 12 ms later); the transient null `SelectionChanged` is ignored.
 - **Focused item re-sorting:** focus follows the item and its container automatically, but scroll does not. While the item has an open editor or unsaved draft, its position is held until editing ends. Otherwise the list scrolls minimally to bring it into view (`design.md` §7.7).
 
+### Implementation decisions (slice 1e, 2026-10-22)
+- **One store scheduler.** All cache and raw-map mutation runs on an owned `EventLoopScheduler`. The feed observer only hands change sets off to it; it never projects on the database writer thread.
+- **Handoff generations.** Each handoff increments a generation number, and scheduled work from an abandoned subscription or load is ignored.
+- **Resync triggers:**
+  - a sequence gap (also between the snapshot and the buffer);
+  - feed `OnError`;
+  - `RequiresFullReload` (import and restore);
+  - an exception while applying a change set.
+
+  While resyncing, status is `Resyncing` and editing is blocked.
+- **Faulted.** A snapshot that cannot be loaded or projected goes to `Faulted` and keeps the previous caches. It does not loop; `Reload()` retries.
+- **`LinkedTaskCount`** counts every linked task, archived included, the same set the cascade-delete confirmation shows (B-05).
+- **Day boundary.** A day signal uses the date it carries; snapshot loads use `TimeProvider.LocalToday()`. The Desktop day-boundary source (slice 1f) must use the same clock.
+- **Selection.** A null selection from the list is treated as transient while the selected record is still in view; a deliberate deselect calls `Selection.Clear()`.
+
 ## Verification
 - Presentation tests with a test scheduler covering load races, ordering, gaps, filter regrouping, selection restore, and 100-cycle subscription disposal.
 - Spike 5 evidence: `docs/evidence/phase-0/platform-controls/` (20–25).
