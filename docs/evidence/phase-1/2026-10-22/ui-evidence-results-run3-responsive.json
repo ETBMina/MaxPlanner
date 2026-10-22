@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-22T17:36:18.0160931+03:00",
+  "configuration": "Debug",
+  "tempRoot": "C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-a56714",
+  "passed": 9,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Corrupt: recovery page shown",
+      "status": "PASS",
+      "detail": "Your planner data can't be opened"
+    },
+    {
+      "name": "Corrupt: message names the backups folder",
+      "status": "PASS",
+      "detail": "The database file (data.db) is damaged or isn't a Max Planner dataset. It hasn't been changed. Keep a copy of the whole data folder before trying anything else. Backups are kept in C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-a56714\\corrupt\\data\\backups; restoring a backup arrives in a later version."
+    },
+    {
+      "name": "Corrupt: no create or retry offered",
+      "status": "PASS",
+      "detail": "Recovery_DataFolderText,Recovery_ExitButton,Recovery_Message,Recovery_OpenDataFolderButton,Recovery_Page,Recovery_Title"
+    },
+    {
+      "name": "Corrupt: Exit button takes keyboard focus",
+      "status": "PASS",
+      "detail": "{\"hasFocus\":true,\"element\":{\"type\":\"Button\",\"name\":\"Exit\",\"automationId\":\"Recovery_ExitButton\",\"className\":\"Button\",\"isEnabled\":true,\"isOffscreen\":false,\"x\":965,\"y\":565,\"width\":70,\"height\":48,\"selector\":\"btn-recoveryexitbut-e60e\",\"isInvokable\":true}}"
+    },
+    {
+      "name": "Corrupt: screenshot",
+      "status": "PASS",
+      "detail": "02-recovery-corrupt.png"
+    },
+    {
+      "name": "Corrupt: Exit button closes with code 5, file kept",
+      "status": "PASS",
+      "detail": "exit=5 wal=False"
+    },
+    {
+      "name": "Narrow: recovery page at 500 epx",
+      "status": "PASS",
+      "detail": "window 750x1050 px"
+    },
+    {
+      "name": "Narrow: screenshot",
+      "status": "PASS",
+      "detail": "10-recovery-corrupt-500epx.png"
+    },
+    {
+      "name": "Narrow: close exit 5",
+      "status": "PASS",
+      "detail": "exit=5 wal=False"
+    }
+  ]
+}

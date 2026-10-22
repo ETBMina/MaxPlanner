@@ -15,6 +15,8 @@ public sealed class DataPaths
         DataDirectory = Path.Combine(applicationDirectory, "data");
         DatabaseFile = Path.Combine(DataDirectory, "data.db");
         ConfigurationFile = Path.Combine(DataDirectory, "configuration.json");
+        LastGoodConfigurationFile = Path.Combine(DataDirectory, "configuration.last-good.json");
+        RestoreMarkerFile = Path.Combine(DataDirectory, "restore.pending.json");
         BackupsDirectory = Path.Combine(DataDirectory, "backups");
         LogsDirectory = Path.Combine(DataDirectory, "logs");
         TempDirectory = Path.Combine(DataDirectory, "temp");
@@ -28,6 +30,12 @@ public sealed class DataPaths
     public string DatabaseFile { get; }
 
     public string ConfigurationFile { get; }
+
+    /// <summary>The previous successfully written preferences, kept by every save (T-09).</summary>
+    public string LastGoodConfigurationFile { get; }
+
+    /// <summary>ADR 0015: present only while a restore is in progress or was interrupted.</summary>
+    public string RestoreMarkerFile { get; }
 
     public string BackupsDirectory { get; }
 

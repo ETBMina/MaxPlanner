@@ -1,6 +1,11 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Storage;
+using MaxPlanner.Presentation.Shell;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.ApplicationModel.Resources;
@@ -11,11 +16,12 @@ namespace MaxPlanner.Desktop;
 /// Custom entry point (DISABLE_XAML_GENERATED_MAIN) so single-instance redirection, the data-folder
 /// probe, and the dataset lock all run before any XAML or database work (T-03.6, T-06.5, ADR 0013).
 /// </summary>
-public static class Program
+public static partial class Program
 {
     [STAThread]
     public static int Main()
     {
+        var startTimestamp = Stopwatch.GetTimestamp();
         WinRT.ComWrappersSupport.InitializeComWrappers();
         var paths = DataPaths.ForApplication();
 
@@ -48,14 +54,27 @@ public static class Program
             return ExitCodes.DatasetLocked;
         }
 
+        // Inspecting the folder, logging, and preferences happen here, before XAML, so the window opens with
+        // its saved bounds and theme and the UI thread never does this file I/O. Disposing flushes the logs.
+        using var context = StartupContext.Create(paths, startTimestamp);
+        var logger = context.LoggerFactory.CreateLogger(typeof(Program).FullName!);
+        Log.Launched(logger, StartupContext.AppVersion, Environment.OSVersion.VersionString, RuntimeInformation.FrameworkDescription, context.Inspection.HasPriorUse);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            Log.UnhandledException(logger, e.ExceptionObject as Exception);
+            context.LoggerFactory.Dispose();
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) => Log.UnobservedTaskException(logger, e.Exception);
+
         Microsoft.UI.Xaml.Application.Start(initialization =>
         {
             SynchronizationContext.SetSynchronizationContext(
                 new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread()));
-            _ = new App();
+            _ = new App(context);
         });
 
-        return ExitCodes.Ok;
+        Log.Exited(logger, context.ExitCode, context.ElapsedMilliseconds);
+        return context.ExitCode;
     }
 
     private static string InstanceKey(DataPaths paths)
@@ -81,12 +100,33 @@ public static class Program
 
     private static void ShowStartupError(string message) =>
         NativeMethods.ShowError(Text("AppDisplayName"), message);
+
+    private static partial class Log
+    {
+        [LoggerMessage(EventId = 5501, Level = LogLevel.Information, Message = "Max Planner {AppVersion} starting on {OsVersion}, {Runtime}; data folder used before: {HasPriorUse}.")]
+        public static partial void Launched(ILogger logger, string appVersion, string osVersion, string runtime, bool hasPriorUse);
+
+        [LoggerMessage(EventId = 5502, Level = LogLevel.Information, Message = "Exiting with code {ExitCode} after {ElapsedMs} ms.")]
+        public static partial void Exited(ILogger logger, int exitCode, long elapsedMs);
+
+        [LoggerMessage(EventId = 5503, Level = LogLevel.Critical, Message = "Unhandled exception; the process is terminating.")]
+        public static partial void UnhandledException(ILogger logger, Exception? exception);
+
+        [LoggerMessage(EventId = 5504, Level = LogLevel.Error, Message = "A task faulted and its exception was never observed.")]
+        public static partial void UnobservedTaskException(ILogger logger, Exception exception);
+    }
 }
 
+/// <summary>Process exit codes (ADR 0003).</summary>
 internal static class ExitCodes
 {
     public const int Ok = 0;
     public const int Redirected = 0;
     public const int DataNotWritable = 2;
     public const int DatasetLocked = 3;
+    public const int NewerSchema = 4;
+    public const int StartupFailure = 5;
+
+    /// <summary>Closing from the recovery page reports why the dataset was not used.</summary>
+    public static int ForRecovery(RecoveryKind kind) => kind == RecoveryKind.UnsupportedSchema ? NewerSchema : StartupFailure;
 }

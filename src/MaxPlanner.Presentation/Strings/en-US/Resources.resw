@@ -36,4 +36,171 @@
     <value>Opening your planner…</value>
     <comment>Shown while the dataset opens at startup.</comment>
   </data>
+  <data name="Squad_General" xml:space="preserve">
+    <value>General</value>
+    <comment>Squad label for tasks without a CR or whose CR has no squad (ADR 0020).</comment>
+  </data>
+  <data name="Shell_ResyncInfoBar.Title" xml:space="preserve">
+    <value>Refreshing to the saved state…</value>
+    <comment>App InfoBar while the projection store reloads after a publication fault (T-07).</comment>
+  </data>
+  <data name="Shell_ResyncInfoBar.Message" xml:space="preserve">
+    <value>Editing is paused until Max Planner has reloaded your saved data.</value>
+  </data>
+  <data name="Shell_BackupFailedInfoBar.Title" xml:space="preserve">
+    <value>Today's backup wasn't created</value>
+    <comment>App InfoBar when the daily backup fails (T-09). Startup continues.</comment>
+  </data>
+  <data name="Shell_BackupFailedMessage" xml:space="preserve">
+    <value>{0} Your planner is open and your changes are saved as usual. Max Planner tries again the next day you open it.</value>
+    <comment>{0} = storage failure description.</comment>
+  </data>
+  <data name="Shell_PreferencesInfoBar.Title" xml:space="preserve">
+    <value>Display preferences were reset</value>
+    <comment>App InfoBar when configuration.json was unreadable (AC-15).</comment>
+  </data>
+  <data name="Shell_PreferencesRestoredMessage" xml:space="preserve">
+    <value>Your saved display preferences couldn't be read, so the previous copy was used. Your planner data isn't affected.</value>
+  </data>
+  <data name="Shell_PreferencesResetMessage" xml:space="preserve">
+    <value>Your saved display preferences couldn't be read, so the defaults are used. Your planner data isn't affected.</value>
+  </data>
+  <data name="Shell_FailedTitle.Text" xml:space="preserve">
+    <value>Max Planner couldn't load your data</value>
+  </data>
+  <data name="Shell_LoadFailedMessage" xml:space="preserve">
+    <value>Your saved data wasn't changed. Select Retry to load it again.</value>
+  </data>
+  <data name="Shell_LoadFailedStorageMessage" xml:space="preserve">
+    <value>{0} Your saved data wasn't changed. Select Retry to load it again.</value>
+    <comment>{0} = storage failure description.</comment>
+  </data>
+  <data name="Shell_UnexpectedStartupFailure" xml:space="preserve">
+    <value>Something went wrong while opening your planner. Your data wasn't changed. Close Max Planner and open it again. If this keeps happening, the log in the data\logs folder has details.</value>
+  </data>
+  <data name="Shell_RetryButton.Content" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Shell_OpenDataFolderButton.Content" xml:space="preserve">
+    <value>Open data folder</value>
+  </data>
+  <data name="Shell_ReadyTitle.Text" xml:space="preserve">
+    <value>Your planner is open</value>
+    <comment>Pre-Phase-2 ready state, shown until the NavigationView pages exist.</comment>
+  </data>
+  <data name="Shell_ReadyDescription.Text" xml:space="preserve">
+    <value>Your data is loaded from the data folder below. The Dashboard, Board, Grid, Calendar, and Checklists pages aren't part of this build yet.</value>
+  </data>
+  <data name="Shell_TaskCountLabel.Text" xml:space="preserve">
+    <value>Tasks, including archived</value>
+  </data>
+  <data name="Shell_ChangeRequestCountLabel.Text" xml:space="preserve">
+    <value>Change requests</value>
+  </data>
+  <data name="Shell_ReviewCountLabel.Text" xml:space="preserve">
+    <value>Review items</value>
+  </data>
+  <data name="Shell_DataFolderLabel.Text" xml:space="preserve">
+    <value>Data folder</value>
+  </data>
+  <data name="Recovery_DataFolderLabel.Text" xml:space="preserve">
+    <value>Data folder</value>
+  </data>
+  <data name="Recovery_RetryButton.Content" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Recovery_CreateNewButton.Content" xml:space="preserve">
+    <value>Create a new empty dataset…</value>
+    <comment>Opens a confirmation step; this button alone creates nothing (AC-15).</comment>
+  </data>
+  <data name="Recovery_OpenDataFolderButton.Content" xml:space="preserve">
+    <value>Open data folder</value>
+  </data>
+  <data name="Recovery_ExitButton.Content" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="Recovery_ConfirmInfoBar.Title" xml:space="preserve">
+    <value>Create a new empty dataset?</value>
+  </data>
+  <data name="Recovery_ConfirmInfoBar.Message" xml:space="preserve">
+    <value>The new dataset starts with no tasks, change requests, checklists, or review items. Files already in the data folder, including backups, aren't changed or deleted.</value>
+  </data>
+  <data name="Recovery_ConfirmCreateButton.Content" xml:space="preserve">
+    <value>Create empty dataset</value>
+  </data>
+  <data name="Recovery_CancelCreateButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Recovery_ProgressRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Working</value>
+  </data>
+  <data name="Recovery_CreateAlreadyExists" xml:space="preserve">
+    <value>A database file appeared in the data folder, so nothing was created or overwritten. Exit and open Max Planner again to use that file.</value>
+  </data>
+  <data name="Recovery_CreateFailed" xml:space="preserve">
+    <value>The new dataset couldn't be created, and nothing was changed. Check that the drive has free space and is still connected, then try again.</value>
+  </data>
+  <data name="Recovery_DatabaseMissing_Title" xml:space="preserve">
+    <value>Your planner data wasn't found</value>
+  </data>
+  <data name="Recovery_DatabaseMissing_Message" xml:space="preserve">
+    <value>Max Planner was used in this folder before, but its database file (data.db) is missing. It may have been moved, renamed, or deleted. Nothing has been changed. If you still have the file, exit, put data.db back in the data folder, and open Max Planner again. Backups are kept in {0}; restoring a backup arrives in a later version.</value>
+    <comment>{0} = backups folder path.</comment>
+  </data>
+  <data name="Recovery_Corrupt_Title" xml:space="preserve">
+    <value>Your planner data can't be opened</value>
+  </data>
+  <data name="Recovery_Corrupt_Message" xml:space="preserve">
+    <value>The database file (data.db) is damaged or isn't a Max Planner dataset. It hasn't been changed. Keep a copy of the whole data folder before trying anything else. Backups are kept in {0}; restoring a backup arrives in a later version.</value>
+    <comment>{0} = backups folder path.</comment>
+  </data>
+  <data name="Recovery_UnsupportedSchema_Title" xml:space="preserve">
+    <value>This data needs a newer Max Planner</value>
+  </data>
+  <data name="Recovery_UnsupportedSchema_Message" xml:space="preserve">
+    <value>The dataset was saved by a newer version of Max Planner (data version {0}; this version supports up to {1}). Open it with that newer version. Nothing has been changed.</value>
+    <comment>{0} = version in the file, {1} = newest version this app supports.</comment>
+  </data>
+  <data name="Recovery_MigrationFailed_Title" xml:space="preserve">
+    <value>Your planner data couldn't be upgraded</value>
+  </data>
+  <data name="Recovery_MigrationFailed_Message" xml:space="preserve">
+    <value>Upgrading the dataset for this version failed, and the upgrade was undone, so your data is unchanged at data version {0}. A safety copy taken before the upgrade is in {1}. Restoring backups arrives in a later version.</value>
+    <comment>{0} = current schema version, {1} = safety backup folder.</comment>
+  </data>
+  <data name="Recovery_InterruptedRestore_Title" xml:space="preserve">
+    <value>A restore was interrupted</value>
+  </data>
+  <data name="Recovery_InterruptedRestore_Message" xml:space="preserve">
+    <value>Max Planner found an unfinished restore (restore.pending.json) and didn't open the dataset, so nothing has been changed. Don't delete or move files in the data folder. Backups are kept in {0}. Completing or undoing an interrupted restore arrives in a later version.</value>
+    <comment>{0} = backups folder path.</comment>
+  </data>
+  <data name="Recovery_StorageUnavailable_Title" xml:space="preserve">
+    <value>Your planner data can't be read right now</value>
+  </data>
+  <data name="Recovery_StorageUnavailable_Message" xml:space="preserve">
+    <value>{0} Nothing has been changed. Check that the drive is connected and that no other program is using the data folder, then select Retry.</value>
+    <comment>{0} = storage failure description.</comment>
+  </data>
+  <data name="StorageFailure_DiskFull" xml:space="preserve">
+    <value>The drive is full.</value>
+  </data>
+  <data name="StorageFailure_FileLocked" xml:space="preserve">
+    <value>The database file is locked by another program.</value>
+  </data>
+  <data name="StorageFailure_Busy" xml:space="preserve">
+    <value>The database file is busy.</value>
+  </data>
+  <data name="StorageFailure_Corrupt" xml:space="preserve">
+    <value>The database file is damaged.</value>
+  </data>
+  <data name="StorageFailure_Unavailable" xml:space="preserve">
+    <value>The data folder can't be reached or written.</value>
+  </data>
+  <data name="StorageFailure_Io" xml:space="preserve">
+    <value>Reading or writing the drive failed.</value>
+  </data>
+  <data name="StorageFailure_Unknown" xml:space="preserve">
+    <value>A storage error occurred.</value>
+  </data>
 </root>

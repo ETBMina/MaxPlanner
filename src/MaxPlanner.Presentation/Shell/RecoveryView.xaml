@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MaxPlanner.Presentation.Shell.RecoveryView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common">
+    <ScrollViewer AutomationProperties.AutomationId="Recovery_Page">
+        <VisualStateManager.VisualStateGroups>
+            <!-- T-08.1 breakpoints, chosen in code-behind from the page width (the page spans the window):
+                 S keeps actions stacked, M/L put them on one row. -->
+            <VisualStateGroup x:Name="WidthStates">
+                <VisualState x:Name="Small">
+                    <VisualState.Setters>
+                        <Setter Target="ContentPanel.Padding" Value="16,12" />
+                        <Setter Target="ActionsPanel.Orientation" Value="Vertical" />
+                        <Setter Target="ConfirmButtonsPanel.Orientation" Value="Vertical" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Medium">
+                    <VisualState.Setters>
+                        <Setter Target="ContentPanel.Padding" Value="24,16" />
+                        <Setter Target="ActionsPanel.Orientation" Value="Horizontal" />
+                        <Setter Target="ConfirmButtonsPanel.Orientation" Value="Horizontal" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Large">
+                    <VisualState.Setters>
+                        <Setter Target="ContentPanel.Padding" Value="32,24" />
+                        <Setter Target="ActionsPanel.Orientation" Value="Horizontal" />
+                        <Setter Target="ConfirmButtonsPanel.Orientation" Value="Horizontal" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <StackPanel
+            x:Name="ContentPanel"
+            MaxWidth="760"
+            Padding="16,12"
+            HorizontalAlignment="Stretch"
+            Spacing="16">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <!-- The glyph repeats the severity the title states; it is decorative for assistive technology. -->
+                <FontIcon
+                    VerticalAlignment="Center"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="32"
+                    Foreground="{x:Bind common:BindFunctions.SeverityBrush(ViewModel.IsWarning), Mode=OneWay}"
+                    Glyph="{x:Bind common:BindFunctions.SeverityGlyph(ViewModel.IsWarning), Mode=OneWay}" />
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="Recovery_Title"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource TitleTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                    TextWrapping="Wrap" />
+            </Grid>
+
+            <TextBlock
+                AutomationProperties.AutomationId="Recovery_Message"
+                IsTextSelectionEnabled="True"
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="{x:Bind ViewModel.Message, Mode=OneWay}"
+                TextWrapping="Wrap" />
+
+            <StackPanel Spacing="4">
+                <TextBlock
+                    x:Uid="Recovery_DataFolderLabel"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock
+                    AutomationProperties.AutomationId="Recovery_DataFolderText"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    IsTextSelectionEnabled="True"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="{x:Bind ViewModel.DataFolderPath, Mode=OneWay}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+
+            <InfoBar
+                AutomationProperties.AutomationId="Recovery_ActionErrorInfoBar"
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.HasActionError, Mode=OneWay}"
+                Message="{x:Bind ViewModel.ActionError, Mode=OneWay}"
+                Severity="Error" />
+
+            <StackPanel
+                x:Name="ActionsPanel"
+                Orientation="Vertical"
+                Spacing="8">
+                <Button
+                    x:Uid="Recovery_RetryButton"
+                    AutomationProperties.AutomationId="Recovery_RetryButton"
+                    Command="{x:Bind ViewModel.RetryCommand, Mode=OneWay}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CanRetry), Mode=OneWay}" />
+                <Button
+                    x:Name="CreateNewButton"
+                    x:Uid="Recovery_CreateNewButton"
+                    AutomationProperties.AutomationId="Recovery_CreateNewButton"
+                    Command="{x:Bind ViewModel.BeginCreateCommand, Mode=OneWay}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsCreateOfferVisible), Mode=OneWay}" />
+                <Button
+                    x:Uid="Recovery_OpenDataFolderButton"
+                    AutomationProperties.AutomationId="Recovery_OpenDataFolderButton"
+                    Command="{x:Bind ViewModel.OpenDataFolderCommand, Mode=OneWay}" />
+                <Button
+                    x:Uid="Recovery_ExitButton"
+                    AutomationProperties.AutomationId="Recovery_ExitButton"
+                    Command="{x:Bind ViewModel.ExitCommand, Mode=OneWay}" />
+            </StackPanel>
+
+            <!-- T-09 / AC-15: an empty dataset is created only after this explicit confirmation step. -->
+            <StackPanel
+                AutomationProperties.AutomationId="Recovery_ConfirmPanel"
+                Spacing="8"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConfirmingCreate), Mode=OneWay}">
+                <InfoBar
+                    x:Uid="Recovery_ConfirmInfoBar"
+                    AutomationProperties.AutomationId="Recovery_ConfirmInfoBar"
+                    IsClosable="False"
+                    IsOpen="True"
+                    Severity="Warning" />
+                <StackPanel
+                    x:Name="ConfirmButtonsPanel"
+                    Orientation="Vertical"
+                    Spacing="8">
+                    <Button
+                        x:Name="ConfirmCreateButton"
+                        x:Uid="Recovery_ConfirmCreateButton"
+                        AutomationProperties.AutomationId="Recovery_ConfirmCreateButton"
+                        Command="{x:Bind ViewModel.ConfirmCreateCommand, Mode=OneWay}"
+                        Style="{StaticResource AccentButtonStyle}" />
+                    <Button
+                        x:Uid="Recovery_CancelCreateButton"
+                        AutomationProperties.AutomationId="Recovery_CancelCreateButton"
+                        Command="{x:Bind ViewModel.CancelCreateCommand, Mode=OneWay}" />
+                    <ProgressRing
+                        x:Uid="Recovery_ProgressRing"
+                        Width="20"
+                        Height="20"
+                        AutomationProperties.AutomationId="Recovery_ProgressRing"
+                        IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

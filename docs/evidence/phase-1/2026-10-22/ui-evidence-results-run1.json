@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-22T17:34:08.4606612+03:00",
+  "configuration": "Debug",
+  "tempRoot": "C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-be92b5",
+  "passed": 26,
+  "failed": 4,
+  "results": [
+    {
+      "name": "Corrupt: recovery page shown",
+      "status": "PASS",
+      "detail": "Your planner data can't be opened"
+    },
+    {
+      "name": "Corrupt: message names the backups folder",
+      "status": "PASS",
+      "detail": "The database file (data.db) is damaged or isn't a Max Planner dataset. It hasn't been changed. Keep a copy of the whole data folder before trying anything else. Backups are kept in C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-be92b5\\corrupt\\data\\backups; restoring a backup arrives in a later version."
+    },
+    {
+      "name": "Corrupt: no create or retry offered",
+      "status": "PASS",
+      "detail": "Recovery_DataFolderText,Recovery_ExitButton,Recovery_Message,Recovery_OpenDataFolderButton,Recovery_Page,Recovery_Title"
+    },
+    {
+      "name": "Corrupt: Exit button takes keyboard focus",
+      "status": "PASS",
+      "detail": "{\"hasFocus\":true,\"element\":{\"type\":\"Button\",\"name\":\"Exit\",\"automationId\":\"Recovery_ExitButton\",\"className\":\"Button\",\"isEnabled\":true,\"isOffscreen\":false,\"x\":965,\"y\":565,\"width\":70,\"height\":48,\"selector\":\"btn-recoveryexitbut-e552\",\"isInvokable\":true}}"
+    },
+    {
+      "name": "Corrupt: screenshot",
+      "status": "PASS",
+      "detail": "02-recovery-corrupt.png"
+    },
+    {
+      "name": "Corrupt: Exit button closes with code 5, file kept",
+      "status": "PASS",
+      "detail": "exit=5 wal=False"
+    },
+    {
+      "name": "Missing: recovery page with create offer",
+      "status": "PASS",
+      "detail": "Your planner data wasn't found"
+    },
+    {
+      "name": "Missing: screenshot",
+      "status": "PASS",
+      "detail": "03-recovery-missing.png"
+    },
+    {
+      "name": "Missing: create needs confirmation",
+      "status": "PASS",
+      "detail": "focused: {\"hasFocus\":true,\"element\":{\"type\":\"Button\",\"name\":\"Create empty dataset\",\"automationId\":\"Recovery_ConfirmCreateButton\",\"className\":\"Button\",\"isEnabled\":true,\"isOffscreen\":false,\"x\":766,\"y\":819,\"width\":236,\"height\":48,\"selector\":\"btn-recoveryconfirm-da2b\",\"isInvokable\":true}}"
+    },
+    {
+      "name": "Missing: confirmation screenshot",
+      "status": "PASS",
+      "detail": "04-recovery-missing-confirm.png"
+    },
+    {
+      "name": "Missing: cancel creates nothing",
+      "status": "PASS",
+      "detail": "no data.db"
+    },
+    {
+      "name": "Missing: confirmed create opens an empty dataset",
+      "status": "PASS",
+      "detail": "tasks=0"
+    },
+    {
+      "name": "Missing: ready after create screenshot",
+      "status": "PASS",
+      "detail": "05-recovery-created-ready.png"
+    },
+    {
+      "name": "Missing: manual backup untouched, close exit 0",
+      "status": "PASS",
+      "detail": "exit=0 wal=False"
+    },
+    {
+      "name": "Newer schema: warning page names both versions",
+      "status": "PASS",
+      "detail": "The dataset was saved by a newer version of Max Planner (data version 99; this version supports up to 1). Open it with that newer version. Nothing has been changed."
+    },
+    {
+      "name": "Newer schema: screenshot",
+      "status": "PASS",
+      "detail": "06-recovery-newer-schema.png"
+    },
+    {
+      "name": "Newer schema: close exit 4",
+      "status": "PASS",
+      "detail": "exit=4 wal=False"
+    },
+    {
+      "name": "Interrupted restore: page shown",
+      "status": "PASS",
+      "detail": "Max Planner found an unfinished restore (restore.pending.json) and didn't open the dataset, so nothing has been changed. Don't delete or move files in the data folder. Backups are kept in C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-be92b5\\restore\\data\\backups. Completing or undoing an interrupted restore arrives in a later version."
+    },
+    {
+      "name": "Interrupted restore: screenshot",
+      "status": "PASS",
+      "detail": "07-recovery-interrupted-restore.png"
+    },
+    {
+      "name": "Interrupted restore: exit 5",
+      "status": "PASS",
+      "detail": "exit=5 wal=False"
+    },
+    {
+      "name": "Light: ready view",
+      "status": "FAIL",
+      "detail": "winapp ui wait-for Shell_ReadyTitle -t 15000 -w 16714034 failed (1): [ERROR] - 'Shell_ReadyTitle' not found after 15000ms"
+    },
+    {
+      "name": "Light: screenshot",
+      "status": "PASS",
+      "detail": "08-ready-light.png"
+    },
+    {
+      "name": "Light: close exit 0",
+      "status": "FAIL",
+      "detail": "exit=5 wal=False"
+    },
+    {
+      "name": "Dark: ready view",
+      "status": "FAIL",
+      "detail": "winapp ui wait-for Shell_ReadyTitle -t 15000 -w 1510024 failed (1): [ERROR] - 'Shell_ReadyTitle' not found after 15000ms"
+    },
+    {
+      "name": "Dark: screenshot",
+      "status": "PASS",
+      "detail": "09-ready-dark.png"
+    },
+    {
+      "name": "Dark: WM_TIMECHANGE and WM_SETTINGCHANGE(intl) reach the hook",
+      "status": "PASS",
+      "detail": "2026-10-22T17:34:02.685+03:00 [INF] MaxPlanner.Desktop.Windowing.WindowMessageHook: Window message WM_TIMECHANGE received. | 2026-10-22T17:34:02.687+03:00 [INF] MaxPlanner.Desktop.Windowing.WindowMessageHook: Window message WM_SETTINGCHANGE(intl) received."
+    },
+    {
+      "name": "Dark: close exit 0",
+      "status": "FAIL",
+      "detail": "exit=5 wal=False"
+    },
+    {
+      "name": "Narrow: recovery page at 500 epx",
+      "status": "PASS",
+      "detail": "window 750x1050 px"
+    },
+    {
+      "name": "Narrow: screenshot",
+      "status": "PASS",
+      "detail": "10-recovery-corrupt-500epx.png"
+    },
+    {
+      "name": "Narrow: close exit 5",
+      "status": "PASS",
+      "detail": "exit=5 wal=False"
+    }
+  ]
+}

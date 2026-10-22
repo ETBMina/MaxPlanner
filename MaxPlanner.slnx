@@ -16,5 +16,6 @@
     <Project Path="tests/MaxPlanner.Infrastructure.Tests.CrashWriter/MaxPlanner.Infrastructure.Tests.CrashWriter.csproj" />
     <Project Path="tests/MaxPlanner.Presentation.Tests/MaxPlanner.Presentation.Tests.csproj" />
     <Project Path="tests/MaxPlanner.Architecture.Tests/MaxPlanner.Architecture.Tests.csproj" />
+    <Project Path="tests/MaxPlanner.Desktop.SmokeTests/MaxPlanner.Desktop.SmokeTests.csproj" />
   </Folder>
 </Solution>

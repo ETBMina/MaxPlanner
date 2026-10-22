@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Process-level smoke tests: they copy the built Desktop app into an isolated temp folder and run the
+       real EXE (T-11.5, ADR 0013). The solution build produces that output first; run scripts/build.ps1
+       before running this project on its own. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Desktop output of the same build: solution builds use bin\<Configuration>\, project builds with
+         -p:Platform=x64 use bin\x64\<Configuration>\, and this project follows the same convention. -->
+    <AssemblyMetadata Include="DesktopOutputDirectory" Value="$(MSBuildThisFileDirectory)..\..\src\MaxPlanner.Desktop\$(OutputPath.Replace('$(TargetFramework)', 'net10.0-windows10.0.26100.0'))win-x64" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <Using Include="Xunit" />
+    <PackageReference Include="AwesomeAssertions" />
+    <!-- Only to arrange a newer-schema database file for the refusal test. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+</Project>

@@ -75,6 +75,9 @@ public sealed class SqliteDataset : IAsyncDisposable
 
     public IReadSnapshotSource Snapshots { get; }
 
+    /// <summary>Read-only connections for consistent online backups alongside the writer (ADR 0015).</summary>
+    internal SqliteConnectionFactory Connections => _connections;
+
     /// <summary>The schema version this app version reads and writes.</summary>
     public static int SupportedSchemaVersion => SchemaMigrations.All[^1].Version;
 

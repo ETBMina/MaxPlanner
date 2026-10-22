@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:shell="using:MaxPlanner.Presentation.Shell">
-    <!-- The backdrop (Mica or solid fallback) is chosen in code-behind; see ADR 0008. -->
+    <!-- The backdrop (Mica or solid fallback) is chosen in code-behind; see ADR 0008. The theme mode is
+         set on RootGrid by ThemeService, so the title bar and every page follow it. -->
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,7 +21,7 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <shell:StartupView
+        <shell:ShellView
             Grid.Row="1"
             ViewModel="{x:Bind ViewModel, Mode=OneTime}" />
     </Grid>

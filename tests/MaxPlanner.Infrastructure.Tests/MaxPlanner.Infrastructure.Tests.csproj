@@ -14,5 +14,6 @@
     <PackageReference Include="xunit.v3" />
     <Using Include="Xunit" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
   </ItemGroup>
 </Project>

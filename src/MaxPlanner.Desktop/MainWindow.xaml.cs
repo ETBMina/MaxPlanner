@@ -22,6 +22,9 @@ public sealed partial class MainWindow : Window
 
     public ShellViewModel ViewModel { get; }
 
+    /// <summary>The element that carries the app theme mode (design §3 rule 1).</summary>
+    public FrameworkElement RootElement => RootGrid;
+
     /// <summary>True when the window uses Mica; false when it uses the solid fallback surface.</summary>
     public bool UsesMica { get; private set; }
 

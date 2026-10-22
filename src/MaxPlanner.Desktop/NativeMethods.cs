@@ -27,6 +27,22 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll", EntryPoint = "MessageBoxW", StringMarshalling = StringMarshalling.Utf16)]
     private static partial int MessageBox(nint owner, string text, string caption, uint type);
 
+    [LibraryImport("user32.dll", EntryPoint = "GetDpiForWindow")]
+    internal static partial uint GetDpiForWindow(nint windowHandle);
+
+    [LibraryImport("comctl32.dll", EntryPoint = "SetWindowSubclass")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static unsafe partial bool SetWindowSubclass(
+        nint windowHandle, delegate* unmanaged[Stdcall]<nint, uint, nint, nint, nuint, nuint, nint> subclassProc, nuint subclassId, nuint referenceData);
+
+    [LibraryImport("comctl32.dll", EntryPoint = "RemoveWindowSubclass")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static unsafe partial bool RemoveWindowSubclass(
+        nint windowHandle, delegate* unmanaged[Stdcall]<nint, uint, nint, nint, nuint, nuint, nint> subclassProc, nuint subclassId);
+
+    [LibraryImport("comctl32.dll", EntryPoint = "DefSubclassProc")]
+    internal static partial nint DefSubclassProc(nint windowHandle, uint message, nint wParam, nint lParam);
+
     /// <summary>Shows a native error box; used only before XAML has started.</summary>
     internal static void ShowError(string caption, string message) =>
         _ = MessageBox(0, message, caption, MbOk | MbIconError);

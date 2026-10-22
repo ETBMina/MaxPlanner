@@ -3,5 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>MaxPlanner.Domain</RootNamespace>
+    <!-- publish-portable.ps1 publishes with -r win-x64, which flows the RID to this library. Restoring for it
+         here too keeps packages.lock.json identical between normal builds and the portable publish. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 </Project>

@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-22T17:35:08.7783445+03:00",
+  "configuration": "Debug",
+  "tempRoot": "C:\\Users\\Guardiola\\AppData\\Local\\Temp\\MaxPlanner Tëst UI\\evidence-1c7ad2",
+  "passed": 9,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Light: first run ready",
+      "status": "PASS",
+      "detail": "exit=0 wal=False"
+    },
+    {
+      "name": "Light: ready view",
+      "status": "PASS",
+      "detail": "ready"
+    },
+    {
+      "name": "Light: screenshot",
+      "status": "PASS",
+      "detail": "08-ready-light.png"
+    },
+    {
+      "name": "Light: close exit 0",
+      "status": "PASS",
+      "detail": "exit=0 wal=False"
+    },
+    {
+      "name": "Dark: first run ready",
+      "status": "PASS",
+      "detail": "exit=0 wal=False"
+    },
+    {
+      "name": "Dark: ready view",
+      "status": "PASS",
+      "detail": "ready"
+    },
+    {
+      "name": "Dark: screenshot",
+      "status": "PASS",
+      "detail": "09-ready-dark.png"
+    },
+    {
+      "name": "Dark: WM_TIMECHANGE and WM_SETTINGCHANGE(intl) reach the hook",
+      "status": "PASS",
+      "detail": "2026-10-22T17:35:07.565+03:00 [INF] MaxPlanner.Desktop.Windowing.WindowMessageHook: Window message WM_TIMECHANGE received. | 2026-10-22T17:35:07.568+03:00 [INF] MaxPlanner.Desktop.Windowing.WindowMessageHook: Window message WM_SETTINGCHANGE(intl) received."
+    },
+    {
+      "name": "Dark: close exit 0",
+      "status": "PASS",
+      "detail": "exit=0 wal=False"
+    }
+  ]
+}
