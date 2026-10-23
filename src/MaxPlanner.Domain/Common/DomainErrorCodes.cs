@@ -33,6 +33,19 @@ public static class DomainErrorCodes
     public const string ReplacementRequired = "replacement-required";
     public const string ReplacementSameAsRemoved = "replacement-same-as-removed";
 
+    /// <summary>The usage counts changed between the confirmation and the commit; the user must confirm again (B-04, design §5.9).</summary>
+    public const string LookupUsageChanged = "lookup-usage-changed";
+
+    // B-04/B-08 workflow configuration.
+    /// <summary>The CR status used by "Move to backlog" must keep the Backlog flag, so moved CRs appear in the backlog (B-08.3, B-08.11).</summary>
+    public const string BacklogStatusMustBeFlagged = "backlog-status-must-be-flagged";
+
+    /// <summary>B-11: a field cannot become required while existing records have no value; it stays optional until they are filled.</summary>
+    public const string RequiredFieldHasMissingValues = "required-field-has-missing-values";
+
+    /// <summary>A Lookup option that stored values use cannot be removed from its field.</summary>
+    public const string OptionInUse = "option-in-use";
+
     /// <summary>A stored record breaks a structural rule (e.g. revision below 1); reported by Rehydrate, never repaired.</summary>
     public const string InvalidStoredValue = "invalid-stored-value";
 }

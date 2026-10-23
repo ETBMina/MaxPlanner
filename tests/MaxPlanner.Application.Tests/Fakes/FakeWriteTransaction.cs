@@ -65,6 +65,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
         public TaskItem? Find(TaskId id) => _revisions.Seen(data.Tasks.GetValueOrDefault(id), t => t.Id.Value, t => t.Revision);
 
+        public IReadOnlyList<TaskItem> ListAll() => [.. data.Tasks.Values.Select(t => _revisions.Seen(t, x => x.Id.Value, x => x.Revision))];
+
         public void Insert(TaskItem task)
         {
             beforeWrite("tasks.insert");
@@ -119,6 +121,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
         public SubtaskCard? Find(SubtaskCardId id) => _revisions.Seen(data.SubtaskCards.GetValueOrDefault(id), c => c.Id.Value, c => c.Revision);
 
+        public IReadOnlyList<SubtaskCard> ListAll() => [.. data.SubtaskCards.Values.Select(c => _revisions.Seen(c, x => x.Id.Value, x => x.Revision))];
+
         public void Insert(SubtaskCard card)
         {
             beforeWrite("subtask-cards.insert");
@@ -158,6 +162,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
         private readonly FakeRevisionGuard _revisions = new("CR");
 
         public ChangeRequest? Find(ChangeRequestId id) => _revisions.Seen(data.ChangeRequests.GetValueOrDefault(id), c => c.Id.Value, c => c.Revision);
+
+        public IReadOnlyList<ChangeRequest> ListAll() => [.. data.ChangeRequests.Values.Select(c => _revisions.Seen(c, x => x.Id.Value, x => x.Revision))];
 
         public ChangeRequest? FindByNormalizedNumber(string normalizedNumber) =>
             _revisions.Seen(ByNumber(normalizedNumber), c => c.Id.Value, c => c.Revision);
@@ -238,6 +244,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
         private readonly FakeRevisionGuard _revisions = new("review item");
 
         public ReviewItem? Find(ReviewItemId id) => _revisions.Seen(data.Reviews.GetValueOrDefault(id), r => r.Id.Value, r => r.Revision);
+
+        public IReadOnlyList<ReviewItem> ListAll() => [.. data.Reviews.Values.Select(r => _revisions.Seen(r, x => x.Id.Value, x => x.Revision))];
 
         public void Insert(ReviewItem item)
         {
@@ -351,6 +359,14 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             }
 
             data.Workflow = data.Workflow with { Defaults = data.Workflow.Defaults with { DefaultCrOwnerId = ownerId } };
+        }
+
+        // Settings changes (Phase 10). The fake keeps no referential checks for lookups yet; Phase 19 adds the
+        // foreign-key checks the SQLite store gets from the schema when it adds the Settings use case tests.
+        public void SaveWorkflow(WorkflowSnapshot workflow)
+        {
+            beforeWrite("workflow.save");
+            data.Workflow = workflow;
         }
     }
 

@@ -1,6 +1,7 @@
 using MaxPlanner.Presentation.ChangeRequests;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Reviews;
+using MaxPlanner.Presentation.Settings;
 using MaxPlanner.Presentation.SubtaskCards;
 using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
@@ -98,6 +99,8 @@ internal sealed class DialogHost
         SubtaskCardEditorViewModel subtaskCard => new SubtaskCardEditorDialog(subtaskCard),
         CrEditorViewModel changeRequest => new CrEditorDialog(changeRequest),
         ReviewEditorViewModel review => new ReviewEditorDialog(review),
+        LookupRemovalViewModel removal => new LookupRemovalDialog(removal),
+        FieldDefinitionEditorViewModel field => new FieldDefinitionDialog(field),
         ConfirmationViewModel confirmation => Confirmation(confirmation),
         _ => throw new NotSupportedException($"No dialog is registered for {viewModel.GetType().Name}."),
     };

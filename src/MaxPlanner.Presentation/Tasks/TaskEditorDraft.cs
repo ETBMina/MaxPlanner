@@ -90,10 +90,11 @@ internal sealed record DraftValues(
     DateOnly? Start,
     DateOnly? End,
     string Notes,
-    IReadOnlyList<(ChecklistItemId Id, string Text, bool IsCompleted)> Checklist)
+    IReadOnlyList<(ChecklistItemId Id, string Text, bool IsCompleted)> Checklist,
+    string CustomFields)
 {
     public static IReadOnlyList<string> Keys { get; } =
-        ["Title", "Service", "Status", "Priority", "Designers", "Developers", "Tags", "StartDate", "EndDate", "Notes", "ChecklistItems"];
+        ["Title", "Service", "Status", "Priority", "Designers", "Developers", "Tags", "StartDate", "EndDate", "Notes", "ChecklistItems", "CustomFields"];
 
     public bool SameAs(DraftValues other, string key) => key switch
     {
@@ -108,6 +109,7 @@ internal sealed record DraftValues(
         "EndDate" => End == other.End,
         "Notes" => Notes == other.Notes,
         "ChecklistItems" => Checklist.SequenceEqual(other.Checklist),
+        "CustomFields" => CustomFields == other.CustomFields,
         _ => throw new ArgumentOutOfRangeException(nameof(key), key, null),
     };
 

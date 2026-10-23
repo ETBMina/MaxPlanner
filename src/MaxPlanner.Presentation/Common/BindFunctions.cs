@@ -16,6 +16,9 @@ public static class BindFunctions
 
     public static bool Not(bool value) => !value;
 
+    /// <summary>True for a non-empty message, e.g. to open an InfoBar while its text is set.</summary>
+    public static bool HasText(string? value) => !string.IsNullOrEmpty(value);
+
     /// <summary>A repeated item's AutomationId: <c>{prefix}{Guid:N}</c> (design §8.1).</summary>
     public static string RecordId(string prefix, Guid id) => prefix + id.ToString("N");
 

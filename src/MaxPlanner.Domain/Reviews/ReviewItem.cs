@@ -1,6 +1,7 @@
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Domain.Reviews;
 
@@ -97,6 +98,16 @@ public sealed record ReviewItem
         isDone == IsDone ? this : (this with { IsDone = isDone, CompletedOn = isDone ? today : null }).Touch(nowUtc);
 
     public ReviewItem MoveTo(long rank, DateTimeOffset nowUtc) => (this with { Rank = rank }).Touch(nowUtc);
+
+    /// <summary>B-17.4: removing a person used as review Developer replaces or clears the reference.</summary>
+    /// <returns>The remapped review, or null when its developer is not the removed person.</returns>
+    public ReviewItem? Remap(LookupRemap remap, DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(remap);
+        return Content.DeveloperId is { } developer && remap.Targets(LookupKind.Person, developer.Value)
+            ? (this with { Content = Content with { DeveloperId = remap.ReplacementId is { } replacement ? new PersonId(replacement) : null } }).Touch(nowUtc)
+            : null;
+    }
 
     private static ReviewContent Normalize(ReviewContent content) =>
         content with { Services = [.. content.Services.DistinctBy(s => s.Value, StringComparer.OrdinalIgnoreCase)] };

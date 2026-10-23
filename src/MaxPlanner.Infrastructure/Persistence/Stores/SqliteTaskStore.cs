@@ -31,6 +31,17 @@ internal sealed class SqliteTaskStore(SqliteWriteTransaction tx) : ITaskStore
         return task;
     }
 
+    public IReadOnlyList<TaskItem> ListAll()
+    {
+        var tasks = tx.Loader.LoadTasks();
+        foreach (var task in tasks)
+        {
+            _revisions.Seen(task.Id.Value, task.Revision);
+        }
+
+        return tasks;
+    }
+
     public void Insert(TaskItem task)
     {
         ArgumentNullException.ThrowIfNull(task);

@@ -173,6 +173,50 @@ public sealed record ChangeRequest
         return (this with { Planned = null, StatusId = backlogStatus.Id }).Touch(nowUtc);
     }
 
+    /// <summary>
+    /// B-04/B-11 lookup removal: points the CR's references to the removed value (status, priority, Owner,
+    /// Squad, People/Tags custom values) at the replacement. A cleared squad becomes "General"; the Owner can
+    /// only be replaced (ADR 0020). Planned dates are kept: this is not a status transition.
+    /// </summary>
+    /// <returns>The remapped CR, or null when it does not reference the removed value.</returns>
+    public ChangeRequest? Remap(LookupRemap remap, DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(remap);
+        var changed = false;
+        var result = this;
+        if (remap.Targets(LookupKind.CrStatus, StatusId.Value))
+        {
+            result = result with { StatusId = new CrStatusId(remap.RequiredReplacement) };
+            changed = true;
+        }
+
+        if (remap.Targets(LookupKind.Priority, PriorityId.Value))
+        {
+            result = result with { PriorityId = new PriorityId(remap.RequiredReplacement) };
+            changed = true;
+        }
+
+        if (remap.Targets(LookupKind.Person, OwnerId.Value))
+        {
+            result = result with { OwnerId = new PersonId(remap.RequiredReplacement) };
+            changed = true;
+        }
+
+        if (SquadId is { } squad && remap.Targets(LookupKind.Squad, squad.Value))
+        {
+            result = result with { SquadId = remap.ReplacementId is { } replacement ? new SquadId(replacement) : null };
+            changed = true;
+        }
+
+        if (remap.MapCustomValues(CustomValues) is { } values)
+        {
+            result = result with { CustomValues = values };
+            changed = true;
+        }
+
+        return changed ? result.Touch(nowUtc) : null;
+    }
+
     private ChangeRequest WithContent(ChangeRequestContent content) => this with
     {
         Number = content.Number,

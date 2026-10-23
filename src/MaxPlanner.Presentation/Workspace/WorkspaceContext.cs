@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Checklists;
@@ -123,9 +124,11 @@ public sealed partial class WorkspaceContext : ObservableObject
         IScheduler uiScheduler,
         ILocalizedStrings strings,
         SaveStatusViewModel saveStatus,
-        IUrlLauncher? urlLauncher = null)
+        IUrlLauncher? urlLauncher = null,
+        IUiPreferencesStore? preferences = null)
     {
         UrlLauncher = urlLauncher ?? NoUrlLauncher.Instance;
+        Preferences = preferences ?? new InMemoryUiPreferences();
         Store = store ?? throw new ArgumentNullException(nameof(store));
         UseCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
         UiScheduler = uiScheduler ?? throw new ArgumentNullException(nameof(uiScheduler));
@@ -153,6 +156,9 @@ public sealed partial class WorkspaceContext : ObservableObject
     public SaveStatusViewModel SaveStatus { get; }
 
     public IUrlLauncher UrlLauncher { get; }
+
+    /// <summary>UI preferences (T-09): Grid layout and sort, archive visibility. In memory when no store is given (tests).</summary>
+    public IUiPreferencesStore Preferences { get; }
 
     /// <summary>The task and Subtask card commands shared by the Board, Grid, Checklists, and the editors.</summary>
     public TaskCommands Tasks => _tasks ??= new TaskCommands(this);
@@ -222,4 +228,20 @@ public interface IPageViewModel : INotifyPropertyChanged, IDisposable
 {
     /// <summary>The status-bar page summary (design §2.8).</summary>
     string Summary { get; }
+}
+
+/// <summary>UI preferences kept in memory only, for a workspace without a preferences file (tests).</summary>
+internal sealed class InMemoryUiPreferences : IUiPreferencesStore
+{
+    public UiPreferences Current { get; private set; } = UiPreferences.Default;
+
+    public PreferencesLoadResult Load() => new(Current, PreferencesRecovery.None);
+
+    public void Update(Func<UiPreferences, UiPreferences> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        Current = change(Current);
+    }
+
+    public Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

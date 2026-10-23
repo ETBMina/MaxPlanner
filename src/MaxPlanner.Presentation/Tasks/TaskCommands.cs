@@ -27,6 +27,17 @@ public sealed class TaskCommands
     /// <summary>Opens the task editor for an existing task (Board Enter/Open, Grid row Open, Checklists Open task).</summary>
     public Task OpenAsync(TaskId taskId) => RunEditorAsync(new TaskEditorViewModel(_context, taskId, initialStatus: null));
 
+    /// <summary>
+    /// Grid row ⋯ › Link to CR… (B-07, B-03.6): the task editor opened on the link picker step, so the permanence
+    /// confirmation of design §5.6 is the same route as in the editor. Archived unlinked tasks may be linked (B-05).
+    /// </summary>
+    public Task LinkAsync(TaskId taskId)
+    {
+        var editor = new TaskEditorViewModel(_context, taskId, initialStatus: null);
+        editor.BeginLink();
+        return RunEditorAsync(editor);
+    }
+
     /// <summary>Opens the task editor for a new task; Board creation preselects the column's status (B-02.1).</summary>
     public Task NewAsync(TaskStatusId? status = null) => RunEditorAsync(new TaskEditorViewModel(_context, taskId: null, status));
 

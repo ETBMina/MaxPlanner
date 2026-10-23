@@ -46,6 +46,7 @@ public static class CommandErrorText
             StorageFailureError storage => strings.Format("Error_Storage", StorageFailureText.Describe(storage.Kind, strings)),
             CommitOutcomeUnknownError => strings.GetString("Error_CommitOutcomeUnknown"),
             OperationCancelledError => strings.GetString("Error_Cancelled"),
+            WorkflowChangedError => strings.GetString("Error_WorkflowChanged"),
             _ => strings.GetString("Error_Unexpected"),
         };
     }
@@ -67,6 +68,18 @@ public static class CommandErrorText
             DomainErrorCodes.UnknownReference => strings.Format("Error_UnknownReference", field),
             DomainErrorCodes.InvalidUrl => strings.GetString("Error_InvalidUrl"),
             DomainErrorCodes.CascadeScopeChanged => strings.GetString("CascadeDelete_ScopeChanged"),
+            DomainErrorCodes.DuplicateName => strings.Format("Error_DuplicateName", field),
+            DomainErrorCodes.DuplicateKey when error.Field == "Key" => strings.GetString("Error_DuplicateFieldKey"),
+            DomainErrorCodes.ReservedKey => strings.GetString("Error_ReservedFieldKey"),
+            DomainErrorCodes.InvalidKey => strings.GetString("Error_InvalidFieldKey"),
+            DomainErrorCodes.LastLookupRequired => strings.GetString("Error_LastLookupRequired"),
+            DomainErrorCodes.ReplacementRequired => strings.GetString("Error_ReplacementRequired"),
+            DomainErrorCodes.ReplacementSameAsRemoved => strings.GetString("Error_ReplacementSameAsRemoved"),
+            DomainErrorCodes.LookupUsageChanged => strings.GetString("LookupRemove_UsageChanged"),
+            DomainErrorCodes.BacklogStatusMustBeFlagged => strings.GetString("Error_BacklogStatusMustBeFlagged"),
+            DomainErrorCodes.RequiredFieldHasMissingValues => strings.Format("Error_RequiredFieldHasMissingValues", error.Limit),
+            DomainErrorCodes.OptionInUse => strings.GetString("Error_OptionInUse"),
+            DomainErrorCodes.InvalidFieldOptions => strings.GetString("Error_InvalidFieldOptions"),
             _ => strings.Format("Error_Invalid", field),
         };
     }

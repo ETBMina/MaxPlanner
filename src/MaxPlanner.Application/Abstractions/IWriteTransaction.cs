@@ -88,6 +88,9 @@ public interface ITaskStore
     /// <see cref="MaxBoardRank"/>. Used to renumber the full column, filtered-out cards included (B-07).
     /// </summary>
     IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardColumn(TaskStatusId status);
+
+    /// <summary>Every task, archived included, with its checklist items and link (lookup replacement, B-04).</summary>
+    IReadOnlyList<TaskItem> ListAll();
 }
 
 public interface ISubtaskCardStore
@@ -102,6 +105,9 @@ public interface ISubtaskCardStore
     void Delete(SubtaskCardId id);
 
     IReadOnlyList<SubtaskCard> ListByParent(TaskId parentTaskId);
+
+    /// <summary>Every Subtask card, including those of archived parents (lookup replacement, B-04).</summary>
+    IReadOnlyList<SubtaskCard> ListAll();
 }
 
 public interface IChangeRequestStore
@@ -117,6 +123,9 @@ public interface IChangeRequestStore
 
     /// <summary>Deletes the CR. Its links (and, by cascade, their tasks) must already be deleted.</summary>
     void Delete(ChangeRequestId id);
+
+    /// <summary>Every CR (lookup replacement, B-04).</summary>
+    IReadOnlyList<ChangeRequest> ListAll();
 }
 
 /// <summary>The <c>cr_task_links</c> table: insert-only, one row per linked task (T-05, ADR 0006).</summary>
@@ -148,6 +157,9 @@ public interface IReviewStore
 
     /// <summary>Every review's ID and rank (B-17.2 explicit order), for reordering; callers sort by rank, then ID.</summary>
     IReadOnlyList<(ReviewItemId Id, long Rank)> ListOrder();
+
+    /// <summary>Every review item (lookup replacement, B-17.4).</summary>
+    IReadOnlyList<ReviewItem> ListAll();
 }
 
 public interface IGeneralTodoStore
@@ -173,9 +185,9 @@ public interface IWorkflowReader
 }
 
 /// <summary>
-/// People and tags added while saving a record that uses them (B-02.6), and the default CR Owner chosen
-/// while saving a CR (B-11). Later reads of
-/// <see cref="IWorkflowReader.Read"/> in the same transaction include them.
+/// Writes the configurable workflow: people and tags added while saving a record that uses them (B-02.6), the
+/// default CR Owner chosen while saving a CR (B-11), and Settings changes to lookups, field definitions, and
+/// defaults (B-04, B-11). Later reads of <see cref="IWorkflowReader.Read"/> in the same transaction include them.
 /// </summary>
 public interface ILookupStore
 {
@@ -190,6 +202,17 @@ public interface ILookupStore
     /// reads of <see cref="IWorkflowReader.Read"/> in the same transaction include it.
     /// </summary>
     void SetDefaultCrOwner(PersonId ownerId);
+
+    /// <summary>
+    /// Stores <paramref name="workflow"/> as the complete configuration: lookup values and field definitions
+    /// missing from it are deleted, new ones inserted, changed ones updated, and the defaults replaced.
+    /// </summary>
+    /// <remarks>
+    /// Storage constraints still apply: a deleted lookup value must no longer be referenced by any record or
+    /// default (the use case remaps references first), names stay unique per lookup type, and field
+    /// definitions are never deleted (B-11 deactivates them). A violation throws, rolling back the transaction.
+    /// </remarks>
+    void SaveWorkflow(WorkflowSnapshot workflow);
 }
 
 /// <summary>

@@ -9,6 +9,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:grid="using:MaxPlanner.Presentation.Grid"
     xmlns:local="using:MaxPlanner.Presentation.Tasks"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
@@ -528,6 +529,15 @@
                     Text="{x:Bind ViewModel.Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
                 <local:FieldError Text="{x:Bind ViewModel.NotesError, Mode=OneWay}" />
+
+                <!-- Group 10: custom fields (B-11), one typed editor per active field (design §5.0). -->
+                <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CustomFields.HasFields), Mode=OneTime}">
+                    <TextBlock x:Uid="TaskEditor_CustomFieldsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <fields:CustomFieldsPanel
+                        x:Name="CustomFieldsPanel"
+                        AutomationPrefix="TaskEditor"
+                        ViewModel="{x:Bind ViewModel.CustomFields, Mode=OneTime}" />
+                </StackPanel>
             </StackPanel>
 
             <!-- ===== Link to CR, step 1: pick (design §5.6). A CR is never shown as occupied. ===== -->

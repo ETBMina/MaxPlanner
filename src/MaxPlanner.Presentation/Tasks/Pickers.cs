@@ -97,6 +97,12 @@ public sealed partial class TokenPickerViewModel : ObservableObject
     /// </summary>
     public bool IsSingleSelection { get; init; }
 
+    /// <summary>
+    /// False offers existing names only. Custom People/Tags field values refer to existing lookups only (the
+    /// add-new route of B-02.6 belongs to the built-in Designers, Developers, and Tags fields).
+    /// </summary>
+    public bool AllowNew { get; init; } = true;
+
     public IReadOnlyList<Guid> Ids => [.. _tokens.Select(t => t.Id)];
 
     /// <summary>Replaces the chips without raising <see cref="Changed"/> (loading or rebasing a draft).</summary>
@@ -169,7 +175,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         {
             yield return new TokenSuggestion(exact.Id, exact.Name, exact.Name);
         }
-        else if (trimmed.Length <= DomainLimits.LookupName)
+        else if (AllowNew && trimmed.Length <= DomainLimits.LookupName)
         {
             yield return new TokenSuggestion(null, trimmed, _strings.Format("TokenPicker_AddNew", trimmed));
         }

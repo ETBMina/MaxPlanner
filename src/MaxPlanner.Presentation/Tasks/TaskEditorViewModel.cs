@@ -17,6 +17,7 @@ using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Grid;
@@ -97,6 +98,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         Designers.Changed += OnDraftChanged;
         Developers.Changed += OnDraftChanged;
         Tags.Changed += OnDraftChanged;
+        CustomFields = new CustomFieldsEditorViewModel(FieldTarget.Task, _workflow, context.Strings);
+        CustomFields.Changed += OnDraftChanged;
         ChecklistItems = new ReadOnlyObservableCollection<EditorChecklistItemViewModel>(_checklist);
         SubtaskCards = new ReadOnlyObservableCollection<EditorSubtaskCardViewModel>(_subtaskCards);
         ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
@@ -109,6 +112,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             _isLoading = true;
             SelectedStatus = StatusOptions.FirstOrDefault(o => o.Id == status);
             SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultPriorityId);
+
+            // B-11: a new task starts with each custom field's default; it is the base, so it is not a change.
+            CustomFields.LoadDefaults();
             _isLoading = false;
             _baseValues = Capture();
 
@@ -163,6 +169,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public TokenPickerViewModel Developers { get; }
 
     public TokenPickerViewModel Tags { get; }
+
+    /// <summary>The active task custom fields (B-11), typed per kind (design §5.0).</summary>
+    public CustomFieldsEditorViewModel CustomFields { get; }
 
     public ReadOnlyObservableCollection<EditorChecklistItemViewModel> ChecklistItems { get; }
 
@@ -396,12 +405,20 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
 
         ClearErrors();
+        if (!CustomFields.TryBuild(_base?.CustomValues ?? CustomValue.NoValues, out var customValues))
+        {
+            ValidationSummary = _context.Strings.Format("TaskEditor_FixField", 1);
+            FocusRequested?.Invoke(this, "Custom:" + CustomFields.FirstErrorKey);
+            RaiseState();
+            return false;
+        }
+
         var operation = _retryOperation ?? OperationId.New();
         IsSaving = true;
         IsDirtyClosePromptOpen = false;
         RaiseState();
         _context.SaveStatus.Begin();
-        var (error, sequence) = await ExecuteSaveAsync(operation).ConfigureAwait(true);
+        var (error, sequence) = await ExecuteSaveAsync(operation, customValues).ConfigureAwait(true);
         if (error is not null)
         {
             var failure = CommandFailure.From(error, operation, "Record_Task", _context.Strings);
@@ -570,7 +587,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         _conflictRows.Clear();
         foreach (var key in DraftValues.Keys.Where(k => !mine.SameAs(saved, k)))
         {
-            _conflictRows.Add(new ConflictRowViewModel(key, _context.Strings.GetString("Field_" + key), Describe(mine, key), Describe(saved, key)));
+            var (mineText, savedText) = key == "CustomFields" ? (CustomFields.DisplayText(None), SavedCustomFieldsText(latest)) : (Describe(mine, key), Describe(saved, key));
+            _conflictRows.Add(new ConflictRowViewModel(key, _context.Strings.GetString("Field_" + key), mineText, savedText));
         }
 
         CurrentStep = EditorStep.ConflictReview;
@@ -592,6 +610,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         var mine = Capture();
         var mineTokens = (Designers.Tokens.ToList(), Developers.Tokens.ToList(), Tags.Tokens.ToList());
         var mineChecklist = _checklist.Select(i => (i.Id, i.Text, i.IsCompleted, i.IsNew)).ToList();
+        _ = CustomFields.TryBuild(latest.CustomValues, out var mineCustom);
         Load(latest);
         _isLoading = true;
         if (keep.Contains("Title"))
@@ -642,6 +661,11 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         if (keep.Contains("Notes"))
         {
             Notes = mine.Notes;
+        }
+
+        if (keep.Contains("CustomFields"))
+        {
+            CustomFields.Load(mineCustom);
         }
 
         if (keep.Contains("ChecklistItems"))
@@ -788,6 +812,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         Designers.Changed -= OnDraftChanged;
         Developers.Changed -= OnDraftChanged;
         Tags.Changed -= OnDraftChanged;
+        CustomFields.Changed -= OnDraftChanged;
         _checklist.CollectionChanged -= OnChecklistChanged;
         foreach (var item in _checklist)
         {
@@ -820,13 +845,23 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         Designers.IsReadOnly = value || IsReadOnly;
         Developers.IsReadOnly = value || IsReadOnly;
         Tags.IsReadOnly = value || IsReadOnly;
+        CustomFields.IsReadOnly = value || IsReadOnly;
     }
 
     partial void OnIsArchivedChanged(bool value) => OnIsSavingChanged(IsSaving);
 
+    private string None => _context.Strings.GetString("Common_None");
+
+    private string SavedCustomFieldsText(TaskReadModel latest)
+    {
+        var saved = new CustomFieldsEditorViewModel(FieldTarget.Task, _workflow, _context.Strings);
+        saved.Load(latest.CustomValues);
+        return saved.DisplayText(None);
+    }
+
     private IEnumerable<(Guid Id, string Name)> People() => _workflow.People.Select(p => (p.Id.Value, p.Name.Display));
 
-    private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation)
+    private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation, IReadOnlyDictionary<FieldId, CustomValue> customValues)
     {
         var useCases = _context.UseCases;
         var designerIds = Designers.Ids;
@@ -847,7 +882,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             [.. developerIds.Select(id => new PersonId(id))],
             [.. tagIds.Select(id => new TagId(id))],
             Notes,
-            _base?.CustomValues ?? CustomValue.NoValues);
+            customValues);
         var checklist = _checklist.Select(i => new ChecklistItemDraft(i.Id, i.Text, i.IsCompleted)).ToList();
         var start = Intent(FromPicker(StartDate), _baseValues.Start, _startCleared);
         var end = Intent(FromPicker(EndDate), _baseValues.End, _endCleared);
@@ -908,7 +943,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     {
         string? first = null;
         var fields = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var error in errors)
+        foreach (var error in errors.Where(e => e.Field?.StartsWith("Custom:", StringComparison.Ordinal) != true))
         {
             var text = CommandErrorText.Describe(error, _context.Strings);
             var key = error.Field switch
@@ -927,6 +962,13 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             fields.Add(key);
         }
 
+        // B-11: custom-field errors (field "Custom:{key}") show beside their typed editors.
+        if (CustomFields.ShowErrors(errors, _context.Strings) is { } customKey)
+        {
+            first ??= "Custom:" + customKey;
+            fields.UnionWith(CustomFields.Fields.Where(f => f.Error is not null).Select(f => "Custom:" + f.Key));
+        }
+
         ValidationSummary = _context.Strings.Format(fields.Count == 1 ? "TaskEditor_FixField" : "TaskEditor_FixFields", fields.Count);
         if (first is not null)
         {
@@ -943,6 +985,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private void ClearErrors()
     {
         TitleError = ServiceError = StatusError = PriorityError = PeopleError = DateError = NotesError = ChecklistError = null;
+        CustomFields.ClearErrors();
         ValidationSummary = null;
         SaveError = null;
         CrChangedMessage = null;
@@ -980,6 +1023,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         StartDate = ToPicker(model.StartDate);
         EndDate = ToPicker(model.EndDate);
         Notes = model.Notes ?? string.Empty;
+        CustomFields.Load(model.CustomValues);
         foreach (var item in _checklist)
         {
             item.PropertyChanged -= OnChecklistItemChanged;
@@ -1015,9 +1059,10 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         FromPicker(StartDate),
         FromPicker(EndDate),
         Notes,
-        [.. _checklist.Select(i => (i.Id, i.Text, i.IsCompleted))]);
+        [.. _checklist.Select(i => (i.Id, i.Text, i.IsCompleted))],
+        CustomFields.Signature);
 
-    private static DraftValues ValuesOf(TaskReadModel model) => new(
+    private DraftValues ValuesOf(TaskReadModel model) => new(
         model.IsTitleInherited ? string.Empty : model.EffectiveTitle,
         model.Service ?? string.Empty,
         model.Status.Id,
@@ -1028,7 +1073,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         model.StartDate,
         model.EndDate,
         model.Notes ?? string.Empty,
-        [.. model.ChecklistItems.Select(i => (i.Id, i.Text, i.IsCompleted))]);
+        [.. model.ChecklistItems.Select(i => (i.Id, i.Text, i.IsCompleted))],
+        CustomFields.SignatureOf(model.CustomValues));
 
     private string Describe(DraftValues values, string key)
     {

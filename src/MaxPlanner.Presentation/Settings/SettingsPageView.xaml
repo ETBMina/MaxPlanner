@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Settings (design §4.6, B-04, B-11, T-09) with native settings cards and Expanders (ADR 0021; visual reference
+    [toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]). Sections are HeadingLevel 2. The 1000-epx cap
+    sits on a Grid wrapper inside the ScrollViewer (spike 4).
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Settings.SettingsPageView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:local="using:MaxPlanner.Presentation.Settings"
+    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="FlagChipTemplate" x:DataType="x:String">
+            <Border Style="{StaticResource FlagChipStyle}">
+                <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind}" />
+            </Border>
+        </DataTemplate>
+
+        <!-- Design §4.6 workflow row: name, usage, flag chips as text, and the ⋯ menu. -->
+        <DataTemplate x:Key="LookupRowTemplate" x:DataType="local:LookupRowViewModel">
+            <Grid
+                MinHeight="52"
+                Padding="56,8,16,8"
+                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0"
+                ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Spacing="2" Visibility="{x:Bind IsNotRenaming, Mode=OneWay}">
+                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Name, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource PageSubtitleTextStyle}" Text="{x:Bind UsageText, Mode=OneWay}" />
+                </StackPanel>
+                <StackPanel Spacing="4" Visibility="{x:Bind IsRenaming, Mode=OneWay}">
+                    <TextBox
+                        x:Uid="Settings_RenameBox"
+                        AutomationProperties.AutomationId="{x:Bind RenameAutomationId, Mode=OneTime}"
+                        IsReadOnly="{x:Bind IsBusy, Mode=OneWay}"
+                        KeyDown="OnRenameKeyDown"
+                        LostFocus="OnRenameLostFocus"
+                        MaxLength="100"
+                        Text="{x:Bind RenameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <tasks:FieldError Text="{x:Bind RenameError, Mode=OneWay}" />
+                </StackPanel>
+                <ItemsRepeater
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    ItemTemplate="{StaticResource FlagChipTemplate}"
+                    ItemsSource="{x:Bind Flags, Mode=OneWay}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Orientation="Horizontal" Spacing="4" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+                <Button
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="{x:Bind MenuAutomationId, Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind MenuName, Mode=OneWay}"
+                    Click="OnLookupRowMenuClick"
+                    IsEnabled="{x:Bind common:BindFunctions.Not(IsBusy), Mode=OneWay}"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                </Button>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="LookupSectionTemplate" x:DataType="local:LookupSectionViewModel">
+            <Expander
+                Margin="0,0,0,4"
+                AutomationProperties.AutomationId="{x:Bind ExpanderAutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind Title, Mode=OneTime}"
+                Style="{StaticResource SettingsExpanderStyle}">
+                <Expander.Header>
+                    <Grid Padding="0,12" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="20"
+                            Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Title, Mode=OneTime}" />
+                            <TextBlock Style="{StaticResource PageSubtitleTextStyle}" Text="{x:Bind Description, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <ItemsControl
+                        IsTabStop="False"
+                        ItemTemplate="{StaticResource LookupRowTemplate}"
+                        ItemsSource="{x:Bind Rows, Mode=OneTime}" />
+                    <!-- Design §4.6: the expander ends with "+ Add" (inline TextBox + Add). -->
+                    <Grid
+                        Padding="56,12,16,12"
+                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                        BorderThickness="0,1,0,0"
+                        ColumnSpacing="8"
+                        RowSpacing="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="360" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBox
+                            x:Uid="Settings_AddBox"
+                            AutomationProperties.AutomationId="{x:Bind AddBoxAutomationId, Mode=OneTime}"
+                            IsReadOnly="{x:Bind IsAdding, Mode=OneWay}"
+                            KeyDown="OnAddBoxKeyDown"
+                            MaxLength="100"
+                            Text="{x:Bind AddText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button
+                            x:Uid="Settings_AddButton"
+                            Grid.Column="1"
+                            AutomationProperties.AutomationId="{x:Bind AddButtonAutomationId, Mode=OneTime}"
+                            Click="OnAddClick"
+                            IsEnabled="{x:Bind common:BindFunctions.Not(IsAdding), Mode=OneWay}" />
+                        <tasks:FieldError Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind AddError, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+        </DataTemplate>
+
+        <!-- Design §4.6 custom field row: label, kind and key, required/default chips, and ⋯ (Edit…, Move, Remove…). -->
+        <DataTemplate x:Key="FieldRowTemplate" x:DataType="local:FieldRowViewModel">
+            <Grid
+                MinHeight="52"
+                Padding="56,8,16,8"
+                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0"
+                ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Label, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource PageSubtitleTextStyle}" Text="{x:Bind Details, Mode=OneWay}" />
+                </StackPanel>
+                <ItemsRepeater
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    ItemTemplate="{StaticResource FlagChipTemplate}"
+                    ItemsSource="{x:Bind Flags, Mode=OneWay}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Orientation="Horizontal" Spacing="4" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+                <Button
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="{x:Bind MenuAutomationId, Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind MenuName, Mode=OneWay}"
+                    Click="OnFieldRowMenuClick"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                </Button>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="FieldSectionTemplate" x:DataType="local:FieldSectionViewModel">
+            <Expander
+                Margin="0,0,0,4"
+                AutomationProperties.AutomationId="{x:Bind ExpanderAutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind Title, Mode=OneTime}"
+                Style="{StaticResource SettingsExpanderStyle}">
+                <Expander.Header>
+                    <Grid Padding="0,12" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="20"
+                            Glyph="&#xE8FD;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Title, Mode=OneTime}" />
+                            <TextBlock Style="{StaticResource PageSubtitleTextStyle}" Text="{x:Bind Description, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <ItemsControl
+                        IsTabStop="False"
+                        ItemTemplate="{StaticResource FieldRowTemplate}"
+                        ItemsSource="{x:Bind Rows, Mode=OneTime}" />
+                    <Grid
+                        Padding="56,12,16,12"
+                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                        BorderThickness="0,1,0,0">
+                        <Button
+                            x:Uid="Settings_AddFieldButton"
+                            AutomationProperties.AutomationId="{x:Bind AddButtonAutomationId, Mode=OneTime}"
+                            Click="OnAddFieldClick" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel x:Name="HeaderRoot" Padding="32,24,32,12" Spacing="2">
+            <TextBlock
+                x:Name="PageTitle"
+                x:Uid="Settings_PageTitle"
+                AutomationProperties.AutomationId="Settings_PageTitle"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource PageTitleTextStyle}" />
+            <TextBlock x:Uid="Settings_PageSubtitle" Style="{StaticResource PageSubtitleTextStyle}" />
+        </StackPanel>
+
+        <!-- Page InfoBar (design §2.7): a refused Settings change, for example settings changed elsewhere. -->
+        <InfoBar
+            x:Name="ErrorBar"
+            Grid.Row="1"
+            Margin="32,0,32,8"
+            AutomationProperties.AutomationId="Settings_ErrorInfoBar"
+            CloseButtonCommand="{x:Bind ViewModel.DismissErrorCommand}"
+            IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+            Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+            Severity="Error" />
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <Grid x:Name="CapWrapper" Padding="32,0,32,32">
+                <StackPanel
+                    x:Name="CardsPanel"
+                    MaxWidth="1000"
+                    HorizontalAlignment="Left"
+                    Spacing="4">
+
+                    <!-- Appearance (AC-23): applies immediately and persists until System is chosen again. -->
+                    <TextBlock x:Uid="Settings_AppearanceHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <local:SettingsCard x:Uid="Settings_ThemeCard" AutomationProperties.AutomationId="Settings_ThemeCard" Glyph="&#xE790;">
+                        <ComboBox
+                            x:Uid="Settings_ThemeCombo"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_ThemeCombo"
+                            ItemsSource="{x:Bind ViewModel.ThemeChoices, Mode=OneTime}"
+                            SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+
+                    <!-- Workflow (B-04): statuses with semantic flags, priorities, squads. -->
+                    <TextBlock x:Uid="Settings_WorkflowHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <ItemsControl
+                        IsTabStop="False"
+                        ItemTemplate="{StaticResource LookupSectionTemplate}"
+                        ItemsSource="{x:Bind ViewModel.WorkflowSections, Mode=OneTime}" />
+
+                    <TextBlock x:Uid="Settings_PeopleHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <ItemsControl
+                        IsTabStop="False"
+                        ItemTemplate="{StaticResource LookupSectionTemplate}"
+                        ItemsSource="{x:Bind ViewModel.PeopleSections, Mode=OneTime}" />
+
+                    <!-- Defaults (B-04, B-11): references always resolve; the workweek is fixed in release 1 (§11 Q5). -->
+                    <TextBlock x:Uid="Settings_DefaultsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <local:SettingsCard x:Uid="Settings_DefaultTaskStatusCard" Glyph="&#xE9D5;">
+                        <ComboBox
+                            x:Uid="Settings_DefaultTaskStatusCombo"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_DefaultTaskStatusCombo"
+                            ItemsSource="{x:Bind ViewModel.TaskStatusChoices, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.DefaultTaskStatusIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_DefaultCrStatusCard" Glyph="&#xE787;">
+                        <ComboBox
+                            x:Uid="Settings_DefaultCrStatusCombo"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_DefaultCrStatusCombo"
+                            ItemsSource="{x:Bind ViewModel.CrStatusChoices, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.DefaultCrStatusIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_DefaultPriorityCard" Glyph="&#xE8C9;">
+                        <ComboBox
+                            x:Uid="Settings_DefaultPriorityCombo"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_DefaultPriorityCombo"
+                            ItemsSource="{x:Bind ViewModel.PriorityChoices, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.DefaultPriorityIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_DefaultCrOwnerCard" Glyph="&#xE77B;">
+                        <ComboBox
+                            x:Uid="Settings_DefaultCrOwnerPicker"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_DefaultCrOwnerPicker"
+                            ItemsSource="{x:Bind ViewModel.OwnerChoices, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.DefaultCrOwnerIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_SchedulingStatusCard" Glyph="&#xE787;">
+                        <ComboBox
+                            x:Uid="Settings_SchedulingStatusCombo"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_DefaultSchedulingStatusCombo"
+                            ItemsSource="{x:Bind ViewModel.CrStatusChoices, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.SchedulingStatusIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_BacklogStatusCard" Glyph="&#xE81C;">
+                        <ComboBox
+                            x:Uid="Settings_BacklogStatusCombo"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_DefaultBacklogStatusCombo"
+                            ItemsSource="{x:Bind ViewModel.CrBacklogChoices, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.BacklogStatusIndex, Mode=TwoWay}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_WorkweekCard" AutomationProperties.AutomationId="Settings_WorkweekCard" Glyph="&#xE787;" />
+
+                    <!-- Custom fields (B-11): typed definitions per target; removal deactivates and keeps values. -->
+                    <TextBlock x:Uid="Settings_FieldsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <ItemsControl
+                        IsTabStop="False"
+                        ItemTemplate="{StaticResource FieldSectionTemplate}"
+                        ItemsSource="{x:Bind ViewModel.FieldSections, Mode=OneTime}" />
+
+                    <!-- Data (T-09): location with Open folder, the last backup, and the Data page entry. -->
+                    <TextBlock x:Uid="Settings_DataHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <local:SettingsCard
+                        x:Uid="Settings_DataLocationCard"
+                        AutomationProperties.AutomationId="Settings_DataLocationCard"
+                        Description="{x:Bind ViewModel.DataFolderPath, Mode=OneTime}"
+                        Glyph="&#xE8B7;"
+                        IsDescriptionSelectable="True">
+                        <Button
+                            x:Uid="Settings_OpenDataFolderButton"
+                            AutomationProperties.AutomationId="Settings_OpenDataFolderButton"
+                            Command="{x:Bind ViewModel.OpenDataFolderCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanOpenDataFolder, Mode=OneTime}" />
+                    </local:SettingsCard>
+                    <local:SettingsCard
+                        x:Uid="Settings_BackupsCard"
+                        AutomationProperties.AutomationId="Settings_BackupsCard"
+                        Description="{x:Bind ViewModel.LastBackupText, Mode=OneWay}"
+                        Glyph="&#xE81C;" />
+                    <!-- The Data page (Import, Export, Restore) arrives with Phases 13-15; the entry is shown disabled until then. -->
+                    <local:SettingsCard x:Uid="Settings_DataPageCard" AutomationProperties.AutomationId="Settings_DataPageCard" Glyph="&#xE896;">
+                        <Button
+                            x:Uid="Settings_DataPageButton"
+                            AutomationProperties.AutomationId="Settings_DataPageButton"
+                            IsEnabled="False" />
+                    </local:SettingsCard>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

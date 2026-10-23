@@ -442,6 +442,60 @@ public sealed record TaskItem
         return DomainResult.Success((this with { ChecklistItems = [.. ChecklistItems.Select(i => i.Id == id ? change(i) : i)] }).Touch(nowUtc));
     }
 
+    /// <summary>
+    /// B-04/B-11 lookup removal: points this task's references to the removed value (status, priority,
+    /// Designers, Developers, Tags, and People/Tags custom values) at the replacement, or clears them where
+    /// allowed. Not a status transition: dates are kept, and archived tasks are remapped too (AC-08).
+    /// </summary>
+    /// <param name="rankInReplacementColumn">
+    /// The Board rank when the task's status is replaced; the caller appends it to the replacement column so
+    /// cards are never placed silently at the top. Null keeps the current rank.
+    /// </param>
+    /// <returns>The remapped task with the next revision, or null when it does not reference the removed value.</returns>
+    public TaskItem? Remap(LookupRemap remap, long? rankInReplacementColumn, DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(remap);
+        var changed = false;
+        var result = this;
+        if (remap.Targets(LookupKind.TaskStatus, StatusId.Value))
+        {
+            result = result with { StatusId = new TaskStatusId(remap.RequiredReplacement), Rank = rankInReplacementColumn ?? Rank };
+            changed = true;
+        }
+
+        if (remap.Targets(LookupKind.Priority, PriorityId.Value))
+        {
+            result = result with { PriorityId = new PriorityId(remap.RequiredReplacement) };
+            changed = true;
+        }
+
+        if (remap.MapList(LookupKind.Person, DesignerIds, p => p.Value, g => new PersonId(g)) is { } designers)
+        {
+            result = result with { DesignerIds = designers };
+            changed = true;
+        }
+
+        if (remap.MapList(LookupKind.Person, DeveloperIds, p => p.Value, g => new PersonId(g)) is { } developers)
+        {
+            result = result with { DeveloperIds = developers };
+            changed = true;
+        }
+
+        if (remap.MapList(LookupKind.Tag, TagIds, t => t.Value, g => new TagId(g)) is { } tags)
+        {
+            result = result with { TagIds = tags };
+            changed = true;
+        }
+
+        if (remap.MapCustomValues(CustomValues) is { } values)
+        {
+            result = result with { CustomValues = values };
+            changed = true;
+        }
+
+        return changed ? result.Touch(nowUtc) : null;
+    }
+
     private TaskItem WithContent(TaskContent content) => this with
     {
         OwnTitle = content.OwnTitle,

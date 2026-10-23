@@ -226,4 +226,17 @@ public sealed record FieldDefinition
 
     /// <summary>B-11 design default: removal deactivates the definition and keeps every stored value.</summary>
     public FieldDefinition Deactivate() => this with { IsActive = false };
+
+    /// <summary>
+    /// Changes the label, required flag, default, and Lookup options. The key, target, and kind never change
+    /// here: B-11 allows no silent retyping, and stored values keep pointing at the same field ID. Option IDs
+    /// of existing options are kept, so stored Lookup values survive a rename.
+    /// </summary>
+    public DomainResult<FieldDefinition> Edit(LookupName label, bool isRequired, CustomValue? defaultValue, IReadOnlyList<FieldOption> options) =>
+        IsActive
+            ? Create(Id, Key, Target, label, Kind, isRequired, defaultValue, DisplayOrder, options)
+            : DomainResult.Failure<FieldDefinition>(DomainErrorCodes.ItemNotFound, "Field");
+
+    /// <summary>B-11: reordering changes the display order only; stored values are untouched.</summary>
+    public FieldDefinition WithDisplayOrder(int displayOrder) => this with { DisplayOrder = displayOrder };
 }

@@ -9,6 +9,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.ChangeRequests"
     xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
@@ -377,6 +378,15 @@
                     Text="{x:Bind ViewModel.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
                 <tasks:FieldError Text="{x:Bind ViewModel.DescriptionError, Mode=OneWay}" />
+
+                <!-- Custom CR fields (B-11), one typed editor per active field (design §5.0). -->
+                <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CustomFields.HasFields), Mode=OneTime}">
+                    <TextBlock x:Uid="CrEditor_CustomFieldsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <fields:CustomFieldsPanel
+                        x:Name="CustomFieldsPanel"
+                        AutomationPrefix="CrEditor"
+                        ViewModel="{x:Bind ViewModel.CustomFields, Mode=OneTime}" />
+                </StackPanel>
 
                 <!-- Group 8: Linked tasks (B-03.5). A row opens the task after this dialog closes (§5.8). -->
                 <StackPanel Spacing="8">

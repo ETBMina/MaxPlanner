@@ -176,6 +176,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         AppPage.Grid => workspace.Grid,
         AppPage.Calendar => workspace.Calendar,
         AppPage.Checklists => workspace.Checklists,
+        AppPage.Settings => workspace.Settings,
         _ => null,
     };
 
@@ -289,7 +290,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     private void OpenDataFolder() => _dataFolder.OpenDataFolder();
 }
 
-/// <summary>The NavigationView destinations (design §2.2). Dashboard and Settings are not built yet.</summary>
+/// <summary>The NavigationView destinations (design §2.2). The Dashboard is not built yet (Phase 12).</summary>
 public enum AppPage
 {
     Dashboard,

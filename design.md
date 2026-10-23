@@ -295,6 +295,14 @@ A failed move restores the committed position, sets the save status to Failed, a
 
 States: Loading, Empty, Filtered-empty (distinct from Empty; when only archived tasks exist the message is "Only archived tasks match — turn on Show archived"), and Error. **Sort never changes Board order** (B-07).
 
+**Proposed notes (Phase 9, pending owner review):**
+- Columns are configurable, so header and row cells are created in code from the page's column list; custom field columns are keyed `Custom_{FieldId:N}`, never by label, and a removed field simply drops out of the saved layout. The chooser keeps at least one column visible.
+- Frozen column at S: the Title column is displayed first and pinned with a render transform that follows the horizontal scroll, so there is still one scroll region (header and rows cannot desynchronize). The configured order is unchanged at M/L.
+- Flyout editors: Notes, Designers, Developers, Tags, and multiline/People/Tags custom fields open in a `Flyout` with **Save** (Ctrl+Enter) and **Cancel**; Esc cancels. Light dismiss counts as leaving the cell, so it attempts the commit and keeps the flyout open with the error if it fails. Other editors are inline; dates have a **Clear** button (an explicit clear for B-04).
+- Task cells other than Title, Service, and Status save through `UpdateTask` with the whole task as committed plus the one changed field, at the revision the edit began from (same status, so no transition dates). Subtask card dates and Notes save through `UpdateSubtaskCard`.
+- Custom People/Tags values pick existing names only; add-new stays with the built-in Designers, Developers, and Tags (B-02.6).
+- Priority shows as text (the §6.1 chip is not used in cells yet). **Export…** is shown disabled until the Data page (Phase 13).
+
 ### 4.4 Calendar (B-08, B-03, AC-11)
 **Purpose:** schedule CRs (not tasks) and reach every CR.
 
@@ -439,6 +447,15 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 |---|---|---|---|
 | Settings | Cards max width 1000 (on a `Grid` wrapper), aligned left | Full width | Full width; the card's content slot wraps below the header through the card style's `VisualStateManager` |
 | Data wizard | Step list + content | Step caption + content | Mapping table becomes stacked rows (source → field) |
+
+**Proposed notes (Phase 10, pending owner review):**
+- The cards are a Presentation `SettingsCard` control (icon, header, description, action slot; the action wraps below at S) and the native `Expander` with a `SettingsExpanderStyle`, per ADR 0021.
+- Row actions are the ⋯ menu only (Rename inline, Set as default / Make default CR Owner, flag toggles, Move up/down, Remove…); the drag handle is not built. People and tags have no configured order and list by name.
+- Row usage counts come from the committed projections (display only); the removal dialog reads authoritative counts from the database.
+- Defaults: the Default CR Owner is a `ComboBox` with "None" plus every person (no add-new here). The "Move to backlog" status offers only statuses flagged Backlog, and that status cannot lose its Backlog flag (Calendar backlog consistency, B-08.3/B-08.11).
+- Custom fields: Key and Kind are fixed after the field is added. A field can be made required only while every record of its target has a value (no backfill step yet). A Lookup option that stored values use cannot be removed. People and Tags fields have no default value.
+- Not built in this phase: **Back up now** and **Manage backups…** (Phase 15), the Data page (the card is disabled, Phases 13–15), **Views › Restore default UI preferences**, and **About**.
+- Settings changes use concurrency stamps instead of row revisions (ADR 0022).
 
 ## 5. Dialogs and editors
 
@@ -604,6 +621,7 @@ Route: the task editor and copy dialog (inline), the Grid row ⋯ "Link to CR…
 - **Note:** "Dates are kept. This is not a status move."
 - **Buttons:** Primary **Remove and replace**; Close Cancel.
 - If the usage changes before commit, the counts refresh and a new confirmation is required.
+- **Proposed note (Phase 10):** the counts are read from the database when the dialog opens (`PreviewLookupRemoval`) and sent with the command; a different count at commit keeps the dialog open with the Warning InfoBar "The usage changed. Review the new counts and confirm again." An unused value uses the same dialog with "Not used by any record or default." and **Remove**. Close (Cancel) is the default button.
 
 ### 5.10 Conflict (B-02.9, AC-07)
 - An editor InfoBar (Error): "This {record} changed elsewhere since you opened it. Your changes are not saved."

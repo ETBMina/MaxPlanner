@@ -12,6 +12,7 @@ using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
@@ -82,6 +83,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     private const string EmailKey = "EmailSubject";
     private const string UrlKey = "SolutionDesignUrl";
     private const string DescriptionKey = "Description";
+    private const string CustomFieldsKey = "CustomFields";
 
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
@@ -132,6 +134,8 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         // B-11/design §5.0: the Owner is a single-person picker with the same add-new rule (created only on Save).
         Owner = new TokenPickerViewModel(context.Strings, () => _workflow.People.Select(p => (p.Id.Value, p.Name.Display)), _newPeople) { IsSingleSelection = true };
         Owner.Changed += OnOwnerChanged;
+        CustomFields = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, context.Strings);
+        CustomFields.Changed += OnCustomFieldsChanged;
         LinkedTasks = new ReadOnlyObservableCollection<LinkedTaskRowViewModel>(_linkedTasks);
         ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
 
@@ -154,6 +158,8 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
                 Owner.Load([(person.Id.Value, person.Name.Display, false)]);
             }
 
+            // B-11: a new CR starts with each custom field's default; it is the base, so it is not a change.
+            CustomFields.LoadDefaults();
             _isLoading = false;
             _baseValues = Capture();
         }
@@ -205,6 +211,9 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     public IReadOnlyList<SquadOption> SquadOptions { get; }
 
     public TokenPickerViewModel Owner { get; }
+
+    /// <summary>The active CR custom fields (B-11), typed per kind (design §5.0).</summary>
+    public CustomFieldsEditorViewModel CustomFields { get; }
 
     public ReadOnlyObservableCollection<LinkedTaskRowViewModel> LinkedTasks { get; }
 
@@ -648,7 +657,10 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         _conflictRows.Clear();
         foreach (var key in mine.Keys.Where(k => !mine.SameAs(saved, k)))
         {
-            _conflictRows.Add(new ConflictRowViewModel(key, _context.Strings.GetString("Field_" + key), Describe(mine, key), Describe(saved, key)));
+            var (mineText, savedText) = key == CustomFieldsKey
+                ? (CustomFields.DisplayText(None), SavedCustomFieldsText(latest))
+                : (Describe(mine, key), Describe(saved, key));
+            _conflictRows.Add(new ConflictRowViewModel(key, _context.Strings.GetString("Field_" + key), mineText, savedText));
         }
 
         CurrentStep = CrEditorStep.ConflictReview;
@@ -666,11 +678,17 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
         var mineOwner = Owner.Tokens.Select(t => (t.Id, t.Name, t.IsNew)).ToList();
+        _ = CustomFields.TryBuild(latest.CustomValues, out var mineCustom);
         Load(latest);
         _isLoading = true;
         foreach (var key in keep)
         {
             Restore(key, mine, mineOwner);
+        }
+
+        if (keep.Contains(CustomFieldsKey))
+        {
+            CustomFields.Load(mineCustom);
         }
 
         _isLoading = false;
@@ -705,6 +723,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     {
         _commits.Dispose();
         Owner.Changed -= OnOwnerChanged;
+        CustomFields.Changed -= OnCustomFieldsChanged;
     }
 
     partial void OnNumberChanged(string value)
@@ -748,6 +767,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     partial void OnIsSavingChanged(bool value)
     {
         Owner.IsReadOnly = value || IsReadOnly;
+        CustomFields.IsReadOnly = value || IsReadOnly;
         RaiseState();
     }
 
@@ -771,11 +791,19 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         }
 
         ClearErrors();
+        if (!CustomFields.TryBuild(_base?.CustomValues ?? CustomValue.NoValues, out var customValues))
+        {
+            ValidationSummary = _context.Strings.Format("TaskEditor_FixField", 1);
+            FocusRequested?.Invoke(this, "Custom:" + CustomFields.FirstErrorKey);
+            RaiseState();
+            return false;
+        }
+
         var operation = _retryOperation ?? OperationId.New();
         IsSaving = true;
         IsDirtyClosePromptOpen = false;
         _context.SaveStatus.Begin();
-        var (error, sequence) = await ExecuteSaveAsync(operation, makeDefaultOwner).ConfigureAwait(true);
+        var (error, sequence) = await ExecuteSaveAsync(operation, makeDefaultOwner, customValues).ConfigureAwait(true);
         if (error is not null)
         {
             var failure = CommandFailure.From(error, operation, "Record_ChangeRequest", _context.Strings);
@@ -797,7 +825,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         return true;
     }
 
-    private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation, bool makeDefaultOwner)
+    private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation, bool makeDefaultOwner, IReadOnlyDictionary<FieldId, CustomValue> customValues)
     {
         var useCases = _context.UseCases;
         var ownerToken = Owner.Tokens.FirstOrDefault();
@@ -814,7 +842,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             SolutionDesignUrl,
             Description,
             TaskNumber,
-            _base?.CustomValues ?? CustomValue.NoValues);
+            customValues);
 
         if (IsNew && CreatedId is null)
         {
@@ -866,7 +894,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     {
         string? first = null;
         var fields = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var error in errors)
+        foreach (var error in errors.Where(e => e.Field?.StartsWith("Custom:", StringComparison.Ordinal) != true))
         {
             var text = CommandErrorText.Describe(error, _context.Strings);
             var key = error.Field switch
@@ -888,6 +916,13 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             fields.Add(key);
         }
 
+        // B-11: custom-field errors (field "Custom:{key}") show beside their typed editors.
+        if (CustomFields.ShowErrors(errors, _context.Strings) is { } customKey)
+        {
+            first ??= "Custom:" + customKey;
+            fields.UnionWith(CustomFields.Fields.Where(f => f.Error is not null).Select(f => "Custom:" + f.Key));
+        }
+
         ValidationSummary = _context.Strings.Format(fields.Count == 1 ? "TaskEditor_FixField" : "TaskEditor_FixFields", fields.Count);
         if (first is not null)
         {
@@ -905,6 +940,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     {
         NumberError = TaskNumberError = TitleError = OwnerError = SquadError = StatusError = PriorityError = null;
         PlannedError = EmailSubjectError = UrlError = DescriptionError = null;
+        CustomFields.ClearErrors();
         ValidationSummary = null;
         SaveError = null;
         DuplicateId = null;
@@ -964,6 +1000,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         EmailSubject = model.EmailSubject ?? string.Empty;
         SolutionDesignUrl = model.SolutionDesignUrl ?? string.Empty;
         Description = model.Description ?? string.Empty;
+        CustomFields.Load(model.CustomValues);
         DuplicateId = null;
         _baseValues = ValuesOf(model);
         _isLoading = false;
@@ -1030,9 +1067,10 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         (EmailKey, EmailSubject.Trim()),
         (UrlKey, SolutionDesignUrl.Trim()),
         (DescriptionKey, Description),
+        (CustomFieldsKey, CustomFields.Signature),
     ]);
 
-    private static DraftSnapshot ValuesOf(ChangeRequestReadModel model) => new(
+    private DraftSnapshot ValuesOf(ChangeRequestReadModel model) => new(
     [
         (NumberKey, model.Number),
         (TaskNumberKey, model.TaskNumber ?? string.Empty),
@@ -1046,6 +1084,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         (EmailKey, model.EmailSubject ?? string.Empty),
         (UrlKey, model.SolutionDesignUrl ?? string.Empty),
         (DescriptionKey, model.Description ?? string.Empty),
+        (CustomFieldsKey, CustomFields.SignatureOf(model.CustomValues)),
     ]);
 
     private string Describe(DraftSnapshot values, string key)
@@ -1066,6 +1105,17 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             var other => other.ToString() ?? none,
         };
     }
+
+    private string None => _context.Strings.GetString("Common_None");
+
+    private string SavedCustomFieldsText(ChangeRequestReadModel latest)
+    {
+        var saved = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, _context.Strings);
+        saved.Load(latest.CustomValues);
+        return saved.DisplayText(None);
+    }
+
+    private void OnCustomFieldsChanged(object? sender, EventArgs e) => RecomputeDirty();
 
     private void OnOwnerChanged(object? sender, EventArgs e)
     {

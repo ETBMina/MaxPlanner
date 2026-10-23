@@ -35,6 +35,8 @@
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
             <StaticResource x:Key="CalendarDropTargetStrokeBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <StaticResource x:Key="ChipStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
@@ -64,6 +66,8 @@
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
             <StaticResource x:Key="CalendarDropTargetStrokeBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <!-- Design §3 rule 3: chips render as ButtonFace with ButtonText border and text; glyphs carry meaning. -->
@@ -95,6 +99,8 @@
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
             <StaticResource x:Key="CalendarDropTargetStrokeBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -127,6 +133,12 @@
     <Style x:Key="PriorityLowestChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource PriorityLowestChipBackgroundBrush}" />
     </Style>
+    <Style x:Key="FlagChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource FlagChipBackgroundBrush}" />
+    </Style>
+    <Style x:Key="ArchivedChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ArchivedChipBackgroundBrush}" />
+    </Style>
     <Style x:Key="ChipTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource ChipForegroundBrush}" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -146,6 +158,45 @@
     </Style>
     <Style x:Key="SecondaryCardBorderStyle" BasedOn="{StaticResource CardBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+    </Style>
+
+    <!--
+        Native settings cards (ADR 0021, design §4.6): card fill with a 1-px stroke and the control corner radius.
+        SettingsCard builds its layout in code over this border style; settings expanders are native Expanders.
+    -->
+    <Style x:Key="SettingsCardBorderStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="MinHeight" Value="68" />
+    </Style>
+    <Style x:Key="SettingsExpanderStyle" TargetType="Expander">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style x:Key="SettingsSectionHeaderTextStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Margin" Value="1,28,0,6" />
+    </Style>
+
+    <!--
+        Grid cells (design §4.3). Archived rows use secondary text with an "Archived" chip (B-05). The frozen first
+        column at S has an opaque surface so cells scrolling underneath stay hidden.
+    -->
+    <Style x:Key="GridCellTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="GridCellSecondaryTextStyle" BasedOn="{StaticResource GridCellTextStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="GridFrozenCellStyle" TargetType="ContentControl">
+        <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
     </Style>
 
     <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->

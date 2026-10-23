@@ -1,10 +1,13 @@
 using MaxPlanner.Application.Abstractions;
+using MaxPlanner.Application.Preferences;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
+using MaxPlanner.Presentation.Settings;
 using MaxPlanner.Presentation.Workspace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -56,6 +59,9 @@ internal sealed class DatasetSession : IAsyncDisposable
         services.AddSingleton(app.GetRequiredService<ReadModelComposer>());
         services.AddSingleton(app.GetRequiredService<IDayBoundarySource>());
         services.AddSingleton(app.GetRequiredService<IUrlLauncher>());
+        services.AddSingleton(app.GetRequiredService<IUiPreferencesStore>());
+        services.AddSingleton(app.GetRequiredService<ThemeService>());
+        services.AddSingleton(app.GetRequiredService<IDataFolderLauncher>());
 
         // Owned and disposed explicitly by DisposeAsync, in the required order.
         services.AddSingleton(dataset);
@@ -82,6 +88,7 @@ internal sealed class DatasetSession : IAsyncDisposable
 
         // Use cases are stateless; one instance of each serves the pages and editors of the session.
         services.AddSingleton(sp => WorkspaceUseCases.Create(sp.GetRequiredService<IMutationCoordinator>()));
+        services.AddSingleton(sp => SettingsUseCases.Create(sp.GetRequiredService<IMutationCoordinator>(), sp.GetRequiredService<IReadSnapshotSource>()));
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         return new DatasetSession(provider, dataset);
@@ -97,7 +104,13 @@ internal sealed class DatasetSession : IAsyncDisposable
             dispatcher,
             strings,
             _provider.GetRequiredService<TimeProvider>(),
-            _provider.GetRequiredService<IUrlLauncher>());
+            _provider.GetRequiredService<IUrlLauncher>(),
+            _provider.GetRequiredService<IUiPreferencesStore>(),
+            new SettingsServices(
+                _provider.GetRequiredService<SettingsUseCases>(),
+                _provider.GetRequiredService<ThemeService>(),
+                _provider.GetRequiredService<IDataFolderLauncher>(),
+                new BackupInfoSource(Dataset.Paths.BackupsDirectory)));
         return Workspace;
     }
 

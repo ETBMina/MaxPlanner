@@ -102,6 +102,13 @@ public sealed partial class TaskEditorDialog : ContentDialog
             return;
         }
 
+        if (field.StartsWith("Custom:", StringComparison.Ordinal))
+        {
+            var key = field["Custom:".Length..];
+            DispatcherQueue.TryEnqueue(() => CustomFieldsPanel.FocusField(key));
+            return;
+        }
+
         if (target is not null)
         {
             DispatcherQueue.TryEnqueue(() => target.Focus(FocusState.Programmatic));

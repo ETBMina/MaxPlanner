@@ -4,6 +4,7 @@ using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Grid;
+using MaxPlanner.Presentation.Settings;
 using MaxPlanner.Presentation.Workspace;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -24,7 +25,7 @@ public sealed partial class ShellView : UserControl
     public static readonly DependencyProperty SaveStatusProperty = DependencyProperty.Register(
         nameof(SaveStatus), typeof(SaveStatusViewModel), typeof(ShellView), new PropertyMetadata(null));
 
-    // Design §6.4: ViewDashboard, Setting; used on the pages that are not built yet.
+    // Design §6.4: ViewDashboard, Setting; used on the pages that are not built yet (Settings only without its services).
     private static readonly Dictionary<AppPage, string> PlaceholderGlyphs = new()
     {
         [AppPage.Dashboard] = "",
@@ -138,6 +139,7 @@ public sealed partial class ShellView : UserControl
                 AppPage.Grid => new GridPageView(workspace.Grid),
                 AppPage.Calendar => new CalendarPageView(workspace.Calendar),
                 AppPage.Checklists => new ChecklistsPageView(workspace.Checklists),
+                AppPage.Settings when workspace.Settings is { } settings => new SettingsPageView(settings),
                 _ => new PlaceholderPageView(page, _viewModel.PageTitle(page), PlaceholderGlyphs[page]),
             };
             _pageViews[page] = view;
@@ -168,6 +170,9 @@ public sealed partial class ShellView : UserControl
                 break;
             case ChecklistsPageView checklists:
                 checklists.FocusTitle();
+                break;
+            case SettingsPageView settings:
+                settings.FocusTitle();
                 break;
             case PlaceholderPageView placeholder:
                 placeholder.FocusTitle();

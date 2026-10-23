@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Custom field dialog (design §4.6 "Add field…"/"Edit…", B-11) on the native ContentDialog. Key and Kind are fixed
+    after the first save (no silent retyping); Lookup options keep their IDs when renamed.
+-->
+<ContentDialog
+    x:Class="MaxPlanner.Presentation.Settings.FieldDefinitionDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:local="using:MaxPlanner.Presentation.Settings"
+    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
+    Title="{x:Bind ViewModel.DialogTitle, Mode=OneTime}"
+    AutomationProperties.AutomationId="FieldDialog_Dialog"
+    CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneTime}"
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
+    PrimaryButtonClick="OnPrimaryClick"
+    PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneTime}"
+    Style="{StaticResource DefaultContentDialogStyle}">
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
+    </ContentDialog.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Padding="0,0,12,0" Spacing="12">
+            <InfoBar
+                AutomationProperties.AutomationId="FieldDialog_ErrorInfoBar"
+                IsClosable="False"
+                IsOpen="{x:Bind common:BindFunctions.HasText(ViewModel.SaveError), Mode=OneWay}"
+                Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
+                Severity="Error" />
+            <TextBlock x:Uid="Editor_RequiredLegend" Style="{StaticResource PageSubtitleTextStyle}" />
+
+            <TextBox
+                x:Name="LabelBox"
+                x:Uid="FieldDialog_LabelBox"
+                AutomationProperties.AutomationId="FieldDialog_LabelBox"
+                AutomationProperties.IsRequiredForForm="True"
+                MaxLength="100"
+                Text="{x:Bind ViewModel.Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <tasks:FieldError Text="{x:Bind ViewModel.LabelError, Mode=OneWay}" />
+
+            <TextBox
+                x:Uid="FieldDialog_KeyBox"
+                AutomationProperties.AutomationId="FieldDialog_KeyBox"
+                AutomationProperties.IsRequiredForForm="True"
+                IsReadOnly="{x:Bind common:BindFunctions.Not(ViewModel.IsNew), Mode=OneTime}"
+                MaxLength="100"
+                Text="{x:Bind ViewModel.Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <tasks:FieldError Text="{x:Bind ViewModel.KeyError, Mode=OneWay}" />
+
+            <ComboBox
+                x:Uid="FieldDialog_KindCombo"
+                MinWidth="240"
+                AutomationProperties.AutomationId="FieldDialog_KindCombo"
+                AutomationProperties.IsRequiredForForm="True"
+                IsEnabled="{x:Bind ViewModel.IsNew, Mode=OneTime}"
+                ItemsSource="{x:Bind ViewModel.KindChoices, Mode=OneTime}"
+                SelectedIndex="{x:Bind ViewModel.KindIndex, Mode=TwoWay}" />
+
+            <!-- Lookup options (B-11): labels are editable; an option in use cannot be removed. -->
+            <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.IsLookup, Mode=OneWay}">
+                <TextBlock x:Uid="FieldDialog_OptionsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <ItemsControl IsTabStop="False" ItemsSource="{x:Bind ViewModel.Options, Mode=OneTime}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:FieldOptionRowViewModel">
+                            <Grid Margin="0,0,0,6" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox
+                                    x:Uid="FieldDialog_OptionBox"
+                                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                    MaxLength="100"
+                                    Text="{x:Bind Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button
+                                    Grid.Column="1"
+                                    AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
+                                    Click="OnRemoveOptionClick"
+                                    ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneTime}">
+                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button x:Uid="FieldDialog_AddOptionButton" AutomationProperties.AutomationId="FieldDialog_AddOptionButton" Click="OnAddOptionClick" />
+                <tasks:FieldError Text="{x:Bind ViewModel.OptionsError, Mode=OneWay}" />
+            </StackPanel>
+
+            <ToggleSwitch
+                x:Uid="FieldDialog_RequiredToggle"
+                AutomationProperties.AutomationId="FieldDialog_RequiredToggle"
+                IsOn="{x:Bind ViewModel.IsRequired, Mode=TwoWay}" />
+            <tasks:FieldError Text="{x:Bind ViewModel.RequiredError, Mode=OneWay}" />
+
+            <!-- Default value: validated against the kind and options (B-11). -->
+            <TextBox
+                x:Uid="FieldDialog_DefaultTextBox"
+                AutomationProperties.AutomationId="FieldDialog_DefaultTextBox"
+                MaxLength="2048"
+                Text="{x:Bind ViewModel.DefaultText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Visibility="{x:Bind ViewModel.DefaultIsText, Mode=OneWay}" />
+            <NumberBox
+                x:Uid="FieldDialog_DefaultNumberBox"
+                AutomationProperties.AutomationId="FieldDialog_DefaultNumberBox"
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.DefaultNumber, Mode=TwoWay}"
+                Visibility="{x:Bind ViewModel.DefaultIsNumber, Mode=OneWay}" />
+            <CalendarDatePicker
+                x:Uid="FieldDialog_DefaultDatePicker"
+                AutomationProperties.AutomationId="FieldDialog_DefaultDatePicker"
+                Date="{x:Bind ViewModel.DefaultDate, Mode=TwoWay}"
+                Visibility="{x:Bind ViewModel.DefaultIsDate, Mode=OneWay}" />
+            <ComboBox
+                x:Uid="FieldDialog_DefaultOptionCombo"
+                MinWidth="240"
+                AutomationProperties.AutomationId="FieldDialog_DefaultOptionCombo"
+                ItemsSource="{x:Bind ViewModel.DefaultOptionChoices, Mode=OneWay}"
+                SelectedIndex="{x:Bind ViewModel.DefaultOptionIndex, Mode=TwoWay}"
+                Visibility="{x:Bind ViewModel.DefaultIsLookup, Mode=OneWay}" />
+            <TextBlock
+                x:Uid="FieldDialog_NoDefaultText"
+                Style="{StaticResource PageSubtitleTextStyle}"
+                Visibility="{x:Bind ViewModel.HasNoDefault, Mode=OneWay}" />
+            <tasks:FieldError Text="{x:Bind ViewModel.DefaultError, Mode=OneWay}" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind ViewModel.IsSaving, Mode=OneWay}">
+                <ProgressRing Width="16" Height="16" IsActive="{x:Bind ViewModel.IsSaving, Mode=OneWay}" />
+                <TextBlock x:Uid="TaskEditor_Saving" Style="{StaticResource CaptionTextBlockStyle}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

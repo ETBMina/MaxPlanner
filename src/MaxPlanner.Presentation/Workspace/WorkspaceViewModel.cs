@@ -5,7 +5,9 @@ using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
+using MaxPlanner.Application.Preferences;
 using MaxPlanner.Presentation.Grid;
+using MaxPlanner.Presentation.Settings;
 
 namespace MaxPlanner.Presentation.Workspace;
 
@@ -22,6 +24,8 @@ public sealed class WorkspaceViewModel : IDisposable
     private GridPageViewModel? _grid;
     private CalendarPageViewModel? _calendar;
     private ChecklistsPageViewModel? _checklists;
+    private SettingsPageViewModel? _settings;
+    private readonly SettingsServices? _settingsServices;
     private bool _isClosing;
     private bool _isDisposed;
 
@@ -32,11 +36,14 @@ public sealed class WorkspaceViewModel : IDisposable
         IUiDispatcher dispatcher,
         ILocalizedStrings strings,
         TimeProvider time,
-        IUrlLauncher? urlLauncher = null)
+        IUrlLauncher? urlLauncher = null,
+        IUiPreferencesStore? preferences = null,
+        SettingsServices? settings = null)
     {
         ArgumentNullException.ThrowIfNull(store);
+        _settingsServices = settings;
         SaveStatus = new SaveStatusViewModel(strings, dispatcher, time);
-        Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher);
+        Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher, preferences);
         _stateSubscription = store.State.ObserveOn(uiScheduler).Subscribe(OnStoreState);
         _badgeSubscription = store.Committed.ObserveOn(uiScheduler).Subscribe(_ => UpdateOpenChecklistCount(store));
     }
@@ -62,9 +69,12 @@ public sealed class WorkspaceViewModel : IDisposable
 
     public ChecklistsPageViewModel Checklists => _checklists ??= new ChecklistsPageViewModel(Live());
 
+    /// <summary>The Settings page, or null when the composition gave no Settings services (tests without them).</summary>
+    public SettingsPageViewModel? Settings => _settingsServices is null ? null : _settings ??= new SettingsPageViewModel(Live(), _settingsServices);
+
     /// <summary>The pages created so far (for disposal and the navigation-budget evidence).</summary>
     public IEnumerable<IPageViewModel> CreatedPages =>
-        new IPageViewModel?[] { _board, _grid, _calendar, _checklists }.OfType<IPageViewModel>();
+        new IPageViewModel?[] { _board, _grid, _calendar, _checklists, _settings }.OfType<IPageViewModel>();
 
     /// <summary>The app is closing (T-06.6): no new command may start, whatever the store reports.</summary>
     public void BeginClose()

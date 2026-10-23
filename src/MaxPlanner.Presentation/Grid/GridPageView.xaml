@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Grid (design §4.3, B-07): the custom virtualized ListView grid of ADR 0004. Columns are configurable (order,
+    width, visibility, active custom fields), so header and row cells are created in code from the page's column
+    list; this file holds the page frame, the command bar, and the single-cell error popup.
+-->
 <UserControl
     x:Class="MaxPlanner.Presentation.Grid.GridPageView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -8,228 +13,9 @@
     xmlns:local="using:MaxPlanner.Presentation.Grid"
     IsTabStop="False">
     <UserControl.Resources>
-        <!-- One source of truth for the column widths of the header row and every data row. -->
-        <GridLength x:Key="KindWidth">132</GridLength>
-        <GridLength x:Key="CrNumberWidth">112</GridLength>
-        <GridLength x:Key="TitleWidth">280</GridLength>
-        <GridLength x:Key="SubtitleWidth">220</GridLength>
-        <GridLength x:Key="ServiceWidth">180</GridLength>
-        <GridLength x:Key="StatusWidth">170</GridLength>
-        <GridLength x:Key="PriorityWidth">110</GridLength>
-        <GridLength x:Key="StartDateWidth">112</GridLength>
-        <GridLength x:Key="EndDateWidth">112</GridLength>
-
-        <Style x:Key="CellTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-            <Setter Property="TextWrapping" Value="NoWrap" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="HeaderCellStyle" TargetType="local:GridHeaderCell">
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Height" Value="40" />
-        </Style>
-
-        <DataTemplate x:Key="StatusOptionTemplate" x:DataType="local:StatusOption">
-            <TextBlock Text="{x:Bind Name, Mode=OneTime}" />
-        </DataTemplate>
-
-        <!--
-            One row of the custom grid (ADR 0004). Editors are created only while their cell edits (x:Load), so
-            realized rows stay light and virtualization keeps its memory profile from the Phase 0 gate.
-        -->
-        <DataTemplate x:Key="RowTemplate" x:DataType="local:GridRowViewModel">
-            <Grid Height="44">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="{StaticResource KindWidth}" />
-                    <ColumnDefinition Width="{StaticResource CrNumberWidth}" />
-                    <ColumnDefinition Width="{StaticResource TitleWidth}" />
-                    <ColumnDefinition Width="{StaticResource SubtitleWidth}" />
-                    <ColumnDefinition Width="{StaticResource ServiceWidth}" />
-                    <ColumnDefinition Width="{StaticResource StatusWidth}" />
-                    <ColumnDefinition Width="{StaticResource PriorityWidth}" />
-                    <ColumnDefinition Width="{StaticResource StartDateWidth}" />
-                    <ColumnDefinition Width="{StaticResource EndDateWidth}" />
-                </Grid.ColumnDefinitions>
-
-                <local:GridCell Column="Kind">
-                    <Grid ColumnSpacing="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <FontIcon
-                            AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
-                            Glyph="{x:Bind KindGlyph, Mode=OneWay}" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource CellTextStyle}" Text="{x:Bind KindText, Mode=OneWay}" />
-                        <!-- Design §4.3 row menu; keyboard users reach the same menu with Shift+F10 on any cell. -->
-                        <Button
-                            Grid.Column="2"
-                            Padding="4,2"
-                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Grid_RowMenuButton_', Key), Mode=OneTime}"
-                            AutomationProperties.Name="{x:Bind RowMenuName, Mode=OneWay}"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Click="OnRowMenuButtonClick"
-                            IsTabStop="False"
-                            ToolTipService.ToolTip="{x:Bind RowMenuName, Mode=OneWay}">
-                            <FontIcon FontSize="12" Glyph="&#xE712;" />
-                        </Button>
-                    </Grid>
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="1" Column="CrNumber">
-                    <TextBlock Style="{StaticResource CellTextStyle}" Text="{x:Bind CrNumberText, Mode=OneWay}" />
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="2" Column="Title">
-                    <Grid ColumnSpacing="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="6"
-                            Visibility="{x:Bind common:BindFunctions.Collapsed(IsEditingTitle), Mode=OneWay}">
-                            <!-- B-02.3: the lock glyph and its tooltip say the title comes from the CR (or the parent task). -->
-                            <FontIcon
-                                AutomationProperties.Name="{x:Bind TitleLockText, Mode=OneWay}"
-                                FontSize="12"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Glyph="&#xE72E;"
-                                ToolTipService.ToolTip="{x:Bind TitleLockText, Mode=OneWay}"
-                                Visibility="{x:Bind common:BindFunctions.Visible(IsTitleLocked), Mode=OneWay}" />
-                            <TextBlock
-                                Style="{StaticResource CellTextStyle}"
-                                Text="{x:Bind TitleText, Mode=OneWay}"
-                                ToolTipService.ToolTip="{x:Bind TitleText, Mode=OneWay}" />
-                        </StackPanel>
-                        <TextBox
-                            x:Name="TitleEditor"
-                            x:Load="{x:Bind IsEditingTitle, Mode=OneWay}"
-                            x:Uid="Grid_TitleEditor"
-                            VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="Grid_CellEditor"
-                            IsReadOnly="{x:Bind IsSaving, Mode=OneWay}"
-                            LostFocus="OnEditorLostFocus"
-                            MaxLength="250"
-                            Text="{x:Bind DraftText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <ProgressRing
-                            Grid.Column="1"
-                            Width="12"
-                            Height="12"
-                            IsActive="{x:Bind common:BindFunctions.All(IsSaving, IsEditingTitle), Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.VisibleAll(IsSaving, IsEditingTitle), Mode=OneWay}" />
-                    </Grid>
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="3" Column="Subtitle">
-                    <Grid ColumnSpacing="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock
-                            Style="{StaticResource CellTextStyle}"
-                            Text="{x:Bind SubtitleText, Mode=OneWay}"
-                            ToolTipService.ToolTip="{x:Bind SubtitleText, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Collapsed(IsEditingSubtitle), Mode=OneWay}" />
-                        <TextBox
-                            x:Name="SubtitleEditor"
-                            x:Load="{x:Bind IsEditingSubtitle, Mode=OneWay}"
-                            x:Uid="Grid_SubtitleEditor"
-                            VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="Grid_CellEditor"
-                            IsReadOnly="{x:Bind IsSaving, Mode=OneWay}"
-                            LostFocus="OnEditorLostFocus"
-                            MaxLength="250"
-                            Text="{x:Bind DraftText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <ProgressRing
-                            Grid.Column="1"
-                            Width="12"
-                            Height="12"
-                            IsActive="{x:Bind common:BindFunctions.All(IsSaving, IsEditingSubtitle), Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.VisibleAll(IsSaving, IsEditingSubtitle), Mode=OneWay}" />
-                    </Grid>
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="4" Column="Service">
-                    <Grid ColumnSpacing="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock
-                            Style="{StaticResource CellTextStyle}"
-                            Text="{x:Bind ServiceText, Mode=OneWay}"
-                            ToolTipService.ToolTip="{x:Bind ServiceText, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Collapsed(IsEditingService), Mode=OneWay}" />
-                        <TextBox
-                            x:Name="ServiceEditor"
-                            x:Load="{x:Bind IsEditingService, Mode=OneWay}"
-                            x:Uid="Grid_ServiceEditor"
-                            VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="Grid_CellEditor"
-                            IsReadOnly="{x:Bind IsSaving, Mode=OneWay}"
-                            LostFocus="OnEditorLostFocus"
-                            MaxLength="250"
-                            Text="{x:Bind DraftText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <ProgressRing
-                            Grid.Column="1"
-                            Width="12"
-                            Height="12"
-                            IsActive="{x:Bind common:BindFunctions.All(IsSaving, IsEditingService), Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.VisibleAll(IsSaving, IsEditingService), Mode=OneWay}" />
-                    </Grid>
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="5" Column="Status">
-                    <Grid ColumnSpacing="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock
-                            Style="{StaticResource CellTextStyle}"
-                            Text="{x:Bind StatusText, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Collapsed(IsEditingStatus), Mode=OneWay}" />
-                        <!-- Items and selection are set in code-behind so a two-way SelectedItem never runs before ItemsSource. -->
-                        <ComboBox
-                            x:Name="StatusEditor"
-                            x:Load="{x:Bind IsEditingStatus, Mode=OneWay}"
-                            x:Uid="Grid_StatusEditor"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="Grid_CellEditor"
-                            IsEnabled="{x:Bind common:BindFunctions.Not(IsSaving), Mode=OneWay}"
-                            ItemTemplate="{StaticResource StatusOptionTemplate}"
-                            Loaded="OnStatusEditorLoaded"
-                            LostFocus="OnEditorLostFocus"
-                            SelectionChanged="OnStatusEditorSelectionChanged" />
-                        <ProgressRing
-                            Grid.Column="1"
-                            Width="12"
-                            Height="12"
-                            IsActive="{x:Bind common:BindFunctions.All(IsSaving, IsEditingStatus), Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.VisibleAll(IsSaving, IsEditingStatus), Mode=OneWay}" />
-                    </Grid>
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="6" Column="Priority">
-                    <TextBlock Style="{StaticResource CellTextStyle}" Text="{x:Bind PriorityText, Mode=OneWay}" />
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="7" Column="StartDate">
-                    <TextBlock Style="{StaticResource CellTextStyle}" Text="{x:Bind StartDateText, Mode=OneWay}" />
-                </local:GridCell>
-
-                <local:GridCell Grid.Column="8" Column="EndDate">
-                    <TextBlock Style="{StaticResource CellTextStyle}" Text="{x:Bind EndDateText, Mode=OneWay}" />
-                </local:GridCell>
-            </Grid>
+        <!-- One row: the cells are created by the presenter for the displayed columns (no x:Bind in the template). -->
+        <DataTemplate x:Key="RowTemplate">
+            <local:GridRowPresenter />
         </DataTemplate>
     </UserControl.Resources>
 
@@ -239,7 +25,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Page header (design §2.3). Search, Filters, and the CommandBar arrive with Phases 9 and 11. -->
+        <!-- Page header (design §2.3). Search and Filters arrive with Phase 11. -->
         <Grid
             x:Name="HeaderRoot"
             Padding="32,24,32,12"
@@ -247,8 +33,9 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Spacing="2">
+            <StackPanel VerticalAlignment="Center" Spacing="2">
                 <TextBlock
                     x:Name="PageTitle"
                     x:Uid="Grid_PageTitle"
@@ -257,8 +44,60 @@
                     Style="{StaticResource PageTitleTextStyle}" />
                 <TextBlock x:Uid="Grid_PageSubtitle" Style="{StaticResource PageSubtitleTextStyle}" />
             </StackPanel>
-            <Button
+
+            <!-- Design §2.4/§4.3: Show archived, Columns, Export…, and Reset column layout in overflow. -->
+            <CommandBar
+                x:Name="Commands"
                 Grid.Column="1"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                DefaultLabelPosition="Right"
+                IsDynamicOverflowEnabled="True"
+                OverflowButtonVisibility="Auto">
+                <AppBarToggleButton
+                    x:Uid="Grid_ShowArchivedToggle"
+                    AutomationProperties.AutomationId="Grid_ShowArchivedToggle"
+                    DynamicOverflowOrder="2"
+                    IsChecked="{x:Bind ViewModel.ShowArchived, Mode=TwoWay}">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon Glyph="&#xE7B8;" />
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarButton
+                    x:Uid="Grid_ColumnsButton"
+                    AutomationProperties.AutomationId="Grid_ColumnsButton"
+                    DynamicOverflowOrder="3">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE80A;" />
+                    </AppBarButton.Icon>
+                    <AppBarButton.Flyout>
+                        <Flyout x:Name="ColumnsFlyout" Opening="OnColumnsFlyoutOpening" ShouldConstrainToRootBounds="True" />
+                    </AppBarButton.Flyout>
+                </AppBarButton>
+                <!-- Export of the current view arrives with the Data page (Phase 13); disabled until then. -->
+                <AppBarButton
+                    x:Uid="Grid_ExportButton"
+                    AutomationProperties.AutomationId="Grid_ExportButton"
+                    DynamicOverflowOrder="1"
+                    IsEnabled="False">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE896;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <CommandBar.SecondaryCommands>
+                    <AppBarButton
+                        x:Uid="Grid_ResetLayoutButton"
+                        AutomationProperties.AutomationId="Grid_ResetLayoutButton"
+                        Command="{x:Bind ViewModel.ResetLayoutCommand}">
+                        <AppBarButton.Icon>
+                            <FontIcon Glyph="&#xE72C;" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                </CommandBar.SecondaryCommands>
+            </CommandBar>
+
+            <Button
+                Grid.Column="2"
                 VerticalAlignment="Center"
                 x:Uid="Grid_NewTaskButton"
                 AutomationProperties.AutomationId="Grid_NewTaskButton"
@@ -269,7 +108,7 @@
                 </Button.KeyboardAccelerators>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="16" Glyph="&#xE710;" />
-                    <TextBlock x:Uid="Grid_NewTaskButtonText" />
+                    <TextBlock x:Name="NewTaskText" x:Uid="Grid_NewTaskButtonText" />
                 </StackPanel>
             </Button>
         </Grid>
@@ -278,7 +117,7 @@
             x:Uid="Grid_StateView"
             Grid.Row="1"
             EmptyActionCommand="{x:Bind ViewModel.NewTaskCommand}"
-            EmptyGlyph="&#xF0E2;"
+            EmptyGlyph="&#xE80A;"
             PageKey="Grid"
             State="{x:Bind ViewModel.State, Mode=OneWay}">
             <!--
@@ -291,38 +130,20 @@
                 HorizontalScrollBarVisibility="Auto"
                 HorizontalScrollMode="Auto"
                 VerticalScrollBarVisibility="Disabled"
-                VerticalScrollMode="Disabled">
+                VerticalScrollMode="Disabled"
+                ViewChanged="OnHorizontalViewChanged">
                 <Grid x:Name="TableRoot">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Grid
-                        x:Name="HeaderRow"
+                    <Border
+                        x:Name="HeaderBorder"
                         Padding="32,0,0,0"
                         BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                         BorderThickness="0,0,0,1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="{StaticResource KindWidth}" />
-                            <ColumnDefinition Width="{StaticResource CrNumberWidth}" />
-                            <ColumnDefinition Width="{StaticResource TitleWidth}" />
-                            <ColumnDefinition Width="{StaticResource SubtitleWidth}" />
-                            <ColumnDefinition Width="{StaticResource ServiceWidth}" />
-                            <ColumnDefinition Width="{StaticResource StatusWidth}" />
-                            <ColumnDefinition Width="{StaticResource PriorityWidth}" />
-                            <ColumnDefinition Width="{StaticResource StartDateWidth}" />
-                            <ColumnDefinition Width="{StaticResource EndDateWidth}" />
-                        </Grid.ColumnDefinitions>
-                        <local:GridHeaderCell x:Uid="Grid_Header_Kind" Column="Kind" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_CrNumber" Grid.Column="1" Column="CrNumber" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_Title" Grid.Column="2" Column="Title" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_Subtitle" Grid.Column="3" Column="Subtitle" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_Service" Grid.Column="4" Column="Service" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_Status" Grid.Column="5" Column="Status" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_Priority" Grid.Column="6" Column="Priority" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_StartDate" Grid.Column="7" Column="StartDate" Style="{StaticResource HeaderCellStyle}" />
-                        <local:GridHeaderCell x:Uid="Grid_Header_EndDate" Grid.Column="8" Column="EndDate" Style="{StaticResource HeaderCellStyle}" />
-                    </Grid>
+                        <local:GridHeaderPanel x:Name="HeaderRow" />
+                    </Border>
 
                     <local:GridTable
                         x:Name="Table"

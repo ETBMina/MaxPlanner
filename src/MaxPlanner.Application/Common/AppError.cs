@@ -58,6 +58,18 @@ public sealed record ConcurrencyConflictError(EntityKind Entity, Guid Id, long E
     public override string Code => "concurrency-conflict";
 }
 
+/// <summary>
+/// A Settings change was prepared against workflow settings that changed meanwhile (ADR 0022). Lookups and
+/// field definitions have no row revisions, so their commands carry a <see cref="Settings.WorkflowStamps"/>
+/// stamp of what the user saw instead. Nothing was written; the page shows the current settings.
+/// </summary>
+public sealed record WorkflowChangedError : AppError
+{
+    public static WorkflowChangedError Instance { get; } = new();
+
+    public override string Code => "workflow-changed";
+}
+
 /// <param name="WasDeleted">True when a tombstone shows the record was deleted, as opposed to never existing (B-05).</param>
 public sealed record RecordNotFoundError(EntityKind Entity, Guid Id, bool WasDeleted) : AppError
 {

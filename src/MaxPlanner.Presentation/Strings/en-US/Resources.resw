@@ -416,45 +416,6 @@
   <data name="Grid_Table.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Tasks and Subtask cards</value>
   </data>
-  <data name="Grid_Header_Kind.Content" xml:space="preserve">
-    <value>Kind</value>
-  </data>
-  <data name="Grid_Header_CrNumber.Content" xml:space="preserve">
-    <value>CR Number</value>
-  </data>
-  <data name="Grid_Header_Title.Content" xml:space="preserve">
-    <value>Title</value>
-  </data>
-  <data name="Grid_Header_Subtitle.Content" xml:space="preserve">
-    <value>Subtitle</value>
-  </data>
-  <data name="Grid_Header_Service.Content" xml:space="preserve">
-    <value>Service</value>
-  </data>
-  <data name="Grid_Header_Status.Content" xml:space="preserve">
-    <value>Status</value>
-  </data>
-  <data name="Grid_Header_Priority.Content" xml:space="preserve">
-    <value>Priority</value>
-  </data>
-  <data name="Grid_Header_StartDate.Content" xml:space="preserve">
-    <value>Start Date</value>
-  </data>
-  <data name="Grid_Header_EndDate.Content" xml:space="preserve">
-    <value>End Date</value>
-  </data>
-  <data name="Grid_TitleEditor.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Title</value>
-  </data>
-  <data name="Grid_SubtitleEditor.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Subtitle</value>
-  </data>
-  <data name="Grid_ServiceEditor.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Service</value>
-  </data>
-  <data name="Grid_StatusEditor.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Status</value>
-  </data>
   <data name="Grid_KindTask" xml:space="preserve">
     <value>Task</value>
   </data>
@@ -480,7 +441,7 @@
     <value>no CR</value>
   </data>
   <data name="Grid_Summary" xml:space="preserve">
-    <value>{0} rows · tasks and Subtask cards · archived hidden</value>
+    <value>{0} rows · {1} · {2}</value>
     <comment>{0} = visible row count.</comment>
   </data>
   <data name="Grid_CellControlType" xml:space="preserve">
@@ -1965,5 +1926,731 @@
   </data>
   <data name="Shell_NavChecklistsBadgeName" xml:space="preserve">
     <value>Checklists, {0} open</value>
+  </data>
+  <data name="Common_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Error_WorkflowChanged" xml:space="preserve">
+    <value>These settings changed elsewhere. The page now shows the current settings; try again.</value>
+  </data>
+  <data name="Error_DuplicateName" xml:space="preserve">
+    <value>{0}: this name is already used.</value>
+  </data>
+  <data name="Error_DuplicateFieldKey" xml:space="preserve">
+    <value>Another field already uses this key.</value>
+  </data>
+  <data name="Error_ReservedFieldKey" xml:space="preserve">
+    <value>This key belongs to a built-in field. Choose another key.</value>
+  </data>
+  <data name="Error_InvalidFieldKey" xml:space="preserve">
+    <value>Use a letter first, then letters, digits, '_' or '-'.</value>
+  </data>
+  <data name="Error_InvalidFieldOptions" xml:space="preserve">
+    <value>A lookup field needs at least one option, and option names must be different.</value>
+  </data>
+  <data name="Error_LastLookupRequired" xml:space="preserve">
+    <value>At least one value of this kind is required.</value>
+  </data>
+  <data name="Error_ReplacementRequired" xml:space="preserve">
+    <value>Choose a replacement. This value is required where it is used.</value>
+  </data>
+  <data name="Error_ReplacementSameAsRemoved" xml:space="preserve">
+    <value>Choose a different value as the replacement.</value>
+  </data>
+  <data name="Error_BacklogStatusMustBeFlagged" xml:space="preserve">
+    <value>The "Move to backlog" status must be flagged Backlog. Choose another backlog status in Defaults first.</value>
+  </data>
+  <data name="Error_RequiredFieldHasMissingValues" xml:space="preserve">
+    <value>{0} records have no value for this field. Fill them in first, or keep the field optional.</value>
+  </data>
+  <data name="Error_OptionInUse" xml:space="preserve">
+    <value>An option you removed is used by records. Keep it, or rename it instead.</value>
+  </data>
+  <data name="Field_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Field_Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="Field_Key" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="Field_Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="Field_IsRequired" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Field_DefaultValue" xml:space="preserve">
+    <value>Default value</value>
+  </data>
+  <data name="Field_Replacement" xml:space="preserve">
+    <value>Replacement</value>
+  </data>
+  <data name="Field_Removed" xml:space="preserve">
+    <value>Removed value</value>
+  </data>
+  <data name="Field_CrBacklogStatus" xml:space="preserve">
+    <value>Backlog status</value>
+  </data>
+  <data name="Field_Order" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="Field_DefaultTaskStatus" xml:space="preserve">
+    <value>Default task status</value>
+  </data>
+  <data name="Field_DefaultCrStatus" xml:space="preserve">
+    <value>Default CR status</value>
+  </data>
+  <data name="Field_DefaultPriority" xml:space="preserve">
+    <value>Default priority</value>
+  </data>
+  <data name="Field_DefaultCrOwner" xml:space="preserve">
+    <value>Default CR Owner</value>
+  </data>
+  <data name="Field_CalendarSchedulingStatus" xml:space="preserve">
+    <value>Scheduling status</value>
+  </data>
+  <data name="Field_IsBacklog" xml:space="preserve">
+    <value>Backlog flag</value>
+  </data>
+  <data name="Field_CustomFields" xml:space="preserve">
+    <value>Custom fields</value>
+  </data>
+  <data name="Field_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Field_Field" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="Record_Settings" xml:space="preserve">
+    <value>setting</value>
+  </data>
+  <data name="CustomField_ClearDateName" xml:space="preserve">
+    <value>Clear {0}</value>
+  </data>
+  <data name="TaskEditor_CustomFieldsHeading.Text" xml:space="preserve">
+    <value>Custom fields</value>
+  </data>
+  <data name="CrEditor_CustomFieldsHeading.Text" xml:space="preserve">
+    <value>Custom fields</value>
+  </data>
+  <data name="Editor_RequiredLegend.Text" xml:space="preserve">
+    <value>* Required</value>
+  </data>
+  <data name="Grid_Column_Kind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Grid_Column_CrNumber" xml:space="preserve">
+    <value>CR Number</value>
+  </data>
+  <data name="Grid_Column_TaskNumber" xml:space="preserve">
+    <value>Task Number</value>
+  </data>
+  <data name="Grid_Column_Squad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Grid_Column_Owner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Grid_Column_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Grid_Column_Subtitle" xml:space="preserve">
+    <value>Subtitle</value>
+  </data>
+  <data name="Grid_Column_Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Grid_Column_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Grid_Column_Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Grid_Column_Designers" xml:space="preserve">
+    <value>Designers</value>
+  </data>
+  <data name="Grid_Column_Developers" xml:space="preserve">
+    <value>Developers</value>
+  </data>
+  <data name="Grid_Column_StartDate" xml:space="preserve">
+    <value>Start Date</value>
+  </data>
+  <data name="Grid_Column_EndDate" xml:space="preserve">
+    <value>End Date</value>
+  </data>
+  <data name="Grid_Column_Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Grid_Column_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Grid_Column_Archived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Grid_ArchivedChip" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Grid_RowArchivedSuffix" xml:space="preserve">
+    <value>, archived, read-only</value>
+  </data>
+  <data name="Grid_ClearDateName" xml:space="preserve">
+    <value>Clear {0}</value>
+  </data>
+  <data name="Grid_HeaderName" xml:space="preserve">
+    <value>Sort by {0}, currently {1}</value>
+  </data>
+  <data name="Grid_SortStateAscending" xml:space="preserve">
+    <value>ascending</value>
+  </data>
+  <data name="Grid_SortStateDescending" xml:space="preserve">
+    <value>descending</value>
+  </data>
+  <data name="Grid_SortStateNone" xml:space="preserve">
+    <value>not sorted</value>
+  </data>
+  <data name="Grid_ResizeColumnName" xml:space="preserve">
+    <value>Resize {0}. Alt+Left or Alt+Right on the header</value>
+  </data>
+  <data name="Grid_MoveColumnCaption" xml:space="preserve">
+    <value>Move before {0}</value>
+  </data>
+  <data name="Grid_HeaderMenuSort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Grid_HeaderMenuMoveLeft" xml:space="preserve">
+    <value>Move left</value>
+  </data>
+  <data name="Grid_HeaderMenuMoveRight" xml:space="preserve">
+    <value>Move right</value>
+  </data>
+  <data name="Grid_HeaderMenuHide" xml:space="preserve">
+    <value>Hide column</value>
+  </data>
+  <data name="Grid_ColumnsHeading" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="Grid_ColumnsReset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Grid_FlyoutSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Grid_FlyoutSaveTooltip" xml:space="preserve">
+    <value>Save (Ctrl+Enter)</value>
+  </data>
+  <data name="Grid_MenuLinkToCr" xml:space="preserve">
+    <value>Link to CR…</value>
+  </data>
+  <data name="Grid_MenuRestore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Grid_SummarySortDefault" xml:space="preserve">
+    <value>sorted by Created, newest first</value>
+  </data>
+  <data name="Grid_SummarySortAscending" xml:space="preserve">
+    <value>sorted by {0}, ascending</value>
+  </data>
+  <data name="Grid_SummarySortDescending" xml:space="preserve">
+    <value>sorted by {0}, descending</value>
+  </data>
+  <data name="Grid_SummaryArchivedHidden" xml:space="preserve">
+    <value>archived hidden</value>
+  </data>
+  <data name="Grid_SummaryArchivedShown" xml:space="preserve">
+    <value>archived shown</value>
+  </data>
+  <data name="Grid_ShowArchivedToggle.Label" xml:space="preserve">
+    <value>Show archived</value>
+  </data>
+  <data name="Grid_ShowArchivedToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show archived tasks and their Subtask cards (read-only)</value>
+  </data>
+  <data name="Grid_ColumnsButton.Label" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="Grid_ColumnsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Choose columns</value>
+  </data>
+  <data name="Grid_ExportButton.Label" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="Grid_ExportButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Export arrives with the Data page in a later version</value>
+  </data>
+  <data name="Grid_ResetLayoutButton.Label" xml:space="preserve">
+    <value>Reset column layout</value>
+  </data>
+  <data name="Settings_Summary" xml:space="preserve">
+    <value>Changes apply immediately</value>
+  </data>
+  <data name="Settings_PageTitle.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings_PageSubtitle.Text" xml:space="preserve">
+    <value>Appearance, workflow, people and tags, defaults, custom fields, and data</value>
+  </data>
+  <data name="Settings_AppearanceHeading.Text" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Settings_WorkflowHeading.Text" xml:space="preserve">
+    <value>Workflow</value>
+  </data>
+  <data name="Settings_PeopleHeading.Text" xml:space="preserve">
+    <value>People and tags</value>
+  </data>
+  <data name="Settings_DefaultsHeading.Text" xml:space="preserve">
+    <value>Defaults</value>
+  </data>
+  <data name="Settings_FieldsHeading.Text" xml:space="preserve">
+    <value>Custom fields</value>
+  </data>
+  <data name="Settings_DataHeading.Text" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="Settings_ThemeCard.Header" xml:space="preserve">
+    <value>App theme</value>
+  </data>
+  <data name="Settings_ThemeCard.Description" xml:space="preserve">
+    <value>Applies immediately. Use system setting follows Windows.</value>
+  </data>
+  <data name="Settings_ThemeCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>App theme</value>
+  </data>
+  <data name="Settings_ThemeSystem" xml:space="preserve">
+    <value>Use system setting</value>
+  </data>
+  <data name="Settings_ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings_ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings_TaskStatusesTitle" xml:space="preserve">
+    <value>Task statuses</value>
+  </data>
+  <data name="Settings_CrStatusesTitle" xml:space="preserve">
+    <value>Change request statuses</value>
+  </data>
+  <data name="Settings_PrioritiesTitle" xml:space="preserve">
+    <value>Priorities</value>
+  </data>
+  <data name="Settings_SquadsTitle" xml:space="preserve">
+    <value>Squads</value>
+  </data>
+  <data name="Settings_PeopleTitle" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="Settings_TagsTitle" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Settings_TaskFieldsTitle" xml:space="preserve">
+    <value>Task fields</value>
+  </data>
+  <data name="Settings_CrFieldsTitle" xml:space="preserve">
+    <value>Change request fields</value>
+  </data>
+  <data name="Settings_StatusesDescription" xml:space="preserve">
+    <value>{0} statuses · names must be unique · at least one is required</value>
+  </data>
+  <data name="Settings_PrioritiesDescription" xml:space="preserve">
+    <value>{0} priorities, highest first · at least one is required</value>
+  </data>
+  <data name="Settings_SquadsDescription" xml:space="preserve">
+    <value>{0} squads · records without a squad show General</value>
+  </data>
+  <data name="Settings_PeopleDescription" xml:space="preserve">
+    <value>{0} people · designers, developers, CR owners, and review developers</value>
+  </data>
+  <data name="Settings_TagsDescription" xml:space="preserve">
+    <value>{0} tags</value>
+  </data>
+  <data name="Settings_FieldsDescription" xml:space="preserve">
+    <value>{0} fields · removing a field keeps its values in exports and backups</value>
+  </data>
+  <data name="Settings_FieldDetails" xml:space="preserve">
+    <value>{0} · key {1}</value>
+  </data>
+  <data name="Settings_AddBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New name</value>
+  </data>
+  <data name="Settings_AddBox.PlaceholderText" xml:space="preserve">
+    <value>New name</value>
+  </data>
+  <data name="Settings_AddButton.Content" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Settings_AddFieldButton.Content" xml:space="preserve">
+    <value>Add field…</value>
+  </data>
+  <data name="Settings_RenameBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New name</value>
+  </data>
+  <data name="Settings_RowMenuName" xml:space="preserve">
+    <value>More actions for {0}</value>
+  </data>
+  <data name="Settings_FlagDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Settings_FlagDefaultOwner" xml:space="preserve">
+    <value>Default CR Owner</value>
+  </data>
+  <data name="Settings_FlagBacklog" xml:space="preserve">
+    <value>Backlog</value>
+  </data>
+  <data name="Settings_FlagSetsStartDate" xml:space="preserve">
+    <value>Sets start date</value>
+  </data>
+  <data name="Settings_FlagCompletedTask" xml:space="preserve">
+    <value>Completed · sets end date</value>
+  </data>
+  <data name="Settings_FlagCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Settings_FlagScheduling" xml:space="preserve">
+    <value>Scheduling</value>
+  </data>
+  <data name="Settings_FlagBacklogDestination" xml:space="preserve">
+    <value>Move to backlog</value>
+  </data>
+  <data name="Settings_FlagRequired" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Settings_FlagHasDefault" xml:space="preserve">
+    <value>Has default</value>
+  </data>
+  <data name="Settings_UsageTasks" xml:space="preserve">
+    <value>{0} tasks</value>
+  </data>
+  <data name="Settings_UsageSubtaskCards" xml:space="preserve">
+    <value>{0} Subtask cards</value>
+  </data>
+  <data name="Settings_UsageCrs" xml:space="preserve">
+    <value>{0} CRs</value>
+  </data>
+  <data name="Settings_UsageCrOwner" xml:space="preserve">
+    <value>owner of {0} CRs</value>
+  </data>
+  <data name="Settings_UsageReviews" xml:space="preserve">
+    <value>{0} reviews</value>
+  </data>
+  <data name="Settings_UsageNone" xml:space="preserve">
+    <value>Not used</value>
+  </data>
+  <data name="Settings_MenuRename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Settings_MenuSetDefault" xml:space="preserve">
+    <value>Set as default</value>
+  </data>
+  <data name="Settings_MenuMakeDefaultOwner" xml:space="preserve">
+    <value>Make default CR Owner</value>
+  </data>
+  <data name="Settings_MenuFlagCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Settings_MenuFlagSetsStartDate" xml:space="preserve">
+    <value>Sets start date</value>
+  </data>
+  <data name="Settings_MenuFlagBacklog" xml:space="preserve">
+    <value>Backlog</value>
+  </data>
+  <data name="Settings_MenuMoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="Settings_MenuMoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Settings_MenuRemove" xml:space="preserve">
+    <value>Remove…</value>
+  </data>
+  <data name="Settings_MenuEditField" xml:space="preserve">
+    <value>Edit…</value>
+  </data>
+  <data name="Settings_MenuRemoveField" xml:space="preserve">
+    <value>Remove…</value>
+  </data>
+  <data name="Settings_RemoveFieldTitle" xml:space="preserve">
+    <value>Remove field '{0}'?</value>
+  </data>
+  <data name="Settings_RemoveFieldMessage" xml:space="preserve">
+    <value>The field leaves editors and the Grid. Its stored values stay in records, full exports, and backups.</value>
+  </data>
+  <data name="Settings_RemoveFieldButton" xml:space="preserve">
+    <value>Remove field</value>
+  </data>
+  <data name="Settings_DefaultTaskStatusCard.Header" xml:space="preserve">
+    <value>Default task status</value>
+  </data>
+  <data name="Settings_DefaultTaskStatusCard.Description" xml:space="preserve">
+    <value>New tasks start here unless the Board column chooses another status.</value>
+  </data>
+  <data name="Settings_DefaultTaskStatusCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Default task status</value>
+  </data>
+  <data name="Settings_DefaultCrStatusCard.Header" xml:space="preserve">
+    <value>Default CR status</value>
+  </data>
+  <data name="Settings_DefaultCrStatusCard.Description" xml:space="preserve">
+    <value>New change requests start in this status.</value>
+  </data>
+  <data name="Settings_DefaultCrStatusCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Default CR status</value>
+  </data>
+  <data name="Settings_DefaultPriorityCard.Header" xml:space="preserve">
+    <value>Default priority</value>
+  </data>
+  <data name="Settings_DefaultPriorityCard.Description" xml:space="preserve">
+    <value>New tasks and change requests start with this priority.</value>
+  </data>
+  <data name="Settings_DefaultPriorityCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Default priority</value>
+  </data>
+  <data name="Settings_DefaultCrOwnerCard.Header" xml:space="preserve">
+    <value>Default CR Owner</value>
+  </data>
+  <data name="Settings_DefaultCrOwnerCard.Description" xml:space="preserve">
+    <value>New change requests start with this owner.</value>
+  </data>
+  <data name="Settings_DefaultCrOwnerPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Default CR Owner</value>
+  </data>
+  <data name="Settings_NoDefaultOwner" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Settings_SchedulingStatusCard.Header" xml:space="preserve">
+    <value>CR scheduling status</value>
+  </data>
+  <data name="Settings_SchedulingStatusCard.Description" xml:space="preserve">
+    <value>Scheduling a backlog CR on the Calendar moves it to this status.</value>
+  </data>
+  <data name="Settings_SchedulingStatusCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>CR scheduling status</value>
+  </data>
+  <data name="Settings_BacklogStatusCard.Header" xml:space="preserve">
+    <value>Move to backlog status</value>
+  </data>
+  <data name="Settings_BacklogStatusCard.Description" xml:space="preserve">
+    <value>Move to backlog sets this status. Only statuses flagged Backlog are offered.</value>
+  </data>
+  <data name="Settings_BacklogStatusCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Move to backlog status</value>
+  </data>
+  <data name="Settings_WorkweekCard.Header" xml:space="preserve">
+    <value>Calendar workweek</value>
+  </data>
+  <data name="Settings_WorkweekCard.Description" xml:space="preserve">
+    <value>Sunday–Thursday. Friday and Saturday are hidden. Fixed in this version.</value>
+  </data>
+  <data name="Settings_DataLocationCard.Header" xml:space="preserve">
+    <value>Data location</value>
+  </data>
+  <data name="Settings_OpenDataFolderButton.Content" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="Settings_BackupsCard.Header" xml:space="preserve">
+    <value>Backups</value>
+  </data>
+  <data name="Settings_BackupLast" xml:space="preserve">
+    <value>Last backup: {0} ({1})</value>
+  </data>
+  <data name="Settings_BackupNone" xml:space="preserve">
+    <value>No backup yet. A backup is made on the first open of each day.</value>
+  </data>
+  <data name="Settings_BackupUnknown" xml:space="preserve">
+    <value>The backup folder could not be read.</value>
+  </data>
+  <data name="Settings_DataPageCard.Header" xml:space="preserve">
+    <value>Import, export and restore</value>
+  </data>
+  <data name="Settings_DataPageCard.Description" xml:space="preserve">
+    <value>Arrives in a later version.</value>
+  </data>
+  <data name="Settings_DataPageButton.Content" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Settings_DataPageButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Not available yet</value>
+  </data>
+  <data name="BackupKind_daily" xml:space="preserve">
+    <value>daily</value>
+  </data>
+  <data name="BackupKind_manual" xml:space="preserve">
+    <value>manual</value>
+  </data>
+  <data name="BackupKind_migrationsafety" xml:space="preserve">
+    <value>before an upgrade</value>
+  </data>
+  <data name="BackupKind_restoresafety" xml:space="preserve">
+    <value>before a restore</value>
+  </data>
+  <data name="BackupKind_importsafety" xml:space="preserve">
+    <value>before an import</value>
+  </data>
+  <data name="FieldKind_Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="FieldKind_MultilineText" xml:space="preserve">
+    <value>Multiline text</value>
+  </data>
+  <data name="FieldKind_Number" xml:space="preserve">
+    <value>Number</value>
+  </data>
+  <data name="FieldKind_Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="FieldKind_Lookup" xml:space="preserve">
+    <value>Lookup</value>
+  </data>
+  <data name="FieldKind_People" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="FieldKind_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="FieldKind_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="LookupRemove_Title_TaskStatus" xml:space="preserve">
+    <value>Remove status '{0}'?</value>
+  </data>
+  <data name="LookupRemove_Title_CrStatus" xml:space="preserve">
+    <value>Remove CR status '{0}'?</value>
+  </data>
+  <data name="LookupRemove_Title_Priority" xml:space="preserve">
+    <value>Remove priority '{0}'?</value>
+  </data>
+  <data name="LookupRemove_Title_Squad" xml:space="preserve">
+    <value>Remove squad '{0}'?</value>
+  </data>
+  <data name="LookupRemove_Title_Person" xml:space="preserve">
+    <value>Remove person '{0}'?</value>
+  </data>
+  <data name="LookupRemove_Title_Tag" xml:space="preserve">
+    <value>Remove tag '{0}'?</value>
+  </data>
+  <data name="LookupRemove_Default_DefaultTaskStatus" xml:space="preserve">
+    <value>The default task status</value>
+  </data>
+  <data name="LookupRemove_Default_DefaultCrStatus" xml:space="preserve">
+    <value>The default CR status</value>
+  </data>
+  <data name="LookupRemove_Default_DefaultPriority" xml:space="preserve">
+    <value>The default priority</value>
+  </data>
+  <data name="LookupRemove_Default_DefaultCrOwner" xml:space="preserve">
+    <value>The default CR Owner</value>
+  </data>
+  <data name="LookupRemove_Default_CalendarSchedulingStatus" xml:space="preserve">
+    <value>The CR scheduling status</value>
+  </data>
+  <data name="LookupRemove_Default_CrBacklogStatus" xml:space="preserve">
+    <value>The Move to backlog status</value>
+  </data>
+  <data name="LookupRemove_UsageTasks" xml:space="preserve">
+    <value>{0} tasks (archived included)</value>
+  </data>
+  <data name="LookupRemove_UsageSubtaskCards" xml:space="preserve">
+    <value>{0} Subtask cards</value>
+  </data>
+  <data name="LookupRemove_UsageCrs" xml:space="preserve">
+    <value>{0} change requests</value>
+  </data>
+  <data name="LookupRemove_UsageCrOwners" xml:space="preserve">
+    <value>Owner of {0} change requests (can only be replaced)</value>
+  </data>
+  <data name="LookupRemove_UsageReviews" xml:space="preserve">
+    <value>{0} review items</value>
+  </data>
+  <data name="LookupRemove_Unused" xml:space="preserve">
+    <value>Not used by any record or default.</value>
+  </data>
+  <data name="LookupRemove_UsageChanged" xml:space="preserve">
+    <value>The usage changed. Review the new counts and confirm again.</value>
+  </data>
+  <data name="LookupRemove_Done" xml:space="preserve">
+    <value>Removed {0}</value>
+  </data>
+  <data name="LookupRemove_RemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="LookupRemove_RemoveAndReplaceButton" xml:space="preserve">
+    <value>Remove and replace</value>
+  </data>
+  <data name="LookupRemove_ReplaceOption" xml:space="preserve">
+    <value>Replace with…</value>
+  </data>
+  <data name="LookupRemove_ClearOption" xml:space="preserve">
+    <value>Clear from records</value>
+  </data>
+  <data name="LookupRemove_InUseBy.Text" xml:space="preserve">
+    <value>In use by:</value>
+  </data>
+  <data name="LookupRemove_ModeRadios.Header" xml:space="preserve">
+    <value>Records that use it</value>
+  </data>
+  <data name="LookupRemove_ReplacementCombo.Header" xml:space="preserve">
+    <value>Replace with *</value>
+  </data>
+  <data name="LookupRemove_StatusNote.Text" xml:space="preserve">
+    <value>Dates are kept. This is not a status move.</value>
+  </data>
+  <data name="FieldDialog_TitleNewTask" xml:space="preserve">
+    <value>Add task field</value>
+  </data>
+  <data name="FieldDialog_TitleNewCr" xml:space="preserve">
+    <value>Add change request field</value>
+  </data>
+  <data name="FieldDialog_TitleEdit" xml:space="preserve">
+    <value>Edit field</value>
+  </data>
+  <data name="FieldDialog_AddButton" xml:space="preserve">
+    <value>Add field</value>
+  </data>
+  <data name="FieldDialog_SaveButton" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="FieldDialog_RemoveOption" xml:space="preserve">
+    <value>Remove option</value>
+  </data>
+  <data name="FieldDialog_LabelBox.Header" xml:space="preserve">
+    <value>Label *</value>
+  </data>
+  <data name="FieldDialog_KeyBox.Header" xml:space="preserve">
+    <value>Key *</value>
+  </data>
+  <data name="FieldDialog_KeyBox.Description" xml:space="preserve">
+    <value>Used in exports. It can't change after the field is added.</value>
+  </data>
+  <data name="FieldDialog_KindCombo.Header" xml:space="preserve">
+    <value>Kind *</value>
+  </data>
+  <data name="FieldDialog_OptionsHeading.Text" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="FieldDialog_OptionBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Option name</value>
+  </data>
+  <data name="FieldDialog_AddOptionButton.Content" xml:space="preserve">
+    <value>Add option</value>
+  </data>
+  <data name="FieldDialog_RequiredToggle.Header" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="FieldDialog_DefaultTextBox.Header" xml:space="preserve">
+    <value>Default value</value>
+  </data>
+  <data name="FieldDialog_DefaultNumberBox.Header" xml:space="preserve">
+    <value>Default value</value>
+  </data>
+  <data name="FieldDialog_DefaultDatePicker.Header" xml:space="preserve">
+    <value>Default value</value>
+  </data>
+  <data name="FieldDialog_DefaultOptionCombo.Header" xml:space="preserve">
+    <value>Default value</value>
+  </data>
+  <data name="FieldDialog_NoDefaultText.Text" xml:space="preserve">
+    <value>People and tag fields start empty.</value>
   </data>
 </root>
