@@ -95,6 +95,17 @@ Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to 
 - **Active-filter chips:** below the header, one removable chip per field (`Button` with a Cancel glyph; name "Remove filter Squad: Retail Cards"), plus "Search: card" and an immediate **Clear all filters** `HyperlinkButton` (B-10).
 - **Invalid saved filters:** a lookup filter that no longer resolves at startup is cleared and reported in a page InfoBar (Warning): "A saved filter referred to a status that no longer exists and was removed." (B-10)
 
+**Proposed notes (Phase 11, pending owner review):**
+- The Filters button and flyout are one shared `FilterButton` control and the context row is one `FilterChipsBar` control, used by Board, Grid and Calendar. Lookup chips wrap with a small native `WrapPanel` (ADR 0021: no Toolkit), not the Gallery `WrapPanel`.
+- **Apply** is the accent button; Enter activates it when it has focus and **Ctrl+Enter** applies from any field, because plain Enter belongs to the CR picker and the text boxes. Ctrl+Shift+F opens the flyout and Ctrl+Shift+L clears all filters on the visible page; Ctrl+F (focus search) is not wired yet.
+- The flyout lists CR Owner chips only for people who own a CR (plus any already selected), so the chip group stays short. Designers, Developers and Tags use the TokenPicker with existing names only (no add-new in a filter).
+- The search box applies immediately and is part of the scope (persisted with it, shown as a "Search: …" chip); it is outside the draft.
+- Custom fields: Text, Multiline and URL use "contains"; Number uses Min/Max; Date uses From/To with "Include records without a {field}"; Lookup uses chips. People/Tags custom fields are not filterable in release 1 (B-10 lists them under "need not be filterable").
+- A saved CR filter that refers to a deleted CR is cleared at startup with the same InfoBar ("…referred to a CR that no longer exists…"). A filter whose value is removed while the app runs is cleaned the same way.
+- Subtask cards filter by their own status and dates, by the CR values inherited through the parent, and by the parent's priority, people, tags, service and custom values.
+- The Grid Filtered-empty action is **Show archived** when only archived records match, otherwise **Clear all filters** (StateView gained a Filtered-empty action).
+- Calendar B-08.12: after a CR editor save, a page InfoBar says "CR-1042 was saved, but it is hidden by the current filters." with **Clear filters**; nothing else changes.
+
 ### 2.7 InfoBar usage `[gallery-infobar-1, -2, -3]`
 | Scope | Placement | Examples | Severity | Closable |
 |---|---|---|---|---|
@@ -129,6 +140,13 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
   - Review metrics → Checklists › Reviews.
 - The destination receives a **replacement** filter context. It shows a page InfoBar ("Showing Dashboard results: Active tasks · Squad: Retail Cards") with a **Return to Dashboard** button, and the chips include a non-editable "From Dashboard" chip that can be removed. Removing that chip restores the destination's previous filters.
 - TitleBar Back (Alt+Left) pops the same stack and restores the Dashboard filters and scroll position (AC-20).
+
+**Proposed notes (Phases 11–12, pending owner review):**
+- **Return and Back also restore the destination's previous filters** (the same as removing the "From Dashboard" chip), so a later visit never shows the drill-down predicate as if it were the page's own filters. **Clear all filters** ends the drill-down context without restoring the previous filters. The drill-down context is never persisted; a restart shows the page's own saved filters.
+- Board and Grid share one task scope (B-10), so a task drill-down into the Grid also shows its "From Dashboard" chip and InfoBar on the Board (where reordering stays off while it is active).
+- The Dashboard metric is the only non-editable part: the drill-down also sets ordinary, editable fields (for example Squad, Priority, CR Owner, or the chart's Status/Squad), shown as normal chips. Applying the flyout keeps the Dashboard metric.
+- Review drill-downs replace the Checklists search (Checklists has no Filters flyout) and show the same InfoBar and a removable "From Dashboard" chip.
+- A second drill-down into a page that still shows Dashboard results replaces the results but keeps the filters from before the first drill-down; the stack holds one entry per destination page.
 
 ## 3. Theme and materials
 
@@ -197,6 +215,15 @@ Each page section lists its purpose, regions, controls, item content, commands, 
 | Filters | Inline row | Inline row, wraps | Behind a "Filters (n)" button opening the same three ComboBoxes in a flyout |
 
 States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task), Filtered-empty (zero cards stay visible and the lists show "No records match these filters" + Clear filters), and Error. **Zero values are shown only after the snapshot has loaded** (B-15.7). Time-relative values refresh at midnight, on resume and on time-zone change without any change in layout (AC-21).
+
+**Proposed notes (Phase 12, pending owner review):**
+- Lists and the chart Table mode use `ItemsRepeater` rows of `Button`s instead of `ListView`: at most ten rows inside the page `ScrollViewer`, where a nested `ListView` would capture the wheel and drop virtualization anyway. Rows are two lines at every width (primary: number + title; secondary: owner · squad · status · priority · planned end · days), and the Priority chip is shown as text.
+- The Reviews card value is the open count; "{n} done this week" and "{m} done this month" are separate links below the card button (never nested in it), each drilling into Checklists › Reviews with its own predicate.
+- The Empty state is the page's own panel (New CR accent + New task), because the shared StateView has one action.
+- A chart category that the Dashboard filter already excludes (for example another squad while Squad is set) stays visible with its zero but is disabled, because no drill-down predicate can show it.
+- Open reviews by developer lists only developers with at least one open review (people with zero are not listed); statuses and squads keep their zero-count rows (B-15.1–2).
+- At S the three filter ComboBoxes wrap in the header instead of moving into a "Filters (n)" flyout, and chart labels stay in their 35% column.
+- The Overdue CRs card has the "Needs attention" badge when the count is above zero; the "Unscheduled" definition is the card caption.
 
 ### 4.2 Board (B-07, B-16, AC-05/06/10)
 **Purpose:** move task cards and Subtask cards through task statuses.

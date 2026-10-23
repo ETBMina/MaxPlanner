@@ -9,6 +9,7 @@ using MaxPlanner.Domain.Calendar;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -65,6 +66,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
         // Before the first batch the store has no day yet; the local clock stands in until it does.
         Today = context.Store.Today is { DayNumber: > 0 } today ? today : DateOnly.FromDateTime(DateTime.Now);
         Anchor = Today;
+        Filters = context.CrFilters;
         RefreshPriorityLevels();
         _records = new ProjectionView<ChangeRequestReadModel, ChangeRequestId, CalendarRecordViewModel>(
             context.Store.ChangeRequests,
@@ -72,7 +74,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
             context.UiScheduler,
             Create,
             new RecordComparer(RecordSortColumn.PlannedStart, descending: false),
-            MatchesSearchPredicate(string.Empty));
+            Filters.Predicate(Today));
 
         // B-08.3: backlog CRs, newest first.
         _backlog = new ProjectionView<ChangeRequestReadModel, ChangeRequestId, CalendarRecordViewModel>(
@@ -81,7 +83,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
             context.UiScheduler,
             Create,
             NewestFirst.Instance,
-            BacklogPredicate(string.Empty));
+            BacklogPredicate(Filters.Predicate(Today)));
         _records.Initialized += (_, _) => Refresh();
         _backlog.Initialized += (_, _) => Refresh();
         ((INotifyCollectionChanged)_backlog.Items).CollectionChanged += (_, _) => OnPropertyChanged(nameof(BacklogToggleText));
@@ -91,10 +93,19 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
         // One batch notification follows the cache updates of its batch, so the surface reads a consistent state.
         _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(commit =>
         {
+            var dayChanged = Today != commit.Today;
             Today = commit.Today;
+            if (dayChanged)
+            {
+                // The overdue drill-down predicate is relative to the local day (B-15, AC-21).
+                ApplyFilters();
+            }
+
             RefreshPriorityLevels();
             Refresh();
         });
+        Filters.Changed += OnFiltersChanged;
+        context.ChangeRequestSaved += OnChangeRequestSaved;
         Refresh();
     }
 
@@ -127,8 +138,22 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     [ObservableProperty]
     public partial bool IsCompact { get; private set; }
 
+    /// <summary>The Calendar CR scope (B-10): search, filters, chips, and the Overdue drill-down context.</summary>
+    public CrFilterScopeViewModel Filters { get; }
+
+    /// <summary>B-10 CR search (Number, Title, TaskNumber, Squad, Owner, EmailSubject, Description), part of the CR scope.</summary>
+    public string SearchText
+    {
+        get => Filters.SearchText;
+        set => Filters.SearchText = value;
+    }
+
+    /// <summary>B-08.12: a saved CR the current filters hide; the page InfoBar offers Clear filters.</summary>
     [ObservableProperty]
-    public partial string SearchText { get; set; } = string.Empty;
+    public partial bool IsSavedHiddenOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string SavedHiddenMessage { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial ViewState State { get; private set; } = ViewState.Loading;
@@ -373,33 +398,52 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
 
     public void Dispose()
     {
+        Filters.Changed -= OnFiltersChanged;
+        _context.ChangeRequestSaved -= OnChangeRequestSaved;
         _commits.Dispose();
         _records.Dispose();
         _backlog.Dispose();
     }
 
-    partial void OnSearchTextChanged(string value)
+    /// <summary>The InfoBar's Clear filters after a saved CR was hidden (B-08.12).</summary>
+    [RelayCommand]
+    private void ClearFiltersForSaved()
     {
-        var query = value.Trim();
-        _records.SetFilter(MatchesSearchPredicate(query));
-        _backlog.SetFilter(BacklogPredicate(query));
+        IsSavedHiddenOpen = false;
+        Filters.ClearAll();
+    }
+
+    private void OnFiltersChanged(object? sender, EventArgs e)
+    {
+        IsSavedHiddenOpen = false;
+        ApplyFilters();
+        OnPropertyChanged(nameof(SearchText));
         Refresh();
     }
 
-    private static Func<ChangeRequestReadModel, bool> MatchesSearchPredicate(string query) => cr => MatchesSearch(cr, query);
-
-    private static Func<ChangeRequestReadModel, bool> BacklogPredicate(string query) => cr => cr.IsBacklog && MatchesSearch(cr, query);
+    /// <summary>B-08.12, B-10: bars, backlog, overflow and Records all use the one CR scope predicate.</summary>
+    private void ApplyFilters()
+    {
+        var filter = Filters.Predicate(Today);
+        _records.SetFilter(filter);
+        _backlog.SetFilter(BacklogPredicate(filter));
+    }
 
     /// <summary>
-    /// B-10 CR search: a case-insensitive substring across Number, Title, TaskNumber, Squad, Owner, EmailSubject
-    /// and Description, applied alike to bars, backlog, overflow and Records (B-08.12).
+    /// B-08.12: editing a CR that the filters hide must stay discoverable, so the save result says it is hidden and
+    /// offers Clear filters.
     /// </summary>
-    private static bool MatchesSearch(ChangeRequestReadModel cr, string query) =>
-        query.Length == 0
-        || Contains(cr.Number, query) || Contains(cr.Title, query) || Contains(cr.TaskNumber, query) || Contains(cr.SquadName, query)
-        || Contains(cr.Owner.Name, query) || Contains(cr.EmailSubject, query) || Contains(cr.Description, query);
+    private void OnChangeRequestSaved(object? sender, ChangeRequestId id)
+    {
+        if (Filters.IsFiltered && Find(id.Value) is { } cr && !Filters.Predicate(Today)(cr))
+        {
+            SavedHiddenMessage = _context.Strings.Format("Calendar_SavedHidden", cr.Number);
+            IsSavedHiddenOpen = true;
+            _context.Announce(SavedHiddenMessage);
+        }
+    }
 
-    private static bool Contains(string? value, string query) => value?.Contains(query, StringComparison.CurrentCultureIgnoreCase) == true;
+    private static Func<ChangeRequestReadModel, bool> BacklogPredicate(Func<ChangeRequestReadModel, bool> filter) => cr => cr.IsBacklog && filter(cr);
 
     private CalendarRecordViewModel Create(ChangeRequestReadModel model) => new(model, _context.Strings, LevelOf);
 
@@ -428,9 +472,9 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
 
     private void Refresh()
     {
-        var query = SearchText.Trim();
+        var filter = Filters.Predicate(Today);
         var all = _context.Store.ChangeRequests.Items;
-        var matching = all.Where(cr => MatchesSearch(cr, query)).ToList();
+        var matching = all.Where(filter).ToList();
         if (Mode != CalendarMode.Records)
         {
             var rows = Mode == CalendarMode.Week ? CalendarGrid.Week(Anchor) : CalendarGrid.Month(Anchor.Year, Anchor.Month);
@@ -444,7 +488,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
             RaiseSurfaceChanged();
         }
 
-        HasNoMatches = query.Length > 0 && all.Count > 0 && matching.Count == 0;
+        HasNoMatches = Filters.IsFiltered && all.Count > 0 && matching.Count == 0;
         State = !_records.IsInitialized || !_backlog.IsInitialized ? ViewState.Loading : all.Count == 0 ? ViewState.Empty : ViewState.Populated;
         UpdateSummary();
     }

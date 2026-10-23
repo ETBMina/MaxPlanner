@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:filters="using:MaxPlanner.Presentation.Common.Filters"
     xmlns:local="using:MaxPlanner.Presentation.Board"
     IsTabStop="False">
     <UserControl.Resources>
@@ -322,7 +323,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Page header (design §2.3). The shared Filters flyout and CommandBar arrive with Phase 11. -->
+        <!-- Page header (design §2.3): title, search and Filters (shared with the Grid, B-10), and the filter context row. -->
         <StackPanel
             x:Name="HeaderRoot"
             Padding="32,24,32,12"
@@ -344,16 +345,17 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <AutoSuggestBox
-                    x:Name="SearchBox"
-                    x:Uid="Board_SearchBox"
-                    MinWidth="200"
-                    MaxWidth="320"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="Board_SearchBox"
-                    AutomationProperties.LandmarkType="Search"
-                    QueryIcon="Find"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <AutoSuggestBox
+                        x:Name="SearchBox"
+                        x:Uid="Board_SearchBox"
+                        Width="280"
+                        AutomationProperties.AutomationId="Board_SearchBox"
+                        AutomationProperties.LandmarkType="Search"
+                        QueryIcon="Find"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <filters:FilterButton PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                </StackPanel>
                 <Button
                     x:Uid="Board_NewTaskButton"
                     Grid.Column="1"
@@ -401,6 +403,7 @@
                     <FontIcon FontSize="12" Glyph="&#xE76C;" />
                 </Button>
             </Grid>
+            <filters:FilterChipsBar PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
             <!-- Design §4.2 filtered mode: reordering is off; a status move appends to the end (B-07). -->
             <InfoBar
                 x:Uid="Board_FilteredInfoBar"

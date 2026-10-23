@@ -16,6 +16,7 @@ using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Tasks;
@@ -54,6 +55,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         var store = context.Store;
         var preferences = context.Preferences.Current;
         ShowArchived = preferences.ShowArchivedTasks ?? false;
+        Filters = context.TaskFilters;
         _view = new ProjectionView<WorkItemRecord, Guid, GridRowViewModel>(
             WorkItemRecord.Connect(store),
             store.Scheduler,
@@ -69,6 +71,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         ApplySavedLayout(preferences.GridLayout, workflow: null);
         _workflowSubscription = store.Workflow.ObserveOn(context.UiScheduler).Subscribe(OnWorkflow);
         _context.PropertyChanged += OnContextChanged;
+        Filters.Changed += OnFiltersChanged;
         _isConstructed = true;
         ApplySort();
     }
@@ -95,6 +98,27 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
 
     [ObservableProperty]
     public partial string Summary { get; private set; } = string.Empty;
+
+    /// <summary>The shared Board/Grid task scope (B-10); a Dashboard drill-down replaces it (design §2.9).</summary>
+    public TaskFilterScopeViewModel Filters { get; }
+
+    /// <summary>The task search, shared with the Board (B-10).</summary>
+    public string SearchText
+    {
+        get => Filters.SearchText;
+        set => Filters.SearchText = value;
+    }
+
+    /// <summary>Design §2.5 Filtered-empty title: no match, or only archived tasks match.</summary>
+    [ObservableProperty]
+    public partial string FilteredTitle { get; private set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string FilteredMessage { get; private set; } = string.Empty;
+
+    /// <summary>"Clear all filters", or "Show archived" when only archived tasks match (B-10, design §4.3).</summary>
+    [ObservableProperty]
+    public partial string FilteredActionText { get; private set; } = string.Empty;
 
     /// <summary>B-05: archived tasks (and their Subtask cards) are shown read-only when on; persisted, off by default.</summary>
     [ObservableProperty]
@@ -350,6 +374,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
 
     public void Dispose()
     {
+        Filters.Changed -= OnFiltersChanged;
         _context.PropertyChanged -= OnContextChanged;
         ((INotifyCollectionChanged)_view.Items).CollectionChanged -= OnRowsChanged;
         _workflowSubscription.Dispose();
@@ -400,7 +425,40 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         RaisePendingFocus();
     }
 
-    private static Func<WorkItemRecord, bool> Membership(bool showArchived) => showArchived ? _ => true : record => record.IsActive;
+    /// <summary>Archive visibility composes with the shared filters (B-10); column visibility never affects it.</summary>
+    private Func<WorkItemRecord, bool> Membership(bool showArchived)
+    {
+        var filter = Filters.Predicate();
+        return showArchived ? filter : record => record.IsActive && filter(record);
+    }
+
+    private void OnFiltersChanged(object? sender, EventArgs e)
+    {
+        _view.SetFilter(Membership(ShowArchived));
+        OnPropertyChanged(nameof(SearchText));
+        UpdateState();
+    }
+
+    /// <summary>The Filtered-empty action: Show archived when only archived tasks match, otherwise Clear all filters.</summary>
+    [RelayCommand]
+    private void ResolveFilteredEmpty()
+    {
+        if (!ShowArchived && OnlyArchivedMatch())
+        {
+            ShowArchived = true;
+        }
+        else
+        {
+            Filters.ClearAll();
+        }
+    }
+
+    private bool OnlyArchivedMatch()
+    {
+        var filter = Filters.Predicate();
+        return _context.Store.Tasks.Items.Any(t => t.IsArchived && filter(WorkItemRecord.From(t)))
+            || _context.Store.SubtaskCards.Items.Any(c => c.IsParentArchived && filter(WorkItemRecord.From(c)));
+    }
 
     private async Task<(AppError? Error, long Revision)> ExecuteAsync(
         GridRowViewModel row,
@@ -734,14 +792,26 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         }
 
         var count = Rows.Count;
+        var strings = _context.Strings;
+        var onlyArchived = count == 0 && !ShowArchived && OnlyArchivedMatch();
         State = !_view.IsInitialized ? ViewState.Loading
             : count > 0 ? ViewState.Populated
-            : !ShowArchived && _context.Store.Tasks.Items.Any(t => t.IsArchived) ? ViewState.FilteredEmpty
+            : Filters.IsFiltered || onlyArchived ? ViewState.FilteredEmpty
             : ViewState.Empty;
-        var strings = _context.Strings;
+        if (State == ViewState.FilteredEmpty)
+        {
+            // B-10, design §4.3: "Only archived tasks match — turn on Show archived" is a different way out than clearing.
+            FilteredTitle = strings.GetString(onlyArchived ? (Filters.IsFiltered ? "Grid_OnlyArchivedMatchTitle" : "Grid_OnlyArchivedTitle") : "Filters_NoMatchesTitle");
+            FilteredMessage = onlyArchived ? strings.GetString("Grid_OnlyArchivedMessage") : string.Join(" · ", Filters.Chips.Select(c => c.Label));
+            FilteredActionText = strings.GetString(onlyArchived ? "Grid_ShowArchivedAction" : "Filters_ClearAllAction");
+        }
+
         var sort = _columns.FirstOrDefault(c => c.Key == _sortColumn) is { } sorted
             ? strings.Format(_sortDescending ? "Grid_SummarySortDescending" : "Grid_SummarySortAscending", sorted.Header)
             : strings.GetString("Grid_SummarySortDefault");
-        Summary = strings.Format("Grid_Summary", count, sort, strings.GetString(ShowArchived ? "Grid_SummaryArchivedShown" : "Grid_SummaryArchivedHidden"));
+        var archived = strings.GetString(ShowArchived ? "Grid_SummaryArchivedShown" : "Grid_SummaryArchivedHidden");
+        Summary = Filters.IsFiltered
+            ? strings.Format("Grid_SummaryFiltered", count, ShowArchived ? _context.Store.Tasks.Count + _context.Store.SubtaskCards.Count : _context.Store.Tasks.Items.Count(t => !t.IsArchived) + _context.Store.SubtaskCards.Items.Count(c => !c.IsParentArchived), sort, archived)
+            : strings.Format("Grid_Summary", count, sort, archived);
     }
 }

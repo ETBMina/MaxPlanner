@@ -10,6 +10,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:filters="using:MaxPlanner.Presentation.Common.Filters"
     xmlns:local="using:MaxPlanner.Presentation.Grid"
     IsTabStop="False">
     <UserControl.Resources>
@@ -25,16 +26,22 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Page header (design §2.3). Search and Filters arrive with Phase 11. -->
+        <!-- Page header (design §2.3): title and commands, search and Filters (shared with the Board, B-10), filter context. -->
         <Grid
             x:Name="HeaderRoot"
             Padding="32,24,32,12"
-            ColumnSpacing="12">
+            ColumnSpacing="12"
+            RowSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <StackPanel VerticalAlignment="Center" Spacing="2">
                 <TextBlock
                     x:Name="PageTitle"
@@ -111,6 +118,27 @@
                     <TextBlock x:Name="NewTaskText" x:Uid="Grid_NewTaskButtonText" />
                 </StackPanel>
             </Button>
+
+            <StackPanel
+                Grid.Row="1"
+                Grid.ColumnSpan="3"
+                Orientation="Horizontal"
+                Spacing="8">
+                <AutoSuggestBox
+                    x:Name="SearchBox"
+                    x:Uid="Grid_SearchBox"
+                    Width="280"
+                    AutomationProperties.AutomationId="Grid_SearchBox"
+                    AutomationProperties.LandmarkType="Search"
+                    QueryIcon="Find"
+                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <filters:FilterButton PageKey="Grid" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+            </StackPanel>
+            <filters:FilterChipsBar
+                Grid.Row="2"
+                Grid.ColumnSpan="3"
+                PageKey="Grid"
+                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
         </Grid>
 
         <controls:StateView
@@ -118,6 +146,10 @@
             Grid.Row="1"
             EmptyActionCommand="{x:Bind ViewModel.NewTaskCommand}"
             EmptyGlyph="&#xE80A;"
+            FilteredActionCommand="{x:Bind ViewModel.ResolveFilteredEmptyCommand}"
+            FilteredActionText="{x:Bind ViewModel.FilteredActionText, Mode=OneWay}"
+            FilteredMessage="{x:Bind ViewModel.FilteredMessage, Mode=OneWay}"
+            FilteredTitle="{x:Bind ViewModel.FilteredTitle, Mode=OneWay}"
             PageKey="Grid"
             State="{x:Bind ViewModel.State, Mode=OneWay}">
             <!--

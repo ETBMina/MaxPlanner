@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Dashboard (design §4.1, B-15, AC-18–21): inline Squad/Priority/CR Owner filters [gallery-combobox-2], summary cards
+    in an ItemsRepeater + UniformGridLayout [gallery-itemsrepeater-1], three native bar charts (ADR 0011), and the
+    Overdue CRs and Unlinked tasks lists. Every card, bar, and "View all" drills down with its own predicate.
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Dashboard.DashboardPageView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:local="using:MaxPlanner.Presentation.Dashboard"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="CardTemplate" x:DataType="local:DashboardCardViewModel">
+            <Border Padding="0" Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <!-- Design §4.1: the card is a Button; invoking it drills down with exactly its predicate. -->
+                    <Button
+                        Padding="16,12"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{x:Bind DrillDownCommand, Mode=OneTime}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Label, Mode=OneTime}" />
+                            <TextBlock Style="{StaticResource TitleLargeTextBlockStyle}" Text="{x:Bind Value, Mode=OneWay}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind Caption, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                            <!-- Design §6.3: "Needs attention" is a Warning glyph plus text, never color alone. -->
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasBadge), Mode=OneWay}">
+                                <FontIcon
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    FontSize="14"
+                                    Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                    Glyph="&#xE7BA;" />
+                                <TextBlock x:Uid="Dashboard_NeedsAttention" Style="{StaticResource CaptionTextBlockStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                    <!-- Secondary metrics (reviews done this week/month) are links of their own, never nested in the card button. -->
+                    <ItemsControl
+                        Margin="12,0,12,8"
+                        IsTabStop="False"
+                        ItemsSource="{x:Bind Links, Mode=OneTime}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasLinks), Mode=OneTime}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:DashboardLinkViewModel">
+                                <HyperlinkButton
+                                    Padding="4,2"
+                                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                    Command="{x:Bind Command, Mode=OneTime}"
+                                    Content="{x:Bind Text, Mode=OneWay}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <controls:WrapPanel Spacing="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="OverdueRowTemplate" x:DataType="local:OverdueRowViewModel">
+            <Button
+                Padding="8,6"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="OnOverdueRowClick">
+                <StackPanel Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="14"
+                            Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                            Glyph="&#xE7BA;" />
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneTime}" />
+                        <TextBlock
+                            Text="{x:Bind Title, Mode=OneTime}"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTipService.ToolTip="{x:Bind Title, Mode=OneTime}" />
+                    </StackPanel>
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Secondary, Mode=OneTime}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="UnlinkedRowTemplate" x:DataType="local:UnlinkedRowViewModel">
+            <Button
+                Padding="8,6"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="OnUnlinkedRowClick">
+                <StackPanel Spacing="2">
+                    <TextBlock
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Title, Mode=OneTime}"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTipService.ToolTip="{x:Bind Title, Mode=OneTime}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Secondary, Mode=OneTime}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Page header (design §2.3, §4.1): title, date subtitle, and the inline Dashboard filters. -->
+        <StackPanel
+            x:Name="HeaderRoot"
+            Padding="32,24,32,12"
+            Spacing="8">
+            <StackPanel Spacing="2">
+                <TextBlock
+                    x:Name="PageTitle"
+                    x:Uid="Dashboard_PageTitle"
+                    AutomationProperties.AutomationId="Dashboard_PageTitle"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource PageTitleTextStyle}" />
+                <TextBlock
+                    AutomationProperties.AutomationId="Dashboard_PageSubtitle"
+                    Style="{StaticResource PageSubtitleTextStyle}"
+                    Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+            <controls:WrapPanel Spacing="12">
+                <ComboBox
+                    x:Uid="Dashboard_SquadCombo"
+                    MinWidth="180"
+                    AutomationProperties.AutomationId="Dashboard_SquadCombo"
+                    ItemsSource="{x:Bind ViewModel.SquadOptions, Mode=OneTime}"
+                    SelectedItem="{x:Bind ViewModel.SelectedSquad, Mode=TwoWay}" />
+                <ComboBox
+                    x:Uid="Dashboard_PriorityCombo"
+                    MinWidth="180"
+                    AutomationProperties.AutomationId="Dashboard_PriorityCombo"
+                    ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneTime}"
+                    SelectedItem="{x:Bind ViewModel.SelectedPriority, Mode=TwoWay}" />
+                <ComboBox
+                    x:Uid="Dashboard_OwnerCombo"
+                    MinWidth="180"
+                    AutomationProperties.AutomationId="Dashboard_OwnerCombo"
+                    ItemsSource="{x:Bind ViewModel.OwnerOptions, Mode=OneTime}"
+                    SelectedItem="{x:Bind ViewModel.SelectedOwner, Mode=TwoWay}" />
+                <HyperlinkButton
+                    x:Uid="Dashboard_ClearFiltersLink"
+                    VerticalAlignment="Bottom"
+                    AutomationProperties.AutomationId="Dashboard_ClearFiltersLink"
+                    Command="{x:Bind ViewModel.ClearFiltersCommand}" />
+            </controls:WrapPanel>
+            <TextBlock
+                x:Uid="Dashboard_FilterScopeCaption"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                TextWrapping="Wrap" />
+        </StackPanel>
+
+        <controls:StateView
+            x:Uid="Dashboard_StateView"
+            Grid.Row="1"
+            PageKey="Dashboard"
+            State="{x:Bind ViewModel.State, Mode=OneWay}">
+            <ScrollViewer
+                x:Name="PageScroller"
+                AutomationProperties.AutomationId="Dashboard_Content"
+                HorizontalScrollMode="Disabled"
+                VerticalScrollBarVisibility="Auto">
+                <Grid x:Name="ContentRoot" Padding="32,0,32,24">
+                    <!-- Design §4.1 Empty: "Start by creating a CR or a task" + New CR + New task. -->
+                    <StackPanel
+                        MaxWidth="480"
+                        Margin="0,48,0,0"
+                        HorizontalAlignment="Center"
+                        AutomationProperties.AutomationId="Dashboard_EmptyPanel"
+                        Spacing="12"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsDatasetEmpty), Mode=OneWay}">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="48"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xF246;" />
+                        <TextBlock
+                            x:Uid="Dashboard_EmptyTitle"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                        <StackPanel
+                            HorizontalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <Button
+                                x:Uid="Dashboard_NewCrButton"
+                                AutomationProperties.AutomationId="Dashboard_NewCrButton"
+                                Command="{x:Bind ViewModel.NewChangeRequestCommand}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="Dashboard_NewTaskButton"
+                                AutomationProperties.AutomationId="Dashboard_NewTaskButton"
+                                Command="{x:Bind ViewModel.NewTaskCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="16" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasData), Mode=OneWay}">
+                        <ItemsRepeater
+                            AutomationProperties.AutomationId="Dashboard_Cards"
+                            ItemTemplate="{StaticResource CardTemplate}"
+                            ItemsSource="{x:Bind ViewModel.Cards, Mode=OneTime}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout
+                                    x:Name="CardsLayout"
+                                    ItemsStretch="Fill"
+                                    MinColumnSpacing="12"
+                                    MinItemWidth="220"
+                                    MinRowSpacing="12" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+
+                        <!-- L: status | squad, reviews | overdue, then unlinked; M and S stack (design §4.1, set in code). -->
+                        <Grid
+                            x:Name="SectionsGrid"
+                            ColumnSpacing="16"
+                            RowSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <local:BarChart
+                                x:Name="StatusChartView"
+                                ChartKey="Status"
+                                ViewModel="{x:Bind ViewModel.StatusChart, Mode=OneTime}" />
+                            <local:BarChart
+                                x:Name="SquadChartView"
+                                Grid.Column="1"
+                                ChartKey="Squad"
+                                ViewModel="{x:Bind ViewModel.SquadChart, Mode=OneTime}" />
+                            <local:BarChart
+                                x:Name="ReviewChartView"
+                                Grid.Row="1"
+                                ChartKey="ReviewDev"
+                                ViewModel="{x:Bind ViewModel.ReviewChart, Mode=OneTime}" />
+
+                            <Border
+                                x:Name="OverdueSection"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Padding="16"
+                                Style="{StaticResource CardBorderStyle}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock
+                                        x:Uid="Dashboard_OverdueTitle"
+                                        AutomationProperties.HeadingLevel="Level2"
+                                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                                    <ItemsRepeater
+                                        AutomationProperties.AutomationId="Dashboard_OverdueList"
+                                        ItemTemplate="{StaticResource OverdueRowTemplate}"
+                                        ItemsSource="{x:Bind ViewModel.OverdueRows, Mode=OneTime}"
+                                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasOverdue), Mode=OneWay}">
+                                        <ItemsRepeater.Layout>
+                                            <StackLayout Spacing="2" />
+                                        </ItemsRepeater.Layout>
+                                    </ItemsRepeater>
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.OverdueEmptyText, Mode=OneWay}"
+                                        Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.HasOverdue), Mode=OneWay}" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind ViewModel.OverdueCaption, Mode=OneWay}" />
+                                        <HyperlinkButton
+                                            x:Uid="Dashboard_ViewAllLink"
+                                            Grid.Column="1"
+                                            AutomationProperties.AutomationId="Dashboard_OverdueViewAllLink"
+                                            Command="{x:Bind ViewModel.ViewAllOverdueCommand}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border
+                                x:Name="UnlinkedSection"
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
+                                Padding="16"
+                                Style="{StaticResource CardBorderStyle}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock
+                                        x:Uid="Dashboard_UnlinkedHeading"
+                                        AutomationProperties.HeadingLevel="Level2"
+                                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                                    <ItemsRepeater
+                                        AutomationProperties.AutomationId="Dashboard_UnlinkedList"
+                                        ItemTemplate="{StaticResource UnlinkedRowTemplate}"
+                                        ItemsSource="{x:Bind ViewModel.UnlinkedRows, Mode=OneTime}"
+                                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasUnlinked), Mode=OneWay}">
+                                        <ItemsRepeater.Layout>
+                                            <StackLayout Spacing="2" />
+                                        </ItemsRepeater.Layout>
+                                    </ItemsRepeater>
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.UnlinkedEmptyText, Mode=OneWay}"
+                                        Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.HasUnlinked), Mode=OneWay}" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind ViewModel.UnlinkedCaption, Mode=OneWay}" />
+                                        <HyperlinkButton
+                                            x:Uid="Dashboard_ViewAllLink"
+                                            Grid.Column="1"
+                                            AutomationProperties.AutomationId="Dashboard_UnlinkedViewAllLink"
+                                            Command="{x:Bind ViewModel.ViewAllUnlinkedCommand}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </controls:StateView>
+    </Grid>
+</UserControl>

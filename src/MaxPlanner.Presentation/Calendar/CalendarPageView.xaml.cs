@@ -171,7 +171,7 @@ public sealed partial class CalendarPageView : UserControl
         }
     }
 
-    private void OnClearSearchClick(object sender, RoutedEventArgs e) => ViewModel.SearchText = string.Empty;
+    private void OnClearSearchClick(object sender, RoutedEventArgs e) => ViewModel.Filters.ClearAll();
 
     private void OnAgendaItemClick(object sender, ItemClickEventArgs e)
     {

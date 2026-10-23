@@ -3,6 +3,7 @@ using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.Dashboard;
 using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Settings;
 using MaxPlanner.Presentation.Workspace;
@@ -25,10 +26,9 @@ public sealed partial class ShellView : UserControl
     public static readonly DependencyProperty SaveStatusProperty = DependencyProperty.Register(
         nameof(SaveStatus), typeof(SaveStatusViewModel), typeof(ShellView), new PropertyMetadata(null));
 
-    // Design §6.4: ViewDashboard, Setting; used on the pages that are not built yet (Settings only without its services).
+    // Design §6.4: Setting; used only for Settings when the composition gives no Settings services (tests).
     private static readonly Dictionary<AppPage, string> PlaceholderGlyphs = new()
     {
-        [AppPage.Dashboard] = "",
         [AppPage.Settings] = "",
     };
 
@@ -54,6 +54,15 @@ public sealed partial class ShellView : UserControl
             SyncSelection();
         };
     }
+
+    /// <summary>Raised when <see cref="CanGoBack"/> changed, so the window shows or hides the TitleBar back button.</summary>
+    public event EventHandler? BackStateChanged;
+
+    /// <summary>A drill-down context can be popped (design §2.9).</summary>
+    public bool CanGoBack => _viewModel?.CanGoBack ?? false;
+
+    /// <summary>TitleBar Back: returns to the Dashboard with its filters and scroll position (AC-20).</summary>
+    public void GoBack() => _viewModel?.GoBack();
 
     /// <summary>Raised when the NavigationView enters or leaves LeftMinimal, where the title bar shows the pane toggle (design §2.1).</summary>
     public event EventHandler? TitleBarPaneToggleChanged;
@@ -118,6 +127,9 @@ public sealed partial class ShellView : UserControl
             case nameof(ShellViewModel.CurrentPage):
                 ShowCurrentPage(moveFocus: true);
                 break;
+            case nameof(ShellViewModel.CanGoBack):
+                BackStateChanged?.Invoke(this, EventArgs.Empty);
+                break;
             default:
                 break;
         }
@@ -135,6 +147,7 @@ public sealed partial class ShellView : UserControl
         {
             view = page switch
             {
+                AppPage.Dashboard => new DashboardPageView(workspace.Dashboard),
                 AppPage.Board => new BoardPageView(workspace.Board),
                 AppPage.Grid => new GridPageView(workspace.Grid),
                 AppPage.Calendar => new CalendarPageView(workspace.Calendar),
@@ -161,6 +174,9 @@ public sealed partial class ShellView : UserControl
         {
             case GridPageView grid:
                 grid.FocusTitle();
+                break;
+            case DashboardPageView dashboard:
+                dashboard.FocusTitle();
                 break;
             case BoardPageView board:
                 board.FocusTitle();
@@ -258,6 +274,17 @@ public sealed partial class ShellView : UserControl
             };
             KeyboardAccelerators.Add(accelerator);
         }
+
+        // Design §7.1: Alt+Left returns to the drill-down origin, like the TitleBar Back button.
+        var back = new KeyboardAccelerator { Key = VirtualKey.Left, Modifiers = VirtualKeyModifiers.Menu };
+        back.Invoked += (_, e) =>
+        {
+            if (_viewModel is { IsReady: true, CanGoBack: true })
+            {
+                e.Handled = _viewModel.GoBack();
+            }
+        };
+        KeyboardAccelerators.Add(back);
     }
 
     private void AttachBadge(WorkspaceViewModel? workspace)

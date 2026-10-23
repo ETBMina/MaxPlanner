@@ -3,10 +3,13 @@ using System.Collections.Specialized;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Filtering;
+using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.Shell;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Checklists;
@@ -35,7 +38,10 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
     private readonly ProjectionView<TaskReadModel, TaskId, ChecklistGroupViewModel> _view;
     private readonly ObservableCollection<object> _cards = [];
     private readonly HashSet<TaskId> _pinned = [];
+    private const string PreferenceKey = "checklists";
+
     private readonly IDisposable _commits;
+    private string? _searchBeforeDashboard;
 
     public ChecklistsPageViewModel(WorkspaceContext context)
     {
@@ -57,6 +63,13 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
         // The store's batch notification is queued after the group updates of the same batch, so counts read
         // the updated groups.
         _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => UpdateState());
+
+        // B-10: Checklists keeps its own search scope, persisted independently of the task and CR scopes.
+        if (context.Preferences.Current.ViewFilters?.GetValueOrDefault(PreferenceKey)?.SearchText is { Length: > 0 } saved)
+        {
+            SearchText = saved;
+        }
+
         UpdateState();
     }
 
@@ -109,6 +122,20 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
     [ObservableProperty]
     public partial bool HasNoReviews { get; private set; }
 
+    /// <summary>A Dashboard review drill-down is shown (design §2.9).</summary>
+    [ObservableProperty]
+    public partial bool IsFromDashboard { get; private set; }
+
+    /// <summary>"Showing Dashboard results: Open reviews · Developer: Sam".</summary>
+    [ObservableProperty]
+    public partial string DashboardMessage { get; private set; } = string.Empty;
+
+    /// <summary>The removable "From Dashboard: Open reviews" chip text.</summary>
+    [ObservableProperty]
+    public partial string DashboardChipText { get; private set; } = string.Empty;
+
+    public string DashboardChipName => _context.Strings.Format("Filters_RemoveChipName", DashboardChipText);
+
     public bool IsChecklistsSection => Section == ChecklistsSection.Checklists;
 
     public bool IsReviewsSection => Section == ChecklistsSection.Reviews;
@@ -121,6 +148,45 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
 
     /// <summary>The review drill-down target (B-10, AC-20): Checklists › Reviews.</summary>
     public void ShowReviews() => SetSection(ChecklistsSection.Reviews);
+
+    /// <summary>
+    /// Review drill-down (B-15.3): Checklists › Reviews with the metric's review scope replacing the search; the
+    /// previous search comes back when the context ends (design §2.9).
+    /// </summary>
+    public void ShowDashboardReviews(ReviewFilterSpec spec, string label)
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+        if (!IsFromDashboard)
+        {
+            _searchBeforeDashboard = SearchText;
+        }
+
+        IsFromDashboard = true;
+        DashboardChipText = _context.Strings.Format("Filters_DashboardChip", label);
+        DashboardMessage = _context.Strings.Format("Filters_DashboardMessage", label);
+        OnPropertyChanged(nameof(DashboardChipName));
+        SearchText = string.Empty;
+        Reviews.ApplyDashboard(spec);
+        ShowReviews();
+    }
+
+    /// <summary>Removing the "From Dashboard" chip, Return, or Back: the previous search is restored.</summary>
+    public void EndDashboardContext()
+    {
+        if (!IsFromDashboard)
+        {
+            return;
+        }
+
+        IsFromDashboard = false;
+        DashboardMessage = string.Empty;
+        DashboardChipText = string.Empty;
+        Reviews.ApplyDashboard(null);
+        _context.Navigator.Forget(AppPage.Checklists);
+        SearchText = _searchBeforeDashboard ?? string.Empty;
+        _searchBeforeDashboard = null;
+        UpdateState();
+    }
 
     /// <summary>The "Add to task…" picker: active tasks whose title or reference contains the query.</summary>
     public IReadOnlyList<TaskChoice> TaskChoices(string query)
@@ -178,9 +244,34 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
     private Task NewReviewAsync() => Reviews.NewReviewAsync();
 
     [RelayCommand]
-    private void ClearSearch() => SearchText = string.Empty;
+    private void ClearSearch()
+    {
+        _searchBeforeDashboard = null;
+        SearchText = string.Empty;
+        EndDashboardContext();
+    }
 
-    partial void OnSearchTextChanged(string value) => ApplyFilter();
+    [RelayCommand]
+    private void RemoveDashboardContext() => EndDashboardContext();
+
+    [RelayCommand]
+    private void ReturnToDashboard() => _context.Navigator.Return(AppPage.Checklists);
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilter();
+        if (!IsFromDashboard)
+        {
+            var saved = new ViewFilterPreference(value.Trim().Length > 0 ? value.Trim() : null, new Dictionary<string, IReadOnlyList<string>>());
+            _context.Preferences.Update(p => p with
+            {
+                ViewFilters = new Dictionary<string, ViewFilterPreference>(p.ViewFilters ?? new Dictionary<string, ViewFilterPreference>(), StringComparer.Ordinal)
+                {
+                    [PreferenceKey] = saved,
+                },
+            });
+        }
+    }
 
     private void ApplyFilter()
     {
@@ -266,7 +357,9 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
         var strings = _context.Strings;
         ChecklistsTabText = query.Length == 0 ? strings.GetString("Checklists_SectionChecklists") : strings.Format("Checklists_SectionMatches", strings.GetString("Checklists_SectionChecklists"), checklistMatches);
         ReviewsTabText = query.Length == 0 ? strings.Format("Checklists_SectionReviews", Reviews.OpenCount) : strings.Format("Checklists_SectionMatches", strings.GetString("Checklists_SectionReviewsPlain"), Reviews.MatchCount);
-        HasNoMatches = query.Length > 0 && (IsChecklistsSection ? checklistMatches == 0 && Groups.Count == 0 : Reviews.MatchCount == 0);
+        HasNoMatches = IsChecklistsSection
+            ? query.Length > 0 && checklistMatches == 0 && Groups.Count == 0
+            : (query.Length > 0 || IsFromDashboard) && Reviews.MatchCount == 0;
         NoMatchesText = strings.Format("Checklists_NoMatches", query);
         HasNoReviews = Reviews.TotalCount == 0;
         Summary = IsChecklistsSection

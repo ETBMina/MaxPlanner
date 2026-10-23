@@ -10,7 +10,9 @@ using MaxPlanner.Application.Reviews;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Presentation.ChangeRequests;
+using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Tasks;
@@ -116,6 +118,8 @@ public sealed partial class WorkspaceContext : ObservableObject
 {
     private TaskCommands? _tasks;
     private ChangeRequestCommands? _changeRequests;
+    private TaskFilterScopeViewModel? _taskFilters;
+    private CrFilterScopeViewModel? _crFilters;
 
     /// <param name="urlLauncher">Opens design links (B-02.11); null opens nothing (tests, no window).</param>
     public WorkspaceContext(
@@ -145,6 +149,9 @@ public sealed partial class WorkspaceContext : ObservableObject
     /// <summary>Raised for screen-reader announcements (design §8.3); the shell raises the UIA notification.</summary>
     public event EventHandler<Announcement>? Announced;
 
+    /// <summary>A CR editor saved a CR (B-08.12: the Calendar says when the saved CR is hidden by its filters).</summary>
+    public event EventHandler<ChangeRequestId>? ChangeRequestSaved;
+
     public WorkspaceProjectionStore Store { get; }
 
     public WorkspaceUseCases UseCases { get; }
@@ -165,6 +172,15 @@ public sealed partial class WorkspaceContext : ObservableObject
 
     /// <summary>The CR commands (open, new, create task from a CR) shared by the pages and editors.</summary>
     public ChangeRequestCommands ChangeRequests => _changeRequests ??= new ChangeRequestCommands(this);
+
+    /// <summary>The shared Board/Grid task filter scope (B-10), created on first use and disposed with the workspace.</summary>
+    public TaskFilterScopeViewModel TaskFilters => _taskFilters ??= new TaskFilterScopeViewModel(this);
+
+    /// <summary>The Calendar CR filter scope (B-10).</summary>
+    public CrFilterScopeViewModel CrFilters => _crFilters ??= new CrFilterScopeViewModel(this);
+
+    /// <summary>The Dashboard drill-down context stack (design §2.9).</summary>
+    public DrillDownNavigator Navigator { get; } = new();
 
     /// <summary>
     /// T-07: true while the store is not Ready (loading, resyncing, faulted) or the app is closing. Editors
@@ -188,6 +204,16 @@ public sealed partial class WorkspaceContext : ObservableObject
     }
 
     public void Announce(string text, bool isFailure = false) => Announced?.Invoke(this, new Announcement(text, isFailure));
+
+    /// <summary>Called by the CR editor after a save was displayed (B-08.12).</summary>
+    public void ReportChangeRequestSaved(ChangeRequestId id) => ChangeRequestSaved?.Invoke(this, id);
+
+    /// <summary>Disposes the filter scopes; the workspace calls it when the dataset closes.</summary>
+    internal void DisposeFilters()
+    {
+        _taskFilters?.Dispose();
+        _crFilters?.Dispose();
+    }
 
     /// <summary>
     /// Completes once the page lists show the committed state of <paramref name="sequence"/> (T-07: show

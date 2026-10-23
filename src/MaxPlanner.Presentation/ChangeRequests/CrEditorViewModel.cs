@@ -822,6 +822,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         await _context.WhenDisplayedAsync(sequence, DisplayTimeout).ConfigureAwait(true);
         IsSaving = false;
         _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
+        _context.ReportChangeRequestSaved(_id);
         return true;
     }
 

@@ -1,13 +1,16 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using MaxPlanner.Application.Dashboard;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
+using MaxPlanner.Presentation.Dashboard;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Settings;
+using MaxPlanner.Presentation.Shell;
 
 namespace MaxPlanner.Presentation.Workspace;
 
@@ -20,6 +23,7 @@ public sealed class WorkspaceViewModel : IDisposable
 {
     private readonly IDisposable _stateSubscription;
     private readonly IDisposable _badgeSubscription;
+    private DashboardPageViewModel? _dashboard;
     private BoardPageViewModel? _board;
     private GridPageViewModel? _grid;
     private CalendarPageViewModel? _calendar;
@@ -46,6 +50,7 @@ public sealed class WorkspaceViewModel : IDisposable
         Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher, preferences);
         _stateSubscription = store.State.ObserveOn(uiScheduler).Subscribe(OnStoreState);
         _badgeSubscription = store.Committed.ObserveOn(uiScheduler).Subscribe(_ => UpdateOpenChecklistCount(store));
+        Context.Navigator.DrillDownRequested += OnDrillDownRequested;
     }
 
     /// <summary>Raised when <see cref="OpenChecklistCount"/> changed (the Checklists nav badge, design §2.2).</summary>
@@ -61,6 +66,8 @@ public sealed class WorkspaceViewModel : IDisposable
 
     public SaveStatusViewModel SaveStatus { get; }
 
+    public DashboardPageViewModel Dashboard => _dashboard ??= new DashboardPageViewModel(Live());
+
     public BoardPageViewModel Board => _board ??= new BoardPageViewModel(Live());
 
     public GridPageViewModel Grid => _grid ??= new GridPageViewModel(Live());
@@ -74,7 +81,7 @@ public sealed class WorkspaceViewModel : IDisposable
 
     /// <summary>The pages created so far (for disposal and the navigation-budget evidence).</summary>
     public IEnumerable<IPageViewModel> CreatedPages =>
-        new IPageViewModel?[] { _board, _grid, _calendar, _checklists, _settings }.OfType<IPageViewModel>();
+        new IPageViewModel?[] { _dashboard, _board, _grid, _calendar, _checklists, _settings }.OfType<IPageViewModel>();
 
     /// <summary>The app is closing (T-06.6): no new command may start, whatever the store reports.</summary>
     public void BeginClose()
@@ -93,12 +100,48 @@ public sealed class WorkspaceViewModel : IDisposable
         _isDisposed = true;
         _stateSubscription.Dispose();
         _badgeSubscription.Dispose();
+        Context.Navigator.DrillDownRequested -= OnDrillDownRequested;
         foreach (var page in CreatedPages)
         {
             page.Dispose();
         }
 
+        Context.DisposeFilters();
+
         SaveStatus.Dispose();
+    }
+
+    /// <summary>
+    /// Design §2.9: the destination gets a replacement filter context (never intersected with its old filters), the
+    /// context is pushed for Return and Back, and the shell shows the destination. Task and Subtask card metrics open
+    /// the Grid, Overdue CRs open Calendar › Records, and review metrics open Checklists › Reviews (B-10, AC-20).
+    /// </summary>
+    private void OnDrillDownRequested(object? sender, DrillDownRequest request)
+    {
+        if (_isDisposed || _isClosing)
+        {
+            return;
+        }
+
+        switch (request.DrillDown)
+        {
+            case TaskDrillDown task:
+                _ = Grid;
+                Context.TaskFilters.ReplaceWithDashboard(task.Spec, request.Label);
+                Context.Navigator.Push(AppPage.Grid, Context.TaskFilters.EndDashboardContext);
+                break;
+            case CrDrillDown cr:
+                Calendar.SetMode(CalendarMode.Records);
+                Context.CrFilters.ReplaceWithDashboard(cr.Spec, request.Label);
+                Context.Navigator.Push(AppPage.Calendar, Context.CrFilters.EndDashboardContext);
+                break;
+            case ReviewDrillDown review:
+                Checklists.ShowDashboardReviews(review.Spec, request.Label);
+                Context.Navigator.Push(AppPage.Checklists, Checklists.EndDashboardContext);
+                break;
+            default:
+                break;
+        }
     }
 
     private WorkspaceContext Live() => _isDisposed ? throw new ObjectDisposedException(nameof(WorkspaceViewModel)) : Context;

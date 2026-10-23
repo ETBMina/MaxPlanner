@@ -18,4 +18,11 @@ public static class OverduePolicy
     /// <summary>Calendar days past PlannedEnd for an overdue CR; 0 otherwise.</summary>
     public static int DaysOverdue(PlannedRange? planned, bool statusIsCompleted, DateOnly today) =>
         IsOverdue(planned, statusIsCompleted, today) ? today.DayNumber - planned!.End.DayNumber : 0;
+
+    /// <summary>The same rule over a read model's PlannedEnd, so read-side filters and metrics never restate it.</summary>
+    public static bool IsOverdueByPlannedEnd(DateOnly? plannedEnd, bool statusIsCompleted, DateOnly today) =>
+        !statusIsCompleted && plannedEnd is { } end && end < today;
+
+    public static int DaysOverdueByPlannedEnd(DateOnly? plannedEnd, bool statusIsCompleted, DateOnly today) =>
+        IsOverdueByPlannedEnd(plannedEnd, statusIsCompleted, today) ? today.DayNumber - plannedEnd!.Value.DayNumber : 0;
 }

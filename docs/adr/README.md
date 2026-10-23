@@ -26,3 +26,4 @@ Each ADR records context, options considered, the decision, consequences, depend
 | [0020](0020-cr-owner-general-squad-no-cr-archive.md) | CR Owner, "General" squad label, no CR archive, Records mode | Accepted |
 | [0021](0021-native-settings-cards-no-toolkit.md) | Native settings cards; no Community Toolkit WinUI packages | Accepted |
 | [0022](0022-workflow-settings-concurrency-stamps.md) | Concurrency stamps for workflow settings | Proposed |
+| [0023](0023-filter-scopes-and-drill-down-context.md) | Filter scopes, shared predicates, and the drill-down context stack | Proposed |

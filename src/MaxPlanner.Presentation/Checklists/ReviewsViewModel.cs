@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Reviews;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
@@ -105,6 +106,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     private readonly ObservableCollection<ReviewRowViewModel> _completed = [];
     private readonly IDisposable _commits;
     private string _query = string.Empty;
+    private ReviewFilterSpec? _dashboard;
 
     public ReviewsViewModel(WorkspaceContext context)
     {
@@ -149,6 +151,16 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             _query = query;
             Sync();
         }
+    }
+
+    /// <summary>
+    /// A Dashboard review drill-down (B-15.3, design §2.9): shows only the reviews of that metric and developer, with
+    /// the same predicate the Dashboard counted; null ends it.
+    /// </summary>
+    public void ApplyDashboard(ReviewFilterSpec? spec)
+    {
+        _dashboard = spec;
+        Sync();
     }
 
     /// <summary>Accent "New review" (design §4.5): the review editor in create mode.</summary>
@@ -282,6 +294,11 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
 
     private bool Matches(ReviewItem review)
     {
+        if (_dashboard is { } dashboard && !ReviewFilterMatcher.Matches(dashboard, review, _context.Store.Today))
+        {
+            return false;
+        }
+
         if (_query.Length == 0)
         {
             return true;

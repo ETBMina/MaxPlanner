@@ -75,6 +75,10 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string StatusSummary { get; private set; } = string.Empty;
 
+    /// <summary>A Dashboard drill-down context can be popped (TitleBar Back, Alt+Left; design §2.9).</summary>
+    [ObservableProperty]
+    public partial bool CanGoBack { get; private set; }
+
     /// <summary>Bound two-way: the user may close the notice.</summary>
     [ObservableProperty]
     public partial bool IsPreferencesNoticeOpen { get; set; }
@@ -144,8 +148,13 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     {
         ArgumentNullException.ThrowIfNull(workspace);
         Workspace = workspace;
+        workspace.Context.Navigator.NavigationRequested += OnNavigationRequested;
+        workspace.Context.Navigator.StackChanged += OnDrillDownStackChanged;
         ActivatePage(CurrentPage);
     }
+
+    /// <summary>TitleBar Back / Alt+Left: pops the drill-down stack and shows the Dashboard again (AC-20).</summary>
+    public bool GoBack() => Workspace?.Context.Navigator.GoBack() ?? false;
 
     /// <summary>
     /// Shows <paramref name="page"/>. Its ViewModel is created on the first visit and kept afterwards, so
@@ -172,6 +181,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>The retained ViewModel of a built page, created on first use; null for pages not built yet.</summary>
     public IPageViewModel? PageViewModel(AppPage page) => Workspace is not { } workspace ? null : page switch
     {
+        AppPage.Dashboard => workspace.Dashboard,
         AppPage.Board => workspace.Board,
         AppPage.Grid => workspace.Grid,
         AppPage.Calendar => workspace.Calendar,
@@ -212,8 +222,19 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     public void DetachWorkspace()
     {
         SetSummarySource(null);
+        if (Workspace is { } workspace)
+        {
+            workspace.Context.Navigator.NavigationRequested -= OnNavigationRequested;
+            workspace.Context.Navigator.StackChanged -= OnDrillDownStackChanged;
+        }
+
+        CanGoBack = false;
         Workspace = null;
     }
+
+    private void OnNavigationRequested(object? sender, AppPage page) => NavigateTo(page);
+
+    private void OnDrillDownStackChanged(object? sender, EventArgs e) => CanGoBack = Workspace?.Context.Navigator.CanGoBack ?? false;
 
     public void Dispose()
     {
@@ -290,7 +311,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     private void OpenDataFolder() => _dataFolder.OpenDataFolder();
 }
 
-/// <summary>The NavigationView destinations (design §2.2). The Dashboard is not built yet (Phase 12).</summary>
+/// <summary>The NavigationView destinations (design §2.2).</summary>
 public enum AppPage
 {
     Dashboard,

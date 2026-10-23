@@ -11,6 +11,7 @@ using MaxPlanner.Application.Tasks;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -36,21 +37,21 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
     private readonly WorkspaceContext _context;
     private readonly ProjectionView<WorkItemRecord, Guid, BoardCardViewModel> _view;
     private readonly TaskStatusId _statusId;
-    private string _query = string.Empty;
+    private bool _isFiltered;
 
-    internal BoardColumnViewModel(WorkspaceContext context, TaskStatusDefinition status, Func<WorkItemRecord, PriorityLevel> priorityLevel, string query)
+    internal BoardColumnViewModel(WorkspaceContext context, TaskStatusDefinition status, Func<WorkItemRecord, PriorityLevel> priorityLevel, Func<WorkItemRecord, bool> filter, bool isFiltered)
     {
         _context = context;
         StatusId = status.Id;
         _statusId = status.Id;
-        _query = query;
+        _isFiltered = isFiltered;
         _view = new ProjectionView<WorkItemRecord, Guid, BoardCardViewModel>(
             WorkItemRecord.Connect(context.Store),
             context.Store.Scheduler,
             context.UiScheduler,
             record => new BoardCardViewModel(record, context.Strings, priorityLevel),
             RankOrder.Instance,
-            Predicate(query));
+            Predicate(filter));
         _view.Initialized += (_, _) => Initialized?.Invoke(this, EventArgs.Empty);
         ((INotifyCollectionChanged)_view.Items).CollectionChanged += OnCardsChanged;
         Update(status);
@@ -108,10 +109,11 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
         Glyph = status.IsCompleted ? "" : status.SetsStartDate ? "" : status.IsBacklog ? "" : string.Empty;
     }
 
-    internal void SetQuery(string query)
+    /// <summary>Applies the shared task filter (B-10) to this column; hidden cards keep their ranks (B-07).</summary>
+    internal void SetFilter(Func<WorkItemRecord, bool> filter, bool isFiltered)
     {
-        _query = query;
-        _view.SetFilter(Predicate(query));
+        _isFiltered = isFiltered;
+        _view.SetFilter(Predicate(filter));
         UpdateCount();
     }
 
@@ -119,7 +121,7 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
     internal void UpdateCount()
     {
         var visible = Cards.Count;
-        if (_query.Length == 0)
+        if (!_isFiltered)
         {
             CountText = visible.ToString(CultureInfo.CurrentCulture);
             return;
@@ -130,10 +132,10 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
         CountText = _context.Strings.Format("Board_CountFiltered", visible, total);
     }
 
-    private Func<WorkItemRecord, bool> Predicate(string query)
+    private Func<WorkItemRecord, bool> Predicate(Func<WorkItemRecord, bool> filter)
     {
         var statusId = _statusId;
-        return record => record.IsActive && record.Status.Id == statusId && BoardSearch.Matches(record, query);
+        return record => record.IsActive && record.Status.Id == statusId && filter(record);
     }
 
     private void OnCardsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -170,40 +172,6 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
 }
 
 /// <summary>
-/// B-10 task text search as the Board applies it until the shared filter panel arrives (Phase 11): a
-/// case-insensitive substring over the effective title, CR and task number, squad, owner, service, people,
-/// tags, and notes. Subtask cards match their subtitle, notes, and their parent's displayed values.
-/// </summary>
-public static class BoardSearch
-{
-    public static bool Matches(WorkItemRecord record, string query)
-    {
-        ArgumentNullException.ThrowIfNull(record);
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return true;
-        }
-
-        var q = query.Trim();
-        bool Has(string? value) => value is not null && value.Contains(q, StringComparison.CurrentCultureIgnoreCase);
-        var cr = record.Cr;
-        if (Has(cr.CrNumber) || Has(cr.TaskNumber) || Has(cr.SquadName) || Has(cr.OwnerName))
-        {
-            return true;
-        }
-
-        if (record.Task is { } task)
-        {
-            return Has(task.EffectiveTitle) || Has(task.Service) || Has(task.Notes)
-                || task.Designers.Any(p => Has(p.Name)) || task.Developers.Any(p => Has(p.Name)) || task.Tags.Any(t => Has(t.Name));
-        }
-
-        var card = record.Card!;
-        return Has(card.Subtitle) || Has(card.Notes) || Has(card.ParentTitle) || Has(card.ParentService);
-    }
-}
-
-/// <summary>
 /// The Board page (B-07, B-16, design §4.2): one column per task status in configured order, updated
 /// incrementally from the shared store; drag/drop, keyboard and menu moves through the move use cases;
 /// the card menu; task search with the filtered-append rule; the S-breakpoint column picker. A card moves
@@ -224,6 +192,8 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         Columns = new ReadOnlyObservableCollection<BoardColumnViewModel>(_columns);
+        Filters = context.TaskFilters;
+        Filters.Changed += OnFiltersChanged;
         _workflowSubscription = context.Store.Workflow.ObserveOn(context.UiScheduler).Subscribe(OnWorkflow);
 
         // Hidden cards change the "4 of 6" totals without touching the visible lists (B-07 counts).
@@ -241,17 +211,22 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     [ObservableProperty]
     public partial string Summary { get; private set; } = string.Empty;
 
-    /// <summary>Task-scope search (B-10). While it is set, reordering within a column is off (B-07).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsFiltered), nameof(CanReorder))]
-    public partial string SearchText { get; set; } = string.Empty;
+    /// <summary>The shared Board/Grid task scope: search, filters, chips, and the Dashboard context (B-10).</summary>
+    public TaskFilterScopeViewModel Filters { get; }
+
+    /// <summary>Task-scope search (B-10), shared with the Grid. While it is set, reordering within a column is off (B-07).</summary>
+    public string SearchText
+    {
+        get => Filters.SearchText;
+        set => Filters.SearchText = value;
+    }
 
     /// <summary>The column shown at the S breakpoint (design §4.2: one column per viewport with ‹ ›).</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PreviousColumnCommand), nameof(NextColumnCommand))]
     public partial BoardColumnViewModel? SelectedColumn { get; set; }
 
-    public bool IsFiltered => SearchText.Trim().Length > 0;
+    public bool IsFiltered => Filters.IsFiltered;
 
     /// <summary>B-07 design default: positional reordering is off while search or filters are active.</summary>
     public bool CanReorder => !IsFiltered;
@@ -363,6 +338,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     public void Dispose()
     {
+        Filters.Changed -= OnFiltersChanged;
         _commits.Dispose();
         _workflowSubscription.Dispose();
         foreach (var column in _columns)
@@ -376,8 +352,9 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     [RelayCommand]
     private Task NewTask() => NewTaskAsync();
 
+    /// <summary>The filtered InfoBar's Clear all filters (B-10).</summary>
     [RelayCommand]
-    private void ClearSearch() => SearchText = string.Empty;
+    private void ClearSearch() => Filters.ClearAll();
 
     [RelayCommand(CanExecute = nameof(CanGoPrevious))]
     private void PreviousColumn() => SelectedColumn = _columns[_columns.IndexOf(SelectedColumn!) - 1];
@@ -389,13 +366,17 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     private bool CanGoNext() => SelectedColumn is { } c && _columns.IndexOf(c) < _columns.Count - 1;
 
-    partial void OnSearchTextChanged(string value)
+    private void OnFiltersChanged(object? sender, EventArgs e)
     {
+        var filter = Filters.Predicate();
         foreach (var column in _columns)
         {
-            column.SetQuery(value.Trim());
+            column.SetFilter(filter, IsFiltered);
         }
 
+        OnPropertyChanged(nameof(SearchText));
+        OnPropertyChanged(nameof(IsFiltered));
+        OnPropertyChanged(nameof(CanReorder));
         UpdateState();
     }
 
@@ -492,7 +473,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
             column => column.StatusId,
             status =>
             {
-                var column = new BoardColumnViewModel(_context, status, LevelOf, SearchText.Trim());
+                var column = new BoardColumnViewModel(_context, status, LevelOf, Filters.Predicate(), IsFiltered);
                 column.Initialized += (_, _) => UpdateState();
                 column.CardsChanged += (_, _) => UpdateState();
                 return column;

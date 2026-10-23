@@ -407,12 +407,6 @@
   <data name="Grid_StateView.EmptyActionText" xml:space="preserve">
     <value>New task</value>
   </data>
-  <data name="Grid_StateView.FilteredTitle" xml:space="preserve">
-    <value>Only archived tasks exist</value>
-  </data>
-  <data name="Grid_StateView.FilteredMessage" xml:space="preserve">
-    <value>Archived tasks and their Subtask cards are hidden from the Grid.</value>
-  </data>
   <data name="Grid_Table.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Tasks and Subtask cards</value>
   </data>
@@ -698,7 +692,7 @@
     <value>Reordering within a column is off while search or filters are active. Moving to another status adds the card to the end.</value>
   </data>
   <data name="Board_ClearSearchButton.Content" xml:space="preserve">
-    <value>Clear search</value>
+    <value>Clear all filters</value>
   </data>
   <data name="Board_MovingCaption.Text" xml:space="preserve">
     <value>Moving</value>
@@ -1484,7 +1478,7 @@
     <value>Search change requests</value>
   </data>
   <data name="Calendar_ClearSearchButton.Content" xml:space="preserve">
-    <value>Clear search</value>
+    <value>Clear all filters</value>
   </data>
   <data name="Calendar_StateView.LoadingMessage" xml:space="preserve">
     <value>Loading change requests…</value>
@@ -2652,5 +2646,446 @@
   </data>
   <data name="FieldDialog_NoDefaultText.Text" xml:space="preserve">
     <value>People and tag fields start empty.</value>
+  </data>
+  <data name="Filters_ButtonText.Text" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Filters_ButtonName" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Filters_ButtonNameCount" xml:space="preserve">
+    <value>Filters, {0} fields set</value>
+  </data>
+  <data name="Filters_TaskScopeTitle" xml:space="preserve">
+    <value>Filter tasks — Board and Grid</value>
+  </data>
+  <data name="Filters_CrScopeTitle" xml:space="preserve">
+    <value>Filter CRs — Calendar</value>
+  </data>
+  <data name="Filters_Header" xml:space="preserve">
+    <value>{0} · {1} fields set</value>
+  </data>
+  <data name="Filters_HeaderOne" xml:space="preserve">
+    <value>{0} · 1 field set</value>
+  </data>
+  <data name="Filters_Hint.Text" xml:space="preserve">
+    <value>Nothing changes until you apply.</value>
+  </data>
+  <data name="Filters_ClearButton.Content" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Filters_CancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Filters_ApplyButton.Content" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Filters_ApplyButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Apply (Ctrl+Enter)</value>
+  </data>
+  <data name="Filters_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Filters_Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Filters_Squad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Filters_Owner" xml:space="preserve">
+    <value>CR Owner</value>
+  </data>
+  <data name="Filters_Designers" xml:space="preserve">
+    <value>Designers</value>
+  </data>
+  <data name="Filters_Developers" xml:space="preserve">
+    <value>Developers</value>
+  </data>
+  <data name="Filters_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Filters_TagsAll" xml:space="preserve">
+    <value>Tags (all selected)</value>
+  </data>
+  <data name="Filters_TagModeRadio.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Match tags</value>
+  </data>
+  <data name="Filters_TagModeAny.Content" xml:space="preserve">
+    <value>Any selected</value>
+  </data>
+  <data name="Filters_TagModeAll.Content" xml:space="preserve">
+    <value>All selected</value>
+  </data>
+  <data name="Filters_Cr" xml:space="preserve">
+    <value>CR</value>
+  </data>
+  <data name="Filters_AnyCr" xml:space="preserve">
+    <value>Any CR</value>
+  </data>
+  <data name="Filters_NoCr" xml:space="preserve">
+    <value>No CR</value>
+  </data>
+  <data name="Filters_Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Filters_ServiceContains" xml:space="preserve">
+    <value>Service contains</value>
+  </data>
+  <data name="Filters_Contains" xml:space="preserve">
+    <value>{0} contains</value>
+  </data>
+  <data name="Filters_ContainsValue" xml:space="preserve">
+    <value>contains “{0}”</value>
+  </data>
+  <data name="Filters_StartDate" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="Filters_EndDate" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="Filters_Planned" xml:space="preserve">
+    <value>Planned range (overlaps)</value>
+  </data>
+  <data name="Filters_IncludeWithoutStart" xml:space="preserve">
+    <value>Include records without a start date</value>
+  </data>
+  <data name="Filters_IncludeWithoutEnd" xml:space="preserve">
+    <value>Include records without an end date</value>
+  </data>
+  <data name="Filters_IncludeWithout" xml:space="preserve">
+    <value>Include records without a {0}</value>
+  </data>
+  <data name="Filters_IncludeUnscheduled" xml:space="preserve">
+    <value>Include unscheduled CRs</value>
+  </data>
+  <data name="Filters_FromDate.Header" xml:space="preserve">
+    <value>From (inclusive)</value>
+  </data>
+  <data name="Filters_ToDate.Header" xml:space="preserve">
+    <value>To (inclusive)</value>
+  </data>
+  <data name="Filters_MinNumber.Header" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="Filters_MaxNumber.Header" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="Filters_InvertedRange" xml:space="preserve">
+    <value>The From value is after the To value. Change one of them to apply.</value>
+  </data>
+  <data name="Filters_RangeBoth" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="Filters_RangeFrom" xml:space="preserve">
+    <value>from {0}</value>
+  </data>
+  <data name="Filters_RangeTo" xml:space="preserve">
+    <value>until {0}</value>
+  </data>
+  <data name="Filters_RangeOrNone" xml:space="preserve">
+    <value>{0}, or none</value>
+  </data>
+  <data name="Filters_NumberMin" xml:space="preserve">
+    <value>at least {0}</value>
+  </data>
+  <data name="Filters_NumberMax" xml:space="preserve">
+    <value>at most {0}</value>
+  </data>
+  <data name="Filters_ChipLabel" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Filters_SearchChip" xml:space="preserve">
+    <value>Search: {0}</value>
+  </data>
+  <data name="Filters_DashboardChip" xml:space="preserve">
+    <value>From Dashboard: {0}</value>
+  </data>
+  <data name="Filters_DashboardMessage" xml:space="preserve">
+    <value>Showing Dashboard results: {0}</value>
+  </data>
+  <data name="Filters_RemoveChipName" xml:space="preserve">
+    <value>Remove filter {0}</value>
+  </data>
+  <data name="Filters_ClearAllLink.Content" xml:space="preserve">
+    <value>Clear all filters</value>
+  </data>
+  <data name="Filters_ClearAllLink.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear all filters (Ctrl+Shift+L)</value>
+  </data>
+  <data name="Filters_ClearAllAction" xml:space="preserve">
+    <value>Clear all filters</value>
+  </data>
+  <data name="Filters_ReturnToDashboardButton.Content" xml:space="preserve">
+    <value>Return to Dashboard</value>
+  </data>
+  <data name="Filters_NoMatchesTitle" xml:space="preserve">
+    <value>No records match your search and filters</value>
+  </data>
+  <data name="Filters_Unknown" xml:space="preserve">
+    <value>(removed)</value>
+  </data>
+  <data name="Filters_InvalidRemoved" xml:space="preserve">
+    <value>A saved filter referred to a {0} that no longer exists and was removed.</value>
+  </data>
+  <data name="Filters_Kind_Status" xml:space="preserve">
+    <value>status</value>
+  </data>
+  <data name="Filters_Kind_Priority" xml:space="preserve">
+    <value>priority</value>
+  </data>
+  <data name="Filters_Kind_Squad" xml:space="preserve">
+    <value>squad</value>
+  </data>
+  <data name="Filters_Kind_Person" xml:space="preserve">
+    <value>person</value>
+  </data>
+  <data name="Filters_Kind_Tag" xml:space="preserve">
+    <value>tag</value>
+  </data>
+  <data name="Filters_Kind_ChangeRequest" xml:space="preserve">
+    <value>CR</value>
+  </data>
+  <data name="Filters_Kind_CustomField" xml:space="preserve">
+    <value>custom field or option</value>
+  </data>
+  <data name="Grid_SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="Grid_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="Grid_OnlyArchivedTitle" xml:space="preserve">
+    <value>Only archived tasks exist</value>
+  </data>
+  <data name="Grid_OnlyArchivedMatchTitle" xml:space="preserve">
+    <value>Only archived tasks match — turn on Show archived</value>
+  </data>
+  <data name="Grid_OnlyArchivedMessage" xml:space="preserve">
+    <value>Archived tasks and their Subtask cards are hidden from the Grid.</value>
+  </data>
+  <data name="Grid_ShowArchivedAction" xml:space="preserve">
+    <value>Show archived</value>
+  </data>
+  <data name="Grid_SummaryFiltered" xml:space="preserve">
+    <value>{0} of {1} rows match · {2} · {3}</value>
+  </data>
+  <data name="Calendar_SavedHidden" xml:space="preserve">
+    <value>{0} was saved, but it is hidden by the current filters.</value>
+  </data>
+  <data name="Calendar_SavedHiddenClearButton.Content" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="Dashboard_PageTitle.Text" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Dashboard_Subtitle" xml:space="preserve">
+    <value>{0} · non-archived records only</value>
+  </data>
+  <data name="Dashboard_SquadCombo.Header" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Dashboard_PriorityCombo.Header" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Dashboard_OwnerCombo.Header" xml:space="preserve">
+    <value>CR Owner</value>
+  </data>
+  <data name="Dashboard_AllSquads" xml:space="preserve">
+    <value>All squads</value>
+  </data>
+  <data name="Dashboard_AllPriorities" xml:space="preserve">
+    <value>All priorities</value>
+  </data>
+  <data name="Dashboard_AllOwners" xml:space="preserve">
+    <value>All owners</value>
+  </data>
+  <data name="Dashboard_ClearFiltersLink.Content" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="Dashboard_FilterScopeCaption.Text" xml:space="preserve">
+    <value>Filters apply to tasks, Subtask cards and CRs. Reviews are not filtered.</value>
+  </data>
+  <data name="Dashboard_StateView.LoadingMessage" xml:space="preserve">
+    <value>Loading the dashboard…</value>
+  </data>
+  <data name="Dashboard_StateView.ErrorTitle" xml:space="preserve">
+    <value>The dashboard couldn't be loaded</value>
+  </data>
+  <data name="Dashboard_EmptyTitle.Text" xml:space="preserve">
+    <value>Start by creating a CR or a task</value>
+  </data>
+  <data name="Dashboard_NewCrButton.Content" xml:space="preserve">
+    <value>New CR</value>
+  </data>
+  <data name="Dashboard_NewTaskButton.Content" xml:space="preserve">
+    <value>New task</value>
+  </data>
+  <data name="Dashboard_ActiveTasks" xml:space="preserve">
+    <value>Active tasks</value>
+  </data>
+  <data name="Dashboard_CompletedTasks" xml:space="preserve">
+    <value>Completed tasks</value>
+  </data>
+  <data name="Dashboard_UnscheduledTasks" xml:space="preserve">
+    <value>Unscheduled tasks</value>
+  </data>
+  <data name="Dashboard_OverdueCrs" xml:space="preserve">
+    <value>Overdue CRs</value>
+  </data>
+  <data name="Dashboard_ActiveSubtaskCards" xml:space="preserve">
+    <value>Active Subtask cards</value>
+  </data>
+  <data name="Dashboard_Reviews" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="Dashboard_ActiveCaption" xml:space="preserve">
+    <value>of {0} total · not in a completed status</value>
+  </data>
+  <data name="Dashboard_UnscheduledCaption" xml:space="preserve">
+    <value>Subset of active · no CR or CR without planned dates</value>
+  </data>
+  <data name="Dashboard_OverdueCaption" xml:space="preserve">
+    <value>Incomplete CRs whose planned end is before today</value>
+  </data>
+  <data name="Dashboard_ActiveCardsCaption" xml:space="preserve">
+    <value>Not completed · parent not archived</value>
+  </data>
+  <data name="Dashboard_ReviewsCaption" xml:space="preserve">
+    <value>Open · {0} done this week · {1} this month</value>
+  </data>
+  <data name="Dashboard_ReviewsWeekLink" xml:space="preserve">
+    <value>{0} done this week</value>
+  </data>
+  <data name="Dashboard_ReviewsMonthLink" xml:space="preserve">
+    <value>{0} done this month</value>
+  </data>
+  <data name="Dashboard_NeedsAttention.Text" xml:space="preserve">
+    <value>Needs attention</value>
+  </data>
+  <data name="Dashboard_OpensGrid" xml:space="preserve">
+    <value>Opens matching tasks in Grid.</value>
+  </data>
+  <data name="Dashboard_OpensRecords" xml:space="preserve">
+    <value>Opens matching CRs in Calendar Records.</value>
+  </data>
+  <data name="Dashboard_OpensReviews" xml:space="preserve">
+    <value>Opens matching reviews in Checklists.</value>
+  </data>
+  <data name="Dashboard_StatusChartTitle" xml:space="preserve">
+    <value>Tasks by status</value>
+  </data>
+  <data name="Dashboard_SquadChartTitle" xml:space="preserve">
+    <value>Tasks by squad</value>
+  </data>
+  <data name="Dashboard_ReviewChartTitle" xml:space="preserve">
+    <value>Open reviews by developer</value>
+  </data>
+  <data name="Dashboard_SquadFootnote" xml:space="preserve">
+    <value>General = unlinked tasks and CRs without a squad</value>
+  </data>
+  <data name="Dashboard_ReviewFootnote" xml:space="preserve">
+    <value>Unassigned = no developer</value>
+  </data>
+  <data name="Dashboard_Unassigned" xml:space="preserve">
+    <value>Unassigned</value>
+  </data>
+  <data name="Dashboard_TableToggle.Content" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Dashboard_TableToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Show as table</value>
+  </data>
+  <data name="Dashboard_TableCategory.Text" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Dashboard_TableCount.Text" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="Dashboard_TableShare.Text" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="Dashboard_ChartEmpty.Text" xml:space="preserve">
+    <value>No open reviews.</value>
+  </data>
+  <data name="Dashboard_ChartTotal" xml:space="preserve">
+    <value>Total: {0}</value>
+  </data>
+  <data name="Dashboard_UnitTask" xml:space="preserve">
+    <value>{0} tasks</value>
+  </data>
+  <data name="Dashboard_UnitTaskOne" xml:space="preserve">
+    <value>{0} task</value>
+  </data>
+  <data name="Dashboard_UnitReview" xml:space="preserve">
+    <value>{0} open reviews</value>
+  </data>
+  <data name="Dashboard_UnitReviewOne" xml:space="preserve">
+    <value>{0} open review</value>
+  </data>
+  <data name="Dashboard_SharePercent" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="Dashboard_BarName" xml:space="preserve">
+    <value>{0}, {1}, {2} percent of {3}.</value>
+  </data>
+  <data name="Dashboard_DrillStatus" xml:space="preserve">
+    <value>Tasks in {0}</value>
+  </data>
+  <data name="Dashboard_DrillSquad" xml:space="preserve">
+    <value>Tasks in squad {0}</value>
+  </data>
+  <data name="Dashboard_DrillReviewDeveloper" xml:space="preserve">
+    <value>Open reviews · Developer: {0}</value>
+  </data>
+  <data name="Dashboard_DrillOpenReviews" xml:space="preserve">
+    <value>Open reviews</value>
+  </data>
+  <data name="Dashboard_DrillReviewsWeek" xml:space="preserve">
+    <value>Reviews done this week</value>
+  </data>
+  <data name="Dashboard_DrillReviewsMonth" xml:space="preserve">
+    <value>Reviews done this month</value>
+  </data>
+  <data name="Dashboard_OverdueTitle.Text" xml:space="preserve">
+    <value>Overdue CRs</value>
+  </data>
+  <data name="Dashboard_UnlinkedHeading.Text" xml:space="preserve">
+    <value>Unlinked tasks</value>
+  </data>
+  <data name="Dashboard_UnlinkedTitle" xml:space="preserve">
+    <value>Unlinked tasks</value>
+  </data>
+  <data name="Dashboard_ViewAllLink.Content" xml:space="preserve">
+    <value>View all</value>
+  </data>
+  <data name="Dashboard_ShowingOf" xml:space="preserve">
+    <value>Showing {0} of {1}</value>
+  </data>
+  <data name="Dashboard_NoOverdue" xml:space="preserve">
+    <value>No overdue CRs.</value>
+  </data>
+  <data name="Dashboard_NoUnlinked" xml:space="preserve">
+    <value>Every active task is linked to a CR.</value>
+  </data>
+  <data name="Dashboard_NoFilteredRecords" xml:space="preserve">
+    <value>No records match these filters.</value>
+  </data>
+  <data name="Dashboard_DaysOverdue" xml:space="preserve">
+    <value>{0} days</value>
+  </data>
+  <data name="Dashboard_DaysOverdueOne" xml:space="preserve">
+    <value>1 day</value>
+  </data>
+  <data name="Dashboard_OverdueRowName" xml:space="preserve">
+    <value>{0} {1}, owner {2}, planned end {3}, {4} overdue. Opens the CR.</value>
+  </data>
+  <data name="Dashboard_UnlinkedRowName" xml:space="preserve">
+    <value>{0}, {1}. Opens the task to link a CR.</value>
+  </data>
+  <data name="Dashboard_Summary" xml:space="preserve">
+    <value>{0} of {1} tasks active · {2} overdue CRs · {3} open reviews</value>
+  </data>
+  <data name="Filters_Applied" xml:space="preserve">
+    <value>Filters applied</value>
   </data>
 </root>

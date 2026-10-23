@@ -479,6 +479,40 @@
                     QueryIcon="Find"
                     Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </Grid>
+            <!-- Design §2.9: a review drill-down shows its context and a removable "From Dashboard" chip. -->
+            <InfoBar
+                AutomationProperties.AutomationId="Checklists_DashboardInfoBar"
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.IsFromDashboard, Mode=OneWay}"
+                Message="{x:Bind ViewModel.DashboardMessage, Mode=OneWay}"
+                Severity="Informational">
+                <InfoBar.ActionButton>
+                    <Button
+                        x:Uid="Filters_ReturnToDashboardButton"
+                        AutomationProperties.AutomationId="Checklists_ReturnToDashboardButton"
+                        Command="{x:Bind ViewModel.ReturnToDashboardCommand}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <Button
+                Padding="10,3"
+                AutomationProperties.AutomationId="Checklists_FilterChip_Dashboard"
+                AutomationProperties.Name="{x:Bind ViewModel.DashboardChipName, Mode=OneWay}"
+                Command="{x:Bind ViewModel.RemoveDashboardContextCommand}"
+                CornerRadius="12"
+                ToolTipService.ToolTip="{x:Bind ViewModel.DashboardChipName, Mode=OneWay}"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFromDashboard), Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="12"
+                        Glyph="&#xF246;" />
+                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.DashboardChipText, Mode=OneWay}" />
+                    <FontIcon
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="10"
+                        Glyph="&#xE711;" />
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <!-- Filtered-empty (design §4.5): "No items match 'abc'" + Clear search. -->

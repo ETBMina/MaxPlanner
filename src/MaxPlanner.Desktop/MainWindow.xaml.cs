@@ -22,6 +22,10 @@ public sealed partial class MainWindow : Window
         // Design §2.1: in LeftMinimal (S) the pane toggle lives in the title bar and opens the overlay pane.
         ShellContent.TitleBarPaneToggleChanged += (_, _) => AppTitleBar.IsPaneToggleButtonVisible = ShellContent.IsTitleBarPaneToggleVisible;
         AppTitleBar.PaneToggleRequested += (_, _) => ShellContent.TogglePane();
+
+        // Design §2.9: the TitleBar Back button pops the Dashboard drill-down stack (Alt+Left does the same).
+        ShellContent.BackStateChanged += (_, _) => AppTitleBar.IsBackButtonVisible = ShellContent.CanGoBack;
+        AppTitleBar.BackRequested += (_, _) => ShellContent.GoBack();
     }
 
     public ShellViewModel ViewModel { get; }

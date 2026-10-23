@@ -17,5 +17,8 @@ Use option 2. Each bar row is a focusable `Button` with `AutomationProperties.Na
 - No chart dependency is added.
 - Charts beyond horizontal bars would need a new ADR.
 
+## Implementation (Phase 12)
+`Presentation/Dashboard/BarChart` with `BarChartViewModel`: an `ItemsRepeater` of `Button` rows (label in a 35% column, a `BarTrack` panel that gives the bar its share of the largest count, at least 2 epx above zero and none at zero, and the count as text); a single accent hue (`AccentFillColorDefaultBrush`, one series, so no legend) with a 4-epx rounded data end; row names "In Progress, 6 tasks, 19 percent of 32. Opens matching tasks in Grid."; a Table `ToggleButton` showing the same rows as Category | Count | Share. The `dataviz` skill guided form, single-hue color, and labeling only; rendering is native WinUI.
+
 ## Verification
-UIA names and keyboard drill-down tests, plus theme screenshots.
+UIA names and keyboard drill-down tests, plus theme screenshots. Not run yet: deferred to Phase 19 (owner decision).

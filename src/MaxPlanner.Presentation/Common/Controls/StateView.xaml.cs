@@ -36,6 +36,7 @@ public sealed partial class StateView : UserControl
     public static readonly DependencyProperty EmptyActionTextProperty = Text(nameof(EmptyActionText));
     public static readonly DependencyProperty FilteredTitleProperty = Text(nameof(FilteredTitle));
     public static readonly DependencyProperty FilteredMessageProperty = Text(nameof(FilteredMessage));
+    public static readonly DependencyProperty FilteredActionTextProperty = Text(nameof(FilteredActionText));
     public static readonly DependencyProperty ErrorTitleProperty = Text(nameof(ErrorTitle));
     public static readonly DependencyProperty ErrorMessageProperty = Text(nameof(ErrorMessage));
     public static readonly DependencyProperty ErrorDetailsTextProperty = Text(nameof(ErrorDetailsText));
@@ -43,6 +44,10 @@ public sealed partial class StateView : UserControl
 
     public static readonly DependencyProperty EmptyActionCommandProperty = DependencyProperty.Register(
         nameof(EmptyActionCommand), typeof(ICommand), typeof(StateView), new PropertyMetadata(null, (d, _) => ((StateView)d).Apply()));
+
+    /// <summary>Design §2.5 Filtered-empty: "Clear all filters" (or the page's own way out, e.g. Show archived).</summary>
+    public static readonly DependencyProperty FilteredActionCommandProperty = DependencyProperty.Register(
+        nameof(FilteredActionCommand), typeof(ICommand), typeof(StateView), new PropertyMetadata(null, (d, _) => ((StateView)d).Apply()));
 
     public static readonly DependencyProperty RetryCommandProperty = DependencyProperty.Register(
         nameof(RetryCommand), typeof(ICommand), typeof(StateView), new PropertyMetadata(null, (d, _) => ((StateView)d).Apply()));
@@ -97,6 +102,10 @@ public sealed partial class StateView : UserControl
 
     public string FilteredMessage { get => (string)GetValue(FilteredMessageProperty); set => SetValue(FilteredMessageProperty, value); }
 
+    public string FilteredActionText { get => (string)GetValue(FilteredActionTextProperty); set => SetValue(FilteredActionTextProperty, value); }
+
+    public ICommand? FilteredActionCommand { get => (ICommand?)GetValue(FilteredActionCommandProperty); set => SetValue(FilteredActionCommandProperty, value); }
+
     public string ErrorTitle { get => (string)GetValue(ErrorTitleProperty); set => SetValue(ErrorTitleProperty, value); }
 
     public string ErrorMessage { get => (string)GetValue(ErrorMessageProperty); set => SetValue(ErrorMessageProperty, value); }
@@ -132,7 +141,7 @@ public sealed partial class StateView : UserControl
         var (glyph, title, message, actionText, action) = state switch
         {
             ViewState.Empty => (EmptyGlyph, EmptyTitle, EmptyMessage, EmptyActionText, EmptyActionCommand),
-            ViewState.FilteredEmpty => ("", FilteredTitle, FilteredMessage, string.Empty, (ICommand?)null),
+            ViewState.FilteredEmpty => ("", FilteredTitle, FilteredMessage, FilteredActionText, FilteredActionCommand),
             ViewState.Error => ("", ErrorTitle, ErrorMessage, RetryText, RetryCommand),
             _ => (string.Empty, string.Empty, string.Empty, string.Empty, (ICommand?)null),
         };
@@ -192,7 +201,12 @@ public sealed partial class StateView : UserControl
 
     private void OnActionClick(object sender, RoutedEventArgs e)
     {
-        var command = State == ViewState.Error ? RetryCommand : EmptyActionCommand;
+        var command = State switch
+        {
+            ViewState.Error => RetryCommand,
+            ViewState.FilteredEmpty => FilteredActionCommand,
+            _ => EmptyActionCommand,
+        };
         if (command?.CanExecute(null) == true)
         {
             command.Execute(null);
