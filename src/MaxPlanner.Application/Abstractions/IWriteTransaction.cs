@@ -167,7 +167,8 @@ public interface IWorkflowReader
 }
 
 /// <summary>
-/// People and tags added while saving a record that uses them (B-02.6). Later reads of
+/// People and tags added while saving a record that uses them (B-02.6), and the default CR Owner chosen
+/// while saving a CR (B-11). Later reads of
 /// <see cref="IWorkflowReader.Read"/> in the same transaction include them.
 /// </summary>
 public interface ILookupStore
@@ -177,6 +178,12 @@ public interface ILookupStore
 
     /// <summary>Requires an unused ID and an unused normalized name.</summary>
     void InsertTag(TagDefinition tag);
+
+    /// <summary>
+    /// Sets the workspace default CR Owner (B-04, B-11 first-CR prompt). Requires an existing person; later
+    /// reads of <see cref="IWorkflowReader.Read"/> in the same transaction include it.
+    /// </summary>
+    void SetDefaultCrOwner(PersonId ownerId);
 }
 
 /// <summary>

@@ -337,6 +337,17 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
             data.Workflow = data.Workflow with { Tags = [.. data.Workflow.Tags, tag] };
         }
+
+        public void SetDefaultCrOwner(PersonId ownerId)
+        {
+            beforeWrite("app_metadata.default-cr-owner");
+            if (data.Workflow.FindPerson(ownerId) is null)
+            {
+                throw Constraint($"person {ownerId} does not exist");
+            }
+
+            data.Workflow = data.Workflow with { Defaults = data.Workflow.Defaults with { DefaultCrOwnerId = ownerId } };
+        }
     }
 
     private sealed class TombstoneStore(InMemoryDataset data, Action<string> beforeWrite) : ITombstoneStore

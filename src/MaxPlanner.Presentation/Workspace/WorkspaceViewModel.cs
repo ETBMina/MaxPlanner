@@ -28,11 +28,12 @@ public sealed class WorkspaceViewModel : IDisposable
         IScheduler uiScheduler,
         IUiDispatcher dispatcher,
         ILocalizedStrings strings,
-        TimeProvider time)
+        TimeProvider time,
+        IUrlLauncher? urlLauncher = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         SaveStatus = new SaveStatusViewModel(strings, dispatcher, time);
-        Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus);
+        Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher);
         _stateSubscription = store.State.ObserveOn(uiScheduler).Subscribe(OnStoreState);
     }
 

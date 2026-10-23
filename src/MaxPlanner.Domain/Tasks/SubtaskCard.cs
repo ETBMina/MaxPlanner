@@ -128,6 +128,30 @@ public sealed record SubtaskCard
                 .Map(dates => (this with { StatusId = target.Id, Dates = dates, Rank = rank }).Touch(nowUtc));
     }
 
+    /// <summary>
+    /// The whole editor draft (B-16.2) as one change with one revision: own text, status, Board rank, and
+    /// dates. B-04 automation runs on the card's own dates only when the status really changes.
+    /// </summary>
+    public DomainResult<SubtaskCard> Update(
+        SubtitleText subtitle,
+        LongText? notes,
+        TaskStatusDefinition current,
+        TaskStatusDefinition target,
+        long rank,
+        DateIntent start,
+        DateIntent end,
+        DateOnly today,
+        DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(subtitle);
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(target);
+        return current.Id != StatusId
+            ? DomainResult.Failure<SubtaskCard>(DomainErrorCodes.StatusMismatch, "Status")
+            : TaskDatePolicy.Apply(Dates, current, target, start, end, today)
+                .Map(dates => (this with { Subtitle = subtitle, Notes = notes, StatusId = target.Id, Dates = dates, Rank = rank }).Touch(nowUtc));
+    }
+
     public DomainResult<SubtaskCard> EditDates(TaskStatusDefinition current, DateIntent start, DateIntent end, DateOnly today, DateTimeOffset nowUtc)
     {
         ArgumentNullException.ThrowIfNull(current);

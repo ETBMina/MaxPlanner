@@ -6,6 +6,7 @@ using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.SubtaskCards;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Tasks;
@@ -17,6 +18,8 @@ namespace MaxPlanner.Presentation.Tasks;
 /// </summary>
 public sealed class TaskCommands
 {
+    private static readonly TimeSpan PopOutDisplayTimeout = TimeSpan.FromSeconds(5);
+
     private readonly WorkspaceContext _context;
 
     internal TaskCommands(WorkspaceContext context) => _context = context;
@@ -26,6 +29,19 @@ public sealed class TaskCommands
 
     /// <summary>Opens the task editor for a new task; Board creation preselects the column's status (B-02.1).</summary>
     public Task NewAsync(TaskStatusId? status = null) => RunEditorAsync(new TaskEditorViewModel(_context, taskId: null, status));
+
+    /// <summary>
+    /// "Create task" from a CR (B-03.5): a new task whose permanent link to the saved CR is pending, so the
+    /// task and its link are created together by Save, with the inherited values of that CR (T-13).
+    /// </summary>
+    public Task NewLinkedAsync(ChangeRequestId changeRequestId) => RunEditorAsync(new TaskEditorViewModel(_context, taskId: null, initialStatus: null, changeRequestId));
+
+    /// <summary>Opens the Subtask card editor (design §5.2): Board/Grid Open, the task editor's card list.</summary>
+    public Task OpenSubtaskCardAsync(SubtaskCardId cardId) => RunSubtaskEditorAsync(SubtaskCardEditorViewModel.ForCard(_context, cardId));
+
+    /// <summary>"Add Subtask card" (B-16.3): the Subtask card editor for a new card under <paramref name="parentId"/>.</summary>
+    public Task NewSubtaskCardAsync(TaskId parentId, TaskStatusId? status = null) =>
+        RunSubtaskEditorAsync(SubtaskCardEditorViewModel.ForNewCard(_context, parentId, status));
 
     /// <summary>Opens the Copy dialog (B-06, design §5.5).</summary>
     public async Task CopyAsync(TaskId sourceId)
@@ -106,11 +122,40 @@ public sealed class TaskCommands
         }
     }
 
-    /// <summary>Asks for a subtitle and creates the Subtask card in the default status (B-16.3, Board card menu).</summary>
+    /// <summary>Board/Grid card menu "Add Subtask card" (B-16.3): opens the Subtask card editor for a new card.</summary>
     public Task AddSubtaskCardAsync(TaskReadModel task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        return _context.ShowDialogAsync(new SubtaskCardPromptViewModel(_context, task));
+        return NewSubtaskCardAsync(task.Id);
+    }
+
+    /// <summary>
+    /// "Pop out to card" (B-16.3, design §4.5): one transaction removes the checklist item and creates a Subtask
+    /// card from it. The save status then reads "Moved to a Subtask card in Backlog — Open card".
+    /// </summary>
+    /// <returns>The new card, or null when the command failed (reported in the save status).</returns>
+    public async Task<SubtaskCardId?> PopOutAsync(TaskReadModel task, ChecklistItemId itemId)
+    {
+        ArgumentNullException.ThrowIfNull(task);
+        var cardId = new SubtaskCardId(Guid.NewGuid());
+        var outcome = await RunAsync(
+            "Record_Task",
+            op => _context.UseCases.PopOutChecklistItem.ExecuteAsync(new PopOutChecklistItemCommand(op, task.Id, task.Revision, itemId, cardId), CancellationToken.None),
+            complete: _ => { }).ConfigureAwait(true);
+        if (outcome is null)
+        {
+            return null;
+        }
+
+        // The status the use case chose (default, or the first completed one for a checked item) is read from
+        // the committed card, so the message never guesses it.
+        await _context.WhenDisplayedAsync(outcome.CommitSequence, PopOutDisplayTimeout).ConfigureAwait(true);
+        var card = _context.Store.SubtaskCards.Lookup(cardId);
+        var statusName = card.HasValue ? card.Value.Status.Name : string.Empty;
+        var message = _context.Strings.Format("PopOut_Moved", statusName);
+        _context.SaveStatus.Complete(message, _context.Strings.GetString("PopOut_OpenCard"), () => OpenSubtaskCardAsync(cardId));
+        _context.Announce(_context.Strings.Format("PopOut_Announced", statusName));
+        return cardId;
     }
 
     public async Task<bool> DeleteSubtaskCardAsync(SubtaskCardReadModel card)
@@ -144,7 +189,11 @@ public sealed class TaskCommands
     /// Runs one command with the shared save indicator: Saving while it runs, then the actual result. A
     /// failure is reported and announced and returns null; nothing is retried (T-07).
     /// </summary>
-    internal async Task<CommandOutcome<T>?> RunAsync<T>(string recordKey, Func<OperationId, Task<AppResult<CommandOutcome<T>>>> command)
+    /// <param name="complete">Replaces the plain "Saved" result when the caller reports its own result text.</param>
+    internal async Task<CommandOutcome<T>?> RunAsync<T>(
+        string recordKey,
+        Func<OperationId, Task<AppResult<CommandOutcome<T>>>> command,
+        Action<CommandOutcome<T>>? complete = null)
     {
         if (_context.IsEditingBlocked)
         {
@@ -163,7 +212,16 @@ public sealed class TaskCommands
             return null;
         }
 
-        _context.SaveStatus.Complete();
+        if (complete is null)
+        {
+            _context.SaveStatus.Complete();
+        }
+        else
+        {
+            // The caller completes the indicator with its own result once it is displayed.
+            complete(result.Value);
+        }
+
         return result.Value;
     }
 
@@ -183,78 +241,37 @@ public sealed class TaskCommands
             case EditorFollowUp.Delete when editor.ExistingTaskId is { } deleteId && _context.Store.Tasks.Lookup(deleteId) is { HasValue: true } task:
                 await DeleteAsync(task.Value).ConfigureAwait(true);
                 break;
+            case EditorFollowUp.OpenCr when editor.LinkedCr is { } cr:
+                await _context.ChangeRequests.OpenAsync(cr.Id).ConfigureAwait(true);
+                break;
+            case EditorFollowUp.OpenSubtaskCard when editor.FollowUpCardId is { } cardId:
+                await OpenSubtaskCardAsync(cardId).ConfigureAwait(true);
+                break;
+            case EditorFollowUp.AddSubtaskCard when editor.ExistingTaskId is { } parentId:
+                await NewSubtaskCardAsync(parentId).ConfigureAwait(true);
+                break;
             default:
                 break;
         }
     }
-}
 
-/// <summary>
-/// "Add Subtask card" from the Board card menu (B-16.3): one required subtitle, created in the default status.
-/// </summary>
-public sealed partial class SubtaskCardPromptViewModel : CommunityToolkit.Mvvm.ComponentModel.ObservableObject, IDialogViewModel
-{
-    private readonly WorkspaceContext _context;
-    private readonly TaskReadModel _parent;
-
-    public SubtaskCardPromptViewModel(WorkspaceContext context, TaskReadModel parent)
+    private async Task RunSubtaskEditorAsync(SubtaskCardEditorViewModel editor)
     {
-        _context = context;
-        _parent = parent;
-    }
-
-    public event EventHandler? CloseRequested;
-
-    public string Caption => _context.Strings.Format("Board_SubtaskOf", _parent.EffectiveTitle);
-
-    public string DialogTitle => _context.Strings.GetString("SubtaskPrompt_Title");
-
-    public string SubtitleHeader => _context.Strings.GetString("SubtaskPrompt_SubtitleHeader");
-
-    public string AddButtonText => _context.Strings.GetString("SubtaskPrompt_AddButton");
-
-    public string CancelText => _context.Strings.GetString("Common_Cancel");
-
-    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
-    public partial string Subtitle { get; set; } = string.Empty;
-
-    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
-    public partial string? Error { get; private set; }
-
-    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
-    public partial bool IsSaving { get; private set; }
-
-    public SubtaskCardId? CreatedId { get; private set; }
-
-    /// <summary>Creates the card; on success the dialog closes, otherwise the error stays beside the field.</summary>
-    public async Task<bool> CreateAsync()
-    {
-        if (IsSaving)
+        using (editor)
         {
-            return false;
+            await _context.ShowDialogAsync(editor).ConfigureAwait(true);
         }
 
-        IsSaving = true;
-        Error = null;
-        var id = new SubtaskCardId(Guid.NewGuid());
-        var operation = OperationId.New();
-        _context.SaveStatus.Begin();
-        var result = await _context.UseCases.CreateSubtaskCard.ExecuteAsync(
-            new CreateSubtaskCardCommand(operation, _parent.Id, id, Subtitle), CancellationToken.None).ConfigureAwait(true);
-        IsSaving = false;
-        if (!result.IsSuccess)
+        switch (editor.FollowUp)
         {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_SubtaskCard", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            Error = failure.Message;
-            _context.Announce(failure.Message, isFailure: true);
-            return false;
+            case SubtaskEditorFollowUp.Delete when editor.Latest is { } card:
+                await DeleteSubtaskCardAsync(card).ConfigureAwait(true);
+                break;
+            case SubtaskEditorFollowUp.OpenParent when editor.Parent is not null:
+                await OpenAsync(editor.ParentTaskId).ConfigureAwait(true);
+                break;
+            default:
+                break;
         }
-
-        _context.SaveStatus.Complete();
-        CreatedId = id;
-        _context.Announce(_context.Strings.Format("SubtaskCard_Created", Subtitle.Trim()));
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        return true;
     }
 }

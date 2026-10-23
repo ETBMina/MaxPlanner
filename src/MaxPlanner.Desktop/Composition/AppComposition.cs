@@ -44,6 +44,7 @@ internal static class AppComposition
         services.AddSingleton<IDayBoundarySource>(sp => sp.GetRequiredService<LocalDayBoundarySource>());
 
         services.AddSingleton<IDataFolderLauncher, ExplorerDataFolderLauncher>();
+        services.AddSingleton<IUrlLauncher, ShellUrlLauncher>();
         services.AddSingleton<ThemeService>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton(sp => new StartupCoordinator(

@@ -321,12 +321,32 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     public bool CanMoveDown(BoardCardViewModel card) => CanReorder && ColumnOf(card) is { } c && c.Cards.IndexOf(card) < c.Cards.Count - 1;
 
-    /// <summary>Open (Enter): the task editor; a Subtask card opens its parent until the Subtask card editor (Phase 5).</summary>
+    /// <summary>Open (Enter): the task editor, or the Subtask card editor for a Subtask card (design §5.2).</summary>
     public Task OpenAsync(BoardCardViewModel card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        return card.Model.Card is { } subtaskCard ? _context.Tasks.OpenSubtaskCardAsync(subtaskCard.Id) : _context.Tasks.OpenAsync(card.TaskId);
+    }
+
+    /// <summary>A Subtask card's "Subtask of …" link opens its parent task (B-16.5).</summary>
+    public Task OpenParentAsync(BoardCardViewModel card)
     {
         ArgumentNullException.ThrowIfNull(card);
         return _context.Tasks.OpenAsync(card.TaskId);
     }
+
+    /// <summary>The card's CR reference link opens the CR, where the inherited values are edited (B-02.4).</summary>
+    public Task OpenCrAsync(BoardCardViewModel card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        return card.Model.Cr.ChangeRequestId is { } id ? _context.ChangeRequests.OpenAsync(id) : Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Overflow "New CR…". Interim entry point until the Calendar (Phase 7), the CR editor's home (B-03.1).
+    /// </summary>
+    [RelayCommand]
+    private Task NewChangeRequestAsync() => _context.ChangeRequests.NewAsync();
 
     /// <summary>Accent New task (default status) or a column's + (that status, B-02.1).</summary>
     public Task NewTaskAsync(BoardColumnViewModel? column = null) => _context.Tasks.NewAsync(column?.StatusId);

@@ -634,6 +634,10 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
         }
 
         Item("Board_MenuOpen", "Grid_RowMenuOpenItem", () => _ = ViewModel.OpenRowAsync(row));
+        if (row.Model.Cr.ChangeRequestId is not null)
+        {
+            Item("Board_MenuOpenCr", "Grid_RowMenuOpenCrItem", () => _ = ViewModel.OpenCrAsync(row));
+        }
         if (row.IsTask)
         {
             Item("Board_MenuCopy", "Grid_RowMenuCopyItem", () => _ = ViewModel.CopyRowAsync(row));

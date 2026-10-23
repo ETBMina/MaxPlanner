@@ -390,7 +390,7 @@ internal sealed class SqliteWorkflowReader(SqliteWriteTransaction tx) : IWorkflo
     public WorkflowSnapshot Read() => tx.Loader.LoadWorkflow();
 }
 
-/// <summary>People and tags added by a saved draft (B-02.6); the UNIQUE name_norm column refuses duplicates.</summary>
+/// <summary>People and tags added by a saved draft (B-02.6; the UNIQUE name_norm column refuses duplicates) and the default CR Owner (B-11).</summary>
 internal sealed class SqliteLookupStore(SqliteWriteTransaction tx) : ILookupStore
 {
     public void InsertPerson(PersonDefinition person)
@@ -403,6 +403,15 @@ internal sealed class SqliteLookupStore(SqliteWriteTransaction tx) : ILookupStor
     {
         ArgumentNullException.ThrowIfNull(tag);
         Insert("INSERT INTO tags (id, name, name_norm) VALUES ($id, $name, $norm);", "tags.insert", tag.Id.Value, tag.Name);
+    }
+
+    public void SetDefaultCrOwner(PersonId ownerId)
+    {
+        // The app_metadata column has a foreign key to people, so an unknown person is refused by SQLite.
+        tx.BeforeWrite("app_metadata.default-cr-owner");
+        var command = tx.Command("UPDATE app_metadata SET default_cr_owner_id = $owner WHERE id = 1;");
+        command.Add("$owner", ownerId.Value);
+        tx.Execute(command);
     }
 
     private void Insert(string sql, string write, Guid id, LookupName name)

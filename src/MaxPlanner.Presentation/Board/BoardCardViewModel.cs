@@ -64,6 +64,9 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
 
     public bool HasCrReference => CrReference.Length > 0;
 
+    /// <summary>"Open CR-1067": the CR link's accessible name and tooltip (design §8.2).</summary>
+    public string OpenCrName => Model.Cr.CrNumber is { } number ? _strings.Format("TaskEditor_OpenCrName", number) : string.Empty;
+
     public string PriorityText => Model.Task?.Priority.Name ?? string.Empty;
 
     public PriorityLevel PriorityLevel => _priorityLevel(Model);
@@ -127,6 +130,7 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(HasService));
         OnPropertyChanged(nameof(CrReference));
         OnPropertyChanged(nameof(HasCrReference));
+        OnPropertyChanged(nameof(OpenCrName));
         OnPropertyChanged(nameof(PriorityText));
         OnPropertyChanged(nameof(PriorityLevel));
         OnPropertyChanged(nameof(PriorityName));

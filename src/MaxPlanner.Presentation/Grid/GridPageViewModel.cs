@@ -166,12 +166,19 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     /// <summary>Conflict "Reload": discards the draft and shows the saved value (design §5.10).</summary>
     public void Reload(GridRowViewModel row) => CancelEdit(row);
 
-    /// <summary>Row ⋯ › Open (design §4.3): the full editor, also the S-breakpoint row-details route (T-08.1).</summary>
+    /// <summary>
+    /// Row ⋯ › Open (design §4.3): the task editor, or the Subtask card editor for a card row (design §5.2);
+    /// also the S-breakpoint row-details route (T-08.1).
+    /// </summary>
     public Task OpenRowAsync(GridRowViewModel row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        return _context.Tasks.OpenAsync(row.Model.Task?.Id ?? row.Model.Card!.ParentTaskId);
+        return row.Model.Card is { } card ? _context.Tasks.OpenSubtaskCardAsync(card.Id) : _context.Tasks.OpenAsync(row.Model.Task!.Id);
     }
+
+    /// <summary>Row ⋯ › Open CR: the CR whose values the row inherits (B-02.4: inherited values are edited there).</summary>
+    public Task OpenCrAsync(GridRowViewModel row) =>
+        row?.Model.Cr.ChangeRequestId is { } id ? _context.ChangeRequests.OpenAsync(id) : Task.CompletedTask;
 
     /// <summary>Row ⋯ › Copy… (tasks only, B-06).</summary>
     public Task CopyRowAsync(GridRowViewModel row) =>

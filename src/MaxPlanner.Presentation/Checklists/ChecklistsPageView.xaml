@@ -9,32 +9,84 @@
     IsTabStop="False">
     <UserControl.Resources>
         <DataTemplate x:Key="OpenItemTemplate" x:DataType="local:ChecklistItemViewModel">
-            <CheckBox
-                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id.Value), Mode=OneTime}"
-                Checked="OnItemToggled"
-                Tag="{x:Bind Mode=OneTime}"
-                Unchecked="OnItemToggled"
-                IsChecked="{x:Bind IsChecked, Mode=OneWay}"
-                IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}">
-                <TextBlock Text="{x:Bind Text, Mode=OneWay}" TextWrapping="Wrap" />
-            </CheckBox>
+            <Grid ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox
+                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id.Value), Mode=OneTime}"
+                    Checked="OnItemToggled"
+                    Tag="{x:Bind Mode=OneTime}"
+                    Unchecked="OnItemToggled"
+                    IsChecked="{x:Bind IsChecked, Mode=OneWay}"
+                    IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}">
+                    <TextBlock Text="{x:Bind Text, Mode=OneWay}" TextWrapping="Wrap" />
+                </CheckBox>
+                <!-- Design §4.5 item ⋯ menu. Rename, Move up/down and Delete arrive with Phase 8. -->
+                <Button
+                    Grid.Column="1"
+                    Padding="6,4"
+                    VerticalAlignment="Top"
+                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemMenuButton_', Id.Value), Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem
+                                x:Uid="Checklists_ItemPopOut"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemPopOutItem_', Id.Value), Mode=OneTime}"
+                                Command="{x:Bind PopOutCommand}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
         </DataTemplate>
 
         <!-- Completed items show strikethrough and sit in the Completed section, so color is never the only cue. -->
         <DataTemplate x:Key="CompletedItemTemplate" x:DataType="local:ChecklistItemViewModel">
-            <CheckBox
-                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id.Value), Mode=OneTime}"
-                Checked="OnItemToggled"
-                Tag="{x:Bind Mode=OneTime}"
-                Unchecked="OnItemToggled"
-                IsChecked="{x:Bind IsChecked, Mode=OneWay}"
-                IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}">
-                <TextBlock
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind Text, Mode=OneWay}"
-                    TextDecorations="Strikethrough"
-                    TextWrapping="Wrap" />
-            </CheckBox>
+            <Grid ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox
+                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id.Value), Mode=OneTime}"
+                    Checked="OnItemToggled"
+                    Tag="{x:Bind Mode=OneTime}"
+                    Unchecked="OnItemToggled"
+                    IsChecked="{x:Bind IsChecked, Mode=OneWay}"
+                    IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}">
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind Text, Mode=OneWay}"
+                        TextDecorations="Strikethrough"
+                        TextWrapping="Wrap" />
+                </CheckBox>
+                <!-- Design §4.5 item ⋯ menu. Rename, Move up/down and Delete arrive with Phase 8. -->
+                <Button
+                    Grid.Column="1"
+                    Padding="6,4"
+                    VerticalAlignment="Top"
+                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemMenuButton_', Id.Value), Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem
+                                x:Uid="Checklists_ItemPopOut"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemPopOutItem_', Id.Value), Mode=OneTime}"
+                                Command="{x:Bind PopOutCommand}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="GroupTemplate" x:DataType="local:ChecklistGroupViewModel">

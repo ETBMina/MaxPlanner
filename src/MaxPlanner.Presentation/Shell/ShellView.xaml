@@ -216,6 +216,14 @@
                             Style="{StaticResource CaptionTextBlockStyle}"
                             Text="{x:Bind SaveStatus.Text, Mode=OneWay}"
                             Visibility="{x:Bind common:BindFunctions.Collapsed(SaveStatus.IsFailed), Mode=OneWay}" />
+                        <!-- Design §4.5: a result can carry a follow-up, for example "Open card" after a pop out. -->
+                        <HyperlinkButton
+                            Padding="4,0"
+                            AutomationProperties.AutomationId="Shell_SaveStatusActionLink"
+                            Command="{x:Bind SaveStatus.RunResultActionCommand, Mode=OneWay}"
+                            Content="{x:Bind SaveStatus.ResultActionText, Mode=OneWay}"
+                            FontSize="12"
+                            Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.HasResultAction), Mode=OneWay}" />
                         <!-- Failed: the link text opens the App InfoBar with the message and the operation id. -->
                         <HyperlinkButton
                             Padding="4,0"

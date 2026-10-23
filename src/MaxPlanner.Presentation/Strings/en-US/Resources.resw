@@ -937,15 +937,6 @@
   <data name="SubtaskCard_Deleted" xml:space="preserve">
     <value>Deleted Subtask card {0}</value>
   </data>
-  <data name="SubtaskPrompt_AddButton" xml:space="preserve">
-    <value>Add</value>
-  </data>
-  <data name="SubtaskPrompt_SubtitleHeader" xml:space="preserve">
-    <value>Subtitle *</value>
-  </data>
-  <data name="SubtaskPrompt_Title" xml:space="preserve">
-    <value>Add Subtask card</value>
-  </data>
   <data name="Task_Archived" xml:space="preserve">
     <value>Archived {0}</value>
   </data>
@@ -993,9 +984,6 @@
   </data>
   <data name="TaskEditor_PendingTitleHelper" xml:space="preserve">
     <value>This becomes the title from {0} when you save.</value>
-  </data>
-  <data name="TaskEditor_PoppedOut" xml:space="preserve">
-    <value>Moved to a Subtask card</value>
   </data>
   <data name="TaskEditor_ServiceHelper" xml:space="preserve">
     <value>Tells this task apart from the other {0} tasks on {1}.</value>
@@ -1212,5 +1200,299 @@
   </data>
   <data name="Conflict_ReviewHeading.Text" xml:space="preserve">
     <value>Review changes</value>
+  </data>
+  <data name="Editor_ConflictMessage" xml:space="preserve">
+    <value>This {0} changed elsewhere since you opened it. Your changes are not saved.</value>
+  </data>
+  <data name="Record_ChangeRequest" xml:space="preserve">
+    <value>CR</value>
+  </data>
+  <data name="Error_InvalidUrl" xml:space="preserve">
+    <value>Enter a link that starts with http:// or https://.</value>
+  </data>
+  <data name="Field_Number" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="Field_TaskNumber" xml:space="preserve">
+    <value>Task number</value>
+  </data>
+  <data name="Field_Owner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Field_Squad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Field_PlannedStart" xml:space="preserve">
+    <value>Planned start</value>
+  </data>
+  <data name="Field_PlannedEnd" xml:space="preserve">
+    <value>Planned end</value>
+  </data>
+  <data name="Field_EmailSubject" xml:space="preserve">
+    <value>Email subject</value>
+  </data>
+  <data name="Field_SolutionDesignUrl" xml:space="preserve">
+    <value>Solution design link</value>
+  </data>
+  <data name="Field_Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="SubtaskEditor_Title" xml:space="preserve">
+    <value>Subtask card</value>
+  </data>
+  <data name="SubtaskEditor_TitleNew" xml:space="preserve">
+    <value>New Subtask card</value>
+  </data>
+  <data name="SubtaskEditor_CreateButton" xml:space="preserve">
+    <value>Create card</value>
+  </data>
+  <data name="SubtaskEditor_DeletedElsewhere" xml:space="preserve">
+    <value>This Subtask card was deleted elsewhere. Your changes can no longer be saved.</value>
+  </data>
+  <data name="SubtaskEditor_ParentDeleted" xml:space="preserve">
+    <value>The parent task was deleted elsewhere, so this card can no longer be created.</value>
+  </data>
+  <data name="SubtaskEditor_MoreMenu.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="SubtaskEditor_MoreMenu.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="SubtaskEditor_MoreDelete.Text" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="SubtaskEditor_ParentArchivedInfoBar.Title" xml:space="preserve">
+    <value>The parent task is archived.</value>
+  </data>
+  <data name="SubtaskEditor_ParentArchivedInfoBar.Message" xml:space="preserve">
+    <value>Its Subtask cards are read-only. Restore the task to edit them.</value>
+  </data>
+  <data name="SubtaskEditor_ParentHeader.Text" xml:space="preserve">
+    <value>Parent task</value>
+  </data>
+  <data name="SubtaskEditor_ServiceLabel.Text" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="SubtaskEditor_CrNumberLabel.Text" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="SubtaskEditor_SubtitleBox.Header" xml:space="preserve">
+    <value>Subtitle *</value>
+  </data>
+  <data name="SubtaskEditor_StatusCombo.Header" xml:space="preserve">
+    <value>Status *</value>
+  </data>
+  <data name="SubtaskEditor_StatusHelper.Text" xml:space="preserve">
+    <value>Saving this card never changes the parent task's status or dates.</value>
+  </data>
+  <data name="SubtaskEditor_ReloadMessage.Text" xml:space="preserve">
+    <value>Reload discards your changes and shows the saved card. Continue?</value>
+  </data>
+  <data name="CrEditor_Title" xml:space="preserve">
+    <value>Change request</value>
+  </data>
+  <data name="CrEditor_TitleNew" xml:space="preserve">
+    <value>New CR</value>
+  </data>
+  <data name="CrEditor_CreateButton" xml:space="preserve">
+    <value>Create CR</value>
+  </data>
+  <data name="CrEditor_ThisCr" xml:space="preserve">
+    <value>this CR</value>
+  </data>
+  <data name="CrEditor_SquadGeneral" xml:space="preserve">
+    <value>General (no squad)</value>
+  </data>
+  <data name="CrEditor_DeletedElsewhere" xml:space="preserve">
+    <value>This CR was deleted elsewhere. Your changes can no longer be saved.</value>
+  </data>
+  <data name="CrEditor_DuplicateNumber" xml:space="preserve">
+    <value>{0} already exists</value>
+  </data>
+  <data name="CrEditor_OpenDuplicate" xml:space="preserve">
+    <value>Open {0}</value>
+  </data>
+  <data name="CrEditor_Overdue" xml:space="preserve">
+    <value>Overdue by {0} days — Planned end was {1}. Reschedule or complete this CR.</value>
+  </data>
+  <data name="CrEditor_OverdueOne" xml:space="preserve">
+    <value>Overdue by {0} day — Planned end was {1}. Reschedule or complete this CR.</value>
+  </data>
+  <data name="CrEditor_Unscheduled" xml:space="preserve">
+    <value>Unscheduled</value>
+  </data>
+  <data name="CrEditor_LinkedTasksHeader" xml:space="preserve">
+    <value>Linked tasks ({0})</value>
+  </data>
+  <data name="CrEditor_TaskNumberHelper" xml:space="preserve">
+    <value>Shared by all {0} linked tasks.</value>
+  </data>
+  <data name="CrEditor_TaskNumberHelperOne" xml:space="preserve">
+    <value>Shared by the {0} linked task.</value>
+  </data>
+  <data name="CrEditor_SaveAndCreatePrompt" xml:space="preserve">
+    <value>Save {0} and create a task?</value>
+  </data>
+  <data name="CrEditor_MakeDefaultOwner" xml:space="preserve">
+    <value>Make {0} the default CR Owner</value>
+  </data>
+  <data name="CrEditor_Deleted" xml:space="preserve">
+    <value>Deleted {0} and {1} linked tasks</value>
+  </data>
+  <data name="CrEditor_LinkedTaskName" xml:space="preserve">
+    <value>Task {0}, {1}, {2}</value>
+  </data>
+  <data name="CrEditor_LinkedTaskNameArchived" xml:space="preserve">
+    <value>Archived task {0}, {1}, {2}</value>
+  </data>
+  <data name="CrEditor_MoreMenu.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="CrEditor_MoreMenu.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="CrEditor_MoreDelete.Text" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="CrEditor_NumberBox.Header" xml:space="preserve">
+    <value>CR number *</value>
+  </data>
+  <data name="CrEditor_NumberHelper.Text" xml:space="preserve">
+    <value>Must be unique.</value>
+  </data>
+  <data name="CrEditor_TaskNumberBox.Header" xml:space="preserve">
+    <value>Task number</value>
+  </data>
+  <data name="CrEditor_TitleBox.Header" xml:space="preserve">
+    <value>Title *</value>
+  </data>
+  <data name="CrEditor_TitleHelper.Text" xml:space="preserve">
+    <value>Every linked task shows this title; their services tell them apart.</value>
+  </data>
+  <data name="CrEditor_OwnerPicker.Header" xml:space="preserve">
+    <value>Owner *</value>
+  </data>
+  <data name="CrEditor_SquadCombo.Header" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="CrEditor_StatusCombo.Header" xml:space="preserve">
+    <value>Status *</value>
+  </data>
+  <data name="CrEditor_PriorityCombo.Header" xml:space="preserve">
+    <value>Priority *</value>
+  </data>
+  <data name="CrEditor_PlannedStart.Header" xml:space="preserve">
+    <value>Planned start</value>
+  </data>
+  <data name="CrEditor_PlannedEnd.Header" xml:space="preserve">
+    <value>Planned end</value>
+  </data>
+  <data name="CrEditor_ClearPlannedStartButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Clear planned start</value>
+  </data>
+  <data name="CrEditor_ClearPlannedStartButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear planned start</value>
+  </data>
+  <data name="CrEditor_ClearPlannedEndButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Clear planned end</value>
+  </data>
+  <data name="CrEditor_ClearPlannedEndButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear planned end</value>
+  </data>
+  <data name="CrEditor_EmailSubjectBox.Header" xml:space="preserve">
+    <value>Email subject</value>
+  </data>
+  <data name="CrEditor_UrlBox.Header" xml:space="preserve">
+    <value>Solution design link</value>
+  </data>
+  <data name="CrEditor_OpenUrlButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Open solution design link</value>
+  </data>
+  <data name="CrEditor_OpenUrlButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open in your browser</value>
+  </data>
+  <data name="CrEditor_DescriptionBox.Header" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="CrEditor_CreateTaskText.Text" xml:space="preserve">
+    <value>Create task</value>
+  </data>
+  <data name="CrEditor_NoLinkedTasks.Text" xml:space="preserve">
+    <value>No tasks are linked to this CR yet.</value>
+  </data>
+  <data name="CrEditor_LinkedTasksList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Linked tasks</value>
+  </data>
+  <data name="CrEditor_ArchivedChip.Text" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="CrEditor_SaveAndCreateNote.Text" xml:space="preserve">
+    <value>The CR is saved first, so the new task takes its saved title, task number, squad and owner.</value>
+  </data>
+  <data name="CrEditor_SaveAndCreateButton.Content" xml:space="preserve">
+    <value>Save and create</value>
+  </data>
+  <data name="CrEditor_ReloadMessage.Text" xml:space="preserve">
+    <value>Reload discards your changes and shows the saved CR. Continue?</value>
+  </data>
+  <data name="CascadeDelete_Heading" xml:space="preserve">
+    <value>Delete {0} and its tasks?</value>
+  </data>
+  <data name="CascadeDelete_Tasks" xml:space="preserve">
+    <value>{0} linked tasks ({1} active, {2} archived)</value>
+  </data>
+  <data name="CascadeDelete_ChecklistItems" xml:space="preserve">
+    <value>{0} checklist items</value>
+  </data>
+  <data name="CascadeDelete_SubtaskCards" xml:space="preserve">
+    <value>{0} Subtask cards</value>
+  </data>
+  <data name="CascadeDelete_Button" xml:space="preserve">
+    <value>Delete CR and {0} tasks</value>
+  </data>
+  <data name="CascadeDelete_ButtonOne" xml:space="preserve">
+    <value>Delete CR and {0} task</value>
+  </data>
+  <data name="CascadeDelete_ScopeChanged" xml:space="preserve">
+    <value>The linked tasks changed. Review the new counts.</value>
+  </data>
+  <data name="CascadeDelete_ReviewNote.Text" xml:space="preserve">
+    <value>Review items that mention this CR number are not affected.</value>
+  </data>
+  <data name="CascadeDelete_Warning.Text" xml:space="preserve">
+    <value>This can't be undone.</value>
+  </data>
+  <data name="CascadeDelete_CancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="TaskEditor_OpenCrName" xml:space="preserve">
+    <value>Open {0}</value>
+  </data>
+  <data name="Board_MenuOpenParent" xml:space="preserve">
+    <value>Open parent task</value>
+  </data>
+  <data name="Board_MenuOpenCr" xml:space="preserve">
+    <value>Open CR</value>
+  </data>
+  <data name="Board_NewCrButton.Label" xml:space="preserve">
+    <value>New CR…</value>
+  </data>
+  <data name="Board_NewCrButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>New change request (until the Calendar page is available)</value>
+  </data>
+  <data name="Checklists_ItemMenuName" xml:space="preserve">
+    <value>More actions for {0}</value>
+  </data>
+  <data name="Checklists_ItemPopOut.Text" xml:space="preserve">
+    <value>Pop out to card</value>
+  </data>
+  <data name="PopOut_Moved" xml:space="preserve">
+    <value>Moved to a Subtask card in {0} —</value>
+  </data>
+  <data name="PopOut_OpenCard" xml:space="preserve">
+    <value>Open card</value>
+  </data>
+  <data name="PopOut_Announced" xml:space="preserve">
+    <value>Moved to a Subtask card in {0}</value>
   </data>
 </root>

@@ -70,6 +70,9 @@ public enum EditorFollowUp
     None,
     Copy,
     Delete,
+    OpenCr,
+    OpenSubtaskCard,
+    AddSubtaskCard,
 }
 
 /// <summary>

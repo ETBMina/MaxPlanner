@@ -42,6 +42,7 @@ public static class CommandErrorText
             ConcurrencyConflictError => strings.Format("Error_Conflict", record),
             RecordNotFoundError { WasDeleted: true } => strings.Format("Error_Deleted", record),
             RecordNotFoundError => strings.Format("Error_NotFound", record),
+            DuplicateCrNumberError duplicate => strings.Format("CrEditor_DuplicateNumber", duplicate.Number),
             StorageFailureError storage => strings.Format("Error_Storage", StorageFailureText.Describe(storage.Kind, strings)),
             CommitOutcomeUnknownError => strings.GetString("Error_CommitOutcomeUnknown"),
             OperationCancelledError => strings.GetString("Error_Cancelled"),
@@ -64,6 +65,8 @@ public static class CommandErrorText
             DomainErrorCodes.TitleNotAllowedWhenLinked => strings.GetString("Error_TitleInherited"),
             DomainErrorCodes.ArchivedReadOnly => strings.GetString("Error_ArchivedReadOnly"),
             DomainErrorCodes.UnknownReference => strings.Format("Error_UnknownReference", field),
+            DomainErrorCodes.InvalidUrl => strings.GetString("Error_InvalidUrl"),
+            DomainErrorCodes.CascadeScopeChanged => strings.GetString("CascadeDelete_ScopeChanged"),
             _ => strings.Format("Error_Invalid", field),
         };
     }

@@ -56,19 +56,20 @@
                             <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                         </StackPanel>
                     </Border>
-                    <StackPanel
-                        Orientation="Horizontal"
-                        Spacing="6"
+                    <!-- Design §4.2 anatomy 3: the CR reference link opens the CR. -->
+                    <HyperlinkButton
+                        Padding="0"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
+                        Click="OnCardCrLinkClick"
+                        IsTabStop="False"
+                        ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
                         Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
-                        <FontIcon
-                            FontSize="12"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Glyph="&#xE71B;" />
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind CrReference, Mode=OneWay}" />
-                    </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon FontSize="12" Glyph="&#xE71B;" />
+                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
+                        </StackPanel>
+                    </HyperlinkButton>
                     <Grid ColumnSpacing="6" RowSpacing="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -160,19 +161,23 @@
                         Grid.Column="1"
                         Padding="12"
                         Spacing="6">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon
-                                FontSize="12"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Glyph="&#xE8FD;" />
-                            <TextBlock
-                                MaxLines="2"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind SubtaskOfText, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
+                        <!-- B-16.5: the "Subtask of" indicator opens the parent. -->
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
+                            AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
+                            Click="OnCardParentLinkClick"
+                            IsTabStop="False">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon FontSize="12" Glyph="&#xE8FD;" />
+                                <TextBlock
+                                    MaxLines="2"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </HyperlinkButton>
                         <Border
                             HorizontalAlignment="Left"
                             Style="{StaticResource ServiceChipStyle}"
@@ -182,11 +187,16 @@
                                 <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                             </StackPanel>
                         </Border>
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind CrReference, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}" />
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
+                            AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
+                            Click="OnCardCrLinkClick"
+                            IsTabStop="False"
+                            ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
+                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
+                        </HyperlinkButton>
                         <TextBlock
                             MaxLines="3"
                             Style="{StaticResource BodyStrongTextBlockStyle}"
@@ -333,6 +343,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <AutoSuggestBox
                     x:Name="SearchBox"
@@ -358,6 +369,28 @@
                         <TextBlock x:Uid="Board_NewTaskText" />
                     </StackPanel>
                 </Button>
+                <!--
+                    Overflow-only CommandBar (design §2.4). "New CR" is interim here until the Calendar page
+                    (Phase 7), the CR editor's home (B-03.1); remove it then.
+                -->
+                <CommandBar
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="Board_CommandBar"
+                    Background="Transparent"
+                    DefaultLabelPosition="Right"
+                    IsDynamicOverflowEnabled="False">
+                    <CommandBar.SecondaryCommands>
+                        <AppBarButton
+                            x:Uid="Board_NewCrButton"
+                            AutomationProperties.AutomationId="Board_NewCrButton"
+                            Command="{x:Bind ViewModel.NewChangeRequestCommand}">
+                            <AppBarButton.Icon>
+                                <FontIcon Glyph="&#xE710;" />
+                            </AppBarButton.Icon>
+                        </AppBarButton>
+                    </CommandBar.SecondaryCommands>
+                </CommandBar>
             </Grid>
             <!-- Design §4.2 S: one column per viewport, chosen here or with the previous/next buttons. -->
             <Grid

@@ -25,6 +25,9 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan SavedDisplayTime = TimeSpan.FromSeconds(3);
 
+    // A result with a follow-up action ("— Open card") stays long enough to be reached by keyboard.
+    private static readonly TimeSpan ResultDisplayTime = TimeSpan.FromSeconds(15);
+
     private readonly ILocalizedStrings _strings;
     private readonly IUiDispatcher _dispatcher;
     private readonly TimeProvider _time;
@@ -32,6 +35,8 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     private int _inFlight;
     private SaveState _lastResult = SaveState.Idle;
     private bool _isResyncing;
+    private string? _resultMessage;
+    private Func<Task>? _resultAction;
 
     public SaveStatusViewModel(ILocalizedStrings strings, IUiDispatcher dispatcher, TimeProvider time)
     {
@@ -56,6 +61,16 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? FailureDetails { get; private set; }
 
+    /// <summary>
+    /// The link text of the last result's follow-up, for example "Open card" after a pop out (design §4.5);
+    /// null when there is none.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasResultAction))]
+    public partial string? ResultActionText { get; private set; }
+
+    public bool HasResultAction => ResultActionText is not null;
+
     /// <summary>Bound two-way to the App InfoBar so the user can close it.</summary>
     [ObservableProperty]
     public partial bool IsFailureNoticeOpen { get; set; }
@@ -72,12 +87,29 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     /// <summary>Marks a command as started. Pair every call with <see cref="Complete"/> or <see cref="Fail"/>.</summary>
     public void Begin()
     {
+        ClearResult();
         _inFlight++;
         CancelSavedTimer();
         Refresh();
     }
 
-    public void Complete()
+    public void Complete() => CompleteCore(SavedDisplayTime);
+
+    /// <summary>
+    /// Completes a command whose result names what happened, optionally with a follow-up link: "Moved to a
+    /// Subtask card in Backlog — Open card" (design §4.5). The next command replaces it.
+    /// </summary>
+    public void Complete(string message, string? actionText, Func<Task>? action)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        CompleteCore(ResultDisplayTime);
+        _resultMessage = message;
+        _resultAction = action;
+        ResultActionText = action is null ? null : actionText;
+        Refresh();
+    }
+
+    private void CompleteCore(TimeSpan displayTime)
     {
         _inFlight = Math.Max(0, _inFlight - 1);
         _lastResult = SaveState.Saved;
@@ -88,7 +120,7 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
         if (State == SaveState.Saved)
         {
             // "Saved" is a transient confirmation; the settled state reads "All changes saved" (design §2.8).
-            _savedTimer = _time.CreateTimer(_ => _dispatcher.Post(OnSavedTimerElapsed), null, SavedDisplayTime, Timeout.InfiniteTimeSpan);
+            _savedTimer = _time.CreateTimer(_ => _dispatcher.Post(OnSavedTimerElapsed), null, displayTime, Timeout.InfiniteTimeSpan);
         }
     }
 
@@ -96,6 +128,7 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     {
         ArgumentNullException.ThrowIfNull(failure);
         _inFlight = Math.Max(0, _inFlight - 1);
+        ClearResult();
         _lastResult = SaveState.Failed;
         CancelSavedTimer();
         FailureMessage = failure.Message;
@@ -153,9 +186,29 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ShowDetails() => IsFailureNoticeOpen = FailureMessage is not null;
 
+    [RelayCommand]
+    private async Task RunResultActionAsync()
+    {
+        var action = _resultAction;
+        ClearResult();
+        Refresh();
+        if (action is not null)
+        {
+            await action().ConfigureAwait(true);
+        }
+    }
+
+    private void ClearResult()
+    {
+        _resultMessage = null;
+        _resultAction = null;
+        ResultActionText = null;
+    }
+
     private void OnSavedTimerElapsed()
     {
         CancelSavedTimer();
+        ClearResult();
         if (_lastResult == SaveState.Saved)
         {
             _lastResult = SaveState.Idle;
@@ -172,6 +225,12 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     private void Refresh()
     {
         State = _isResyncing ? SaveState.Resyncing : _inFlight > 0 ? SaveState.Saving : _lastResult;
+        if (_resultMessage is not null && State == SaveState.Saved)
+        {
+            Text = _resultMessage;
+            return;
+        }
+
         Text = _strings.GetString(State switch
         {
             SaveState.Saving => "SaveStatus_Saving",

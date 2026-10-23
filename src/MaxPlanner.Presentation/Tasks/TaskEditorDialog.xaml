@@ -74,7 +74,7 @@
                             <MenuFlyoutItem
                                 x:Uid="TaskEditor_MoreAddSubtaskCard"
                                 AutomationProperties.AutomationId="TaskEditor_MoreAddSubtaskCardItem"
-                                Click="OnFocusSubtaskBoxClick"
+                                Click="OnAddSubtaskCardFollowUpClick"
                                 IsEnabled="{x:Bind ViewModel.CanAddSubtaskCard, Mode=OneWay}" />
                             <MenuFlyoutSeparator />
                             <MenuFlyoutItem x:Uid="TaskEditor_MoreDelete" AutomationProperties.AutomationId="TaskEditor_MoreDeleteItem" Click="OnDeleteClick">
@@ -243,7 +243,15 @@
                                         Click="OnLinkClick" />
                                 </StackPanel>
                                 <StackPanel Spacing="2" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsLinked), Mode=OneWay}">
-                                    <TextBlock AutomationProperties.AutomationId="TaskEditor_LinkedCrNumber" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.LinkedCrNumber, Mode=OneWay}" />
+                                    <!-- Design §5.1: the CR number link opens the CR, where inherited values are edited (B-02.4). -->
+                                    <HyperlinkButton
+                                        Padding="0"
+                                        AutomationProperties.AutomationId="TaskEditor_OpenCrLink"
+                                        AutomationProperties.Name="{x:Bind ViewModel.OpenCrName, Mode=OneWay}"
+                                        Click="OnOpenCrClick"
+                                        Content="{x:Bind ViewModel.LinkedCrNumber, Mode=OneWay}"
+                                        FontWeight="SemiBold"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.OpenCrName, Mode=OneWay}" />
                                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.LinkedCrTitle, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.LinkedCrSecondary, Mode=OneWay}" />
                                 </StackPanel>
@@ -461,15 +469,21 @@
                 <!-- Group 8: Subtask cards are created immediately, never drafted (design §5.1). -->
                 <StackPanel Spacing="8">
                     <TextBlock x:Uid="TaskEditor_SubtaskCardsHeader" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <!-- Opening a card closes this dialog (after §5.8) and opens the Subtask card editor (§5.2). -->
                     <ListView
                         x:Uid="TaskEditor_SubtaskCardsList"
                         MaxHeight="240"
                         AutomationProperties.AutomationId="TaskEditor_SubtaskCardsList"
+                        IsItemClickEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsNew), Mode=OneWay}"
+                        ItemClick="OnSubtaskCardClick"
                         ItemsSource="{x:Bind ViewModel.SubtaskCards, Mode=OneWay}"
                         SelectionMode="None">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="local:EditorSubtaskCardViewModel">
-                                <StackPanel Padding="0,6">
+                                <StackPanel
+                                    Padding="0,6"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_SubtaskCard_', Id.Value), Mode=OneTime}"
+                                    AutomationProperties.Name="{x:Bind Subtitle, Mode=OneTime}">
                                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Subtitle, Mode=OneTime}" TextWrapping="Wrap" />
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind StatusName, Mode=OneTime}" />

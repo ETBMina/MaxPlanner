@@ -91,6 +91,12 @@ public sealed partial class TokenPickerViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsReadOnly { get; set; }
 
+    /// <summary>
+    /// A single-person picker (design §5.0: CR Owner, review Developer): choosing a name replaces the chip,
+    /// with the same suggestions and add-new behavior as the multi pickers.
+    /// </summary>
+    public bool IsSingleSelection { get; init; }
+
     public IReadOnlyList<Guid> Ids => [.. _tokens.Select(t => t.Id)];
 
     /// <summary>Replaces the chips without raising <see cref="Changed"/> (loading or rebasing a draft).</summary>
@@ -116,6 +122,11 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         {
             Query = string.Empty;
             return false;
+        }
+
+        if (IsSingleSelection)
+        {
+            _tokens.Clear();
         }
 
         _tokens.Add(Token(id, suggestion.Name.Trim(), suggestion.ExistingId is null));

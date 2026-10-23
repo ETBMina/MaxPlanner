@@ -1,5 +1,4 @@
 using MaxPlanner.Application.Abstractions;
-using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Backup;
@@ -56,6 +55,7 @@ internal sealed class DatasetSession : IAsyncDisposable
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
         services.AddSingleton(app.GetRequiredService<ReadModelComposer>());
         services.AddSingleton(app.GetRequiredService<IDayBoundarySource>());
+        services.AddSingleton(app.GetRequiredService<IUrlLauncher>());
 
         // Owned and disposed explicitly by DisposeAsync, in the required order.
         services.AddSingleton(dataset);
@@ -82,8 +82,6 @@ internal sealed class DatasetSession : IAsyncDisposable
 
         // Use cases are stateless; one instance of each serves the pages and editors of the session.
         services.AddSingleton(sp => WorkspaceUseCases.Create(sp.GetRequiredService<IMutationCoordinator>()));
-        services.AddSingleton<CreateChangeRequest>();
-        services.AddSingleton<DeleteChangeRequest>();
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         return new DatasetSession(provider, dataset);
@@ -98,7 +96,8 @@ internal sealed class DatasetSession : IAsyncDisposable
             uiScheduler,
             dispatcher,
             strings,
-            _provider.GetRequiredService<TimeProvider>());
+            _provider.GetRequiredService<TimeProvider>(),
+            _provider.GetRequiredService<IUrlLauncher>());
         return Workspace;
     }
 

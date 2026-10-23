@@ -1,4 +1,6 @@
+using MaxPlanner.Presentation.ChangeRequests;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.SubtaskCards;
 using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 using Microsoft.UI.Xaml;
@@ -92,8 +94,9 @@ internal sealed class DialogHost
     {
         TaskEditorViewModel editor => new TaskEditorDialog(editor),
         CopyTaskViewModel copy => new CopyTaskDialog(copy),
+        SubtaskCardEditorViewModel subtaskCard => new SubtaskCardEditorDialog(subtaskCard),
+        CrEditorViewModel changeRequest => new CrEditorDialog(changeRequest),
         ConfirmationViewModel confirmation => Confirmation(confirmation),
-        SubtaskCardPromptViewModel prompt => SubtaskPrompt(prompt),
         _ => throw new NotSupportedException($"No dialog is registered for {viewModel.GetType().Name}."),
     };
 
@@ -111,45 +114,6 @@ internal sealed class DialogHost
             Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["DefaultContentDialogStyle"],
         };
         AutomationProperties.SetAutomationId(dialog, viewModel.AutomationId);
-        return dialog;
-    }
-
-    private static ContentDialog SubtaskPrompt(SubtaskCardPromptViewModel viewModel)
-    {
-        var box = new TextBox { Header = viewModel.SubtitleHeader, MaxLength = 250 };
-        AutomationProperties.SetAutomationId(box, "SubtaskPrompt_SubtitleBox");
-        AutomationProperties.SetIsRequiredForForm(box, true);
-        box.TextChanged += (_, _) => viewModel.Subtitle = box.Text;
-        var error = new FieldError();
-        viewModel.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(SubtaskCardPromptViewModel.Error))
-            {
-                error.Text = viewModel.Error;
-            }
-        };
-        var caption = new TextBlock { Text = viewModel.Caption, TextWrapping = TextWrapping.Wrap };
-        var panel = new StackPanel { Spacing = 8 };
-        panel.Children.Add(caption);
-        panel.Children.Add(box);
-        panel.Children.Add(error);
-        var dialog = new ContentDialog
-        {
-            Title = viewModel.DialogTitle,
-            Content = panel,
-            PrimaryButtonText = viewModel.AddButtonText,
-            CloseButtonText = viewModel.CancelText,
-            DefaultButton = ContentDialogButton.Primary,
-            Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["DefaultContentDialogStyle"],
-        };
-        AutomationProperties.SetAutomationId(dialog, "SubtaskPrompt_Dialog");
-        dialog.PrimaryButtonClick += (sender, args) =>
-        {
-            // The card is created first; the ViewModel closes the dialog only on success.
-            args.Cancel = true;
-            _ = viewModel.CreateAsync();
-        };
-        dialog.Opened += (_, _) => box.Focus(FocusState.Programmatic);
         return dialog;
     }
 

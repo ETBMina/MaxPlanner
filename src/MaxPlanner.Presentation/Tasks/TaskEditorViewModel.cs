@@ -52,7 +52,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         nameof(IsLinked), nameof(LinkedCr), nameof(IsTitleEditable), nameof(ShowInheritedTitle), nameof(InheritedTitle),
         nameof(InheritedTitleHelper), nameof(IsServiceRequired), nameof(ServiceHeader), nameof(ServiceHelper), nameof(HasServiceHelper),
         nameof(IsUnlinkedWithoutPending), nameof(HasPendingLink), nameof(PendingLinkWarning), nameof(CanLinkToCr), nameof(TaskNumberText),
-        nameof(SquadText), nameof(OwnerText), nameof(CrHelperText), nameof(LinkedCrTitle), nameof(LinkedCrSecondary), nameof(LinkedCrNumber),
+        nameof(SquadText), nameof(OwnerText), nameof(CrHelperText), nameof(LinkedCrTitle), nameof(LinkedCrSecondary), nameof(LinkedCrNumber), nameof(OpenCrName),
         nameof(CanEditFields), nameof(CanSave), nameof(CanArchive), nameof(CanRestore), nameof(CanAddSubtaskCard), nameof(CanPopOut),
         nameof(IsFormStep), nameof(IsLinkPickStep), nameof(IsLinkConfirmStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
         nameof(Caption), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
@@ -74,10 +74,15 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private bool _isLoading;
     private bool _closeApproved;
     private OperationId? _retryOperation;
+    private readonly ChangeRequestId? _presetLinkId;
 
     /// <param name="taskId">The task to edit, or null for a new task.</param>
     /// <param name="initialStatus">For a new task: the Board column's status (B-02.1); null uses the default.</param>
-    public TaskEditorViewModel(WorkspaceContext context, TaskId? taskId, TaskStatusId? initialStatus)
+    /// <param name="linkTo">
+    /// For a new task created from a CR (B-03.5): the saved CR, preselected as the pending permanent link so the
+    /// task and its link are created together by Save (B-02.1 "CR creation preselects (and links) the CR").
+    /// </param>
+    public TaskEditorViewModel(WorkspaceContext context, TaskId? taskId, TaskStatusId? initialStatus, ChangeRequestId? linkTo = null)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _workflow = context.Store.CurrentWorkflow
@@ -106,6 +111,10 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultPriorityId);
             _isLoading = false;
             _baseValues = Capture();
+
+            // T-13: the preview comes from the committed CR, and Save checks the revision it was taken from.
+            PendingLink = linkTo is { } crId ? CrPicker.Current(crId) : null;
+            _presetLinkId = PendingLink?.Id;
         }
         else
         {
@@ -141,6 +150,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public TaskId? CreatedTaskId { get; private set; }
 
     public EditorFollowUp FollowUp { get; private set; }
+
+    /// <summary>The Subtask card to open for <see cref="EditorFollowUp.OpenSubtaskCard"/>.</summary>
+    public SubtaskCardId? FollowUpCardId { get; private set; }
 
     public IReadOnlyList<StatusOption> StatusOptions { get; }
 
@@ -272,6 +284,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public CrChoice? LinkedCr => (Latest ?? _base)?.Cr.ChangeRequestId is { } id ? CrPicker.Current(id) : null;
 
     public string LinkedCrNumber => LinkedCr?.Number ?? string.Empty;
+
+    /// <summary>"Open CR-1042": the CR link's accessible name and tooltip (design §8.2).</summary>
+    public string OpenCrName => LinkedCr is { } cr ? _context.Strings.Format("TaskEditor_OpenCrName", cr.Number) : string.Empty;
 
     public string LinkedCrTitle => LinkedCr?.Title ?? string.Empty;
 
@@ -426,7 +441,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             return false;
         }
 
-        if (IsDirty || PendingLink is not null)
+        // A link the user chose is a change; the CR a "Create task" route preselected is not (B-03.5).
+        if (IsDirty || (PendingLink is not null && PendingLink.Id != _presetLinkId))
         {
             IsDirtyClosePromptOpen = true;
             FocusRequested?.Invoke(this, "DirtyClose");
@@ -457,10 +473,13 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         FollowUp = EditorFollowUp.None;
     }
 
-    /// <summary>More › Copy… or Delete…: closes this dialog first (after the dirty prompt), then the caller opens the next one.</summary>
+    /// <summary>
+    /// More › Copy…, Delete…, Add Subtask card, Open CR, or a Subtask card row: closes this dialog first (after
+    /// the dirty prompt), then the caller opens the next one.
+    /// </summary>
     public void RequestFollowUp(EditorFollowUp followUp)
     {
-        if (IsNew || IsSaving)
+        if (IsNew || IsSaving || (followUp == EditorFollowUp.OpenCr && !IsLinked) || (followUp == EditorFollowUp.AddSubtaskCard && !CanAddSubtaskCard))
         {
             return;
         }
@@ -470,6 +489,14 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         {
             CloseRequested?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>A row of the Subtask cards list (design §5.1 group 8): this dialog closes and §5.2 opens.</summary>
+    public void OpenSubtaskCard(EditorSubtaskCardViewModel card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        FollowUpCardId = card.Id;
+        RequestFollowUp(EditorFollowUp.OpenSubtaskCard);
     }
 
     /// <summary>Link to CR… (design §5.6 step 1).</summary>
@@ -718,16 +745,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             return false;
         }
 
-        var outcome = await _context.Tasks.RunAsync("Record_Task", op => _context.UseCases.PopOutChecklistItem.ExecuteAsync(
-            new PopOutChecklistItemCommand(op, task.Id, task.Revision, item.Id, new SubtaskCardId(Guid.NewGuid())), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is null)
-        {
-            return false;
-        }
-
-        await _context.WhenDisplayedAsync(outcome.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        _context.Announce(_context.Strings.GetString("TaskEditor_PoppedOut"));
-        return true;
+        // The same command as the Checklists page: one transaction, then "Moved to a Subtask card in …".
+        return await _context.Tasks.PopOutAsync(task, item.Id).ConfigureAwait(true) is not null;
     }
 
     /// <summary>Add Subtask card (design §5.1 group 8): creates the card immediately in the default status.</summary>
@@ -776,10 +795,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
     }
 
-    internal static DateTimeOffset? ToPicker(DateOnly? date) => date is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue)) : null;
+    internal static DateTimeOffset? ToPicker(DateOnly? date) => DraftDates.ToPicker(date);
 
-    // The picker's local date component is the calendar day; converting through UTC could shift it (T-05).
-    internal static DateOnly? FromPicker(DateTimeOffset? value) => value is { } v ? DateOnly.FromDateTime(v.DateTime) : null;
+    internal static DateOnly? FromPicker(DateTimeOffset? value) => DraftDates.FromPicker(value);
 
     partial void OnTitleChanged(string value) => RecomputeDirty();
 
@@ -860,14 +878,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         return updated.IsSuccess ? (null, updated.Value.CommitSequence) : (updated.Error, 0);
     }
 
-    /// <summary>
-    /// B-04: an unchanged date sends no intent, so automation may fill it on a transition; an edited date is
-    /// set; a cleared date is an explicit clear that automation must respect in this save.
-    /// </summary>
-    private static DateIntent Intent(DateOnly? draft, DateOnly? based, bool cleared) =>
-        draft != based ? (draft is { } d ? DateIntent.Set(d) : DateIntent.Cleared)
-        : draft is null && cleared ? DateIntent.Cleared
-        : DateIntent.Unchanged;
+    private static DateIntent Intent(DateOnly? draft, DateOnly? based, bool cleared) => DraftDates.Intent(draft, based, cleared);
 
     private void ShowFailure(CommandFailure failure)
     {

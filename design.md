@@ -247,7 +247,11 @@ A failed move restores the committed position, sets the save status to Failed, a
 **Proposed notes (Phase 3, pending owner review):**
 - Drop feedback is a 2-epx accent stroke on the destination list plus the drag caption ("Drop to move to Review" / "Will be added to the end of Review"); there is no insertion line. The card itself is dimmed with a "Moving" caption until the move is saved. A card moves on screen only after the move committed, so a failure needs no visual rollback.
 - Board search is a task-scope `AutoSuggestBox` (B-10 subset) until the shared Filters flyout (Phase 11). The filtered rules above apply to it.
-- "Add Subtask card" from the card menu opens a small dialog with a required Subtitle box. "Open" on a Subtask card opens its parent task until the Subtask card editor (§5.2, Phase 5).
+- ~~"Add Subtask card" from the card menu opens a small dialog with a required Subtitle box. "Open" on a Subtask card opens its parent task until the Subtask card editor (§5.2, Phase 5).~~ Superseded in Phase 5: both open the Subtask card editor (§5.2).
+
+**Proposed notes (Phases 5–6, pending owner review):**
+- The CR reference on a card and the Subtask card's "Subtask of …" indicator are `HyperlinkButton`s that are not tab stops, because the card itself is the focusable list item. Their keyboard route is the card menu, which gains **Open CR** (linked cards) and **Open parent task** (Subtask cards).
+- **New CR…** sits in an overflow-only `CommandBar` beside New task until the Calendar page exists (Phase 7), where the CR editor belongs (B-03.1). It is removed then.
 
 ### 4.3 Grid (B-07 Grid, T-08 gate, D7)
 **Purpose:** a spreadsheet-style **task editor**. The control is a **custom virtualized `ListView` grid** with a synchronized header row and custom Grid/Table automation peers. WinUI.TableView failed the gate (ADR 0004).
@@ -358,6 +362,10 @@ States:
 - Reviews empty: "No reviews yet" + New review.
 
 **Pop out** removes the row and shows the save status "Moved to a Subtask card in Backlog — Open card" (one transaction, B-16.3).
+
+**Proposed notes (Phase 5, pending owner review):**
+- Until Phase 8 the item **⋯** menu offers only **Pop out to card**; Rename, Move up/down and Delete arrive with the rest of the Checklists work, as does Ctrl+Shift+P (§7.6).
+- "Open card" is a link beside the status-bar text (`Shell_SaveStatusActionLink`). It stays for 15 seconds or until the next command, so a keyboard user can reach it; the announcement reads "Moved to a Subtask card in Backlog". The status name is read from the committed card, never guessed.
 
 ### 4.6 Settings (B-04, B-11, T-09)
 **Purpose:** appearance, workflow, lookups, fields, defaults and data.
@@ -472,6 +480,12 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 - **Archived parent:** the dialog is read-only and an InfoBar says "The parent task is archived."
 - **Parent effects:** saving never changes the parent task's status or dates. The helper under Status states this (AC-32).
 
+**Proposed notes (Phase 5, pending owner review):**
+- The same dialog creates cards: the title is "New Subtask card" and the primary button **Create card**. It opens from the Board/Grid card menu "Add Subtask card" and the task editor's More › Add Subtask card (the task editor closes first, §5.0). The task editor's inline quick-add box (§5.1 group 8) stays as the fast route.
+- The parent title in the read-only block is the **Open parent** link; opening it closes this dialog first (after §5.8). More › Delete… also closes this dialog first, then the §5.7 confirmation opens, because dialogs never stack.
+- The parent block shows "No owner" and squad "General" for an unlinked parent, "None" for a parent without a service, and the CR number placeholder of the Grid for an unlinked parent.
+- Conflict review and Reload work as in §5.10, over Subtitle, Status, Start date, End date and Notes.
+
 ### 5.3 CR editor (B-03, B-11, T-13, AC-04/30/31)
 | # | Fields | Behavior |
 |---|---|---|
@@ -486,6 +500,14 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | 8 | **Linked tasks (3)** | A `ListView`: service chip, effective status, "Checklist 2/5", an "Archived" chip. A row opens the task (closes after §5.8). **+ Create task**: for a new or dirty CR, an inline step "Save CR-1042 and create a task?" → Save and create (T-13). **Link existing task…**: inline step §5.6 (task-side picker). |
 
 - **More menu:** Move to backlog, Delete… (inline cascade step §5.7). **No Archive** (B-05).
+
+**Proposed notes (Phase 6, pending owner review):**
+- **Owner** uses the TokenPicker in single-selection mode (one chip; choosing another name replaces it), so suggestions and "Add 'name'" match the people pickers. A new person is created only by Save (B-02.6).
+- "Make {name} the default CR Owner" is offered whenever no default exists, also on an existing CR, and saving with it checked sets the default in the same transaction.
+- The four field pairs (Number · Task number, Owner · Squad, Status · Priority, Planned start · end) are side by side at L (window ≥ 1008 epx) and stacked below that.
+- **+ Create task** on a saved, unchanged CR closes the editor and opens the task editor with that CR preselected as a pending permanent link (§5.1 "Pending"); closing that new task without other changes does not ask about unsaved changes. A new or changed CR first shows the inline step "Save CR-1042 and create a task?" with **Save and create**.
+- A linked task row opens the task (Enter or click) after this dialog closes. **Link existing task…** (reverse picker, §5.6) and **Move to backlog** are not built yet (Phase 7 with the Calendar); custom fields are Phase 10.
+- An empty CR has the text "No tasks are linked to this CR yet." instead of an empty list.
 
 ### 5.4 Review editor (B-17)
 **Title*** (250); **CR number** (text, 100); **Task number** (text, 100); **Services** (free-text token box, each ≤250); **Developer** (single person picker, add-new on save); **Review comments** (multiline); **Done** `CheckBox` with the caption "Completed on Oct 20, 2026" when checked.
@@ -533,8 +555,10 @@ Route: the task editor and copy dialog (inline), the Grid row ⋯ "Link to CR…
 |---|---|---|
 | Task | "Delete '{title}' permanently? Its {n} checklist items and {m} Subtask cards are deleted too. Its CR stays." | Primary **Delete task**; Secondary **Archive instead**; Close Cancel; Default = Close |
 | Subtask card | "Delete Subtask card '{subtitle}'? The parent task is unchanged." | **Delete**; Cancel |
-| **CR cascade** | Heading "Delete {CR number} and its tasks?". A list of counts: "{n} linked tasks ({a} active, {b} archived)", "{c} checklist items", "{d} Subtask cards". The note "Review items that mention this CR number are not affected." and the warning "This can't be undone." | Primary **Delete CR and {n} tasks**; Close Cancel; Default = Close. **Scope changed** at commit: the dialog stays open with an InfoBar (Warning) "The linked tasks changed. Review the new counts." The counts refresh and must be confirmed again. |
+| **CR cascade** (inline step of the CR editor) | Heading "Delete {CR number} and its tasks?". A list of counts: "{n} linked tasks ({a} active, {b} archived)", "{c} checklist items", "{d} Subtask cards". The note "Review items that mention this CR number are not affected." and the warning "This can't be undone." | Primary **Delete CR and {n} tasks**; Close Cancel; Default = Close. **Scope changed** at commit: the dialog stays open with an InfoBar (Warning) "The linked tasks changed. Review the new counts." The counts refresh and must be confirmed again. |
 | Checklist item / General to-do / Review | Light `Flyout` (§4.5) | Delete / Cancel |
+
+**Proposed notes (Phase 6, pending owner review):** the CR cascade is an inline step of the CR editor, so its buttons are in the step: **Cancel** (focused first; it returns to the form) and **Delete CR and {n} tasks** (a standard button, never the default). The counts are taken from the committed projection when the step opens and stay as confirmed; the CR's current revision is sent, because the confirmation is about the deleted scope, not the CR's content.
 
 ### 5.8 Dirty-close step (B-02.8)
 - When the user tries to close, the closing is cancelled and an inline InfoBar (Warning) appears at the top of the dialog content: "You have unsaved changes." with the buttons **Save**, **Discard**, **Continue editing**. Focus moves to Save.

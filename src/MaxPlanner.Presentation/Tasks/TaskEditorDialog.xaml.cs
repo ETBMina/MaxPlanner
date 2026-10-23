@@ -156,7 +156,17 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     private void OnRestoreClick(object sender, RoutedEventArgs e) => _ = ViewModel.RestoreAsync();
 
-    private void OnFocusSubtaskBoxClick(object sender, RoutedEventArgs e) => SubtaskCardBox.Focus(FocusState.Programmatic);
+    private void OnAddSubtaskCardFollowUpClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.AddSubtaskCard);
+
+    private void OnOpenCrClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.OpenCr);
+
+    private void OnSubtaskCardClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is EditorSubtaskCardViewModel card)
+        {
+            ViewModel.OpenSubtaskCard(card);
+        }
+    }
 
     private void OnDirtySaveClick(object sender, RoutedEventArgs e) => _ = ViewModel.SaveFromPromptAsync();
 

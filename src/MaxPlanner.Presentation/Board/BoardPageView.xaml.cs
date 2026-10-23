@@ -192,6 +192,16 @@ public sealed partial class BoardPageView : UserControl
     {
         var menu = new MenuFlyout();
         menu.Items.Add(Item("Board_MenuOpen", "Board_MenuOpenItem", "", () => _ = ViewModel.OpenAsync(card)));
+        if (card.IsSubtaskCard)
+        {
+            menu.Items.Add(Item("Board_MenuOpenParent", "Board_MenuOpenParentItem", null, () => _ = ViewModel.OpenParentAsync(card)));
+        }
+
+        // The card's CR link is not a tab stop inside the list, so the menu is its keyboard route (design §7.3).
+        if (card.HasCrReference)
+        {
+            menu.Items.Add(Item("Board_MenuOpenCr", "Board_MenuOpenCrItem", null, () => _ = ViewModel.OpenCrAsync(card)));
+        }
 
         var moveTo = new MenuFlyoutSubItem { Text = Strings.GetString("Board_MenuMoveTo") };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(moveTo, "Board_MenuMoveToItem");
@@ -230,6 +240,22 @@ public sealed partial class BoardPageView : UserControl
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(Item("Board_MenuDelete", "Board_MenuDeleteItem", "", () => _ = ViewModel.DeleteAsync(card)));
         return menu;
+    }
+
+    private void OnCardCrLinkClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
+        {
+            _ = ViewModel.OpenCrAsync(card);
+        }
+    }
+
+    private void OnCardParentLinkClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
+        {
+            _ = ViewModel.OpenParentAsync(card);
+        }
     }
 
     private static MenuFlyoutItem Item(string textKey, string automationId, string? glyph, Action action, bool enabled = true)

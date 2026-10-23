@@ -7,6 +7,7 @@ using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
+using MaxPlanner.Presentation.ChangeRequests;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
@@ -34,7 +35,11 @@ public sealed record WorkspaceUseCases(
     LinkTaskToChangeRequest LinkTaskToChangeRequest,
     CreateSubtaskCard CreateSubtaskCard,
     DeleteSubtaskCard DeleteSubtaskCard,
-    PopOutChecklistItem PopOutChecklistItem)
+    PopOutChecklistItem PopOutChecklistItem,
+    UpdateSubtaskCard UpdateSubtaskCard,
+    CreateChangeRequest CreateChangeRequest,
+    UpdateChangeRequest UpdateChangeRequest,
+    DeleteChangeRequest DeleteChangeRequest)
 {
     /// <summary>Every use case over one dataset's coordinator; the composition root and tests share this list.</summary>
     public static WorkspaceUseCases Create(IMutationCoordinator coordinator)
@@ -56,7 +61,11 @@ public sealed record WorkspaceUseCases(
             new LinkTaskToChangeRequest(coordinator),
             new CreateSubtaskCard(coordinator),
             new DeleteSubtaskCard(coordinator),
-            new PopOutChecklistItem(coordinator));
+            new PopOutChecklistItem(coordinator),
+            new UpdateSubtaskCard(coordinator),
+            new CreateChangeRequest(coordinator),
+            new UpdateChangeRequest(coordinator),
+            new DeleteChangeRequest(coordinator));
     }
 }
 
@@ -72,14 +81,18 @@ public sealed record Announcement(string Text, bool IsFailure);
 public sealed partial class WorkspaceContext : ObservableObject
 {
     private TaskCommands? _tasks;
+    private ChangeRequestCommands? _changeRequests;
 
+    /// <param name="urlLauncher">Opens design links (B-02.11); null opens nothing (tests, no window).</param>
     public WorkspaceContext(
         WorkspaceProjectionStore store,
         WorkspaceUseCases useCases,
         IScheduler uiScheduler,
         ILocalizedStrings strings,
-        SaveStatusViewModel saveStatus)
+        SaveStatusViewModel saveStatus,
+        IUrlLauncher? urlLauncher = null)
     {
+        UrlLauncher = urlLauncher ?? NoUrlLauncher.Instance;
         Store = store ?? throw new ArgumentNullException(nameof(store));
         UseCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
         UiScheduler = uiScheduler ?? throw new ArgumentNullException(nameof(uiScheduler));
@@ -106,8 +119,13 @@ public sealed partial class WorkspaceContext : ObservableObject
 
     public SaveStatusViewModel SaveStatus { get; }
 
-    /// <summary>The task commands shared by the Board, Grid, Checklists, and the editors.</summary>
+    public IUrlLauncher UrlLauncher { get; }
+
+    /// <summary>The task and Subtask card commands shared by the Board, Grid, Checklists, and the editors.</summary>
     public TaskCommands Tasks => _tasks ??= new TaskCommands(this);
+
+    /// <summary>The CR commands (open, new, create task from a CR) shared by the pages and editors.</summary>
+    public ChangeRequestCommands ChangeRequests => _changeRequests ??= new ChangeRequestCommands(this);
 
     /// <summary>
     /// T-07: true while the store is not Ready (loading, resyncing, faulted) or the app is closing. Editors

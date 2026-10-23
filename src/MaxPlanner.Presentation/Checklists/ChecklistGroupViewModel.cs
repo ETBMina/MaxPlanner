@@ -14,18 +14,35 @@ namespace MaxPlanner.Presentation.Checklists;
 /// <summary>One checklist item row. <see cref="IsChecked"/> is always the committed state (T-07).</summary>
 public sealed partial class ChecklistItemViewModel : ObservableObject
 {
-    public ChecklistItemViewModel(ChecklistItemReadModel model) => Update(model);
+    private readonly ILocalizedStrings _strings;
+
+    /// <param name="popOut">The owning group's pop out command (B-16.3), so the item's menu needs no view lookup.</param>
+    public ChecklistItemViewModel(ChecklistItemReadModel model, Func<ChecklistItemViewModel, Task> popOut, ILocalizedStrings strings)
+    {
+        ArgumentNullException.ThrowIfNull(popOut);
+        _strings = strings ?? throw new ArgumentNullException(nameof(strings));
+        PopOutCommand = new AsyncRelayCommand(() => popOut(this), () => !IsPending);
+        Update(model);
+    }
+
+    /// <summary>Item ⋯ › "Pop out to card" (B-16.3, design §4.5).</summary>
+    public IAsyncRelayCommand PopOutCommand { get; }
+
+    /// <summary>"More actions for Draft API spec" (design §8.2: icon buttons name the action and target).</summary>
+    public string MenuButtonName => _strings.Format("Checklists_ItemMenuName", Text);
 
     public ChecklistItemId Id { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MenuButtonName))]
     public partial string Text { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial bool IsChecked { get; private set; }
 
-    /// <summary>True while a toggle of this item is being saved.</summary>
+    /// <summary>True while a toggle or pop out of this item is being saved.</summary>
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PopOutCommand))]
     public partial bool IsPending { get; internal set; }
 
     internal void Update(ChecklistItemReadModel model)
@@ -124,6 +141,22 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddItemCommand))]
     public partial bool IsAdding { get; private set; }
+
+    /// <summary>
+    /// "Pop out to card" (B-16.3): the item becomes a Subtask card in one transaction; the save status then
+    /// offers "Open card" (design §4.5). Runs after this group's earlier commands, like a toggle.
+    /// </summary>
+    public Task PopOutAsync(ChecklistItemViewModel item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        return Enqueue(async () =>
+        {
+            item.IsPending = true;
+            var cardId = await _context.Tasks.PopOutAsync(Model, item.Id).ConfigureAwait(true);
+            item.IsPending = false;
+            ToggleError = cardId is null && _context.SaveStatus.FailureMessage is { } failure ? failure : null;
+        });
+    }
 
     /// <summary>Checks or unchecks an item from its checkbox click (B-09). Never changes the task's status or dates.</summary>
     public Task ToggleAsync(ChecklistItemViewModel item, bool isChecked)
@@ -265,6 +298,6 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         Sync(_completedItems, [.. Model.ChecklistItems.Where(i => i.IsCompleted)]);
     }
 
-    private static void Sync(ObservableCollection<ChecklistItemViewModel> target, IReadOnlyList<ChecklistItemReadModel> models) =>
-        KeyedCollectionSync.Sync(target, models, m => m.Id, vm => vm.Id, m => new ChecklistItemViewModel(m), (vm, m) => vm.Update(m));
+    private void Sync(ObservableCollection<ChecklistItemViewModel> target, IReadOnlyList<ChecklistItemReadModel> models) =>
+        KeyedCollectionSync.Sync(target, models, m => m.Id, vm => vm.Id, m => new ChecklistItemViewModel(m, PopOutAsync, _context.Strings), (vm, m) => vm.Update(m));
 }
