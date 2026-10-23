@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings › Data › Restore (design §4.6). Hosted by DataPageView; bindings are flat on this view's ViewModel. -->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Settings.DataPage.RestoreWizardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MaxPlanner.Presentation.Settings.DataPage"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="StepTemplate" x:DataType="local:WizardStep">
+            <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
+                <FontIcon FontSize="14" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
+                <TextBlock Text="{x:Bind Title, Mode=OneTime}" />
+                <TextBlock
+                    x:Uid="Data_CurrentStepText"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Visibility="{x:Bind local:DataPageView.Show(IsCurrent), Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+        <Style x:Key="StepListStyle" TargetType="ListView">
+            <Setter Property="SelectionMode" Value="None" />
+            <Setter Property="IsItemClickEnabled" Value="False" />
+            <Setter Property="Width" Value="220" />
+            <Setter Property="Margin" Value="0,0,24,0" />
+        </Style>
+    </UserControl.Resources>
+    <Grid x:Name="RestorePanel" Padding="32,0,32,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ListView
+                x:Name="RestoreStepList"
+                AutomationProperties.AutomationId="Data_RestoreStepList"
+                ItemTemplate="{StaticResource StepTemplate}"
+                ItemsSource="{x:Bind ViewModel.Steps, Mode=OneTime}"
+                Style="{StaticResource StepListStyle}" />
+            <Grid Grid.Column="1" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="RestoreCaption" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.StepCaption, Mode=OneWay}" />
+                <InfoBar
+                    Grid.Row="1"
+                    AutomationProperties.AutomationId="Data_RestoreErrorInfoBar"
+                    IsClosable="False"
+                    IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                    Severity="Error" />
+                <Grid Grid.Row="2">
+                    <!-- Step 1: the backups list keeps its own bounded, virtualized viewport. -->
+                    <Grid RowSpacing="8" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 0), Mode=OneWay}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ListView
+                            AutomationProperties.AutomationId="Data_RestoreBackupList"
+                            ItemsSource="{x:Bind ViewModel.Backups, Mode=OneTime}"
+                            SelectionChanged="OnRestoreBackupSelected"
+                            SelectionMode="Single">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:BackupRowViewModel">
+                                    <StackPanel Padding="0,6" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}">
+                                        <TextBlock><Run FontWeight="SemiBold" Text="{x:Bind DateText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind KindText, Mode=OneTime}" /></TextBlock>
+                                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"><Run Text="{x:Bind SizeText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind ManifestText, Mode=OneTime}" /></TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <StackPanel Grid.Row="1" Spacing="8">
+                            <Button x:Uid="Restore_BrowseButton" AutomationProperties.AutomationId="Data_RestoreBrowseButton" Command="{x:Bind ViewModel.BrowseCommand, Mode=OneTime}" />
+                            <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.SelectedFolderText, Mode=OneWay}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                    <ItemsControl AutomationProperties.AutomationId="Data_RestoreChecks" ItemsSource="{x:Bind ViewModel.Checks, Mode=OneWay}" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 1), Mode=OneWay}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:RestoreCheckRow">
+                                <StackPanel Margin="0,4" Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="14" Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                                    <TextBlock Text="{x:Bind Text, Mode=OneTime}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 2), Mode=OneWay}">
+                        <InfoBar x:Uid="Restore_ConfirmInfoBar" AutomationProperties.AutomationId="Data_RestoreConfirmInfoBar" IsClosable="False" IsOpen="True" Severity="Warning" />
+                        <CheckBox x:Uid="Restore_ConfirmCheck" AutomationProperties.AutomationId="Data_RestoreConfirmCheck" IsChecked="{x:Bind ViewModel.IsConfirmed, Mode=TwoWay}" />
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind ViewModel.ResultText, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 3), Mode=OneWay}" />
+                </Grid>
+                <StackPanel Grid.Row="3" Spacing="8">
+                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsBusy), Mode=OneWay}" />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Data_BackButton" AutomationProperties.AutomationId="Data_RestoreBackButton" Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        <Button
+                            AutomationProperties.AutomationId="Data_RestoreNextButton"
+                            Command="{x:Bind ViewModel.NextCommand, Mode=OneTime}"
+                            Content="{x:Bind ViewModel.NextText, Mode=OneWay}"
+                            Style="{StaticResource AccentButtonStyle}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+</UserControl>

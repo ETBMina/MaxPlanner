@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings › Data › Import (design §4.6). Hosted by DataPageView; bindings are flat on this view's ViewModel. -->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Settings.DataPage.ImportWizardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MaxPlanner.Presentation.Settings.DataPage"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="StepTemplate" x:DataType="local:WizardStep">
+            <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
+                <FontIcon FontSize="14" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
+                <TextBlock Text="{x:Bind Title, Mode=OneTime}" />
+                <TextBlock
+                    x:Uid="Data_CurrentStepText"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Visibility="{x:Bind local:DataPageView.Show(IsCurrent), Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+        <Style x:Key="StepListStyle" TargetType="ListView">
+            <Setter Property="SelectionMode" Value="None" />
+            <Setter Property="IsItemClickEnabled" Value="False" />
+            <Setter Property="Width" Value="220" />
+            <Setter Property="Margin" Value="0,0,24,0" />
+        </Style>
+    </UserControl.Resources>
+    <Grid x:Name="ImportPanel" Padding="32,0,32,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ListView
+                x:Name="ImportStepList"
+                AutomationProperties.AutomationId="Data_ImportStepList"
+                ItemTemplate="{StaticResource StepTemplate}"
+                ItemsSource="{x:Bind ViewModel.Steps, Mode=OneTime}"
+                Style="{StaticResource StepListStyle}" />
+            <Grid Grid.Column="1" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock
+                    x:Name="ImportCaption"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="{x:Bind ViewModel.StepCaption, Mode=OneWay}" />
+                <InfoBar
+                    Grid.Row="1"
+                    AutomationProperties.AutomationId="Data_ImportErrorInfoBar"
+                    IsClosable="False"
+                    IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                    Severity="Error" />
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch" Spacing="12">
+                        <!-- Step 1: Source -->
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 0), Mode=OneWay}">
+                            <RadioButton
+                                x:Uid="Import_SourceOwnRadio"
+                                AutomationProperties.AutomationId="Data_ImportSourceOwnRadio"
+                                GroupName="ImportSource"
+                                IsChecked="{x:Bind ViewModel.IsOwnFormat, Mode=OneWay}" />
+                            <RadioButton
+                                x:Uid="Import_SourceExternalRadio"
+                                AutomationProperties.AutomationId="Data_ImportSourceExternalRadio"
+                                GroupName="ImportSource"
+                                IsChecked="{x:Bind ViewModel.IsExternal, Mode=TwoWay}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Import_PickFilesButton" AutomationProperties.AutomationId="Data_ImportPickFilesButton" Command="{x:Bind ViewModel.PickFilesCommand, Mode=OneTime}" />
+                                <Button
+                                    x:Uid="Import_PickFolderButton"
+                                    AutomationProperties.AutomationId="Data_ImportPickFolderButton"
+                                    Command="{x:Bind ViewModel.PickFolderCommand, Mode=OneTime}"
+                                    Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsExternal), Mode=OneWay}" />
+                            </StackPanel>
+                            <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.SourceText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsExternal), Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Uid="Import_PickChecklistButton" AutomationProperties.AutomationId="Data_ImportPickChecklistButton" Command="{x:Bind ViewModel.PickGeneralChecklistCommand, Mode=OneTime}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{x:Bind ViewModel.GeneralChecklistText, Mode=OneWay}" />
+                                </StackPanel>
+                                <TextBox
+                                    x:Uid="Import_NamespaceBox"
+                                    MaxWidth="480"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.AutomationId="Data_ImportNamespaceBox"
+                                    AutomationProperties.IsRequiredForForm="True"
+                                    MaxLength="100"
+                                    Text="{x:Bind ViewModel.SourceNamespace, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <ComboBox
+                                x:Uid="Import_ModeCombo"
+                                MinWidth="240"
+                                AutomationProperties.AutomationId="Data_ImportModeCombo"
+                                ItemsSource="{x:Bind ViewModel.ModeChoices, Mode=OneTime}"
+                                SelectedIndex="{x:Bind ViewModel.ModeIndex, Mode=TwoWay}" />
+                            <TextBlock x:Uid="Import_ModeHelp" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <!-- Step 2: Map columns (external) -->
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Tables, Mode=OneTime}" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 1), Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:ImportTableViewModel">
+                                    <StackPanel Margin="0,0,0,16" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{StaticResource ControlCornerRadius}" Spacing="8">
+                                        <TextBlock AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Name, Mode=OneTime}" />
+                                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind RowCountText, Mode=OneTime}" />
+                                        <ComboBox x:Uid="Import_EntityCombo" MinWidth="220" ItemsSource="{x:Bind EntityChoices, Mode=OneTime}" SelectedIndex="{x:Bind EntityIndex, Mode=TwoWay}" />
+                                        <ItemsControl ItemsSource="{x:Bind Columns, Mode=OneTime}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="local:ImportColumnViewModel">
+                                                    <Grid Margin="0,4" ColumnSpacing="12">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="2*" MinWidth="120" />
+                                                            <ColumnDefinition Width="2*" />
+                                                            <ColumnDefinition Width="3*" MinWidth="160" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{x:Bind Header, Mode=OneTime}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock x:Uid="Import_AmbiguousText" Foreground="{ThemeResource SystemFillColorCautionBrush}" Visibility="{x:Bind local:DataPageView.Show(IsAmbiguous), Mode=OneTime}" />
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Sample, Mode=OneTime}" TextTrimming="CharacterEllipsis" />
+                                                        <ComboBox
+                                                            Grid.Column="2"
+                                                            HorizontalAlignment="Stretch"
+                                                            AutomationProperties.Name="{x:Bind Header, Mode=OneTime}"
+                                                            ItemsSource="{x:Bind FieldChoices, Mode=OneTime}"
+                                                            SelectedIndex="{x:Bind FieldIndex, Mode=TwoWay}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Step 3: Lookups and relationships (external) -->
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 2), Mode=OneWay}">
+                            <TextBlock x:Uid="Import_NoDecisionsText" Visibility="{x:Bind local:DataPageView.Show(ViewModel.HasNoDecisions), Mode=OneWay}" />
+                            <TextBlock x:Uid="Import_ValuesHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.ValueChoices, Mode=OneTime}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:ImportChoiceViewModel">
+                                        <Grid Margin="0,4" ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=": " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
+                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="{x:Bind Detail, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Uid="Import_CrConflictsHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.CrConflicts, Mode=OneTime}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:ImportChoiceViewModel">
+                                        <Grid Margin="0,4" ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
+                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Uid="Import_CrChoicesHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Uid="Import_CrChoicesPermanent" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.CrReferenceChoices, Mode=OneTime}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:ImportChoiceViewModel">
+                                        <Grid Margin="0,4" ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center" Text="{x:Bind Label, Mode=OneTime}" TextWrapping="Wrap" />
+                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ComboBox
+                                x:Uid="Import_FallbackOwnerCombo"
+                                MinWidth="240"
+                                AutomationProperties.AutomationId="Data_ImportFallbackOwnerCombo"
+                                ItemsSource="{x:Bind ViewModel.OwnerChoices, Mode=OneWay}"
+                                SelectedIndex="{x:Bind ViewModel.FallbackOwnerIndex, Mode=TwoWay}" />
+                        </StackPanel>
+
+                        <!-- Step 4: Preview -->
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 3), Mode=OneWay}">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.PreviewSummary, Mode=OneWay}" TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Bind ViewModel.PresenceText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="Import_CountEntityHeader" Style="{StaticResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_CountCreateHeader" Grid.Column="1" Style="{StaticResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_CountUpdateHeader" Grid.Column="2" Style="{StaticResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_CountSkipHeader" Grid.Column="3" Style="{StaticResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_CountConflictHeader" Grid.Column="4" Style="{StaticResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_CountErrorHeader" Grid.Column="5" Style="{StaticResource CaptionTextBlockStyle}" />
+                            </Grid>
+                            <ItemsControl AutomationProperties.AutomationId="Data_ImportCounts" ItemsSource="{x:Bind ViewModel.CountRows, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:ImportCountRow">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind Entity, Mode=OneTime}" />
+                                            <TextBlock Grid.Column="1" Text="{x:Bind Create, Mode=OneTime}" />
+                                            <TextBlock Grid.Column="2" Text="{x:Bind Update, Mode=OneTime}" />
+                                            <TextBlock Grid.Column="3" Text="{x:Bind Skip, Mode=OneTime}" />
+                                            <TextBlock Grid.Column="4" Text="{x:Bind Conflict, Mode=OneTime}" />
+                                            <TextBlock Grid.Column="5" Text="{x:Bind Error, Mode=OneTime}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- Bounded viewport so the findings list stays virtualized. -->
+                            <ListView
+                                MaxHeight="420"
+                                AutomationProperties.AutomationId="Data_PreviewList"
+                                ItemsSource="{x:Bind ViewModel.Findings, Mode=OneWay}"
+                                SelectionMode="None">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="local:ImportFindingRow">
+                                        <Grid Padding="0,4" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon FontSize="14" Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock TextWrapping="Wrap"><Run FontWeight="SemiBold" Text="{x:Bind SeverityText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind EntityText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind RecordKey, Mode=OneTime}" /></TextBlock>
+                                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Message, Mode=OneTime}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+
+                        <!-- Step 5: Result -->
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 4), Mode=OneWay}">
+                            <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.ResultText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <Button x:Uid="Import_RestartButton" AutomationProperties.AutomationId="Data_ImportRestartButton" Command="{x:Bind ViewModel.RestartCommand, Mode=OneTime}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+                <StackPanel Grid.Row="3" Spacing="8">
+                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsBusy), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind ViewModel.ProgressText, Mode=OneWay}" />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Data_BackButton" AutomationProperties.AutomationId="Data_BackButton" Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        <Button
+                            AutomationProperties.AutomationId="Data_NextButton"
+                            Command="{x:Bind ViewModel.NextCommand, Mode=OneTime}"
+                            Content="{x:Bind ViewModel.NextText, Mode=OneWay}"
+                            Style="{StaticResource AccentButtonStyle}" />
+                        <Button x:Uid="Data_CancelButton" AutomationProperties.AutomationId="Data_CancelButton" Command="{x:Bind ViewModel.CancelWorkCommand, Mode=OneTime}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+</UserControl>

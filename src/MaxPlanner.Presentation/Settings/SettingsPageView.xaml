@@ -218,6 +218,14 @@
     </UserControl.Resources>
 
     <Grid>
+    <!-- Settings › Data (D13) replaces the cards inside the Settings destination; the host is filled on first open. -->
+    <ContentControl
+        x:Name="DataPageHost"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch"
+        IsTabStop="False"
+        Visibility="{x:Bind local:SettingsPageView.Show(ViewModel.IsDataPageOpen), Mode=OneWay}" />
+    <Grid Visibility="{x:Bind local:SettingsPageView.Show(ViewModel.IsCardsVisible), Mode=OneWay}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -350,20 +358,34 @@
                             Command="{x:Bind ViewModel.OpenDataFolderCommand}"
                             IsEnabled="{x:Bind ViewModel.CanOpenDataFolder, Mode=OneTime}" />
                     </local:SettingsCard>
+                    <!-- T-09: the last backup, Back up now (a manual backup, never pruned), and Manage backups…. -->
                     <local:SettingsCard
                         x:Uid="Settings_BackupsCard"
                         AutomationProperties.AutomationId="Settings_BackupsCard"
                         Description="{x:Bind ViewModel.LastBackupText, Mode=OneWay}"
-                        Glyph="&#xE81C;" />
-                    <!-- The Data page (Import, Export, Restore) arrives with Phases 13-15; the entry is shown disabled until then. -->
+                        Glyph="&#xE81C;">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Uid="Settings_BackupNowButton"
+                                AutomationProperties.AutomationId="Settings_BackupNowButton"
+                                Command="{x:Bind ViewModel.BackUpNowCommand}" />
+                            <HyperlinkButton
+                                x:Uid="Settings_ManageBackupsLink"
+                                AutomationProperties.AutomationId="Settings_ManageBackupsLink"
+                                Command="{x:Bind ViewModel.ManageBackupsCommand}"
+                                IsEnabled="{x:Bind ViewModel.HasDataServices, Mode=OneTime}" />
+                        </StackPanel>
+                    </local:SettingsCard>
                     <local:SettingsCard x:Uid="Settings_DataPageCard" AutomationProperties.AutomationId="Settings_DataPageCard" Glyph="&#xE896;">
                         <Button
                             x:Uid="Settings_DataPageButton"
                             AutomationProperties.AutomationId="Settings_DataPageButton"
-                            IsEnabled="False" />
+                            Command="{x:Bind ViewModel.OpenDataCommand}"
+                            IsEnabled="{x:Bind ViewModel.HasDataServices, Mode=OneTime}" />
                     </local:SettingsCard>
                 </StackPanel>
             </Grid>
         </ScrollViewer>
+    </Grid>
     </Grid>
 </UserControl>

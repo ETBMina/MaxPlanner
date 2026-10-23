@@ -47,6 +47,7 @@ internal static class AppComposition
         services.AddSingleton<IUrlLauncher, ShellUrlLauncher>();
         services.AddSingleton<ThemeService>();
         services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<Maintenance.WindowFilePickers>();
         services.AddSingleton(sp => new StartupCoordinator(
             context,
             sp,
@@ -56,6 +57,7 @@ internal static class AppComposition
             sp.GetRequiredService<IScheduler>(),
             sp.GetRequiredService<IUiDispatcher>(),
             sp.GetRequiredService<TimeProvider>(),
+            sp.GetRequiredService<Maintenance.WindowFilePickers>(),
             requestClose,
             sp.GetRequiredService<ILogger<StartupCoordinator>>()));
 

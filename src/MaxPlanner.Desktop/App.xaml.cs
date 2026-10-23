@@ -52,6 +52,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         var window = new MainWindow(_services.GetRequiredService<ShellViewModel>());
         _window = window;
         var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(window);
+        _services.GetRequiredService<Maintenance.WindowFilePickers>().Attach(window.AppWindow.Id);
 
         _services.GetRequiredService<ThemeService>().Attach(window.RootElement, window.AppWindow.TitleBar);
         _services.GetRequiredService<ThemeService>().Apply(preferences.Theme);

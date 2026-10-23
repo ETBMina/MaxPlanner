@@ -152,6 +152,9 @@ public sealed partial class WorkspaceContext : ObservableObject
     /// <summary>A CR editor saved a CR (B-08.12: the Calendar says when the saved CR is hidden by its filters).</summary>
     public event EventHandler<ChangeRequestId>? ChangeRequestSaved;
 
+    /// <summary>A page's Export… asked for Settings › Data › Export preset with its current view (B-12).</summary>
+    public event EventHandler<global::MaxPlanner.Application.Transfer.ViewExportScope>? ExportViewRequested;
+
     public WorkspaceProjectionStore Store { get; }
 
     public WorkspaceUseCases UseCases { get; }
@@ -207,6 +210,8 @@ public sealed partial class WorkspaceContext : ObservableObject
 
     /// <summary>Called by the CR editor after a save was displayed (B-08.12).</summary>
     public void ReportChangeRequestSaved(ChangeRequestId id) => ChangeRequestSaved?.Invoke(this, id);
+
+    public void RequestExportView(global::MaxPlanner.Application.Transfer.ViewExportScope view) => ExportViewRequested?.Invoke(this, view);
 
     /// <summary>Disposes the filter scopes; the workspace calls it when the dataset closes.</summary>
     internal void DisposeFilters()

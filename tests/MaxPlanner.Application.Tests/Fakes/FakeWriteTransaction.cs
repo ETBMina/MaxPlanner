@@ -57,6 +57,9 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
     public ITombstoneStore Tombstones { get; }
 
+    /// <summary>Compile fix for the Phase 13 port: transaction-local only; the import tests of Phase 19 extend the fake.</summary>
+    public IImportLedgerStore ImportLedger { get; } = new ImportLedgerStore();
+
     private static InvalidOperationException Constraint(string message) => new($"Constraint violated: {message}");
 
     private sealed class TaskStore(InMemoryDataset data, Action<string> beforeWrite) : ITaskStore
@@ -379,5 +382,21 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
         }
 
         public bool Contains(EntityKind kind, Guid id) => data.Tombstones.Contains((kind, id));
+    }
+
+    private sealed class ImportLedgerStore : IImportLedgerStore
+    {
+        private readonly Dictionary<(string, string, string), Guid> _rows = [];
+
+        public Guid? Find(string sourceNamespace, string entityKind, string sourceKey) =>
+            _rows.TryGetValue((sourceNamespace, entityKind, sourceKey), out var id) ? id : null;
+
+        public void Insert(string sourceNamespace, string entityKind, string sourceKey, Guid recordId)
+        {
+            if (!_rows.TryAdd((sourceNamespace, entityKind, sourceKey), recordId))
+            {
+                throw Constraint("import_ledger primary key");
+            }
+        }
     }
 }

@@ -69,9 +69,42 @@ public enum CreateDatasetOutcome
     Failed,
 }
 
+/// <summary>The result of a restore started from the recovery page (ADR 0015).</summary>
+public enum RecoveryRestoreOutcome
+{
+    /// <summary>The restored or recovered dataset is in place and was opened.</summary>
+    Completed,
+
+    /// <summary>An interrupted restore was undone; the previous data is back and was opened.</summary>
+    RolledBack,
+
+    /// <summary>Neither copy could be verified; nothing was guessed and the marker is kept (AC-15).</summary>
+    Unresolved,
+
+    /// <summary>The user cancelled the folder picker.</summary>
+    Cancelled,
+
+    /// <summary>The chosen backup failed validation; nothing was replaced.</summary>
+    Invalid,
+
+    Failed,
+}
+
 /// <summary>What the recovery page can ask the startup coordinator to do.</summary>
 public interface IRecoveryActions
 {
+    /// <summary>
+    /// ADR 0015: finishes an interrupted restore (roll forward when the restored copy verifies, otherwise roll back),
+    /// then opens the result. The default refuses, for hosts without restore support.
+    /// </summary>
+    Task<RecoveryRestoreOutcome> FinishInterruptedRestoreAsync() => Task.FromResult(RecoveryRestoreOutcome.Failed);
+
+    /// <summary>
+    /// T-09: lets the user pick a backup folder, validates it in staging, keeps a raw copy of the current files, swaps
+    /// the database under the restore marker, and opens it. Called only after the user confirmed it.
+    /// </summary>
+    Task<RecoveryRestoreOutcome> RestoreFromBackupAsync() => Task.FromResult(RecoveryRestoreOutcome.Failed);
+
     /// <summary>Creates a new empty dataset; called only after the user confirmed it (T-09, AC-15).</summary>
     Task<CreateDatasetOutcome> CreateNewDatasetAsync();
 
@@ -120,6 +153,72 @@ public sealed partial class RecoveryViewModel : ObservableObject
     /// <summary>Retrying helps only when the file was temporarily unreadable.</summary>
     public bool CanRetry => Info.Kind == RecoveryKind.StorageUnavailable;
 
+    /// <summary>ADR 0015: an interrupted restore is finished or undone from the marker, never guessed.</summary>
+    public bool CanFinishRestore => Info.Kind == RecoveryKind.InterruptedRestore;
+
+    /// <summary>T-09: a damaged, missing, or failed-upgrade dataset can be replaced from a validated backup after confirmation.</summary>
+    public bool CanRestoreFromBackup => Info.Kind is RecoveryKind.Corrupt or RecoveryKind.DatabaseMissing or RecoveryKind.MigrationFailed;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRestoreOfferVisible))]
+    [NotifyCanExecuteChangedFor(nameof(BeginRestoreCommand), nameof(ConfirmRestoreCommand), nameof(CancelRestoreCommand))]
+    public partial bool IsConfirmingRestore { get; private set; }
+
+    public bool IsRestoreOfferVisible => CanRestoreFromBackup && !IsConfirmingRestore;
+
+    private bool CanBeginRestore => CanRestoreFromBackup && !IsConfirmingRestore && !IsBusy;
+
+    private bool CanAnswerRestore => IsConfirmingRestore && !IsBusy;
+
+    private bool CanFinishRestoreNow => CanFinishRestore && !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanFinishRestoreNow))]
+    private async Task FinishRestoreAsync()
+    {
+        IsBusy = true;
+        try
+        {
+            ShowRestoreOutcome(await _actions.FinishInterruptedRestoreAsync());
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanBeginRestore))]
+    private void BeginRestore()
+    {
+        ActionError = null;
+        IsConfirmingRestore = true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAnswerRestore))]
+    private void CancelRestore() => IsConfirmingRestore = false;
+
+    [RelayCommand(CanExecute = nameof(CanAnswerRestore))]
+    private async Task ConfirmRestoreAsync()
+    {
+        IsBusy = true;
+        try
+        {
+            ShowRestoreOutcome(await _actions.RestoreFromBackupAsync());
+            IsConfirmingRestore = false;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void ShowRestoreOutcome(RecoveryRestoreOutcome outcome)
+    {
+        // Success replaces this page with the opened dataset; only the other outcomes stay visible here.
+        ActionError = outcome is RecoveryRestoreOutcome.Completed or RecoveryRestoreOutcome.RolledBack or RecoveryRestoreOutcome.Cancelled
+            ? null
+            : _strings.GetString("Recovery_RestoreOutcome_" + outcome);
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCreateOfferVisible))]
     [NotifyCanExecuteChangedFor(nameof(BeginCreateCommand), nameof(ConfirmCreateCommand), nameof(CancelCreateCommand))]
@@ -127,6 +226,7 @@ public sealed partial class RecoveryViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(BeginCreateCommand), nameof(ConfirmCreateCommand), nameof(CancelCreateCommand), nameof(RetryCommand))]
+    [NotifyCanExecuteChangedFor(nameof(FinishRestoreCommand), nameof(BeginRestoreCommand), nameof(ConfirmRestoreCommand), nameof(CancelRestoreCommand))]
     public partial bool IsBusy { get; private set; }
 
     [ObservableProperty]

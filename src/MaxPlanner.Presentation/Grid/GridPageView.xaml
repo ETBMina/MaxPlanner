@@ -81,12 +81,12 @@
                         <Flyout x:Name="ColumnsFlyout" Opening="OnColumnsFlyoutOpening" ShouldConstrainToRootBounds="True" />
                     </AppBarButton.Flyout>
                 </AppBarButton>
-                <!-- Export of the current view arrives with the Data page (Phase 13); disabled until then. -->
+                <!-- B-12: exports the rows shown now through Settings › Data › Export ("Current view results"). -->
                 <AppBarButton
                     x:Uid="Grid_ExportButton"
                     AutomationProperties.AutomationId="Grid_ExportButton"
-                    DynamicOverflowOrder="1"
-                    IsEnabled="False">
+                    Command="{x:Bind ViewModel.ExportViewCommand}"
+                    DynamicOverflowOrder="1">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE896;" />
                     </AppBarButton.Icon>

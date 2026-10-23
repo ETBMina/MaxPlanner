@@ -484,6 +484,17 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 - Not built in this phase: **Back up now** and **Manage backups…** (Phase 15), the Data page (the card is disabled, Phases 13–15), **Views › Restore default UI preferences**, and **About**.
 - Settings changes use concurrency stamps instead of row revisions (ADR 0022).
 
+**Proposed notes (Phases 13–15, pending owner review):**
+- **Data page placement:** Settings › Data replaces the Settings cards inside the Settings destination (no new NavigationView item); the breadcrumb's "Settings" crumb returns to the cards. The Data card's **Open**, Backups' **Back up now**, and **Manage backups…** are enabled; Grid **Export…** opens Data › Export preset with "Current view results".
+- **Fourth SelectorBar item "Backups"** (Manage backups): list with date, kind, size and manifest state as text, **Back up now**, **Open backups folder**, and **Delete…** on manual backups only (confirmation dialog, Cancel default). Daily and safety backups cannot be deleted from the app.
+- **Import step 1** asks the source type explicitly ("A Max Planner export" or "Other data") instead of detecting it; a Max Planner export skips steps 2–3 because it carries its own IDs and definitions. Merge is a `ComboBox` choice next to the source.
+- **Export steps** are Scope → Format → Export → Result; the destination is chosen with the save picker when **Export…** is pressed (no separate Destination step content beyond a help text).
+- **Steps without a separate Apply step:** Import's Preview step's accent button is **Import** (Apply), and the Result step shows the outcome; Restore's Confirm step's accent button is **Restore**. Progress is an indeterminate `ProgressBar` with a status text (not determinate), and **Cancel** cancels the current step's work before any commit.
+- **Mapping table** is a column list (header, sample value, field `ComboBox`) per source table with the entity `ComboBox`; it does not switch to a different stacked layout at S (the rows already stack their three parts in one grid row).
+- **Lookups and relationships** shows one `ComboBox` per decision: each unknown value ("Create "X"" or "Use existing "Y"", exact-name matches preselected), each differing CR-level value (no preselection; an error until chosen), each task with several CRs ("Don't link" or one number; an error until chosen), and the owner for CRs without one (the default CR Owner preselected).
+- **Restore result** is reported in an app InfoBar (`Shell_DataNoticeInfoBar`), because the Data page closes with the dataset session; the restored dataset reopens on its last page.
+- **Recovery page:** InterruptedRestore offers **Finish the interrupted restore**; Corrupt, DatabaseMissing and MigrationFailed offer **Restore from a backup…** with an inline confirmation step before the folder picker.
+
 ## 5. Dialogs and editors
 
 ### 5.0 Common rules

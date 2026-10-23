@@ -153,7 +153,7 @@
     <value>A restore was interrupted</value>
   </data>
   <data name="Recovery_InterruptedRestore_Message" xml:space="preserve">
-    <value>Max Planner found an unfinished restore (restore.pending.json) and didn't open the dataset, so nothing has been changed. Don't delete or move files in the data folder. Backups are kept in {0}. Completing or undoing an interrupted restore arrives in a later version.</value>
+    <value>Max Planner found an unfinished restore (restore.pending.json) and didn't open the dataset, so nothing has been changed. Select Finish the interrupted restore: the restored copy is kept when it verifies, otherwise the previous data is put back. Don't delete or move files in the data folder. Backups are kept in {0}.</value>
     <comment>{0} = backups folder path.</comment>
   </data>
   <data name="Recovery_StorageUnavailable_Title" xml:space="preserve">
@@ -2171,7 +2171,7 @@
     <value>Export…</value>
   </data>
   <data name="Grid_ExportButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Export arrives with the Data page in a later version</value>
+    <value>Export the rows shown now (Settings › Data › Export)</value>
   </data>
   <data name="Grid_ResetLayoutButton.Label" xml:space="preserve">
     <value>Reset column layout</value>
@@ -2459,13 +2459,13 @@
     <value>Import, export and restore</value>
   </data>
   <data name="Settings_DataPageCard.Description" xml:space="preserve">
-    <value>Arrives in a later version.</value>
+    <value>Import, export, and restore data, and manage backups.</value>
   </data>
   <data name="Settings_DataPageButton.Content" xml:space="preserve">
     <value>Open</value>
   </data>
   <data name="Settings_DataPageButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Not available yet</value>
+    <value>Open the Data page</value>
   </data>
   <data name="BackupKind_daily" xml:space="preserve">
     <value>daily</value>
@@ -3087,5 +3087,788 @@
   </data>
   <data name="Filters_Applied" xml:space="preserve">
     <value>Filters applied</value>
+  </data>
+  <data name="Data_BreadcrumbSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Data_BreadcrumbData" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="Data_ModeImportItem.Text" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Data_ModeExportItem.Text" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Data_ModeRestoreItem.Text" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Data_ModeBackupsItem.Text" xml:space="preserve">
+    <value>Backups</value>
+  </data>
+  <data name="Data_StepCaption" xml:space="preserve">
+    <value>Step {0} of {1} · {2}</value>
+  </data>
+  <data name="Data_CurrentStepText.Text" xml:space="preserve">
+    <value>Current step</value>
+  </data>
+  <data name="Data_NextButtonText" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Data_BackButton.Content" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Data_CancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Data_Working" xml:space="preserve">
+    <value>Working…</value>
+  </data>
+  <data name="Record_Import" xml:space="preserve">
+    <value>import</value>
+  </data>
+  <data name="Record_Backup" xml:space="preserve">
+    <value>backup</value>
+  </data>
+  <data name="Transfer_Entity_file" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Transfer_Entity_lookup" xml:space="preserve">
+    <value>Lookup value</value>
+  </data>
+  <data name="Transfer_Entity_field" xml:space="preserve">
+    <value>Custom field</value>
+  </data>
+  <data name="Transfer_Entity_task" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Transfer_Entity_subtaskCard" xml:space="preserve">
+    <value>Subtask cards</value>
+  </data>
+  <data name="Transfer_Entity_changeRequest" xml:space="preserve">
+    <value>Change requests</value>
+  </data>
+  <data name="Transfer_Entity_link" xml:space="preserve">
+    <value>CR links</value>
+  </data>
+  <data name="Transfer_Entity_review" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="Transfer_Entity_generalTodo" xml:space="preserve">
+    <value>General to-dos</value>
+  </data>
+  <data name="Transfer_Table_Tasks" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Transfer_Table_ChangeRequests" xml:space="preserve">
+    <value>Change Requests</value>
+  </data>
+  <data name="Transfer_Table_ChecklistItems" xml:space="preserve">
+    <value>Checklist Items</value>
+  </data>
+  <data name="Transfer_Table_SubtaskCards" xml:space="preserve">
+    <value>Subtask Cards</value>
+  </data>
+  <data name="Transfer_Table_Reviews" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="Transfer_Table_GeneralTodos" xml:space="preserve">
+    <value>General To-dos</value>
+  </data>
+  <data name="Transfer_Error_TooLarge" xml:space="preserve">
+    <value>The file is larger than the import limits (25 MiB, 50,000 records, 200 MiB expanded). Nothing was imported. {0}</value>
+  </data>
+  <data name="Transfer_Error_Malformed" xml:space="preserve">
+    <value>The file couldn't be read in its format. Nothing was imported or written. Location: {0}</value>
+  </data>
+  <data name="Transfer_Error_UnsupportedVersion" xml:space="preserve">
+    <value>The file was written by a newer version of Max Planner (format {0}). Update Max Planner to import it.</value>
+  </data>
+  <data name="Transfer_Error_UnsafeArchive" xml:space="preserve">
+    <value>The archive contains an unexpected or unsafe entry and was rejected. {0}</value>
+  </data>
+  <data name="Transfer_Error_FormulaRejected" xml:space="preserve">
+    <value>The workbook contains a formula at {0}. Formulas are never evaluated; replace it with its value and try again.</value>
+  </data>
+  <data name="Transfer_Error_Io" xml:space="preserve">
+    <value>The file couldn't be read or written. Check that it isn't open in another app and that the folder is writable. {0}</value>
+  </data>
+  <data name="Transfer_Error_CellLimitExceeded" xml:space="preserve">
+    <value>A value is longer than a spreadsheet cell can hold ({0}). Export as JSON instead; nothing was truncated.</value>
+  </data>
+  <data name="Export_Step_Scope" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="Export_Step_Format" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Export_Step_Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Export_Step_Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Export_ScopeEntireRadio.Content" xml:space="preserve">
+    <value>Entire dataset</value>
+  </data>
+  <data name="Export_ScopeViewRadio.Content" xml:space="preserve">
+    <value>Current view results</value>
+  </data>
+  <data name="Export_ScopeHelp.Text" xml:space="preserve">
+    <value>The entire dataset always includes archived tasks, checklist items, Subtask cards, links, reviews, General to-dos, lookups, and custom fields. A view export is not a backup.</value>
+  </data>
+  <data name="Export_ViewDescription" xml:space="preserve">
+    <value>Grid view: {0} tasks and {1} Subtask cards · {2}</value>
+  </data>
+  <data name="Export_Format_Json" xml:space="preserve">
+    <value>JSON (lossless)</value>
+  </data>
+  <data name="Export_Format_Xlsx" xml:space="preserve">
+    <value>Excel workbook (.xlsx)</value>
+  </data>
+  <data name="Export_Format_CsvTable" xml:space="preserve">
+    <value>CSV, one table</value>
+  </data>
+  <data name="Export_Format_CsvBundle" xml:space="preserve">
+    <value>CSV, ZIP of all tables</value>
+  </data>
+  <data name="Export_FormatCombo.Header" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Export_TableCombo.Header" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Export_FormatHelp_Json" xml:space="preserve">
+    <value>JSON keeps every value exactly, including preserved content, and is the format for moving data between datasets.</value>
+  </data>
+  <data name="Export_FormatHelp_Xlsx" xml:space="preserve">
+    <value>One worksheet per table plus Metadata, Lookups, and Fields. Dates are real date cells; identifiers are text. Derived CR columns on tasks are informational. A value longer than 32,767 characters stops the export; use JSON then.</value>
+  </data>
+  <data name="Export_FormatHelp_CsvTable" xml:space="preserve">
+    <value>One CSV file holds one table. Text starting with =, +, -, or @ gets a leading apostrophe so spreadsheets don't run it as a formula.</value>
+  </data>
+  <data name="Export_FormatHelp_CsvBundle" xml:space="preserve">
+    <value>A ZIP with one CSV per table and metadata.json with the definitions. Text starting with =, +, -, or @ gets a leading apostrophe.</value>
+  </data>
+  <data name="Export_DestinationHelp.Text" xml:space="preserve">
+    <value>Select Export to choose where to save the file. The file is written to a temporary name first and replaces an existing file only when it is complete.</value>
+  </data>
+  <data name="Export_ExportButtonText" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="Export_SuggestedName" xml:space="preserve">
+    <value>Max Planner export {0}</value>
+  </data>
+  <data name="Export_FileType_Json" xml:space="preserve">
+    <value>JSON file</value>
+  </data>
+  <data name="Export_FileType_Xlsx" xml:space="preserve">
+    <value>Excel workbook</value>
+  </data>
+  <data name="Export_FileType_Csv" xml:space="preserve">
+    <value>CSV file</value>
+  </data>
+  <data name="Export_FileType_Zip" xml:space="preserve">
+    <value>ZIP archive</value>
+  </data>
+  <data name="Export_ResultEntire" xml:space="preserve">
+    <value>Exported the entire dataset as {0}.</value>
+  </data>
+  <data name="Export_ResultView" xml:space="preserve">
+    <value>Exported the current view as {0}.</value>
+  </data>
+  <data name="Export_ResultCount" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Export_Limitation_viewnotbackup" xml:space="preserve">
+    <value>A view export is not a backup: it holds only the records the view showed.</value>
+  </data>
+  <data name="Export_Limitation_parentsincluded" xml:space="preserve">
+    <value>The CRs of exported tasks and the parent tasks of exported Subtask cards are included so links resolve.</value>
+  </data>
+  <data name="Export_Limitation_csvformulaneutralized" xml:space="preserve">
+    <value>Text that starts with =, +, -, @, tab, or carriage return was written with a leading apostrophe.</value>
+  </data>
+  <data name="Export_Limitation_csvsingletable" xml:space="preserve">
+    <value>Only one table was exported; importing it needs the referenced records to exist already.</value>
+  </data>
+  <data name="Export_Limitation_spreadsheetnotbackup" xml:space="preserve">
+    <value>Spreadsheet formats are a business-data transfer, not a backup. Use JSON or Back up now for a complete copy.</value>
+  </data>
+  <data name="Export_OpenFolderButton.Content" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="Export_RestartButton.Content" xml:space="preserve">
+    <value>Export again</value>
+  </data>
+  <data name="Import_Step_Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Import_Step_Map" xml:space="preserve">
+    <value>Map columns</value>
+  </data>
+  <data name="Import_Step_Lookups" xml:space="preserve">
+    <value>Lookups and relationships</value>
+  </data>
+  <data name="Import_Step_Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Import_Step_Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Import_SourceOwnRadio.Content" xml:space="preserve">
+    <value>A Max Planner export (JSON, Excel, CSV, or CSV ZIP)</value>
+  </data>
+  <data name="Import_SourceExternalRadio.Content" xml:space="preserve">
+    <value>Other data (CSV, Excel, simple JSON, or a folder of Markdown files)</value>
+  </data>
+  <data name="Import_PickFilesButton.Content" xml:space="preserve">
+    <value>Choose files…</value>
+  </data>
+  <data name="Import_PickFolderButton.Content" xml:space="preserve">
+    <value>Choose a Markdown folder…</value>
+  </data>
+  <data name="Import_PickChecklistButton.Content" xml:space="preserve">
+    <value>General checklist file (optional)…</value>
+  </data>
+  <data name="Import_MarkdownFolder" xml:space="preserve">
+    <value>Markdown folder: {0}</value>
+  </data>
+  <data name="Import_NamespaceBox.Header" xml:space="preserve">
+    <value>Source name *</value>
+  </data>
+  <data name="Import_NamespaceBox.PlaceholderText" xml:space="preserve">
+    <value>For example: Team tracker 2026</value>
+  </data>
+  <data name="Import_ModeCombo.Header" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Import_Mode_CreateOnly" xml:space="preserve">
+    <value>Create only (skip records that already exist)</value>
+  </data>
+  <data name="Import_Mode_Merge" xml:space="preserve">
+    <value>Merge (update existing records with the supplied fields)</value>
+  </data>
+  <data name="Import_ModeHelp.Text" xml:space="preserve">
+    <value>The source files are only read. Importing the same source name again updates or skips earlier records instead of duplicating them. Links to CRs are permanent and are never changed by an import.</value>
+  </data>
+  <data name="Import_EntityCombo.Header" xml:space="preserve">
+    <value>This table holds</value>
+  </data>
+  <data name="Import_Entity_Task" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Import_Entity_ChangeRequest" xml:space="preserve">
+    <value>Change requests</value>
+  </data>
+  <data name="Import_Entity_Review" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="Import_Entity_GeneralTodo" xml:space="preserve">
+    <value>General to-dos</value>
+  </data>
+  <data name="Import_Entity_Ignore" xml:space="preserve">
+    <value>Don't import</value>
+  </data>
+  <data name="Import_TableRows" xml:space="preserve">
+    <value>{0} rows</value>
+  </data>
+  <data name="Import_AmbiguousText.Text" xml:space="preserve">
+    <value>Ambiguous header: choose a field</value>
+  </data>
+  <data name="Import_Field_Ignore" xml:space="preserve">
+    <value>Don't import (keep as preserved content)</value>
+  </data>
+  <data name="Import_Field_SourceId" xml:space="preserve">
+    <value>Source ID</value>
+  </data>
+  <data name="Import_Field_Title" xml:space="preserve">
+    <value>Title / text</value>
+  </data>
+  <data name="Import_Field_Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Import_Field_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Import_Field_Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Import_Field_Designers" xml:space="preserve">
+    <value>Designers</value>
+  </data>
+  <data name="Import_Field_Developers" xml:space="preserve">
+    <value>Developers</value>
+  </data>
+  <data name="Import_Field_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Import_Field_Notes" xml:space="preserve">
+    <value>Notes / description / comments</value>
+  </data>
+  <data name="Import_Field_StartDate" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="Import_Field_EndDate" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="Import_Field_Archived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Import_Field_CrNumber" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="Import_Field_TaskNumber" xml:space="preserve">
+    <value>Task number</value>
+  </data>
+  <data name="Import_Field_Squad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Import_Field_Owner" xml:space="preserve">
+    <value>CR Owner</value>
+  </data>
+  <data name="Import_Field_PlannedStart" xml:space="preserve">
+    <value>Planned start</value>
+  </data>
+  <data name="Import_Field_PlannedEnd" xml:space="preserve">
+    <value>Planned end</value>
+  </data>
+  <data name="Import_Field_EmailSubject" xml:space="preserve">
+    <value>Email subject</value>
+  </data>
+  <data name="Import_Field_SolutionDesignUrl" xml:space="preserve">
+    <value>Solution design URL</value>
+  </data>
+  <data name="Import_Field_Developer" xml:space="preserve">
+    <value>Developer</value>
+  </data>
+  <data name="Import_Field_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Import_Field_CompletedOn" xml:space="preserve">
+    <value>Completed on</value>
+  </data>
+  <data name="Import_NoDecisionsText.Text" xml:space="preserve">
+    <value>Nothing needs a decision. Select Next to preview the import.</value>
+  </data>
+  <data name="Import_ValuesHeading.Text" xml:space="preserve">
+    <value>Values</value>
+  </data>
+  <data name="Import_CreateValue" xml:space="preserve">
+    <value>Create "{0}"</value>
+  </data>
+  <data name="Import_MapToValue" xml:space="preserve">
+    <value>Use existing "{0}"</value>
+  </data>
+  <data name="Import_CrConflictsHeading.Text" xml:space="preserve">
+    <value>CR values that differ between tasks</value>
+  </data>
+  <data name="Import_CrField_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Import_CrField_TaskNumber" xml:space="preserve">
+    <value>Task number</value>
+  </data>
+  <data name="Import_CrField_Squad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Import_CrField_Owner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Import_CrChoicesHeading.Text" xml:space="preserve">
+    <value>Tasks that refer to several CRs</value>
+  </data>
+  <data name="Import_CrChoicesPermanent.Text" xml:space="preserve">
+    <value>A task can link to one CR, and the link is permanent. The references you don't choose are kept as preserved content.</value>
+  </data>
+  <data name="Import_CrChoiceHelp" xml:space="preserve">
+    <value>Choose the CR to link</value>
+  </data>
+  <data name="Import_DoNotLink" xml:space="preserve">
+    <value>Don't link</value>
+  </data>
+  <data name="Import_FallbackOwnerCombo.Header" xml:space="preserve">
+    <value>Owner for CRs without one</value>
+  </data>
+  <data name="Import_NoFallbackOwner" xml:space="preserve">
+    <value>None (report an error)</value>
+  </data>
+  <data name="LookupKind_TaskStatus" xml:space="preserve">
+    <value>Task status</value>
+  </data>
+  <data name="LookupKind_CrStatus" xml:space="preserve">
+    <value>CR status</value>
+  </data>
+  <data name="LookupKind_Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="LookupKind_Squad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="LookupKind_Person" xml:space="preserve">
+    <value>Person</value>
+  </data>
+  <data name="LookupKind_Tag" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Import_CountEntityHeader.Text" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Import_CountCreateHeader.Text" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Import_CountUpdateHeader.Text" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="Import_CountSkipHeader.Text" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="Import_CountConflictHeader.Text" xml:space="preserve">
+    <value>Conflict</value>
+  </data>
+  <data name="Import_CountErrorHeader.Text" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Import_Severity_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Import_Severity_Conflict" xml:space="preserve">
+    <value>Conflict (not applied)</value>
+  </data>
+  <data name="Import_Severity_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Import_Severity_Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Import_PreviewBlocked" xml:space="preserve">
+    <value>Fix {0} errors before importing. Nothing has been written.</value>
+  </data>
+  <data name="Import_PreviewReady" xml:space="preserve">
+    <value>Ready to import {0} changes in one step.</value>
+  </data>
+  <data name="Import_PreviewReadySafety" xml:space="preserve">
+    <value>Ready to import {0} changes in one step. A safety backup of the current data is made first.</value>
+  </data>
+  <data name="Import_PreviewNothing" xml:space="preserve">
+    <value>There is nothing to import: every record already exists or was skipped.</value>
+  </data>
+  <data name="Import_PresenceAll" xml:space="preserve">
+    <value>The source contains tasks, checklist items, Subtask cards, CRs, reviews, General to-dos, dates, and notes.</value>
+  </data>
+  <data name="Import_PresenceAbsent" xml:space="preserve">
+    <value>Not in the source, so not imported: {0}.</value>
+  </data>
+  <data name="Import_Presence_Tasks" xml:space="preserve">
+    <value>tasks</value>
+  </data>
+  <data name="Import_Presence_ChecklistItems" xml:space="preserve">
+    <value>checklist items</value>
+  </data>
+  <data name="Import_Presence_SubtaskCards" xml:space="preserve">
+    <value>Subtask cards</value>
+  </data>
+  <data name="Import_Presence_ChangeRequests" xml:space="preserve">
+    <value>CRs</value>
+  </data>
+  <data name="Import_Presence_Reviews" xml:space="preserve">
+    <value>reviews</value>
+  </data>
+  <data name="Import_Presence_GeneralTodos" xml:space="preserve">
+    <value>General to-dos</value>
+  </data>
+  <data name="Import_Presence_Dates" xml:space="preserve">
+    <value>dates</value>
+  </data>
+  <data name="Import_Presence_Notes" xml:space="preserve">
+    <value>notes</value>
+  </data>
+  <data name="Import_ApplyButtonText" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Import_SafetyBackupFailed" xml:space="preserve">
+    <value>The safety backup couldn't be made, so nothing was imported. {0}</value>
+  </data>
+  <data name="Import_Result" xml:space="preserve">
+    <value>Imported {0} changes.</value>
+  </data>
+  <data name="Import_ResultWithSafety" xml:space="preserve">
+    <value>Imported {0} changes. The data from before the import is in {1}.</value>
+  </data>
+  <data name="Import_Stale" xml:space="preserve">
+    <value>The data changed after the preview. Nothing was imported; go back and preview again.</value>
+  </data>
+  <data name="Import_NotApplicable" xml:space="preserve">
+    <value>The preview has errors or nothing to import.</value>
+  </data>
+  <data name="Import_RestartButton.Content" xml:space="preserve">
+    <value>Import more</value>
+  </data>
+  <data name="Import_Finding_toomanyrecords" xml:space="preserve">
+    <value>More than {1} records; split the source.</value>
+  </data>
+  <data name="Import_Finding_invalid" xml:space="preserve">
+    <value>{0} is not valid ({1}).</value>
+  </data>
+  <data name="Import_Finding_exists" xml:space="preserve">
+    <value>Already exists; skipped (create only).</value>
+  </data>
+  <data name="Import_Finding_unchanged" xml:space="preserve">
+    <value>No changes.</value>
+  </data>
+  <data name="Import_Finding_deleted" xml:space="preserve">
+    <value>This record was deleted and is not re-created.</value>
+  </data>
+  <data name="Import_Finding_duplicateinsource" xml:space="preserve">
+    <value>The source contains this record twice.</value>
+  </data>
+  <data name="Import_Finding_duplicatecrnumber" xml:space="preserve">
+    <value>CR number {1} is already used by another CR.</value>
+  </data>
+  <data name="Import_Finding_matchedbynumber" xml:space="preserve">
+    <value>Matched the existing CR {1} by its number.</value>
+  </data>
+  <data name="Import_Finding_unknownreference" xml:space="preserve">
+    <value>{0} refers to something that doesn't exist.</value>
+  </data>
+  <data name="Import_Finding_missingparent" xml:space="preserve">
+    <value>The parent task doesn't exist.</value>
+  </data>
+  <data name="Import_Finding_linkchangerefused" xml:space="preserve">
+    <value>The task is already linked to another CR. Links are permanent, so this row is not applied.</value>
+  </data>
+  <data name="Import_Finding_unlinkrefused" xml:space="preserve">
+    <value>The task is linked to a CR, but the source has no link. Links are permanent, so this row is not applied.</value>
+  </data>
+  <data name="Import_Finding_permanentlink" xml:space="preserve">
+    <value>The task will be linked permanently, and its title will become the CR's title.</value>
+  </data>
+  <data name="Import_Finding_linktargetskipped" xml:space="preserve">
+    <value>The task's CR is not imported, so the task is not applied.</value>
+  </data>
+  <data name="Import_Finding_titlepreserved" xml:space="preserve">
+    <value>The task is linked, so its own title is kept as preserved content, not shown.</value>
+  </data>
+  <data name="Import_Finding_lookupcreated" xml:space="preserve">
+    <value>New {0}: {1}.</value>
+  </data>
+  <data name="Import_Finding_lookupmapped" xml:space="preserve">
+    <value>{0} "{1}" matched the existing value of the same name.</value>
+  </data>
+  <data name="Import_Finding_fieldcreated" xml:space="preserve">
+    <value>New custom field: {1}.</value>
+  </data>
+  <data name="Import_Finding_fieldmapped" xml:space="preserve">
+    <value>Custom field {1} matched the existing field.</value>
+  </data>
+  <data name="Import_Finding_fieldkindmismatch" xml:space="preserve">
+    <value>Custom field {1} exists with a different kind.</value>
+  </data>
+  <data name="Import_Finding_optioncreated" xml:space="preserve">
+    <value>New option {1} for custom field {0}.</value>
+  </data>
+  <data name="Import_Finding_defaultsapplied" xml:space="preserve">
+    <value>The business defaults of the source are applied.</value>
+  </data>
+  <data name="Import_Finding_defaultskept" xml:space="preserve">
+    <value>The current business defaults are kept.</value>
+  </data>
+  <data name="Import_Finding_defaultused" xml:space="preserve">
+    <value>{0} was not supplied; the default is used.</value>
+  </data>
+  <data name="Import_Finding_ownerrequired" xml:space="preserve">
+    <value>CR {1} has no owner. Choose an owner for CRs without one.</value>
+  </data>
+  <data name="Import_Finding_conflictingcrvalues" xml:space="preserve">
+    <value>Tasks of CR {1} have different values for {0}. Choose one.</value>
+  </data>
+  <data name="Import_Finding_crvalueproposed" xml:space="preserve">
+    <value>CR {1} gets {0} from its tasks.</value>
+  </data>
+  <data name="Import_Finding_multiplecrreferences" xml:space="preserve">
+    <value>The task refers to several CRs. Choose at most one.</value>
+  </data>
+  <data name="Import_Finding_alreadyimported" xml:space="preserve">
+    <value>Imported before from this source; skipped (create only).</value>
+  </data>
+  <data name="Import_Finding_ambiguouscolumn" xml:space="preserve">
+    <value>Two columns are mapped to {0}. Map one of them to another field.</value>
+  </data>
+  <data name="Import_Finding_unknowncolumn" xml:space="preserve">
+    <value>Column {1} is not mapped; its values are kept as preserved content.</value>
+  </data>
+  <data name="Import_Finding_missingcolumn" xml:space="preserve">
+    <value>No column is mapped to {0}.</value>
+  </data>
+  <data name="Import_Finding_invaliddate" xml:space="preserve">
+    <value>{0} is not a yyyy-MM-dd date.</value>
+  </data>
+  <data name="Import_Finding_invalidboolean" xml:space="preserve">
+    <value>{0} is not true/false, yes/no, or 1/0.</value>
+  </data>
+  <data name="Import_Finding_preservedtext" xml:space="preserve">
+    <value>The Markdown body is kept as preserved content because notes are mapped from a field.</value>
+  </data>
+  <data name="Import_Finding_notitle" xml:space="preserve">
+    <value>The record has no title.</value>
+  </data>
+  <data name="Restore_Step_Choose" xml:space="preserve">
+    <value>Choose backup</value>
+  </data>
+  <data name="Restore_Step_Validate" xml:space="preserve">
+    <value>Validate</value>
+  </data>
+  <data name="Restore_Step_Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Restore_Step_Result" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Restore_BrowseButton.Content" xml:space="preserve">
+    <value>Browse for a backup folder…</value>
+  </data>
+  <data name="Restore_SelectedFolder" xml:space="preserve">
+    <value>Selected: {0}</value>
+  </data>
+  <data name="Restore_NoneSelected" xml:space="preserve">
+    <value>Select a backup or browse for a backup folder.</value>
+  </data>
+  <data name="Restore_Check_Manifest" xml:space="preserve">
+    <value>Manifest</value>
+  </data>
+  <data name="Restore_Check_Checksums" xml:space="preserve">
+    <value>Checksums</value>
+  </data>
+  <data name="Restore_Check_SchemaVersion" xml:space="preserve">
+    <value>Schema version</value>
+  </data>
+  <data name="Restore_Check_Integrity" xml:space="preserve">
+    <value>Database integrity</value>
+  </data>
+  <data name="Restore_Check_ForeignKeys" xml:space="preserve">
+    <value>Relationships (foreign keys)</value>
+  </data>
+  <data name="Restore_Check_Records" xml:space="preserve">
+    <value>Records, IDs, and links</value>
+  </data>
+  <data name="Restore_CheckPassed" xml:space="preserve">
+    <value>{0}: passed {1}</value>
+  </data>
+  <data name="Restore_CheckFailed" xml:space="preserve">
+    <value>{0}: failed {1}</value>
+  </data>
+  <data name="Restore_Invalid" xml:space="preserve">
+    <value>This backup can't be restored. Nothing has been changed.</value>
+  </data>
+  <data name="Restore_ConfirmInfoBar.Title" xml:space="preserve">
+    <value>Replace the current dataset?</value>
+  </data>
+  <data name="Restore_ConfirmInfoBar.Message" xml:space="preserve">
+    <value>Restoring replaces the current dataset. A safety backup will be created first. Your UI preferences are kept.</value>
+  </data>
+  <data name="Restore_ConfirmCheck.Content" xml:space="preserve">
+    <value>I understand the current data will be replaced</value>
+  </data>
+  <data name="Restore_RestoreButtonText" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Restore_Outcome_Restored" xml:space="preserve">
+    <value>The backup was restored and opened.</value>
+  </data>
+  <data name="Restore_Outcome_RolledBack" xml:space="preserve">
+    <value>The restore didn't finish and the previous data was kept.</value>
+  </data>
+  <data name="Restore_Outcome_NotStarted" xml:space="preserve">
+    <value>The safety backup couldn't be made, so nothing was replaced.</value>
+  </data>
+  <data name="Restore_DoneNotice" xml:space="preserve">
+    <value>The backup was restored. The data from before the restore is in {0}.</value>
+  </data>
+  <data name="Restore_RolledBackNotice" xml:space="preserve">
+    <value>The restore didn't finish, so the previous data was put back. A safety backup is in {0}.</value>
+  </data>
+  <data name="Backups_BackUpNowButton.Content" xml:space="preserve">
+    <value>Back up now</value>
+  </data>
+  <data name="Backups_OpenFolderButton.Content" xml:space="preserve">
+    <value>Open backups folder</value>
+  </data>
+  <data name="Backups_DeleteButton.Content" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="Backups_Count" xml:space="preserve">
+    <value>{0} backups</value>
+  </data>
+  <data name="Backups_Created" xml:space="preserve">
+    <value>Backup created</value>
+  </data>
+  <data name="Backups_Size" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Backups_Manifest_Valid" xml:space="preserve">
+    <value>Manifest valid</value>
+  </data>
+  <data name="Backups_Manifest_Missing" xml:space="preserve">
+    <value>No manifest</value>
+  </data>
+  <data name="Backups_Manifest_Invalid" xml:space="preserve">
+    <value>Manifest doesn't match the files</value>
+  </data>
+  <data name="Backups_DeleteTitle" xml:space="preserve">
+    <value>Delete this manual backup?</value>
+  </data>
+  <data name="Backups_DeleteMessage" xml:space="preserve">
+    <value>The manual backup from {0} ({1}) is deleted permanently. Daily and safety backups are not affected.</value>
+  </data>
+  <data name="Backups_DeletePrimary" xml:space="preserve">
+    <value>Delete backup</value>
+  </data>
+  <data name="Backups_DeleteFailed" xml:space="preserve">
+    <value>The backup couldn't be deleted. Only manual backups can be deleted.</value>
+  </data>
+  <data name="Settings_BackupNowButton.Content" xml:space="preserve">
+    <value>Back up now</value>
+  </data>
+  <data name="Settings_ManageBackupsLink.Content" xml:space="preserve">
+    <value>Manage backups…</value>
+  </data>
+  <data name="Grid_ExportNoFilters" xml:space="preserve">
+    <value>no filters</value>
+  </data>
+  <data name="Grid_ExportScope" xml:space="preserve">
+    <value>Filters: {0} · {1}</value>
+  </data>
+  <data name="Recovery_FinishRestoreButton.Content" xml:space="preserve">
+    <value>Finish the interrupted restore</value>
+  </data>
+  <data name="Recovery_RestoreFromBackupButton.Content" xml:space="preserve">
+    <value>Restore from a backup…</value>
+  </data>
+  <data name="Recovery_RestoreConfirmInfoBar.Title" xml:space="preserve">
+    <value>Restore from a backup?</value>
+  </data>
+  <data name="Recovery_RestoreConfirmInfoBar.Message" xml:space="preserve">
+    <value>You choose a backup folder next. It is checked before anything changes; then a copy of the current database files is kept in the backups folder and the backup replaces them.</value>
+  </data>
+  <data name="Recovery_ConfirmRestoreButton.Content" xml:space="preserve">
+    <value>Choose backup and restore</value>
+  </data>
+  <data name="Recovery_CancelRestoreButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Recovery_RestoreOutcome_Unresolved" xml:space="preserve">
+    <value>Neither the restored data nor the previous data could be verified, so nothing was changed. Keep the data folder as it is and contact support with the log.</value>
+  </data>
+  <data name="Recovery_RestoreOutcome_Invalid" xml:space="preserve">
+    <value>The chosen backup failed its checks, so nothing was replaced.</value>
+  </data>
+  <data name="Recovery_RestoreOutcome_Failed" xml:space="preserve">
+    <value>The restore couldn't be completed. The data folder was not replaced with an empty dataset.</value>
+  </data>
+  <data name="Recovery_RestoreFinishedNotice" xml:space="preserve">
+    <value>The interrupted restore was completed.</value>
+  </data>
+  <data name="Recovery_RestoreUndoneNotice" xml:space="preserve">
+    <value>The interrupted restore was undone; the previous data is back.</value>
   </data>
 </root>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings › Data › Export (design §4.6). Hosted by DataPageView; bindings are flat on this view's ViewModel. -->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Settings.DataPage.ExportWizardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MaxPlanner.Presentation.Settings.DataPage"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="StepTemplate" x:DataType="local:WizardStep">
+            <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
+                <FontIcon FontSize="14" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
+                <TextBlock Text="{x:Bind Title, Mode=OneTime}" />
+                <TextBlock
+                    x:Uid="Data_CurrentStepText"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Visibility="{x:Bind local:DataPageView.Show(IsCurrent), Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+        <Style x:Key="StepListStyle" TargetType="ListView">
+            <Setter Property="SelectionMode" Value="None" />
+            <Setter Property="IsItemClickEnabled" Value="False" />
+            <Setter Property="Width" Value="220" />
+            <Setter Property="Margin" Value="0,0,24,0" />
+        </Style>
+    </UserControl.Resources>
+    <Grid x:Name="ExportPanel" Padding="32,0,32,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ListView
+                x:Name="ExportStepList"
+                AutomationProperties.AutomationId="Data_ExportStepList"
+                ItemTemplate="{StaticResource StepTemplate}"
+                ItemsSource="{x:Bind ViewModel.Steps, Mode=OneTime}"
+                Style="{StaticResource StepListStyle}" />
+            <Grid Grid.Column="1" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="ExportCaption" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.StepCaption, Mode=OneWay}" />
+                <InfoBar
+                    Grid.Row="1"
+                    AutomationProperties.AutomationId="Data_ExportErrorInfoBar"
+                    IsClosable="False"
+                    IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                    Severity="Error" />
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch" Spacing="12">
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 0), Mode=OneWay}">
+                            <RadioButton x:Uid="Export_ScopeEntireRadio" AutomationProperties.AutomationId="Data_ExportScopeEntireRadio" GroupName="ExportScope" IsChecked="{x:Bind ViewModel.IsEntireDataset, Mode=TwoWay}" />
+                            <RadioButton
+                                x:Uid="Export_ScopeViewRadio"
+                                AutomationProperties.AutomationId="Data_ExportScopeViewRadio"
+                                GroupName="ExportScope"
+                                IsChecked="{x:Bind local:DataPageView.Not(ViewModel.IsEntireDataset), Mode=OneWay}"
+                                IsEnabled="{x:Bind ViewModel.IsViewAvailable, Mode=OneWay}" />
+                            <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ViewModel.ViewDescription, Mode=OneWay}" TextWrapping="Wrap" />
+                            <TextBlock x:Uid="Export_ScopeHelp" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 1), Mode=OneWay}">
+                            <ComboBox
+                                x:Uid="Export_FormatCombo"
+                                MinWidth="260"
+                                AutomationProperties.AutomationId="Data_ExportFormatCombo"
+                                ItemsSource="{x:Bind ViewModel.FormatChoices, Mode=OneTime}"
+                                SelectedIndex="{x:Bind ViewModel.FormatIndex, Mode=TwoWay}" />
+                            <ComboBox
+                                x:Uid="Export_TableCombo"
+                                MinWidth="260"
+                                AutomationProperties.AutomationId="Data_ExportTableCombo"
+                                ItemsSource="{x:Bind ViewModel.TableChoices, Mode=OneTime}"
+                                SelectedIndex="{x:Bind ViewModel.TableIndex, Mode=TwoWay}"
+                                Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsCsvTable), Mode=OneWay}" />
+                            <TextBlock Text="{x:Bind ViewModel.FormatHelp, Mode=OneWay}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 2), Mode=OneWay}">
+                            <TextBlock x:Uid="Export_DestinationHelp" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 3), Mode=OneWay}">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.ResultSummary, Mode=OneWay}" TextWrapping="Wrap" />
+                            <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.ResultPath, Mode=OneWay}" TextWrapping="Wrap" />
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.ResultLines, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{x:Bind}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Export_OpenFolderButton" AutomationProperties.AutomationId="Data_ExportOpenFolderButton" Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneTime}" />
+                                <Button x:Uid="Export_RestartButton" AutomationProperties.AutomationId="Data_ExportRestartButton" Command="{x:Bind ViewModel.RestartCommand, Mode=OneTime}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+                <StackPanel Grid.Row="3" Spacing="8">
+                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsBusy), Mode=OneWay}" />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Data_BackButton" AutomationProperties.AutomationId="Data_ExportBackButton" Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        <Button
+                            AutomationProperties.AutomationId="Data_ExportNextButton"
+                            Command="{x:Bind ViewModel.NextCommand, Mode=OneTime}"
+                            Content="{x:Bind ViewModel.NextText, Mode=OneWay}"
+                            Style="{StaticResource AccentButtonStyle}" />
+                        <Button x:Uid="Data_CancelButton" AutomationProperties.AutomationId="Data_ExportCancelButton" Command="{x:Bind ViewModel.CancelWorkCommand, Mode=OneTime}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+</UserControl>

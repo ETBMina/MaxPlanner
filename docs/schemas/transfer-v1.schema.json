@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxplanner.local/schemas/transfer-v1.schema.json",
+  "title": "Max Planner transfer file, format version 1",
+  "description": "B-12 JSON envelope written by Settings › Data › Export and read by Import (T-10). Property names are camelCase. A property that is absent reads as null; records in a JSON file are complete, so for a merge import an absent nullable property clears the value (tabular CSV/XLSX sources merge only the columns they contain). Business dates are yyyy-MM-dd; timestamps are ISO 8601 UTC. IDs are GUIDs. CR-owned values (title, task number, squad, owner) are stored once on the CR; a linked task has no ownTitle. Lookups are matched by ID, then by their unique name. Limits: 25 MiB input, 50,000 top-level records, nesting depth 64. A newer formatVersion is rejected.",
+  "type": "object",
+  "required": ["format", "formatVersion"],
+  "properties": {
+    "format": { "const": "max-planner-transfer" },
+    "formatVersion": { "type": "integer", "minimum": 1, "maximum": 1 },
+    "datasetId": { "$ref": "#/$defs/id" },
+    "exportedAtUtc": { "$ref": "#/$defs/timestamp" },
+    "scope": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["entire-dataset", "current-view", "external"] },
+        "entityType": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "lookups": {
+      "type": "object",
+      "properties": {
+        "taskStatuses": { "type": "array", "items": { "$ref": "#/$defs/taskStatus" } },
+        "crStatuses": { "type": "array", "items": { "$ref": "#/$defs/crStatus" } },
+        "priorities": { "type": "array", "items": { "$ref": "#/$defs/orderedLookup" } },
+        "squads": { "type": "array", "items": { "$ref": "#/$defs/orderedLookup" } },
+        "people": { "type": "array", "items": { "$ref": "#/$defs/namedLookup" } },
+        "tags": { "type": "array", "items": { "$ref": "#/$defs/namedLookup" } }
+      }
+    },
+    "fieldDefinitions": { "type": "array", "items": { "$ref": "#/$defs/fieldDefinition" } },
+    "defaults": {
+      "type": "object",
+      "required": ["defaultTaskStatusId", "defaultCrStatusId", "defaultPriorityId", "calendarSchedulingStatusId", "crBacklogStatusId"],
+      "properties": {
+        "defaultTaskStatusId": { "$ref": "#/$defs/id" },
+        "defaultCrStatusId": { "$ref": "#/$defs/id" },
+        "defaultPriorityId": { "$ref": "#/$defs/id" },
+        "defaultCrOwnerId": { "$ref": "#/$defs/id" },
+        "calendarSchedulingStatusId": { "$ref": "#/$defs/id" },
+        "crBacklogStatusId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "tasks": { "type": "array", "items": { "$ref": "#/$defs/task" } },
+    "subtaskCards": { "type": "array", "items": { "$ref": "#/$defs/subtaskCard" } },
+    "changeRequests": { "type": "array", "items": { "$ref": "#/$defs/changeRequest" } },
+    "links": { "type": "array", "items": { "$ref": "#/$defs/link" } },
+    "reviews": { "type": "array", "items": { "$ref": "#/$defs/review" } },
+    "generalTodos": { "type": "array", "items": { "$ref": "#/$defs/generalTodo" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "format": "uuid" },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "idList": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+    "taskStatus": {
+      "type": "object",
+      "required": ["id", "name", "order", "isCompleted", "setsStartDate", "isBacklog"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "maxLength": 100 },
+        "order": { "type": "integer" },
+        "isCompleted": { "type": "boolean" },
+        "setsStartDate": { "type": "boolean" },
+        "isBacklog": { "type": "boolean" }
+      }
+    },
+    "crStatus": {
+      "type": "object",
+      "required": ["id", "name", "order", "isCompleted", "isBacklog"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "maxLength": 100 },
+        "order": { "type": "integer" },
+        "isCompleted": { "type": "boolean" },
+        "isBacklog": { "type": "boolean" }
+      }
+    },
+    "orderedLookup": {
+      "type": "object",
+      "required": ["id", "name", "order"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "type": "string", "maxLength": 100 }, "order": { "type": "integer" } }
+    },
+    "namedLookup": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "type": "string", "maxLength": 100 } }
+    },
+    "value": {
+      "description": "A typed custom value: kind selects the property that holds it (no coercion, B-11).",
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["Text", "MultilineText", "Number", "Date", "Lookup", "People", "Tags", "Url"] },
+        "text": { "type": "string" },
+        "number": { "type": "number" },
+        "date": { "$ref": "#/$defs/date" },
+        "option": { "$ref": "#/$defs/id" },
+        "ids": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "customValues": {
+      "description": "Custom values by field ID, including values of deactivated fields.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/value" }
+    },
+    "preserved": {
+      "description": "Content kept but never shown: the task's title from before it was linked, CR references not chosen during import, and unknown fields as raw JSON.",
+      "type": "object",
+      "properties": {
+        "preLinkTitle": { "type": "string" },
+        "unselectedCrReferences": { "type": "array", "items": { "type": "string" } },
+        "legacyJson": { "type": "string" }
+      }
+    },
+    "fieldDefinition": {
+      "type": "object",
+      "required": ["id", "key", "target", "label", "kind", "isRequired", "displayOrder", "options", "isActive"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "key": { "type": "string" },
+        "target": { "enum": ["Task", "ChangeRequest"] },
+        "label": { "type": "string" },
+        "kind": { "enum": ["Text", "MultilineText", "Number", "Date", "Lookup", "People", "Tags", "Url"] },
+        "isRequired": { "type": "boolean" },
+        "defaultValue": { "$ref": "#/$defs/value" },
+        "displayOrder": { "type": "integer" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "order"],
+            "properties": { "id": { "$ref": "#/$defs/id" }, "label": { "type": "string" }, "order": { "type": "integer" } }
+          }
+        },
+        "isActive": { "type": "boolean" }
+      }
+    },
+    "audit": {
+      "properties": {
+        "createdAtUtc": { "$ref": "#/$defs/timestamp" },
+        "updatedAtUtc": { "$ref": "#/$defs/timestamp" },
+        "revision": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["id"],
+      "allOf": [{ "$ref": "#/$defs/audit" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "ownTitle": { "type": "string", "maxLength": 250, "description": "Required for an unlinked task; absent for a linked task (the CR supplies the title)." },
+        "service": { "type": "string", "maxLength": 250, "description": "Required for a linked task." },
+        "statusId": { "$ref": "#/$defs/id" },
+        "priorityId": { "$ref": "#/$defs/id" },
+        "designerIds": { "$ref": "#/$defs/idList" },
+        "developerIds": { "$ref": "#/$defs/idList" },
+        "tagIds": { "$ref": "#/$defs/idList" },
+        "notes": { "type": "string", "maxLength": 100000 },
+        "startDate": { "$ref": "#/$defs/date" },
+        "endDate": { "$ref": "#/$defs/date" },
+        "isArchived": { "type": "boolean" },
+        "order": { "type": "integer", "description": "Board rank." },
+        "checklistItems": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "required": ["id", "text", "isCompleted", "order"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "text": { "type": "string", "maxLength": 2000 },
+              "isCompleted": { "type": "boolean" },
+              "order": { "type": "integer" }
+            }
+          }
+        },
+        "customValues": { "$ref": "#/$defs/customValues" },
+        "preserved": { "$ref": "#/$defs/preserved" },
+        "createdAtUtc": true,
+        "updatedAtUtc": true,
+        "revision": true
+      }
+    },
+    "subtaskCard": {
+      "type": "object",
+      "required": ["id", "parentTaskId"],
+      "allOf": [{ "$ref": "#/$defs/audit" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "parentTaskId": { "$ref": "#/$defs/id" },
+        "subtitle": { "type": "string", "maxLength": 250 },
+        "statusId": { "$ref": "#/$defs/id" },
+        "startDate": { "$ref": "#/$defs/date" },
+        "endDate": { "$ref": "#/$defs/date" },
+        "notes": { "type": "string", "maxLength": 100000 },
+        "order": { "type": "integer" },
+        "createdAtUtc": true,
+        "updatedAtUtc": true,
+        "revision": true
+      }
+    },
+    "changeRequest": {
+      "type": "object",
+      "required": ["id"],
+      "allOf": [{ "$ref": "#/$defs/audit" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "number": { "type": "string", "maxLength": 100, "description": "Unique after trimming and case normalization." },
+        "title": { "type": "string", "maxLength": 250 },
+        "ownerId": { "$ref": "#/$defs/id" },
+        "squadId": { "$ref": "#/$defs/id" },
+        "statusId": { "$ref": "#/$defs/id" },
+        "priorityId": { "$ref": "#/$defs/id" },
+        "plannedStart": { "$ref": "#/$defs/date" },
+        "plannedEnd": { "$ref": "#/$defs/date" },
+        "emailSubject": { "type": "string", "maxLength": 1000 },
+        "solutionDesignUrl": { "type": "string", "maxLength": 2048, "pattern": "^https?://" },
+        "description": { "type": "string", "maxLength": 100000 },
+        "taskNumber": { "type": "string", "maxLength": 100 },
+        "customValues": { "$ref": "#/$defs/customValues" },
+        "preserved": { "$ref": "#/$defs/preserved" },
+        "createdAtUtc": true,
+        "updatedAtUtc": true,
+        "revision": true
+      }
+    },
+    "link": {
+      "description": "A permanent task-to-CR link (ADR 0006). Zero or one per task; many tasks per CR.",
+      "type": "object",
+      "required": ["taskId", "changeRequestId"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/id" },
+        "changeRequestId": { "$ref": "#/$defs/id" },
+        "linkedAtUtc": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["id"],
+      "allOf": [{ "$ref": "#/$defs/audit" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "maxLength": 250 },
+        "crNumberText": { "type": "string", "maxLength": 100 },
+        "taskNumberText": { "type": "string", "maxLength": 100 },
+        "services": { "type": "array", "items": { "type": "string", "maxLength": 250 } },
+        "developerId": { "$ref": "#/$defs/id" },
+        "comments": { "type": "string", "maxLength": 100000 },
+        "isDone": { "type": "boolean" },
+        "completedOn": { "$ref": "#/$defs/date", "description": "Present exactly when isDone is true." },
+        "order": { "type": "integer" },
+        "createdAtUtc": true,
+        "updatedAtUtc": true,
+        "revision": true
+      }
+    },
+    "generalTodo": {
+      "type": "object",
+      "required": ["id"],
+      "allOf": [{ "$ref": "#/$defs/audit" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "text": { "type": "string", "maxLength": 2000 },
+        "isCompleted": { "type": "boolean" },
+        "order": { "type": "integer" },
+        "createdAtUtc": true,
+        "updatedAtUtc": true,
+        "revision": true
+      }
+    }
+  }
+}

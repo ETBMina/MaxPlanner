@@ -93,6 +93,16 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? BackupWarningMessage { get; private set; }
 
+    /// <summary>Bound two-way: the user may close the notice.</summary>
+    [ObservableProperty]
+    public partial bool IsDataNoticeOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string? DataNoticeMessage { get; private set; }
+
+    [ObservableProperty]
+    public partial Microsoft.UI.Xaml.Controls.InfoBarSeverity DataNoticeSeverity { get; private set; }
+
     public bool IsStarting => State == ShellState.Starting;
 
     public bool IsReady => State == ShellState.Ready;
@@ -207,6 +217,24 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     {
         BackupWarningMessage = _strings.Format("Shell_BackupFailedMessage", StorageFailureText.Describe(kind, _strings));
         IsBackupWarningOpen = true;
+    }
+
+    /// <summary>T-09: reports a restore outcome app-wide (design §2.7), because the Data page closed with its dataset.</summary>
+    public void ReportDataNotice(string message, bool isError)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        DataNoticeMessage = message;
+        DataNoticeSeverity = isError ? Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error : Microsoft.UI.Xaml.Controls.InfoBarSeverity.Success;
+        IsDataNoticeOpen = true;
+    }
+
+    /// <summary>A restore closes the dataset: edits stop and the shell shows the starting state until it reopens.</summary>
+    public void BeginDatasetReplacement()
+    {
+        IsEditingBlocked = true;
+        Workspace?.BeginClose();
+        _storeSubscription.Disposable = null;
+        ShowStarting();
     }
 
     /// <summary>Closing has begun: block edits from now on, whatever the store reports.</summary>

@@ -317,6 +317,21 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         RaiseLayout();
     }
 
+    /// <summary>
+    /// Export… (B-12 "Current view results"): the rows the Grid shows now, with its filters and archive visibility as the
+    /// stated scope, opened in Settings › Data › Export.
+    /// </summary>
+    [RelayCommand]
+    private void ExportView()
+    {
+        var tasks = Rows.Where(r => r.IsTask).Select(r => r.Key).ToHashSet();
+        var cards = Rows.Where(r => !r.IsTask).Select(r => r.Key).ToHashSet();
+        var filters = Filters.IsFiltered ? string.Join(" · ", Filters.Chips.Select(c => c.Label)) : _context.Strings.GetString("Grid_ExportNoFilters");
+        var description = _context.Strings.Format("Grid_ExportScope", filters,
+            _context.Strings.GetString(ShowArchived ? "Grid_SummaryArchivedShown" : "Grid_SummaryArchivedHidden"));
+        _context.RequestExportView(new global::MaxPlanner.Application.Transfer.ViewExportScope("tasks", description, tasks, cards));
+    }
+
     /// <summary>Column chooser Reset / overflow "Reset column layout": default order, widths, visibility, and sort.</summary>
     [RelayCommand]
     private void ResetLayout()

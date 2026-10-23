@@ -2,6 +2,9 @@ using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Application.Transfer;
+using MaxPlanner.Desktop.Maintenance;
+using MaxPlanner.Infrastructure.Transfer;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
@@ -90,13 +93,32 @@ internal sealed class DatasetSession : IAsyncDisposable
         services.AddSingleton(sp => WorkspaceUseCases.Create(sp.GetRequiredService<IMutationCoordinator>()));
         services.AddSingleton(sp => SettingsUseCases.Create(sp.GetRequiredService<IMutationCoordinator>(), sp.GetRequiredService<IReadSnapshotSource>()));
 
+        // B-12, B-13 (ADR 0012): transfer use cases over the dataset's reader and writer, with the Infrastructure adapters.
+        services.AddSingleton(sp => new ExportTransfer(sp.GetRequiredService<IReadSnapshotSource>(), TransferAdapters.CreateWriter(), dataset.Id.Value, sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton(sp => new ImportTransfer(sp.GetRequiredService<IMutationCoordinator>(), sp.GetRequiredService<IReadSnapshotSource>(), dataset.ImportState, sp.GetRequiredService<TimeProvider>()));
+
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         return new DatasetSession(provider, dataset);
     }
 
     /// <summary>Creates the pages of the session. Call once, on the UI thread, after the store has started.</summary>
-    public WorkspaceViewModel CreateWorkspace(System.Reactive.Concurrency.IScheduler uiScheduler, IUiDispatcher dispatcher, ILocalizedStrings strings)
+    /// <param name="pickers">The main window's file pickers (Data page).</param>
+    /// <param name="restore">Runs a validated restore; the startup coordinator owns the session it closes and reopens.</param>
+    public WorkspaceViewModel CreateWorkspace(
+        System.Reactive.Concurrency.IScheduler uiScheduler,
+        IUiDispatcher dispatcher,
+        ILocalizedStrings strings,
+        IFilePickerService pickers,
+        Func<RestoreValidation, Task<RestoreRunOutcome>> restore)
     {
+        var data = new DataServices(
+            _provider.GetRequiredService<ExportTransfer>(),
+            _provider.GetRequiredService<ImportTransfer>(),
+            TransferAdapters.CreateReader(),
+            TransferAdapters.CreateExternalReader(),
+            Dataset.ImportState,
+            new DataMaintenanceService(Dataset, _provider.GetRequiredService<TimeProvider>(), restore, _provider.GetRequiredService<ILogger<DataMaintenanceService>>()),
+            pickers);
         Workspace ??= new WorkspaceViewModel(
             Store,
             _provider.GetRequiredService<WorkspaceUseCases>(),
@@ -110,7 +132,8 @@ internal sealed class DatasetSession : IAsyncDisposable
                 _provider.GetRequiredService<SettingsUseCases>(),
                 _provider.GetRequiredService<ThemeService>(),
                 _provider.GetRequiredService<IDataFolderLauncher>(),
-                new BackupInfoSource(Dataset.Paths.BackupsDirectory)));
+                new BackupInfoSource(Dataset.Paths.BackupsDirectory),
+                data));
         return Workspace;
     }
 

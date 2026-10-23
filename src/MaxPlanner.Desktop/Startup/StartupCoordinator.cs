@@ -2,6 +2,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Desktop.Composition;
+using MaxPlanner.Desktop.Maintenance;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Presentation.Common.Services;
@@ -33,6 +34,8 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
     private readonly IUiDispatcher _uiDispatcher;
     private readonly SqliteDatasetOptions _datasetOptions;
     private readonly Action _requestClose;
+    private readonly TimeProvider _time;
+    private readonly IFilePickerService _pickers;
     private readonly ILogger _logger;
     private readonly CancellationTokenSource _lifetime = new();
     private DatasetSession? _session;
@@ -50,9 +53,12 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         IScheduler uiScheduler,
         IUiDispatcher uiDispatcher,
         TimeProvider time,
+        IFilePickerService pickers,
         Action requestClose,
         ILogger<StartupCoordinator> logger)
     {
+        _time = time;
+        _pickers = pickers;
         _context = context;
         _appServices = appServices;
         _shell = shell;
@@ -139,6 +145,122 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
 
     }
 
+    /// <summary>
+    /// T-09 / ADR 0015 restore from Settings › Data: a restore-safety backup of the open dataset, then the T-06.6 close
+    /// (pages, store, drained writer), the marker-guarded swap, and a normal reopen with a full projection load. The
+    /// outcome is reported in the shell, because the page that asked belonged to the closed session.
+    /// </summary>
+    private async Task<RestoreRunOutcome> RestoreAsync(RestoreValidation validation)
+    {
+        if (_session is not { } session)
+        {
+            return RestoreRunOutcome.NotStarted;
+        }
+
+        var safety = await Task.Run(() => BackupMaintenance.Create(session.Dataset, BackupKinds.RestoreSafety, _time.GetUtcNow(), StartupContext.AppVersion));
+        if (!safety.IsSuccess)
+        {
+            // No safety backup, no restore: the current data stays open and untouched.
+            Log.RestoreSafetyFailed(_logger, (safety.Error as StorageFailureError)?.Kind);
+            return RestoreRunOutcome.NotStarted;
+        }
+
+        Log.RestoreStarting(_logger, Path.GetFileName(safety.Value));
+        _shell.BeginDatasetReplacement();
+        await CloseSessionAsync();
+        bool swapped;
+        try
+        {
+            swapped = await Task.Run(() => RestoreService.Swap(_context.Paths, validation));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The marker stays; opening shows the interrupted-restore recovery, which finishes or undoes the swap.
+            Log.RestoreSwapFailed(_logger, ex);
+            await GuardAsync(() => OpenAsync(allowFirstRun: false));
+            return RestoreRunOutcome.RolledBack;
+        }
+
+        Log.RestoreFinished(_logger, swapped);
+        await GuardAsync(() => OpenAsync(allowFirstRun: false));
+        _shell.ReportDataNotice(
+            swapped ? _strings.Format("Restore_DoneNotice", safety.Value) : _strings.Format("Restore_RolledBackNotice", safety.Value),
+            isError: !swapped);
+        return swapped ? RestoreRunOutcome.Restored : RestoreRunOutcome.RolledBack;
+    }
+
+    /// <summary>ADR 0015: finishes or undoes an interrupted restore from its marker, then opens the dataset.</summary>
+    public async Task<RecoveryRestoreOutcome> FinishInterruptedRestoreAsync()
+    {
+        var outcome = await Task.Run(() => RestoreService.RecoverInterrupted(_context.Paths));
+        Log.RestoreRecovered(_logger, outcome.ToString());
+        if (outcome == RestoreRecoveryOutcome.Unresolved)
+        {
+            return RecoveryRestoreOutcome.Unresolved;
+        }
+
+        await GuardAsync(() => OpenAsync(allowFirstRun: false));
+        _shell.ReportDataNotice(_strings.GetString(outcome == RestoreRecoveryOutcome.RolledForward ? "Recovery_RestoreFinishedNotice" : "Recovery_RestoreUndoneNotice"), isError: false);
+        return outcome == RestoreRecoveryOutcome.RolledForward ? RecoveryRestoreOutcome.Completed : RecoveryRestoreOutcome.RolledBack;
+    }
+
+    /// <summary>
+    /// T-09 from the recovery page (no dataset is open): validate the chosen backup in staging, keep a raw copy of the
+    /// current database files, swap under the marker, and open. Never creates an empty database.
+    /// </summary>
+    public async Task<RecoveryRestoreOutcome> RestoreFromBackupAsync()
+    {
+        if (await _pickers.PickFolderAsync() is not { } folder)
+        {
+            return RecoveryRestoreOutcome.Cancelled;
+        }
+
+        try
+        {
+            var validation = await Task.Run(() => RestoreService.Validate(_context.Paths, folder, CancellationToken.None));
+            if (!validation.IsValid)
+            {
+                RestoreService.Discard(validation);
+                return RecoveryRestoreOutcome.Invalid;
+            }
+
+            var safety = await Task.Run(() => RestoreService.CreateRawSafetyCopy(_context.Paths, _time.GetUtcNow(), StartupContext.AppVersion));
+            Log.RestoreStarting(_logger, safety is null ? "none" : Path.GetFileName(safety));
+            var swapped = await Task.Run(() => RestoreService.Swap(_context.Paths, validation));
+            Log.RestoreFinished(_logger, swapped);
+            await GuardAsync(() => OpenAsync(allowFirstRun: false));
+            return swapped ? RecoveryRestoreOutcome.Completed : RecoveryRestoreOutcome.Failed;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.RestoreSwapFailed(_logger, ex);
+            await GuardAsync(() => OpenAsync(allowFirstRun: false));
+            return RecoveryRestoreOutcome.Failed;
+        }
+    }
+
+    private async Task CloseSessionAsync()
+    {
+        try
+        {
+            await _backupTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled before the copy started; nothing was written.
+        }
+
+        _readySubscription?.Dispose();
+        _readySubscription = null;
+        _shell.PropertyChanged -= OnShellPropertyChanged;
+        _shell.DetachWorkspace();
+        if (_session is { } session)
+        {
+            _session = null;
+            await session.DisposeAsync();
+        }
+    }
+
     // Boundary of every startup step started from the UI: anything unexpected is logged and shown in the
     // shell instead of escaping into a command or the dispatcher.
     private async Task GuardAsync(Func<Task> step)
@@ -212,7 +334,7 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         _session = DatasetSession.Create(_appServices, dataset);
         var store = _session.Store;
         _shell.AttachStore(store, _uiScheduler);
-        _shell.AttachWorkspace(_session.CreateWorkspace(_uiScheduler, _uiDispatcher, _strings));
+        _shell.AttachWorkspace(_session.CreateWorkspace(_uiScheduler, _uiDispatcher, _strings, _pickers, RestoreAsync));
         _shell.PropertyChanged += OnShellPropertyChanged;
         _readySubscription = store.State
             .Where(state => state.Status == ProjectionStatus.Ready)
@@ -298,6 +420,21 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
 
         [LoggerMessage(EventId = 5009, Level = LogLevel.Error, Message = "The daily backup failed unexpectedly.")]
         public static partial void BackupDefect(ILogger logger, Exception exception);
+
+        [LoggerMessage(EventId = 5011, Level = LogLevel.Error, Message = "Restore refused: the restore-safety backup failed ({Failure}).")]
+        public static partial void RestoreSafetyFailed(ILogger logger, StorageFailureKind? failure);
+
+        [LoggerMessage(EventId = 5012, Level = LogLevel.Warning, Message = "Restore starting; safety backup {Safety}.")]
+        public static partial void RestoreStarting(ILogger logger, string safety);
+
+        [LoggerMessage(EventId = 5013, Level = LogLevel.Information, Message = "Restore swap finished; restored {Swapped}.")]
+        public static partial void RestoreFinished(ILogger logger, bool swapped);
+
+        [LoggerMessage(EventId = 5014, Level = LogLevel.Error, Message = "Restore swap failed; the restore marker is kept for recovery.")]
+        public static partial void RestoreSwapFailed(ILogger logger, Exception exception);
+
+        [LoggerMessage(EventId = 5015, Level = LogLevel.Warning, Message = "Interrupted restore recovery: {Outcome:l}.")]
+        public static partial void RestoreRecovered(ILogger logger, string outcome);
 
         [LoggerMessage(EventId = 5010, Level = LogLevel.Information, Message = "Navigated to {Page:l}; live store subscriptions {Subscriptions}; working set {WorkingSetMiB} MiB.")]
         public static partial void Navigated(ILogger logger, string page, int subscriptions, long workingSetMiB);

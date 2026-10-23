@@ -62,6 +62,7 @@ public sealed class SqliteDataset : IAsyncDisposable
         SchemaVersion = schemaVersion;
         Coordinator = coordinator;
         Snapshots = new SqliteReadSnapshotSource(connections, loggers.CreateLogger<SqliteReadSnapshotSource>());
+        ImportState = new Transfer.SqliteImportStateReader(connections);
     }
 
     public DataPaths Paths { get; }
@@ -74,6 +75,9 @@ public sealed class SqliteDataset : IAsyncDisposable
     public SqliteMutationCoordinator Coordinator { get; }
 
     public IReadSnapshotSource Snapshots { get; }
+
+    /// <summary>The import ledger and tombstones for import previews (B-13.5, B-05).</summary>
+    public Application.Transfer.IImportStateReader ImportState { get; }
 
     /// <summary>Read-only connections for consistent online backups alongside the writer (ADR 0015).</summary>
     internal SqliteConnectionFactory Connections => _connections;

@@ -52,6 +52,9 @@ public interface IWriteTransaction
     ILookupStore Lookups { get; }
 
     ITombstoneStore Tombstones { get; }
+
+    /// <summary>External source identities of imported records (B-13.5).</summary>
+    IImportLedgerStore ImportLedger { get; }
 }
 
 public enum BoardCardKind
@@ -224,4 +227,17 @@ public interface ITombstoneStore
     void Add(EntityKind kind, Guid id, DateTimeOffset deletedAtUtc);
 
     bool Contains(EntityKind kind, Guid id);
+}
+
+/// <summary>
+/// The <c>import_ledger</c> table (B-13.5): which record an external source record became, keyed by the
+/// user-chosen source namespace, the entity kind, and the source record's identity. Rows are insert-only.
+/// </summary>
+public interface IImportLedgerStore
+{
+    /// <returns>The record ID imported for this source identity, or null.</returns>
+    Guid? Find(string sourceNamespace, string entityKind, string sourceKey);
+
+    /// <summary>Requires an unused (namespace, kind, key); a duplicate throws and rolls the import back.</summary>
+    void Insert(string sourceNamespace, string entityKind, string sourceKey, Guid recordId);
 }

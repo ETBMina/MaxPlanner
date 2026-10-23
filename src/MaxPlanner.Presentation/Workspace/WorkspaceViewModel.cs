@@ -51,6 +51,7 @@ public sealed class WorkspaceViewModel : IDisposable
         _stateSubscription = store.State.ObserveOn(uiScheduler).Subscribe(OnStoreState);
         _badgeSubscription = store.Committed.ObserveOn(uiScheduler).Subscribe(_ => UpdateOpenChecklistCount(store));
         Context.Navigator.DrillDownRequested += OnDrillDownRequested;
+        Context.ExportViewRequested += OnExportViewRequested;
     }
 
     /// <summary>Raised when <see cref="OpenChecklistCount"/> changed (the Checklists nav badge, design §2.2).</summary>
@@ -101,6 +102,7 @@ public sealed class WorkspaceViewModel : IDisposable
         _stateSubscription.Dispose();
         _badgeSubscription.Dispose();
         Context.Navigator.DrillDownRequested -= OnDrillDownRequested;
+        Context.ExportViewRequested -= OnExportViewRequested;
         foreach (var page in CreatedPages)
         {
             page.Dispose();
@@ -142,6 +144,17 @@ public sealed class WorkspaceViewModel : IDisposable
             default:
                 break;
         }
+    }
+
+    private void OnExportViewRequested(object? sender, global::MaxPlanner.Application.Transfer.ViewExportScope view)
+    {
+        if (_isDisposed || _isClosing || Settings is not { } settings)
+        {
+            return;
+        }
+
+        settings.OpenDataPage(MaxPlanner.Presentation.Settings.DataPage.DataMode.Export, view);
+        Context.Navigator.RequestNavigation(AppPage.Settings);
     }
 
     private WorkspaceContext Live() => _isDisposed ? throw new ObjectDisposedException(nameof(WorkspaceViewModel)) : Context;

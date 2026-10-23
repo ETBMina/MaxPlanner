@@ -31,6 +31,12 @@
                 IsOpen="{x:Bind ViewModel.IsBackupWarningOpen, Mode=TwoWay}"
                 Message="{x:Bind ViewModel.BackupWarningMessage, Mode=OneWay}"
                 Severity="Warning" />
+            <!-- T-09: the outcome of a restore; the page that started it belonged to the closed dataset. -->
+            <InfoBar
+                AutomationProperties.AutomationId="Shell_DataNoticeInfoBar"
+                IsOpen="{x:Bind ViewModel.IsDataNoticeOpen, Mode=TwoWay}"
+                Message="{x:Bind ViewModel.DataNoticeMessage, Mode=OneWay}"
+                Severity="{x:Bind ViewModel.DataNoticeSeverity, Mode=OneWay}" />
             <InfoBar
                 x:Uid="Shell_PreferencesInfoBar"
                 AutomationProperties.AutomationId="Shell_PreferencesInfoBar"

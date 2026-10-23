@@ -99,6 +99,18 @@
                     Command="{x:Bind ViewModel.RetryCommand, Mode=OneWay}"
                     Style="{StaticResource AccentButtonStyle}"
                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CanRetry), Mode=OneWay}" />
+                <!-- ADR 0015: an interrupted restore is finished or undone from its marker. -->
+                <Button
+                    x:Uid="Recovery_FinishRestoreButton"
+                    AutomationProperties.AutomationId="Recovery_FinishRestoreButton"
+                    Command="{x:Bind ViewModel.FinishRestoreCommand, Mode=OneWay}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CanFinishRestore), Mode=OneWay}" />
+                <Button
+                    x:Uid="Recovery_RestoreFromBackupButton"
+                    AutomationProperties.AutomationId="Recovery_RestoreFromBackupButton"
+                    Command="{x:Bind ViewModel.BeginRestoreCommand, Mode=OneWay}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsRestoreOfferVisible), Mode=OneWay}" />
                 <Button
                     x:Name="CreateNewButton"
                     x:Uid="Recovery_CreateNewButton"
@@ -146,6 +158,30 @@
                         Height="20"
                         AutomationProperties.AutomationId="Recovery_ProgressRing"
                         IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- T-09: replacing the current files from a backup needs this explicit confirmation; a raw copy of them is kept. -->
+            <StackPanel
+                AutomationProperties.AutomationId="Recovery_RestoreConfirmPanel"
+                Spacing="8"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConfirmingRestore), Mode=OneWay}">
+                <InfoBar
+                    x:Uid="Recovery_RestoreConfirmInfoBar"
+                    AutomationProperties.AutomationId="Recovery_RestoreConfirmInfoBar"
+                    IsClosable="False"
+                    IsOpen="True"
+                    Severity="Warning" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button
+                        x:Uid="Recovery_ConfirmRestoreButton"
+                        AutomationProperties.AutomationId="Recovery_ConfirmRestoreButton"
+                        Command="{x:Bind ViewModel.ConfirmRestoreCommand, Mode=OneWay}"
+                        Style="{StaticResource AccentButtonStyle}" />
+                    <Button
+                        x:Uid="Recovery_CancelRestoreButton"
+                        AutomationProperties.AutomationId="Recovery_CancelRestoreButton"
+                        Command="{x:Bind ViewModel.CancelRestoreCommand, Mode=OneWay}" />
                 </StackPanel>
             </StackPanel>
         </StackPanel>

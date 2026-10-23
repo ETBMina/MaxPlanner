@@ -22,12 +22,33 @@ public sealed partial class SettingsPageView : UserControl
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        AttachDataPage();
     }
+
+    public static Visibility Show(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
 
     public SettingsPageViewModel ViewModel { get; }
 
     /// <summary>Gives the page title keyboard focus after navigation (design §7.7).</summary>
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsPageViewModel.DataPage))
+        {
+            AttachDataPage();
+        }
+    }
+
+    // The Data page view is created once, with the retained ViewModel, the first time the page is opened.
+    private void AttachDataPage()
+    {
+        if (DataPageHost.Content is null && ViewModel.DataPage is { } page)
+        {
+            DataPageHost.Content = new DataPage.DataPageView(page);
+        }
+    }
 
     private void ApplyBreakpoint(double width)
     {

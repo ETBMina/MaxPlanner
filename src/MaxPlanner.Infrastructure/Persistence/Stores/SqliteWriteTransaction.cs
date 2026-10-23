@@ -44,6 +44,7 @@ internal sealed class SqliteWriteTransaction : IWriteTransaction
         Workflow = new SqliteWorkflowReader(this);
         Lookups = new SqliteLookupStore(this);
         Tombstones = new SqliteTombstoneStore(this);
+        ImportLedger = new SqliteImportLedgerStore(this);
     }
 
     public DateTimeOffset UtcNow { get; }
@@ -69,6 +70,8 @@ internal sealed class SqliteWriteTransaction : IWriteTransaction
     public ILookupStore Lookups { get; }
 
     public ITombstoneStore Tombstones { get; }
+
+    public IImportLedgerStore ImportLedger { get; }
 
     internal RecordLoader Loader
     {

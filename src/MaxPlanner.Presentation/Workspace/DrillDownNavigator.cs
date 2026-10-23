@@ -28,6 +28,9 @@ public sealed class DrillDownNavigator
 
     public bool CanGoBack => _stack.Count > 0;
 
+    /// <summary>Asks the shell to show <paramref name="page"/> without a drill-down context (for example Grid Export… opening Settings › Data).</summary>
+    public void RequestNavigation(AppPage page) => NavigationRequested?.Invoke(this, page);
+
     public void RequestDrillDown(DrillDownRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);

@@ -6,12 +6,14 @@ using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Settings;
+using MaxPlanner.Application.Transfer;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.Settings.DataPage;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Settings;
@@ -20,7 +22,8 @@ namespace MaxPlanner.Presentation.Settings;
 /// <param name="Theme">Applies and persists the appearance mode (AC-23).</param>
 /// <param name="DataFolder">Shows and opens the portable data folder (T-03, T-09).</param>
 /// <param name="Backups">Reads the newest backup for Settings › Data (T-09).</param>
-public sealed record SettingsServices(SettingsUseCases UseCases, ThemeService? Theme, IDataFolderLauncher? DataFolder, IBackupInfoSource? Backups);
+/// <param name="Data">Import, export, backup, and restore (Data page, B-12, B-13, T-09); null disables them.</param>
+public sealed record SettingsServices(SettingsUseCases UseCases, ThemeService? Theme, IDataFolderLauncher? DataFolder, IBackupInfoSource? Backups, DataServices? Data = null);
 
 /// <summary>
 /// The Settings page (B-04, B-11, T-09, design §4.6): appearance, workflow statuses with semantic flags,
@@ -140,10 +143,97 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     [ObservableProperty]
     public partial string LastBackupText { get; private set; } = string.Empty;
 
+    /// <summary>The Data page (D13), created on first use; null when the composition gave no data services.</summary>
+    public DataPageViewModel? DataPage { get; private set; }
+
+    public bool HasDataServices => _services.Data is not null;
+
+    /// <summary>The Data page replaces the Settings cards inside the Settings destination (breadcrumb "Settings › Data").</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCardsVisible))]
+    public partial bool IsDataPageOpen { get; private set; }
+
+    public bool IsCardsVisible => !IsDataPageOpen;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(BackUpNowCommand))]
+    public partial bool IsBackingUp { get; private set; }
+
     public void Dispose()
     {
         _workflowSubscription.Dispose();
         _commitSubscription.Dispose();
+        if (DataPage is { } page)
+        {
+            page.CloseRequested -= OnDataPageCloseRequested;
+            page.Backups.BackupsChanged -= OnBackupsChanged;
+            page.Dispose();
+        }
+    }
+
+    /// <summary>Opens Settings › Data on a workflow; the Grid's Export… passes its current view (B-12).</summary>
+    public void OpenDataPage(DataMode mode, ViewExportScope? view = null)
+    {
+        if (EnsureDataPage() is { } page)
+        {
+            page.Show(mode, view);
+            IsDataPageOpen = true;
+        }
+    }
+
+    private DataPageViewModel? EnsureDataPage()
+    {
+        if (DataPage is null && _services.Data is { } data)
+        {
+            DataPage = new DataPageViewModel(_context, data);
+            DataPage.CloseRequested += OnDataPageCloseRequested;
+            DataPage.Backups.BackupsChanged += OnBackupsChanged;
+            OnPropertyChanged(nameof(DataPage));
+        }
+
+        return DataPage;
+    }
+
+    private void OnDataPageCloseRequested(object? sender, EventArgs e) => IsDataPageOpen = false;
+
+    private void OnBackupsChanged(object? sender, EventArgs e) => _ = RefreshBackupAsync();
+
+    [RelayCommand]
+    private void OpenData() => OpenDataPage(DataMode.Import);
+
+    [RelayCommand]
+    private void ManageBackups() => OpenDataPage(DataMode.Backups);
+
+    private bool CanBackUpNow => HasDataServices && !IsBackingUp;
+
+    /// <summary>T-09 Back up now: a manual backup, never pruned.</summary>
+    [RelayCommand(CanExecute = nameof(CanBackUpNow))]
+    private async Task BackUpNowAsync()
+    {
+        if (_services.Data is not { } data)
+        {
+            return;
+        }
+
+        IsBackingUp = true;
+        try
+        {
+            var result = await data.Maintenance.CreateBackupAsync("manual", CancellationToken.None).ConfigureAwait(true);
+            if (result.IsSuccess)
+            {
+                _context.Announce(_context.Strings.GetString("Backups_Created"));
+            }
+            else
+            {
+                ErrorMessage = CommandErrorText.Describe(result.Error!, "Record_Backup", _context.Strings);
+            }
+
+            await RefreshBackupAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            IsBackingUp = false;
+        }
     }
 
     // ----- Lookups -----
