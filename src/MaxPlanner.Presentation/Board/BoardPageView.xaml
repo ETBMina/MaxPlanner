@@ -9,15 +9,44 @@
     IsTabStop="False">
     <UserControl.Resources>
         <DataTemplate x:Key="TaskCardTemplate" x:DataType="local:BoardCardViewModel">
-            <Border Margin="0,0,0,8" Padding="12" Style="{StaticResource CardBorderStyle}">
+            <!-- Design §4.2: a card being moved is dimmed and captioned "Moving" until the move is saved. -->
+            <Border
+                Margin="0,0,0,8"
+                Padding="12"
+                Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
+                Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
+                    <Grid ColumnSpacing="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            MaxLines="3"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind Title, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="Wrap"
+                            ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                        <Button
+                            Grid.Column="1"
+                            Padding="6,4"
+                            VerticalAlignment="Top"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
+                            AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="OnCardMenuButtonClick"
+                            IsTabStop="False"
+                            ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
+                            <FontIcon FontSize="14" Glyph="&#xE712;" />
+                        </Button>
+                    </Grid>
                     <TextBlock
-                        MaxLines="3"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        Text="{x:Bind Title, Mode=OneWay}"
-                        TextTrimming="CharacterEllipsis"
-                        TextWrapping="Wrap"
-                        ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                        x:Uid="Board_MovingCaption"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
                     <Border
                         HorizontalAlignment="Left"
                         Style="{StaticResource ServiceChipStyle}"
@@ -102,12 +131,30 @@
 
         <DataTemplate x:Key="SubtaskCardTemplate" x:DataType="local:BoardCardViewModel">
             <!-- Design §4.2: a 3-epx left border and the Subtask glyph distinguish the kind without color. -->
-            <Border Margin="0,0,0,8" Style="{StaticResource CardBorderStyle}">
+            <Border
+                Margin="0,0,0,8"
+                Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
+                Style="{StaticResource CardBorderStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <Button
+                        Grid.Column="2"
+                        Margin="0,8,8,0"
+                        Padding="6,4"
+                        VerticalAlignment="Top"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="OnCardMenuButtonClick"
+                        IsTabStop="False"
+                        ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
+                        <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    </Button>
                     <Border Background="{ThemeResource SubtaskCardAccentBrush}" CornerRadius="8,0,0,8" />
                     <StackPanel
                         Grid.Column="1"
@@ -159,6 +206,11 @@
                             Style="{StaticResource CaptionTextBlockStyle}"
                             Text="{x:Bind DatesText, Mode=OneWay}"
                             Visibility="{x:Bind common:BindFunctions.Visible(HasDates), Mode=OneWay}" />
+                        <TextBlock
+                            x:Uid="Board_MovingCaption"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -185,6 +237,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <StackPanel
+                        Margin="0,0,32,0"
                         Padding="4,0"
                         Orientation="Horizontal"
                         Spacing="8">
@@ -203,14 +256,43 @@
                                 Text="{x:Bind CountText, Mode=OneWay}" />
                         </Border>
                     </StackPanel>
+                    <!-- Design §4.2: + creates a task in this column's status (B-02.1). -->
+                    <Button
+                        Padding="6,4"
+                        HorizontalAlignment="Right"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnAddButton_', StatusId.Value), Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind AddButtonName, Mode=OneWay}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="OnColumnAddClick"
+                        ToolTipService.ToolTip="{x:Bind AddButtonName, Mode=OneWay}">
+                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                    </Button>
                     <!-- The column fills the viewport height, so this list is bounded and virtualizes (T-08). -->
+                    <!--
+                        Native ListView drag and drop (design §9) [gallery-listview-3]. The list never reorders its own
+                        items: a drop runs a move command, and the card moves only after it committed (B-07).
+                    -->
                     <local:BoardCardList
                         Grid.Row="1"
+                        AllowDrop="True"
                         AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnList_', StatusId.Value), Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                        BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                        BorderThickness="0"
+                        CanDragItems="True"
+                        ContextRequested="OnCardContextRequested"
+                        DragItemsCompleted="OnDragItemsCompleted"
+                        DragItemsStarting="OnDragItemsStarting"
+                        DragLeave="OnListDragLeave"
+                        DragOver="OnListDragOver"
+                        Drop="OnListDrop"
                         ItemTemplateSelector="{StaticResource CardTemplateSelector}"
                         ItemsSource="{x:Bind Cards, Mode=OneTime}"
-                        SelectionMode="None">
+                        Loaded="OnListLoaded"
+                        PreviewKeyDown="OnListPreviewKeyDown"
+                        SelectionMode="None"
+                        Unloaded="OnListUnloaded">
                         <local:BoardCardList.ItemContainerStyle>
                             <Style TargetType="local:BoardCardContainer">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -230,21 +312,99 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Page header (design §2.3). Search, Filters, New task, and the CommandBar arrive with Phases 3, 4 and 11. -->
+        <!-- Page header (design §2.3). The shared Filters flyout and CommandBar arrive with Phase 11. -->
         <StackPanel
             x:Name="HeaderRoot"
             Padding="32,24,32,12"
-            Spacing="2">
-            <TextBlock
-                x:Name="PageTitle"
-                x:Uid="Board_PageTitle"
-                AutomationProperties.AutomationId="Board_PageTitle"
-                AutomationProperties.HeadingLevel="Level1"
-                Style="{StaticResource PageTitleTextStyle}" />
-            <TextBlock
-                AutomationProperties.AutomationId="Board_PageSubtitle"
-                Style="{StaticResource PageSubtitleTextStyle}"
-                Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
+            Spacing="8">
+            <StackPanel Spacing="2">
+                <TextBlock
+                    x:Name="PageTitle"
+                    x:Uid="Board_PageTitle"
+                    AutomationProperties.AutomationId="Board_PageTitle"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource PageTitleTextStyle}" />
+                <TextBlock
+                    AutomationProperties.AutomationId="Board_PageSubtitle"
+                    Style="{StaticResource PageSubtitleTextStyle}"
+                    Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
+            </StackPanel>
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <AutoSuggestBox
+                    x:Name="SearchBox"
+                    x:Uid="Board_SearchBox"
+                    MinWidth="200"
+                    MaxWidth="320"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="Board_SearchBox"
+                    AutomationProperties.LandmarkType="Search"
+                    QueryIcon="Find"
+                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button
+                    x:Uid="Board_NewTaskButton"
+                    Grid.Column="1"
+                    AutomationProperties.AutomationId="Board_NewTaskButton"
+                    Command="{x:Bind ViewModel.NewTaskCommand}"
+                    Style="{StaticResource AccentButtonStyle}">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="N" Modifiers="Control" />
+                    </Button.KeyboardAccelerators>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                        <TextBlock x:Uid="Board_NewTaskText" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <!-- Design §4.2 S: one column per viewport, chosen here or with the previous/next buttons. -->
+            <Grid
+                x:Name="ColumnPickerRow"
+                ColumnSpacing="8"
+                Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    x:Uid="Board_PrevColumnButton"
+                    AutomationProperties.AutomationId="Board_PrevColumnButton"
+                    Command="{x:Bind ViewModel.PreviousColumnCommand}">
+                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                </Button>
+                <ComboBox
+                    x:Name="ColumnPicker"
+                    x:Uid="Board_ColumnPickerCombo"
+                    Grid.Column="1"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="Board_ColumnPickerCombo"
+                    ItemsSource="{x:Bind ViewModel.Columns, Mode=OneTime}"
+                    SelectionChanged="OnColumnPickerSelectionChanged" />
+                <Button
+                    x:Uid="Board_NextColumnButton"
+                    Grid.Column="2"
+                    AutomationProperties.AutomationId="Board_NextColumnButton"
+                    Command="{x:Bind ViewModel.NextColumnCommand}">
+                    <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                </Button>
+            </Grid>
+            <!-- Design §4.2 filtered mode: reordering is off; a status move appends to the end (B-07). -->
+            <InfoBar
+                x:Uid="Board_FilteredInfoBar"
+                AutomationProperties.AutomationId="Board_FilteredInfoBar"
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.IsFiltered, Mode=OneWay}"
+                Severity="Informational">
+                <InfoBar.ActionButton>
+                    <Button
+                        x:Uid="Board_ClearSearchButton"
+                        AutomationProperties.AutomationId="Board_ClearAllFiltersLink"
+                        Command="{x:Bind ViewModel.ClearSearchCommand}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
         </StackPanel>
 
         <controls:StateView

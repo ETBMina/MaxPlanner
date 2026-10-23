@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using MaxPlanner.Application.ChangeRequests;
+using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Tasks;
@@ -33,6 +34,7 @@ internal sealed record MigrationHistoryEntry(int Version, string Name, DateTimeO
 [JsonSerializable(typeof(SubtaskCardId))]
 [JsonSerializable(typeof(long))]
 [JsonSerializable(typeof(CascadeDeletionSummary))]
+[JsonSerializable(typeof(TaskDeletionSummary))]
 internal sealed partial class StorageJsonContext : JsonSerializerContext;
 
 internal static class StorageJson
@@ -44,7 +46,7 @@ internal static class StorageJson
     /// </summary>
     private static readonly HashSet<Type> LedgerResultTypes =
     [
-        typeof(TaskId), typeof(ChangeRequestId), typeof(SubtaskCardId), typeof(long), typeof(CascadeDeletionSummary),
+        typeof(TaskId), typeof(ChangeRequestId), typeof(SubtaskCardId), typeof(long), typeof(CascadeDeletionSummary), typeof(TaskDeletionSummary),
     ];
 
     /// <exception cref="NotSupportedException"><typeparamref name="T"/> is not a registered ledger result type.</exception>

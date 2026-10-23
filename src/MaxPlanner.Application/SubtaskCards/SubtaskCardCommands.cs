@@ -141,6 +141,38 @@ public sealed class PopOutChecklistItem
     }
 }
 
+public sealed record DeleteSubtaskCardCommand(OperationId OperationId, SubtaskCardId CardId, long ExpectedRevision);
+
+/// <summary>
+/// Deletes one Subtask card after the user confirmed it (B-16.7). The parent task is unchanged. The cards
+/// of an archived parent are read-only until the parent is restored (B-16.6).
+/// </summary>
+public sealed class DeleteSubtaskCard
+{
+    public const string OperationKind = "subtask-card.delete";
+
+    private readonly IMutationCoordinator _coordinator;
+
+    public DeleteSubtaskCard(IMutationCoordinator coordinator) => _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
+
+    public Task<AppResult<CommandOutcome<SubtaskCardId>>> ExecuteAsync(DeleteSubtaskCardCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        return _coordinator.ExecuteAsync(command.OperationId, OperationKind, tx =>
+        {
+            if (!TransactionGuards.TryLoadEditableSubtaskCard(tx, command.CardId, command.ExpectedRevision, out var card, out var error))
+            {
+                return TxResult.Abort<SubtaskCardId>(error);
+            }
+
+            tx.SubtaskCards.Delete(card.Id);
+            TransactionGuards.Tombstone(tx, EntityKind.SubtaskCard, card.Id.Value);
+            tx.Changes.DeleteSubtaskCard(card.Id);
+            return TxResult.Commit(card.Id);
+        }, cancellationToken);
+    }
+}
+
 internal static class SubtaskCardRules
 {
     /// <summary>The new card's ID is unused and the parent is below the B-02.10 card limit.</summary>

@@ -35,14 +35,7 @@ internal sealed class WorkspaceHarness : IDisposable
         Dataset = dataset;
         Paths = paths;
         Coordinator = new ScriptedCoordinator(dataset.Coordinator);
-        UseCases = new WorkspaceUseCases(
-            new CreateTask(Coordinator),
-            new UpdateTaskContent(Coordinator),
-            new MoveTask(Coordinator),
-            new UpdateSubtaskCardContent(Coordinator),
-            new MoveSubtaskCard(Coordinator),
-            new AddChecklistItem(Coordinator),
-            new SetChecklistItemCompleted(Coordinator));
+        UseCases = WorkspaceUseCases.Create(Coordinator);
         Store = new WorkspaceProjectionStore(dataset.Coordinator, dataset.Snapshots, new ReadModelComposer(), Clock, Days, StoreScheduler);
         _uiContext = new UiSynchronizationContext(Ui);
         _previousContext = SynchronizationContext.Current;

@@ -6,6 +6,8 @@ using MaxPlanner.Domain.Checklists;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
 using MaxPlanner.Domain.Tasks;
+using MaxPlanner.Domain.Values;
+using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Infrastructure.Persistence.Mapping;
 using Microsoft.Data.Sqlite;
 
@@ -386,6 +388,32 @@ internal sealed class SqliteGeneralTodoStore(SqliteWriteTransaction tx) : IGener
 internal sealed class SqliteWorkflowReader(SqliteWriteTransaction tx) : IWorkflowReader
 {
     public WorkflowSnapshot Read() => tx.Loader.LoadWorkflow();
+}
+
+/// <summary>People and tags added by a saved draft (B-02.6); the UNIQUE name_norm column refuses duplicates.</summary>
+internal sealed class SqliteLookupStore(SqliteWriteTransaction tx) : ILookupStore
+{
+    public void InsertPerson(PersonDefinition person)
+    {
+        ArgumentNullException.ThrowIfNull(person);
+        Insert("INSERT INTO people (id, name, name_norm) VALUES ($id, $name, $norm);", "people.insert", person.Id.Value, person.Name);
+    }
+
+    public void InsertTag(TagDefinition tag)
+    {
+        ArgumentNullException.ThrowIfNull(tag);
+        Insert("INSERT INTO tags (id, name, name_norm) VALUES ($id, $name, $norm);", "tags.insert", tag.Id.Value, tag.Name);
+    }
+
+    private void Insert(string sql, string write, Guid id, LookupName name)
+    {
+        tx.BeforeWrite(write);
+        var command = tx.Command(sql);
+        command.Add("$id", id);
+        command.Add("$name", name.Display);
+        command.Add("$norm", name.Normalized);
+        tx.Execute(command);
+    }
 }
 
 internal sealed class SqliteTombstoneStore(SqliteWriteTransaction tx) : ITombstoneStore

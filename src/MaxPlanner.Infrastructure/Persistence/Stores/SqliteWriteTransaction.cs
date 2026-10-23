@@ -42,6 +42,7 @@ internal sealed class SqliteWriteTransaction : IWriteTransaction
         Reviews = new SqliteReviewStore(this);
         GeneralTodos = new SqliteGeneralTodoStore(this);
         Workflow = new SqliteWorkflowReader(this);
+        Lookups = new SqliteLookupStore(this);
         Tombstones = new SqliteTombstoneStore(this);
     }
 
@@ -64,6 +65,8 @@ internal sealed class SqliteWriteTransaction : IWriteTransaction
     public IGeneralTodoStore GeneralTodos { get; }
 
     public IWorkflowReader Workflow { get; }
+
+    public ILookupStore Lookups { get; }
 
     public ITombstoneStore Tombstones { get; }
 

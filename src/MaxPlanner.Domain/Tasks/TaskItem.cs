@@ -18,6 +18,17 @@ public sealed record TaskContent(
     IReadOnlyDictionary<FieldId, CustomValue> CustomValues);
 
 /// <summary>
+/// Everything a task editor saves at once (B-02.8): the content, priority, explicit date edits, and the
+/// complete ordered checklist (existing items keep their IDs, B-02.7).
+/// </summary>
+public sealed record TaskEdit(
+    TaskContent Content,
+    PriorityId PriorityId,
+    DateIntent Start,
+    DateIntent End,
+    IReadOnlyList<ChecklistItem> ChecklistItems);
+
+/// <summary>
 /// A task (B-02). Immutable: every change returns a new instance with the next revision, so cached
 /// read models are never mutated in place (AGENTS §4).
 /// </summary>
@@ -203,6 +214,91 @@ public sealed record TaskItem
         return InheritancePolicy.ValidateOwnFields(IsLinked, content.OwnTitle, content.Service) is { } invalid
             ? DomainResult.Failure<TaskItem>(invalid)
             : DomainResult.Success(WithContent(content).Touch(nowUtc));
+    }
+
+    /// <summary>
+    /// Applies a whole editor draft as one change with one revision (B-02.8): content, priority, a status
+    /// transition with B-04 dates, the checklist, and optionally the permanent link to a CR (B-02.4).
+    /// </summary>
+    /// <param name="current">The definition of the task's current status (checked against <see cref="StatusId"/>).</param>
+    /// <param name="target">The status after the edit; equal to <paramref name="current"/> when it is unchanged.</param>
+    /// <param name="rank">The Board rank after the edit; the caller appends to the target column on a status change.</param>
+    /// <param name="linkTo">
+    /// Links this unlinked task in the same change. The edit is validated as the unlinked task it still is
+    /// (its own title is required), then the title moves to preserved metadata exactly as <see cref="LinkTo"/> does.
+    /// </param>
+    public DomainResult<TaskItem> Edit(
+        TaskEdit edit,
+        TaskStatusDefinition current,
+        TaskStatusDefinition target,
+        long rank,
+        ChangeRequestId? linkTo,
+        DateOnly today,
+        DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(target);
+        if (EnsureEditable() is { } readOnly)
+        {
+            return DomainResult.Failure<TaskItem>(readOnly);
+        }
+
+        if (current.Id != StatusId)
+        {
+            return DomainResult.Failure<TaskItem>(DomainErrorCodes.StatusMismatch, "Status");
+        }
+
+        if (linkTo is not null && IsLinked)
+        {
+            return DomainResult.Failure<TaskItem>(DomainErrorCodes.TaskAlreadyLinked, "ChangeRequest");
+        }
+
+        var content = edit.Content;
+        if (InheritancePolicy.ValidateOwnFields(IsLinked, content.OwnTitle, content.Service) is { } ownership)
+        {
+            return DomainResult.Failure<TaskItem>(ownership);
+        }
+
+        // D10: a link needs a Service, because siblings under one CR share the CR's title.
+        if (linkTo is not null && content.Service is null)
+        {
+            return DomainResult.Failure<TaskItem>(DomainErrorCodes.ServiceRequiredWhenLinked, "Service");
+        }
+
+        var items = edit.ChecklistItems;
+        if (items.Count > DomainLimits.ChecklistItemsPerTask)
+        {
+            return DomainResult.Failure<TaskItem>(DomainErrorCodes.TooManyItems, "ChecklistItems", DomainLimits.ChecklistItemsPerTask);
+        }
+
+        if (items.DistinctBy(i => i.Id).Count() != items.Count)
+        {
+            return DomainResult.Failure<TaskItem>(DomainErrorCodes.DuplicateKey, "ChecklistItems");
+        }
+
+        return TaskDatePolicy.Apply(Dates, current, target, edit.Start, edit.End, today).Map(dates =>
+        {
+            var edited = WithContent(content) with
+            {
+                PriorityId = edit.PriorityId,
+                StatusId = target.Id,
+                Dates = dates,
+                Rank = rank,
+                ChecklistItems = [.. items],
+            };
+            if (linkTo is { } changeRequest)
+            {
+                edited = edited with
+                {
+                    ChangeRequestId = changeRequest,
+                    OwnTitle = null,
+                    Preserved = Preserved with { PreLinkTitle = content.OwnTitle?.Value },
+                };
+            }
+
+            return edited.Touch(nowUtc);
+        });
     }
 
     public DomainResult<TaskItem> SetPriority(PriorityId priority, DateTimeOffset nowUtc) =>

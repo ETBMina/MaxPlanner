@@ -613,4 +613,604 @@
   <data name="Checklists_AddItemButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Add item (Enter)</value>
   </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Common_None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Field_StartDate" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="Field_EndDate" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="Field_People" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="Field_ChangeRequest" xml:space="preserve">
+    <value>Change request</value>
+  </data>
+  <data name="Board_CardHelpText" xml:space="preserve">
+    <value>Press Shift F10 for actions</value>
+  </data>
+  <data name="Board_CardMenuName" xml:space="preserve">
+    <value>More actions for {0}</value>
+  </data>
+  <data name="Board_ColumnAddName" xml:space="preserve">
+    <value>New task in {0}</value>
+  </data>
+  <data name="Board_ColumnPickerItem" xml:space="preserve">
+    <value>Column: {0} ({1})</value>
+  </data>
+  <data name="Board_CountFiltered" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="Board_DropCaption" xml:space="preserve">
+    <value>Drop to move to {0}</value>
+  </data>
+  <data name="Board_DropAppendCaption" xml:space="preserve">
+    <value>Will be added to the end of {0}</value>
+  </data>
+  <data name="Board_MenuMoveTo" xml:space="preserve">
+    <value>Move to</value>
+  </data>
+  <data name="Board_MoveFailed" xml:space="preserve">
+    <value>Couldn't move {0}. It stays in {1}.</value>
+  </data>
+  <data name="Board_Moved" xml:space="preserve">
+    <value>Moved {0} to {1}, position {2} of {3}</value>
+  </data>
+  <data name="Board_MovedHidden" xml:space="preserve">
+    <value>Moved {0} to {1}. It is hidden by the current search.</value>
+  </data>
+  <data name="Board_ReorderOff" xml:space="preserve">
+    <value>Reordering within a column is off while search is active.</value>
+  </data>
+  <data name="Board_ReorderOffCaption" xml:space="preserve">
+    <value>Reordering is off while search is active</value>
+  </data>
+  <data name="Board_SummaryFiltered" xml:space="preserve">
+    <value>Filtered: {0} of {1} cards</value>
+  </data>
+  <data name="Board_MenuOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Board_MenuEndOfColumn" xml:space="preserve">
+    <value>End of column</value>
+  </data>
+  <data name="Board_MenuTopOfColumn" xml:space="preserve">
+    <value>Top of column</value>
+  </data>
+  <data name="Board_MenuBottomOfColumn" xml:space="preserve">
+    <value>Bottom of column</value>
+  </data>
+  <data name="Board_MenuMoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="Board_MenuMoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Board_MenuCopy" xml:space="preserve">
+    <value>Copy…</value>
+  </data>
+  <data name="Board_MenuAddSubtaskCard" xml:space="preserve">
+    <value>Add Subtask card</value>
+  </data>
+  <data name="Board_MenuArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="Board_MenuDelete" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="Board_SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="Board_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="Board_NewTaskButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New task</value>
+  </data>
+  <data name="Board_NewTaskButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>New task (Ctrl+N)</value>
+  </data>
+  <data name="Board_NewTaskText.Text" xml:space="preserve">
+    <value>New task</value>
+  </data>
+  <data name="Board_PrevColumnButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous column</value>
+  </data>
+  <data name="Board_PrevColumnButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous column</value>
+  </data>
+  <data name="Board_NextColumnButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next column</value>
+  </data>
+  <data name="Board_NextColumnButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next column</value>
+  </data>
+  <data name="Board_ColumnPickerCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Column</value>
+  </data>
+  <data name="Board_FilteredInfoBar.Message" xml:space="preserve">
+    <value>Reordering within a column is off while search or filters are active. Moving to another status adds the card to the end.</value>
+  </data>
+  <data name="Board_ClearSearchButton.Content" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="Board_MovingCaption.Text" xml:space="preserve">
+    <value>Moving</value>
+  </data>
+  <data name="Grid_RowMenuName" xml:space="preserve">
+    <value>More actions for {0}</value>
+  </data>
+  <data name="Checklists_OpenTaskName" xml:space="preserve">
+    <value>Open task {0}</value>
+  </data>
+  <data name="Checklists_OpenTaskLink.Content" xml:space="preserve">
+    <value>Open task</value>
+  </data>
+  <data name="Copy_Created" xml:space="preserve">
+    <value>Created a copy: {0}</value>
+  </data>
+  <data name="Copy_NoSubtaskCards" xml:space="preserve">
+    <value>Subtask cards are not copied.</value>
+  </data>
+  <data name="Copy_ReviewCopied" xml:space="preserve">
+    <value>Copied: {0}</value>
+  </data>
+  <data name="Copy_ReviewPriority" xml:space="preserve">
+    <value>Priority: {0}</value>
+  </data>
+  <data name="Copy_ReviewService" xml:space="preserve">
+    <value>Service: {0}</value>
+  </data>
+  <data name="Copy_ReviewStatus" xml:space="preserve">
+    <value>Status: {0}</value>
+  </data>
+  <data name="Copy_ReviewTitle" xml:space="preserve">
+    <value>Title: {0}</value>
+  </data>
+  <data name="Copy_SourceCaption" xml:space="preserve">
+    <value>Copy of: {0}</value>
+  </data>
+  <data name="Copy_SourceCaptionLinked" xml:space="preserve">
+    <value>Copy of: {0} · {1}</value>
+  </data>
+  <data name="Copy_Unlinked" xml:space="preserve">
+    <value>New copy will be unlinked.</value>
+  </data>
+  <data name="Copy_WillLink" xml:space="preserve">
+    <value>New copy will be linked permanently to {0}.</value>
+  </data>
+  <data name="Copy_ReviewButton" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="Copy_CreateButton" xml:space="preserve">
+    <value>Create copy</value>
+  </data>
+  <data name="Copy_People" xml:space="preserve">
+    <value>people</value>
+  </data>
+  <data name="Copy_Dates" xml:space="preserve">
+    <value>dates</value>
+  </data>
+  <data name="Copy_Tags" xml:space="preserve">
+    <value>tags</value>
+  </data>
+  <data name="Copy_Notes" xml:space="preserve">
+    <value>notes</value>
+  </data>
+  <data name="Copy_Checklist" xml:space="preserve">
+    <value>checklist items</value>
+  </data>
+  <data name="Copy_ChecklistPreserved" xml:space="preserve">
+    <value>checklist items with their completion</value>
+  </data>
+  <data name="Copy_CustomValues" xml:space="preserve">
+    <value>custom values</value>
+  </data>
+  <data name="CopyTask_Dialog.Title" xml:space="preserve">
+    <value>Copy task</value>
+  </data>
+  <data name="CopyTask_Dialog.CloseButtonText" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CopyTask_TitleBox.Header" xml:space="preserve">
+    <value>Title *</value>
+  </data>
+  <data name="CopyTask_StatusCombo.Header" xml:space="preserve">
+    <value>Status *</value>
+  </data>
+  <data name="CopyTask_PriorityCombo.Header" xml:space="preserve">
+    <value>Priority *</value>
+  </data>
+  <data name="CopyTask_KeepStatusCheck.Content" xml:space="preserve">
+    <value>Keep current status</value>
+  </data>
+  <data name="CopyTask_CopyHeader.Text" xml:space="preserve">
+    <value>Copy from the source</value>
+  </data>
+  <data name="CopyTask_PeopleCheck.Content" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="CopyTask_DatesCheck.Content" xml:space="preserve">
+    <value>Dates</value>
+  </data>
+  <data name="CopyTask_TagsCheck.Content" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="CopyTask_NotesCheck.Content" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="CopyTask_ChecklistCheck.Content" xml:space="preserve">
+    <value>Checklist items</value>
+  </data>
+  <data name="CopyTask_PreserveCompletionCheck.Content" xml:space="preserve">
+    <value>Preserve completion</value>
+  </data>
+  <data name="CopyTask_CustomValuesCheck.Content" xml:space="preserve">
+    <value>Custom values</value>
+  </data>
+  <data name="CopyTask_NoSubtaskCards.Text" xml:space="preserve">
+    <value>Subtask cards are not copied.</value>
+  </data>
+  <data name="CopyTask_LinkToCrButton.Content" xml:space="preserve">
+    <value>Link to CR…</value>
+  </data>
+  <data name="CopyTask_ReviewHeading.Text" xml:space="preserve">
+    <value>Review the copy</value>
+  </data>
+  <data name="CopyTask_BackButton.Content" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="DeleteSubtaskCard_Title" xml:space="preserve">
+    <value>Delete Subtask card?</value>
+  </data>
+  <data name="DeleteSubtaskCard_Message" xml:space="preserve">
+    <value>Delete Subtask card '{0}'? The parent task is unchanged. This can't be undone.</value>
+  </data>
+  <data name="DeleteSubtaskCard_DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DeleteTask_Title" xml:space="preserve">
+    <value>Delete task?</value>
+  </data>
+  <data name="DeleteTask_Message" xml:space="preserve">
+    <value>Delete '{0}' permanently? Its {1} checklist items and {2} Subtask cards are deleted too. This can't be undone.</value>
+  </data>
+  <data name="DeleteTask_MessageLinked" xml:space="preserve">
+    <value>Delete '{0}' permanently? Its {1} checklist items and {2} Subtask cards are deleted too. Its CR stays. This can't be undone.</value>
+  </data>
+  <data name="DeleteTask_DeleteButton" xml:space="preserve">
+    <value>Delete task</value>
+  </data>
+  <data name="DeleteTask_ArchiveInsteadButton" xml:space="preserve">
+    <value>Archive instead</value>
+  </data>
+  <data name="LinkCr_InheritLine" xml:space="preserve">
+    <value>Task number, squad and owner come from {0}.</value>
+  </data>
+  <data name="LinkCr_TitleLine" xml:space="preserve">
+    <value>The title becomes '{0}'.</value>
+  </data>
+  <data name="LinkCr_Secondary" xml:space="preserve">
+    <value>{0} · {1} linked tasks</value>
+  </data>
+  <data name="LinkCr_SecondaryOne" xml:space="preserve">
+    <value>{0} · 1 linked task</value>
+  </data>
+  <data name="LinkCr_BackButton.Content" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="LinkCr_ConfirmHeading.Text" xml:space="preserve">
+    <value>Link permanently?</value>
+  </data>
+  <data name="LinkCr_LinkButton.Content" xml:space="preserve">
+    <value>Use this CR</value>
+  </data>
+  <data name="LinkCr_NextButton.Content" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="LinkCr_PermanentLine.Text" xml:space="preserve">
+    <value>This link can't be removed or changed. To fix a wrong link, delete or copy the task.</value>
+  </data>
+  <data name="LinkCr_PickHeading.Text" xml:space="preserve">
+    <value>Link to a change request</value>
+  </data>
+  <data name="LinkCr_ResultsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Change requests</value>
+  </data>
+  <data name="LinkCr_SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search by number, title or owner</value>
+  </data>
+  <data name="LinkCr_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search change requests</value>
+  </data>
+  <data name="LinkCr_ServiceBox.Header" xml:space="preserve">
+    <value>Service *</value>
+  </data>
+  <data name="SubtaskCard_Created" xml:space="preserve">
+    <value>Added Subtask card {0}</value>
+  </data>
+  <data name="SubtaskCard_Deleted" xml:space="preserve">
+    <value>Deleted Subtask card {0}</value>
+  </data>
+  <data name="SubtaskPrompt_AddButton" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="SubtaskPrompt_SubtitleHeader" xml:space="preserve">
+    <value>Subtitle *</value>
+  </data>
+  <data name="SubtaskPrompt_Title" xml:space="preserve">
+    <value>Add Subtask card</value>
+  </data>
+  <data name="Task_Archived" xml:space="preserve">
+    <value>Archived {0}</value>
+  </data>
+  <data name="Task_Deleted" xml:space="preserve">
+    <value>Deleted {0}</value>
+  </data>
+  <data name="Task_Restored" xml:space="preserve">
+    <value>Restored {0}</value>
+  </data>
+  <data name="TokenPicker_AddNew" xml:space="preserve">
+    <value>Add '{0}'</value>
+  </data>
+  <data name="TokenPicker_Remove" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
+  <data name="TaskEditor_ChecklistSummary" xml:space="preserve">
+    <value>{0} items, {1} done</value>
+  </data>
+  <data name="TaskEditor_ConflictMessage" xml:space="preserve">
+    <value>This task changed elsewhere since you opened it. Your changes are not saved.</value>
+  </data>
+  <data name="TaskEditor_CrChangedMessage" xml:space="preserve">
+    <value>{0} changed. Review the new values before saving.</value>
+  </data>
+  <data name="TaskEditor_CreatedCaption" xml:space="preserve">
+    <value>Created {0}</value>
+  </data>
+  <data name="TaskEditor_DeletedElsewhere" xml:space="preserve">
+    <value>This task was deleted elsewhere. Your changes can't be saved.</value>
+  </data>
+  <data name="TaskEditor_FromCrHelper" xml:space="preserve">
+    <value>From {0}. Edit them on the CR.</value>
+  </data>
+  <data name="TaskEditor_InheritedTitleHelper" xml:space="preserve">
+    <value>Inherited from {0}. Edit it on the CR.</value>
+  </data>
+  <data name="TaskEditor_NoOwner" xml:space="preserve">
+    <value>No owner</value>
+  </data>
+  <data name="TaskEditor_NoTaskNumber" xml:space="preserve">
+    <value>No task number</value>
+  </data>
+  <data name="TaskEditor_PendingLinkWarning" xml:space="preserve">
+    <value>This link is permanent. When you save, the title becomes '{0}' and the task number, squad and owner come from {1}.</value>
+  </data>
+  <data name="TaskEditor_PendingTitleHelper" xml:space="preserve">
+    <value>This becomes the title from {0} when you save.</value>
+  </data>
+  <data name="TaskEditor_PoppedOut" xml:space="preserve">
+    <value>Moved to a Subtask card</value>
+  </data>
+  <data name="TaskEditor_ServiceHelper" xml:space="preserve">
+    <value>Tells this task apart from the other {0} tasks on {1}.</value>
+  </data>
+  <data name="TaskEditor_TitleNew" xml:space="preserve">
+    <value>New task</value>
+  </data>
+  <data name="TaskEditor_Title" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="TaskEditor_CreateButton" xml:space="preserve">
+    <value>Create task</value>
+  </data>
+  <data name="TaskEditor_SaveButton" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="TaskEditor_ServiceHeader" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="TaskEditor_ServiceRequiredHeader" xml:space="preserve">
+    <value>Service *</value>
+  </data>
+  <data name="TaskEditor_FixField" xml:space="preserve">
+    <value>Fix 1 field to save</value>
+  </data>
+  <data name="TaskEditor_FixFields" xml:space="preserve">
+    <value>Fix {0} fields to save</value>
+  </data>
+  <data name="TaskEditor_StartHelper" xml:space="preserve">
+    <value>Set automatically when moved to {0}</value>
+  </data>
+  <data name="TaskEditor_EndHelper" xml:space="preserve">
+    <value>Filled automatically when moved to {0}</value>
+  </data>
+  <data name="TaskEditor_AddChecklistBox.PlaceholderText" xml:space="preserve">
+    <value>Add a checklist item</value>
+  </data>
+  <data name="TaskEditor_AddChecklistBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add a checklist item</value>
+  </data>
+  <data name="TaskEditor_AddChecklistButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add checklist item</value>
+  </data>
+  <data name="TaskEditor_AddChecklistButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Add checklist item (Enter)</value>
+  </data>
+  <data name="TaskEditor_AddSubtaskCardBox.PlaceholderText" xml:space="preserve">
+    <value>Subtitle of a new Subtask card</value>
+  </data>
+  <data name="TaskEditor_AddSubtaskCardBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Subtitle of a new Subtask card</value>
+  </data>
+  <data name="TaskEditor_AddSubtaskCardButton.Content" xml:space="preserve">
+    <value>Add Subtask card</value>
+  </data>
+  <data name="TaskEditor_ArchivedInfoBar.Message" xml:space="preserve">
+    <value>Archived tasks are read-only. Restore to edit.</value>
+  </data>
+  <data name="TaskEditor_ChecklistHeader.Text" xml:space="preserve">
+    <value>Checklist items</value>
+  </data>
+  <data name="TaskEditor_ChecklistList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Checklist items</value>
+  </data>
+  <data name="TaskEditor_ChooseDifferentCrButton.Content" xml:space="preserve">
+    <value>Choose a different CR</value>
+  </data>
+  <data name="TaskEditor_ClearStartDateButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Clear start date</value>
+  </data>
+  <data name="TaskEditor_ClearStartDateButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear start date</value>
+  </data>
+  <data name="TaskEditor_ClearEndDateButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Clear end date</value>
+  </data>
+  <data name="TaskEditor_ClearEndDateButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear end date</value>
+  </data>
+  <data name="TaskEditor_CrGroupHeader.Text" xml:space="preserve">
+    <value>Change request</value>
+  </data>
+  <data name="TaskEditor_DesignersPicker.Header" xml:space="preserve">
+    <value>Designers</value>
+  </data>
+  <data name="TaskEditor_DevelopersPicker.Header" xml:space="preserve">
+    <value>Developers</value>
+  </data>
+  <data name="TaskEditor_TagsPicker.Header" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="TaskEditor_StartDate.Header" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="TaskEditor_EndDate.Header" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="TaskEditor_ItemMoveUp.Text" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="TaskEditor_ItemMoveDown.Text" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="TaskEditor_ItemPopOut.Text" xml:space="preserve">
+    <value>Pop out to card</value>
+  </data>
+  <data name="TaskEditor_ItemDelete.Text" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="TaskEditor_LinkToCrButton.Content" xml:space="preserve">
+    <value>Link to CR…</value>
+  </data>
+  <data name="TaskEditor_MoreMenu.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="TaskEditor_MoreMenu.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="TaskEditor_MoreCopy.Text" xml:space="preserve">
+    <value>Copy…</value>
+  </data>
+  <data name="TaskEditor_MoreArchive.Text" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="TaskEditor_MoreRestore.Text" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="TaskEditor_MoreAddSubtaskCard.Text" xml:space="preserve">
+    <value>Add Subtask card</value>
+  </data>
+  <data name="TaskEditor_MoreDelete.Text" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="TaskEditor_NotLinked.Text" xml:space="preserve">
+    <value>Not linked to a CR</value>
+  </data>
+  <data name="TaskEditor_NotesBox.Header" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="TaskEditor_OwnerLabel.Text" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="TaskEditor_SquadLabel.Text" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="TaskEditor_TaskNumberLabel.Text" xml:space="preserve">
+    <value>Task number</value>
+  </data>
+  <data name="TaskEditor_StatusCombo.Header" xml:space="preserve">
+    <value>Status *</value>
+  </data>
+  <data name="TaskEditor_PriorityCombo.Header" xml:space="preserve">
+    <value>Priority *</value>
+  </data>
+  <data name="TaskEditor_RequiredLegend.Text" xml:space="preserve">
+    <value>* Required</value>
+  </data>
+  <data name="TaskEditor_RestoreButton.Content" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="TaskEditor_Saving.Text" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="TaskEditor_SubtaskCardsHeader.Text" xml:space="preserve">
+    <value>Subtask cards</value>
+  </data>
+  <data name="TaskEditor_SubtaskCardsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Subtask cards</value>
+  </data>
+  <data name="TaskEditor_TitleBox.Header" xml:space="preserve">
+    <value>Title *</value>
+  </data>
+  <data name="TaskEditor_TitleLabel.Text" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="TaskEditor_ValidationInfoBar.Title" xml:space="preserve">
+    <value>Can't save</value>
+  </data>
+  <data name="DirtyClose_InfoBar.Message" xml:space="preserve">
+    <value>You have unsaved changes.</value>
+  </data>
+  <data name="DirtyClose_SaveButton.Content" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="DirtyClose_DiscardButton.Content" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="DirtyClose_ContinueButton.Content" xml:space="preserve">
+    <value>Continue editing</value>
+  </data>
+  <data name="Conflict_ApplyButton.Content" xml:space="preserve">
+    <value>Apply to draft</value>
+  </data>
+  <data name="Conflict_FieldHeader.Text" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="Conflict_MineHeader.Text" xml:space="preserve">
+    <value>Your draft</value>
+  </data>
+  <data name="Conflict_SavedHeader.Text" xml:space="preserve">
+    <value>Saved now</value>
+  </data>
+  <data name="Conflict_UseMineHeader.Text" xml:space="preserve">
+    <value>Use mine</value>
+  </data>
+  <data name="Conflict_ReloadConfirmButton.Content" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Conflict_ReloadMessage.Text" xml:space="preserve">
+    <value>Reload discards your changes and shows the saved task. Continue?</value>
+  </data>
+  <data name="Conflict_ReviewButton.Content" xml:space="preserve">
+    <value>Review changes</value>
+  </data>
+  <data name="Conflict_ReviewHeading.Text" xml:space="preserve">
+    <value>Review changes</value>
+  </data>
 </root>

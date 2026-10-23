@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The TokenPicker of design §5.0 (ADR 0021): AutoSuggestBox [gallery-autosuggestbox-1] plus removable chip buttons. -->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Common.Controls.TokenPicker"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
+    IsTabStop="False">
+    <StackPanel Spacing="6">
+        <AutoSuggestBox
+            x:Name="Box"
+            Header="{x:Bind Header, Mode=OneWay}"
+            IsEnabled="{x:Bind IsEditable, Mode=OneWay}"
+            ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}"
+            QuerySubmitted="OnQuerySubmitted"
+            Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            UpdateTextOnSelect="False" />
+        <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. -->
+        <ItemsRepeater ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}">
+            <ItemsRepeater.Layout>
+                <LinedFlowLayout LineSpacing="6" MinItemSpacing="6" />
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="tasks:TokenViewModel">
+                    <Button
+                        Padding="8,2"
+                        AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
+                        Click="OnRemoveClick"
+                        KeyDown="OnChipKeyDown"
+                        ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneTime}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name, Mode=OneTime}" />
+                            <FontIcon
+                                AutomationProperties.AccessibilityView="Raw"
+                                FontSize="10"
+                                Glyph="&#xE711;" />
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+    </StackPanel>
+</UserControl>

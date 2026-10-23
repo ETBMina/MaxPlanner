@@ -166,6 +166,33 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     /// <summary>Conflict "Reload": discards the draft and shows the saved value (design §5.10).</summary>
     public void Reload(GridRowViewModel row) => CancelEdit(row);
 
+    /// <summary>Row ⋯ › Open (design §4.3): the full editor, also the S-breakpoint row-details route (T-08.1).</summary>
+    public Task OpenRowAsync(GridRowViewModel row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return _context.Tasks.OpenAsync(row.Model.Task?.Id ?? row.Model.Card!.ParentTaskId);
+    }
+
+    /// <summary>Row ⋯ › Copy… (tasks only, B-06).</summary>
+    public Task CopyRowAsync(GridRowViewModel row) =>
+        row?.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
+
+    /// <summary>Row ⋯ › Add Subtask card (tasks only, B-16.3).</summary>
+    public Task AddSubtaskCardAsync(GridRowViewModel row) =>
+        row?.Model.Task is { } task ? _context.Tasks.AddSubtaskCardAsync(task) : Task.CompletedTask;
+
+    /// <summary>Row ⋯ › Archive (tasks only, B-05).</summary>
+    public Task<bool> ArchiveRowAsync(GridRowViewModel row) =>
+        row?.Model.Task is { } task ? _context.Tasks.ArchiveAsync(task) : Task.FromResult(false);
+
+    /// <summary>Row ⋯ › Delete… with the confirmation of design §5.7.</summary>
+    public Task<bool> DeleteRowAsync(GridRowViewModel row) => row?.Model switch
+    {
+        { Task: { } task } => _context.Tasks.DeleteAsync(task),
+        { Card: { } card } => _context.Tasks.DeleteSubtaskCardAsync(card),
+        _ => Task.FromResult(false),
+    };
+
     public void Dispose()
     {
         _context.PropertyChanged -= OnContextChanged;

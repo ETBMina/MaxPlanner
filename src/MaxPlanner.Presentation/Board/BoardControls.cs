@@ -28,6 +28,11 @@ internal sealed partial class BoardCardAutomationPeer(BoardCardContainer owner) 
         : base.GetAutomationIdCore();
 
     protected override string GetNameCore() => owner.Content is BoardCardViewModel card ? card.AccessibleName : base.GetNameCore();
+
+    // Design §8.2: the card's help text points to its actions menu.
+    protected override string GetHelpTextCore() => HelpText.Value.GetString("Board_CardHelpText");
+
+    private static readonly Lazy<Common.Services.ResourceStrings> HelpText = new(() => new Common.Services.ResourceStrings());
 }
 
 /// <summary>Chooses the task card or the Subtask card template (design §4.2 anatomies).</summary>

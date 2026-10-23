@@ -297,14 +297,7 @@ public sealed class SliceBehaviourTests
     private static UpdateTaskContentCommand Rename(TaskId id, string title) =>
         new(OperationId.New(), id, 1, new TaskContentDraft(title, "Mobile Banking", [], [], [], null, CustomValue.NoValues));
 
-    private static WorkspaceUseCases UseCasesOver(IMutationCoordinator coordinator) => new(
-        new CreateTask(coordinator),
-        new UpdateTaskContent(coordinator),
-        new MoveTask(coordinator),
-        new Application.SubtaskCards.UpdateSubtaskCardContent(coordinator),
-        new Application.SubtaskCards.MoveSubtaskCard(coordinator),
-        new Application.Checklists.AddChecklistItem(coordinator),
-        new Application.Checklists.SetChecklistItemCompleted(coordinator));
+    private static WorkspaceUseCases UseCasesOver(IMutationCoordinator coordinator) => WorkspaceUseCases.Create(coordinator);
 
     /// <summary>A Phase 9 sort stand-in: by title, on the row's held sort snapshot (design §7.7).</summary>
     private sealed class ByTitle : IComparer<GridRowViewModel>

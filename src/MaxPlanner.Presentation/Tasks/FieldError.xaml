@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The inline field error of design §5.0: an Error glyph and caption text directly under the field. The glyph
+    repeats the text, so color never carries the meaning alone (P3). Theme brushes follow theme changes.
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Tasks.FieldError"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    IsTabStop="False"
+    Visibility="Collapsed">
+    <StackPanel Orientation="Horizontal" Spacing="6">
+        <FontIcon
+            Margin="0,2,0,0"
+            VerticalAlignment="Top"
+            AutomationProperties.AccessibilityView="Raw"
+            FontSize="12"
+            Foreground="{ThemeResource ErrorTextBrush}"
+            Glyph="&#xE783;" />
+        <!-- Assertive, so an error that appears after Save is announced (design §8.3). -->
+        <TextBlock
+            x:Name="ErrorText"
+            AutomationProperties.LiveSetting="Assertive"
+            Foreground="{ThemeResource ErrorTextBrush}"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            TextWrapping="Wrap" />
+    </StackPanel>
+</UserControl>

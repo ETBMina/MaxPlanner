@@ -129,7 +129,8 @@
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="Shell_NavGridItem" AutomationProperties.AutomationId="Shell_NavGridItem" Tag="Grid">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xF0E2;" />
+                        <!-- Table glyph: the former GridView glyph (F0E2) was nearly identical to Board's Tiles (Phase 2 review). -->
+                        <FontIcon Glyph="&#xE80A;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="Shell_NavCalendarItem" AutomationProperties.AutomationId="Shell_NavCalendarItem" Tag="Calendar">

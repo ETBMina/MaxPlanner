@@ -15,10 +15,11 @@ public enum PriorityLevel
 }
 
 /// <summary>
-/// A Board card for a task or a Subtask card (B-07, B-16, design §4.2 anatomy). Read-only in Phase 2: moves,
-/// the card menu, and checklist checkboxes on cards arrive in Phase 3. Use on the UI thread.
+/// A Board card for a task or a Subtask card (B-07, B-16, design §4.2 anatomy). Moves and menu commands are
+/// run by <see cref="BoardPageViewModel"/>; the card only shows committed state plus the in-flight move cue.
+/// Use on the UI thread.
 /// </summary>
-public sealed class BoardCardViewModel : ProjectionItemViewModel<WorkItemRecord, Guid>
+public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkItemRecord, Guid>
 {
     private readonly ILocalizedStrings _strings;
     private readonly Func<WorkItemRecord, PriorityLevel> _priorityLevel;
@@ -31,6 +32,16 @@ public sealed class BoardCardViewModel : ProjectionItemViewModel<WorkItemRecord,
     }
 
     public override Guid Key => Model.Id;
+
+    /// <summary>Design §4.2: while a move is dragged or saving, the card is dimmed and captioned "Moving".</summary>
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    public partial bool IsMoving { get; internal set; }
+
+    /// <summary>"More actions for Card limits API" (design §8.2: icon buttons name the action and target).</summary>
+    public string MenuButtonName => _strings.Format("Board_CardMenuName", Title);
+
+    /// <summary>The task this card opens: itself, or a Subtask card's parent.</summary>
+    public MaxPlanner.Domain.Identifiers.TaskId TaskId => Model.Task?.Id ?? Model.Card!.ParentTaskId;
 
     public bool IsTask => Model.Kind == BoardCardKind.Task;
 
@@ -130,6 +141,7 @@ public sealed class BoardCardViewModel : ProjectionItemViewModel<WorkItemRecord,
         OnPropertyChanged(nameof(DatesText));
         OnPropertyChanged(nameof(HasDates));
         OnPropertyChanged(nameof(AccessibleName));
+        OnPropertyChanged(nameof(MenuButtonName));
     }
 
     private static string Format(DateOnly date) => date.ToString("d", CultureInfo.CurrentCulture);

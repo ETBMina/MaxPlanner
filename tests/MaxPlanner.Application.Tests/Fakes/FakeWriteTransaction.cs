@@ -7,6 +7,7 @@ using MaxPlanner.Domain.Checklists;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
 using MaxPlanner.Domain.Tasks;
+using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Application.Tests.Fakes;
 
@@ -28,6 +29,7 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
         Reviews = new ReviewStore(data, beforeWrite);
         GeneralTodos = new GeneralTodoStore(data, beforeWrite);
         Workflow = new WorkflowReader(data);
+        Lookups = new LookupStore(data, beforeWrite);
         Tombstones = new TombstoneStore(data, beforeWrite);
     }
 
@@ -50,6 +52,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
     public IGeneralTodoStore GeneralTodos { get; }
 
     public IWorkflowReader Workflow { get; }
+
+    public ILookupStore Lookups { get; }
 
     public ITombstoneStore Tombstones { get; }
 
@@ -308,6 +312,31 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
     private sealed class WorkflowReader(InMemoryDataset data) : IWorkflowReader
     {
         public WorkflowSnapshot Read() => data.Workflow;
+    }
+
+    private sealed class LookupStore(InMemoryDataset data, Action<string> beforeWrite) : ILookupStore
+    {
+        public void InsertPerson(PersonDefinition person)
+        {
+            beforeWrite("people.insert");
+            if (data.Workflow.People.Any(p => p.Id == person.Id || p.Name.Normalized == person.Name.Normalized))
+            {
+                throw Constraint($"person {person.Id} or name {person.Name} already exists");
+            }
+
+            data.Workflow = data.Workflow with { People = [.. data.Workflow.People, person] };
+        }
+
+        public void InsertTag(TagDefinition tag)
+        {
+            beforeWrite("tags.insert");
+            if (data.Workflow.Tags.Any(t => t.Id == tag.Id || t.Name.Normalized == tag.Name.Normalized))
+            {
+                throw Constraint($"tag {tag.Id} or name {tag.Name} already exists");
+            }
+
+            data.Workflow = data.Workflow with { Tags = [.. data.Workflow.Tags, tag] };
+        }
     }
 
     private sealed class TombstoneStore(InMemoryDataset data, Action<string> beforeWrite) : ITombstoneStore

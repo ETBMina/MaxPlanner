@@ -585,4 +585,66 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
 
         return null;
     }
+
+    // ----- Row menu (design §4.3): Open, Copy…, Add Subtask card, Archive, Delete…. -----
+    private void OnRowMenuButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: GridRowViewModel row } button)
+        {
+            RowMenu(row).ShowAt(button);
+        }
+    }
+
+    private void OnRowContextRequested(UIElement sender, ContextRequestedEventArgs args)
+    {
+        var element = args.OriginalSource as DependencyObject;
+        while (element is not null and not GridRowContainer)
+        {
+            element = VisualTreeHelper.GetParent(element);
+        }
+
+        if (element is not GridRowContainer { Content: GridRowViewModel row } container || row.IsEditing)
+        {
+            return;
+        }
+
+        args.Handled = true;
+        var menu = RowMenu(row);
+        if (args.TryGetPosition(container, out var point))
+        {
+            menu.ShowAt(container, point);
+        }
+        else
+        {
+            menu.ShowAt(container);
+        }
+    }
+
+    private MenuFlyout RowMenu(GridRowViewModel row)
+    {
+        var strings = RowMenuStrings.Value;
+        var menu = new MenuFlyout();
+        MenuFlyoutItem Item(string key, string id, Action action)
+        {
+            var item = new MenuFlyoutItem { Text = strings.GetString(key) };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(item, id);
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+            return item;
+        }
+
+        Item("Board_MenuOpen", "Grid_RowMenuOpenItem", () => _ = ViewModel.OpenRowAsync(row));
+        if (row.IsTask)
+        {
+            Item("Board_MenuCopy", "Grid_RowMenuCopyItem", () => _ = ViewModel.CopyRowAsync(row));
+            Item("Board_MenuAddSubtaskCard", "Grid_RowMenuAddSubtaskCardItem", () => _ = ViewModel.AddSubtaskCardAsync(row));
+            Item("Board_MenuArchive", "Grid_RowMenuArchiveItem", () => _ = ViewModel.ArchiveRowAsync(row));
+        }
+
+        menu.Items.Add(new MenuFlyoutSeparator());
+        Item("Board_MenuDelete", "Grid_RowMenuDeleteItem", () => _ = ViewModel.DeleteRowAsync(row));
+        return menu;
+    }
+
+    private static readonly Lazy<Common.Services.ResourceStrings> RowMenuStrings = new(() => new Common.Services.ResourceStrings());
 }

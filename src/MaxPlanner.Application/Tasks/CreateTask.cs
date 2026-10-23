@@ -1,5 +1,6 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Lookups;
 using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
@@ -17,6 +18,8 @@ public sealed record CrLinkTarget(ChangeRequestId Id, long ExpectedRevision);
 /// <param name="StatusId">Null uses the default task status; Board creation passes the column's status (B-02.1).</param>
 /// <param name="PriorityId">Null uses the default priority.</param>
 /// <param name="LinkTo">Set when creating from a CR: the task and its permanent link are created together (B-03.5).</param>
+/// <param name="ChecklistItems">Items added in the task editor before the first save, in display order.</param>
+/// <param name="NewLookups">People and tags the editor draft created; inserted only by this save (B-02.6).</param>
 public sealed record CreateTaskCommand(
     OperationId OperationId,
     TaskId NewTaskId,
@@ -25,7 +28,9 @@ public sealed record CreateTaskCommand(
     PriorityId? PriorityId = null,
     DateIntent Start = default,
     DateIntent End = default,
-    CrLinkTarget? LinkTo = null);
+    CrLinkTarget? LinkTo = null,
+    IReadOnlyList<ChecklistItemDraft>? ChecklistItems = null,
+    NewLookups? NewLookups = null);
 
 /// <summary>Creates a task at the end of its Board column, optionally linked to a CR in the same transaction.</summary>
 public sealed class CreateTask
@@ -41,15 +46,21 @@ public sealed class CreateTask
         ArgumentNullException.ThrowIfNull(command);
         var validation = new ValidationCollector();
         var content = TaskContentParser.Parse(command.Content, isLinked: command.LinkTo is not null, validation);
-        if (validation.HasErrors || content is null)
+        var checklist = ChecklistDrafts.Parse(command.ChecklistItems, validation);
+        LookupAdditions.Validate(command.NewLookups, validation);
+        if (validation.HasErrors || content is null || checklist is null)
         {
             return UseCaseResults.Failed<TaskId>(validation.ToError());
         }
 
-        return _coordinator.ExecuteAsync(command.OperationId, OperationKind, tx => Execute(tx, command, content), cancellationToken);
+        return _coordinator.ExecuteAsync(command.OperationId, OperationKind, tx => Execute(tx, command, content, checklist), cancellationToken);
     }
 
-    private static TxResult<TaskId> Execute(IWriteTransaction tx, CreateTaskCommand command, TaskContent content)
+    private static TxResult<TaskId> Execute(
+        IWriteTransaction tx,
+        CreateTaskCommand command,
+        TaskContent content,
+        IReadOnlyList<(ChecklistItemId Id, ChecklistText Text, bool IsCompleted)> checklist)
     {
         if (TransactionGuards.EnsureNewId(tx, EntityKind.Task, command.NewTaskId.Value, tx.Tasks.Find(command.NewTaskId) is not null) is { } idError)
         {
@@ -62,6 +73,7 @@ public sealed class CreateTask
             return TxResult.Abort<TaskId>(crError);
         }
 
+        content = LookupAdditions.Apply(tx, command.NewLookups, content);
         var workflow = tx.Workflow.Read();
         var validation = new ValidationCollector();
         var status = workflow.FindTaskStatus(command.StatusId ?? workflow.Defaults.DefaultTaskStatusId);
@@ -83,8 +95,13 @@ public sealed class CreateTask
             return TxResult.Abort<TaskId>(validation.ToError());
         }
 
+        if (!ChecklistDrafts.TryBuildNew(tx, checklist, out var items, out var itemError))
+        {
+            return TxResult.Abort<TaskId>(itemError!);
+        }
+
         var created = TaskItem.Create(command.NewTaskId, content, status, priorityId, command.Start, command.End, changeRequest?.Id,
-            RankPolicy.After(tx.Tasks.MaxBoardRank(status.Id)), tx.LocalToday, tx.UtcNow);
+            RankPolicy.After(tx.Tasks.MaxBoardRank(status.Id)), tx.LocalToday, tx.UtcNow, items);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<TaskId>(invalid);

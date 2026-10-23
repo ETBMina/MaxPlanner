@@ -1,9 +1,6 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
-using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.ReadModels;
-using MaxPlanner.Application.SubtaskCards;
-using MaxPlanner.Application.Tasks;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
@@ -84,26 +81,9 @@ internal sealed class DatasetSession : IAsyncDisposable
             dataset, sp.GetRequiredService<TimeProvider>(), StartupContext.AppVersion, sp.GetRequiredService<ILogger<DailyBackupService>>()));
 
         // Use cases are stateless; one instance of each serves the pages and editors of the session.
-        services.AddSingleton<CreateTask>();
-        services.AddSingleton<UpdateTaskContent>();
-        services.AddSingleton<MoveTask>();
+        services.AddSingleton(sp => WorkspaceUseCases.Create(sp.GetRequiredService<IMutationCoordinator>()));
         services.AddSingleton<CreateChangeRequest>();
         services.AddSingleton<DeleteChangeRequest>();
-        services.AddSingleton<LinkTaskToChangeRequest>();
-        services.AddSingleton<AddChecklistItem>();
-        services.AddSingleton<SetChecklistItemCompleted>();
-        services.AddSingleton<CreateSubtaskCard>();
-        services.AddSingleton<PopOutChecklistItem>();
-        services.AddSingleton<UpdateSubtaskCardContent>();
-        services.AddSingleton<MoveSubtaskCard>();
-        services.AddSingleton(sp => new WorkspaceUseCases(
-            sp.GetRequiredService<CreateTask>(),
-            sp.GetRequiredService<UpdateTaskContent>(),
-            sp.GetRequiredService<MoveTask>(),
-            sp.GetRequiredService<UpdateSubtaskCardContent>(),
-            sp.GetRequiredService<MoveSubtaskCard>(),
-            sp.GetRequiredService<AddChecklistItem>(),
-            sp.GetRequiredService<SetChecklistItemCompleted>()));
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         return new DatasetSession(provider, dataset);

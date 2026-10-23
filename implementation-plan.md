@@ -25,8 +25,11 @@ Status values: `Done` (verified), `In progress`, `Pending`, `Blocked` (with a re
 | 0 | Spike 8: single instance + lock | Done | Redirect, separate copies, locked (exit 3) and not-writable (exit 2) all verified on the published ZIP. A silent-exit defect on failed redirect was found and fixed (ADR 0013). |
 | 0 | Spike 9: Presentation.Tests | Done | ViewModel tests run with no XAML runtime; 33/33 tests pass (ADR 0016) |
 | 1 | Integrity | Done (slices) | Slices 1a–1f below; the open items listed under 1f remain open |
-| 2 | Vertical slice | In progress | Slices 2a–2j below: functionally done and verified; visual evidence blocked by the machine (black WinUI rendering) |
-| 3–18 | Feature phases | Pending | See "Phases" below |
+| 2 | Vertical slice | Done | Slices 2a–2j below; committed `7d5621e`. Black captures were a full-screen capture artifact, resolved with restored-window screens |
+| 3 | Board | Done (code + tests); UI validation deferred | Slices 3a–3f below |
+| 4 | Task editor | Done (code + tests); UI validation deferred | Slices 4a–4d below; open items listed there |
+| 5–18 | Feature phases | Pending | See "Phases" below. **From Phase 5 on, phases deliver code with a clean locked build only: no new tests and no test or UI runs (owner decision, 2026-10-23).** Each phase lists what it skipped under "Deferred to Phase 19". |
+| 19 | Deferred test and validation phase | Pending — **ask the owner before running** | See "Phase 19" below |
 
 ## Context
 Build **Max Planner**, a native, offline, portable Windows 11 planner similar to Microsoft Planner. It covers Change Requests (CRs), tasks, Subtask cards, checklists, reviews, a Dashboard, a Calendar and data transfer.
@@ -272,7 +275,7 @@ docs/  adr/  schemas/transfer-v1.schema.json  samples/  deployment-guide.md  use
 |---|---|---|
 | 2a | Application: checklist items in `TaskReadModel`; `UpdateSubtaskCardContent` and `MoveSubtaskCard` (archived parent → read-only, B-16.6); Board rank placement shared by task and card moves | Done: 6 Application tests, 4 Infrastructure tests on a real SQLite file (`GridEditPathTests`: disk full and stale revision through the Grid's use cases, committed data unchanged) |
 | 2b | Presentation core: `ProjectionView` over merged change streams with an `Initialized` marker and `Resort`; `WorkItemRecord` (task or Subtask card); `SaveStatusViewModel` (actual results only, Saved → Idle after 3 s, Resyncing first); `CommandFailure` typed-error text; `WorkspaceViewModel` with page ViewModels created on first visit and retained | Done |
-| 2c | Shell: in-box `TitleBar` with the pane toggle in LeftMinimal; App InfoBar region (resync, save failure, backup, preferences); `NavigationView` Auto 640/1008 with Settings footer; retained page views; status bar with page summary and save status; Ctrl+1…5 and Ctrl+,; last page restored (B-04) | Done (UIA + restored-window screens). Breakpoints follow resizes; `PreferredMinimum*` confirmed physical px. Open: caption buttons nearly invisible in app-Light/Windows-Dark; Board/Grid nav glyphs too similar. Dashboard, Calendar and Settings show a "not available yet" page: **not built**. |
+| 2c | Shell: in-box `TitleBar` with the pane toggle in LeftMinimal; App InfoBar region (resync, save failure, backup, preferences); `NavigationView` Auto 640/1008 with Settings footer; retained page views; status bar with page summary and save status; Ctrl+1…5 and Ctrl+,; last page restored (B-04) | Done (UIA + restored-window screens). Breakpoints follow resizes; `PreferredMinimum*` confirmed physical px. Caption-button theme and Board/Grid nav glyphs fixed in slice 3f. Dashboard, Calendar and Settings show a "not available yet" page: **not built**. |
 | 2d | Shared `StateView` (Loading after 300 ms, Empty, Filtered-empty, Error, Populated) on the three pages | Done; Filtered-empty is reachable only as "only archived tasks exist" until filters (Phase 11) |
 | 2e | Grid (ADR 0004): virtualized `ListView` rows, horizontally co-scrolling sticky header, DataGrid/Table/GridItem/TableItem/Value/Invoke peers, Kind · CR Number · Title · Subtitle · Service · Status · Priority · Start · End; F2/double-click/typing, Enter, Esc, Tab-on-success, leave-to-commit; editor open with 12-epx ring during the command; error popup with announcement; New task; §7.7 held position | Done. No sort, filters, chooser, resize/reorder or date/people editors (Phase 9) |
 | 2f | Board: horizontal columns, virtualized card lists, task and Subtask card anatomy, counts, S/M/L column widths | Done, read-only; drag/drop, keyboard moves, card menu, column picker at S and New task are Phase 3/4 |
@@ -280,6 +283,32 @@ docs/  adr/  schemas/transfer-v1.schema.json  samples/  deployment-guide.md  use
 | 2h | Failure and conflict: storage failure keeps the editor, draft and operation id, opens the App InfoBar and changes no page; stale revision shows the single-cell conflict (Saved now / Your change, Use mine / Reload; design §5.10 proposed note); editing blocked while resyncing | Done (Presentation tests + real app) |
 | 2i | `tools/MaxPlanner.FixtureGenerator`: disposable dataset through the real use cases (people rows inserted directly until Phase 10); not in the ZIP | Done |
 | 2j | Evidence: `docs/evidence/phase-2/2026-10-22/` — 16/16 UIA checks on the real app incl. genuine relaunch and 100 navigation cycles (19 subscriptions throughout; working set 245 → 252 MiB); 24 restored-window screens in `screens/` | Done for this slice. Black captures were a full-screen capture artifact (independent flip), not rendering; captures need a restored window smaller than the monitor. Verified here: build -Locked 0 warnings, 398/398 tests, publish + verify with no lock-file drift. Keyboard, Narrator and High Contrast not exercised; further UI validation deferred until all phases are built (owner decision). |
+
+**Phase 3. Board** (branch `phase-3/board`, built by the `winui:winui-dev` agent; Phases 3 and 4 were built together because the Board menu opens the Phase 4 editor and dialogs)
+
+| Slice | Content | Status |
+|---|---|---|
+| 3a | Moves through `MoveTask`/`MoveSubtaskCard` only: native `ListView` drag/drop (`CanDragItems`, `AllowDrop`, `DragOver` caption, `Drop` index from the pointer); the list never reorders its own items, so a card moves only after its commit and a failed move leaves the committed position, sets the save status to Failed and announces "Couldn't move …" (B-07, design §4.2) | Done (code + ViewModel tests on real SQLite) |
+| 3b | Keyboard (design §7.3): Alt+Shift+Left/Right appends to the previous/next status; Alt+Shift+Up/Down reorders; Ctrl+Left/Right focuses the adjacent column at the same index; Enter opens; Delete deletes (confirmed); Ctrl+D copies. Focus follows the moved card (§7.7) | Done (ViewModel commands tested); the key routing itself is UI-validation deferred |
+| 3c | Card `MenuFlyout` from ⋯, right-click, Shift+F10 and the Application key: Open, Move to ▸ status ▸ Top/Bottom (End only while filtered), Move up/down, Copy…, Add Subtask card, Archive, Delete…; card help text "Press Shift F10 for actions" | Done |
+| 3d | Task search box (B-10 subset) with the **filtered-append rule**: while searching, cross-column moves append to the full column (hidden cards keep their ranks), reordering is refused, counts read "4 of 6", Filtered InfoBar with Clear search | Done. The shared Filters flyout is Phase 11. Subtask cards match their subtitle, notes and the parent's title/service/CR values, but not the parent's people/tags (not in the card read model) |
+| 3e | Accent **New task** (Ctrl+N) and column **+** "New task in {status}" open the task editor with that status (B-02.1); S breakpoint column `ComboBox` "Column: In Progress (6)" with ‹ › buttons and snap scrolling | Done |
+| 3f | Phase 2 review fixes: `ThemeService` maps Light→Light, Dark→Dark, System→`TitleBarTheme.UseDefaultAppMode` (verified with `winapp find-api enums TitleBarTheme`); Grid nav glyph E80A (table) instead of F0E2, which looked like Board's ECA5 (checked by rendering the installed Segoe Fluent Icons font) | Done (unit test for the mapping; visual check deferred) |
+
+UI validation deferred (owner decision; nothing below was run): drag/drop with mouse and touch including the forbidden cursor and captions; the 2-epx drop stroke; "Moving" dimming; keyboard moves and Ctrl+Left/Right focus; context menu from right-click, Shift+F10, Application key and long-press; S-breakpoint picker scrolling and snap; filtered InfoBar; Narrator announcements of moves and failures; caption buttons in app-Light/Windows-Dark and app-Dark/Windows-Light; the new Grid glyph at 100/150/200%; High Contrast for the new buttons.
+
+**Phase 4. Task editor** (same branch)
+
+| Slice | Content | Status |
+|---|---|---|
+| 4a | Domain `TaskItem.Edit`: a whole editor draft (content, priority, status transition with B-04 dates, Board rank, complete checklist, optional link) as one change with one revision | Done: 8 Domain tests |
+| 4b | Application use cases: `UpdateTask` (whole draft; a status change appends to the new column; checklist add/rename/reorder/check/delete with ID preservation and tombstones; new people/tags; optional permanent link against the previewed CR revision), `CreateTask` extended with checklist items and new lookups, `CopyTask` (B-06 via `CopyTaskPolicy`, Keep current status, optional link), `ArchiveTask`, `RestoreTask` (end of column), `DeleteTask` (cards, items, link, tombstones), `DeleteSubtaskCard`; new `ILookupStore` port so people/tags are created only by a successful save (B-02.6) | Done: 21 Application tests; 3 real-SQLite Infrastructure tests (they found an unregistered ledger result type, `TaskDeletionSummary`, now registered) |
+| 4c | Presentation: `TaskEditorViewModel` (draft, `IsDirty`, `IsSaving`, field errors + "Fix n fields" summary + focus request, inherited title/task number/squad/owner read-only, Service required when linked or pending, TokenPicker for Designers/Developers/Tags with add-new on save, dates with explicit Clear, checklist draft, Subtask cards list with immediate Add, pop-out disabled while dirty, follows commits while clean, conflict review with Use mine/Apply to draft and confirmed Reload, dirty-close Save/Discard/Continue, More: Copy/Archive/Restore/Add Subtask card/Delete); `CopyTaskViewModel` (options, review, Create copy); `CrPickerViewModel`; `TaskCommands` shared by Board/Grid/Checklists; dialog requests and announcements on `WorkspaceContext`; `DialogHost` in the shell (serialized, XamlRoot, theme, focus restore) | Done: 11 editor/route ViewModel tests + 8 Board tests on real SQLite |
+| 4d | Views: `TaskEditorDialog`, `CopyTaskDialog`, `TokenPicker`, `FieldError`, confirmation and Add Subtask card dialogs; Grid row ⋯ menu and Shift+F10 (Open, Copy…, Add Subtask card, Archive, Delete…); Checklists "Open task" link; 200 new resw strings | Done (builds with the WinUI analyzer; not run) |
+
+Open items: window-close deferral while the editor is dirty (design §5.8 `AppWindow.Closing`) is not wired; the Subtask card editor (§5.2) is Phase 5, so opening a Subtask card opens its parent's editor; custom fields in the editor are Phase 10 (values are passed through unchanged); there is no CR update use case yet, so the T-13 "CR changed before commit" path exists in code but has no test; Grid Show archived/Restore is Phase 9 (Restore is reachable from the editor); an archived unlinked task without a Service cannot be linked (Service is read-only while archived).
+
+UI validation deferred (owner decision; nothing below was run): every dialog at L/M/S and with a window under 600 epx tall (FullSizeDesired, footer reachable); Tab order and Ctrl+Enter/Alt+Left/Esc in the editor; focus to the first invalid field and to Save on the dirty prompt; announcements; TokenPicker suggestions, Enter and chip removal by keyboard; CalendarDatePicker Clear buttons; link picker and permanence step; conflict review table; Copy dialog steps; confirmation dialogs default to Cancel; focus restoration after each dialog; Light/Dark/High Contrast; 200% text scaling; a genuine relaunch showing an editor save persisted.
 
 **Phases 3–15. Features.**
 | # | Feature | Requirements |
@@ -302,6 +331,15 @@ docs/  adr/  schemas/transfer-v1.schema.json  samples/  deployment-guide.md  use
 - **16 Accessibility, responsive and theme pass:** screenshots at 500, 639, 640, 1007, 1008 and 1600 epx in System, Light and Dark. Manual checks, which you perform, cover HC, Narrator, touch, scaling, mixed DPI, Snap, transparency off and RDP.
 - **17 Performance:** 10k-task fixture (plus Subtask cards and reviews), T-11 budgets.
 - **18 Release proof** on the **published ZIP**: clean offline VM, relocation, second launch, protected folder, upgrade preserving `data/`, notices and checksums. `winui-packaging` is used for its self-contained guidance only, with no MSIX. **After this, we package the portable ZIP.**
+
+**Phase 19. Deferred test and validation (owner decision 2026-10-23: run only after the owner approves).**
+Collects every test and validation skipped while the feature phases were built:
+1. **Automated tests skipped from Phase 5 on:** Domain, Application, Presentation ViewModel and real-SQLite Infrastructure tests for every use case and page added in Phases 5–18, listed per phase under "Deferred to Phase 19". Then the full `./scripts/test.ps1` run, including the Desktop smoke tests.
+2. **UI validation deferred since Phase 2:** the "UI validation deferred" lists of Phases 2–4 and every later phase: `winapp ui` batch runs on disposable datasets, genuine relaunch persistence, restored-window screenshots (never a full-screen window: those capture black) at 500/640/1008/1600 epx in Light/Dark, keyboard paths, focus restoration, and the Phase 16 manual checks the owner performs (High Contrast, Narrator, touch, mixed DPI, Snap, transparency off, RDP).
+3. **Reviews:** `winui-code-review`, `code-review` and `security-review` across Phases 1–18.
+4. **Release proof gates** of Phase 18 that need app runs, and the T-11 performance fixture (Phase 17).
+
+Defects found are fixed in this phase, and the plan records the results honestly.
 
 ## Spec rewrite list (Phase 0)
 | Decision | Clauses |

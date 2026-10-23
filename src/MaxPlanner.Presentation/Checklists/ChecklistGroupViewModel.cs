@@ -139,6 +139,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         OnPropertyChanged(nameof(Service));
         OnPropertyChanged(nameof(HasService));
         OnPropertyChanged(nameof(Reference));
+        OnPropertyChanged(nameof(OpenTaskName));
         OnPropertyChanged(nameof(ProgressText));
         OnPropertyChanged(nameof(ProgressPercent));
         OnPropertyChanged(nameof(CompletedHeader));
@@ -155,6 +156,13 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
     private bool CanAddItem() => !IsAdding;
 
     /// <summary>Enter in the Add box, or its Add button: blank text is refused by the use case with an inline error (B-02.7).</summary>
+    /// <summary>"Open task" (B-09, design §4.5): the task editor for this group's task.</summary>
+    [RelayCommand]
+    private Task OpenTask() => _context.Tasks.OpenAsync(Model.Id);
+
+    /// <summary>"Open task Card limits API": the link's accessible name.</summary>
+    public string OpenTaskName => _context.Strings.Format("Checklists_OpenTaskName", Model.EffectiveTitle);
+
     [RelayCommand(CanExecute = nameof(CanAddItem))]
     private Task AddItemAsync() => Enqueue(AddNowAsync);
 

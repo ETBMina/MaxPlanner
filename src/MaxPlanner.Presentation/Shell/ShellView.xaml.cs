@@ -31,6 +31,7 @@ public sealed partial class ShellView : UserControl
     };
 
     private readonly Dictionary<AppPage, UIElement> _pageViews = [];
+    private readonly DialogHost _dialogs;
     private ShellViewModel? _viewModel;
     private SaveStatusViewModel? _saveStatus;
     private bool _isSyncingSelection;
@@ -38,6 +39,7 @@ public sealed partial class ShellView : UserControl
     public ShellView()
     {
         InitializeComponent();
+        _dialogs = new DialogHost(this);
         AddPageAccelerators();
         Nav.Loaded += (_, _) =>
         {
@@ -70,6 +72,7 @@ public sealed partial class ShellView : UserControl
             }
 
             AttachSaveStatus(value?.Workspace?.SaveStatus);
+            _dialogs.Attach(value?.Workspace?.Context);
             ShowCurrentPage(moveFocus: false);
         }
     }
@@ -104,6 +107,7 @@ public sealed partial class ShellView : UserControl
                 }
 
                 AttachSaveStatus(_viewModel?.Workspace?.SaveStatus);
+                _dialogs.Attach(_viewModel?.Workspace?.Context);
                 ShowCurrentPage(moveFocus: false);
                 break;
             case nameof(ShellViewModel.CurrentPage):

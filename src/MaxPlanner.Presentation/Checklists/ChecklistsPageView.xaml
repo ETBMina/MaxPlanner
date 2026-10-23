@@ -66,6 +66,13 @@
                         Style="{StaticResource CaptionTextBlockStyle}"
                         Text="{x:Bind Reference, Mode=OneWay}"
                         TextWrapping="Wrap" />
+                    <!-- B-09: each task group offers Open task (design §4.5). -->
+                    <HyperlinkButton
+                        x:Uid="Checklists_OpenTaskLink"
+                        Padding="0"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_OpenTaskLink_', Key.Value), Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind OpenTaskName, Mode=OneWay}"
+                        Command="{x:Bind OpenTaskCommand}" />
                     <StackPanel Spacing="4">
                         <TextBlock
                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_Progress_', Key.Value), Mode=OneTime}"

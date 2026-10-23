@@ -6,6 +6,7 @@ using MaxPlanner.Domain.Checklists;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
 using MaxPlanner.Domain.Tasks;
+using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Application.Abstractions;
 
@@ -46,6 +47,9 @@ public interface IWriteTransaction
     IGeneralTodoStore GeneralTodos { get; }
 
     IWorkflowReader Workflow { get; }
+
+    /// <summary>Adds people and tags created by a saved editor draft (B-02.6).</summary>
+    ILookupStore Lookups { get; }
 
     ITombstoneStore Tombstones { get; }
 }
@@ -160,6 +164,19 @@ public interface IWorkflowReader
 {
     /// <summary>The lookups, field definitions, and defaults as of this transaction.</summary>
     WorkflowSnapshot Read();
+}
+
+/// <summary>
+/// People and tags added while saving a record that uses them (B-02.6). Later reads of
+/// <see cref="IWorkflowReader.Read"/> in the same transaction include them.
+/// </summary>
+public interface ILookupStore
+{
+    /// <summary>Requires an unused ID and an unused normalized name (unique per lookup type, B-04).</summary>
+    void InsertPerson(PersonDefinition person);
+
+    /// <summary>Requires an unused ID and an unused normalized name.</summary>
+    void InsertTag(TagDefinition tag);
 }
 
 /// <summary>

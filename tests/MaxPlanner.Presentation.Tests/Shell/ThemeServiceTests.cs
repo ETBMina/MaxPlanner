@@ -19,11 +19,14 @@ public sealed class ThemeServiceTests
         ThemeService.ToElementTheme(mode).Should().Be(expected);
     }
 
+    // Phase 2 screen review: app Light with Windows Dark left nearly invisible caption buttons, because the
+    // caption theme was read from the root before it loaded. The setting now maps directly.
     [Theory]
-    [InlineData(ElementTheme.Light, TitleBarTheme.Light)]
-    [InlineData(ElementTheme.Dark, TitleBarTheme.Dark)]
-    public void Caption_buttons_follow_the_resolved_theme(ElementTheme actual, TitleBarTheme expected)
+    [InlineData(ThemePreference.System, TitleBarTheme.UseDefaultAppMode)]
+    [InlineData(ThemePreference.Light, TitleBarTheme.Light)]
+    [InlineData(ThemePreference.Dark, TitleBarTheme.Dark)]
+    public void Caption_buttons_follow_the_selected_mode_and_system_follows_the_windows_app_mode(ThemePreference mode, TitleBarTheme expected)
     {
-        ThemeService.ToTitleBarTheme(actual).Should().Be(expected);
+        ThemeService.ToTitleBarTheme(mode).Should().Be(expected);
     }
 }

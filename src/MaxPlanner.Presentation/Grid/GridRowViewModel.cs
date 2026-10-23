@@ -71,6 +71,9 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
 
     public string TitleText => Model.Task?.EffectiveTitle ?? Model.Card!.ParentTitle;
 
+    /// <summary>"More actions for Card limits API" (design §8.2).</summary>
+    public string RowMenuName => _strings.Format("Grid_RowMenuName", Model.Task?.EffectiveTitle ?? Model.Card!.Subtitle);
+
     /// <summary>Linked tasks inherit the CR title (B-02.3); a Subtask card shows its parent's title (B-16.2).</summary>
     public bool IsTitleLocked => Model.Task is not { IsTitleInherited: false };
 
@@ -274,6 +277,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         OnPropertyChanged(nameof(IsTask));
         OnPropertyChanged(nameof(IsSubtaskCard));
         OnPropertyChanged(nameof(KindText));
+        OnPropertyChanged(nameof(RowMenuName));
         OnPropertyChanged(nameof(KindGlyph));
         OnPropertyChanged(nameof(CrNumberText));
         OnPropertyChanged(nameof(TitleText));

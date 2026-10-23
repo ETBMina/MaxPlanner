@@ -244,6 +244,11 @@ States: Loading; Empty (statuses exist but no tasks: "No tasks yet" + New task, 
 
 A failed move restores the committed position, sets the save status to Failed, and announces the failure (B-07).
 
+**Proposed notes (Phase 3, pending owner review):**
+- Drop feedback is a 2-epx accent stroke on the destination list plus the drag caption ("Drop to move to Review" / "Will be added to the end of Review"); there is no insertion line. The card itself is dimmed with a "Moving" caption until the move is saved. A card moves on screen only after the move committed, so a failure needs no visual rollback.
+- Board search is a task-scope `AutoSuggestBox` (B-10 subset) until the shared Filters flyout (Phase 11). The filtered rules above apply to it.
+- "Add Subtask card" from the card menu opens a small dialog with a required Subtitle box. "Open" on a Subtask card opens its parent task until the Subtask card editor (§5.2, Phase 5).
+
 ### 4.3 Grid (B-07 Grid, T-08 gate, D7)
 **Purpose:** a spreadsheet-style **task editor**. The control is a **custom virtualized `ListView` grid** with a synchronized header row and custom Grid/Table automation peers. WinUI.TableView failed the gate (ADR 0004).
 
@@ -517,6 +522,12 @@ Route: the task editor and copy dialog (inline), the Grid row ⋯ "Link to CR…
    - Primary **Link permanently** (task editor/copy: **Use this CR**, which commits on Save); Secondary **Back**; Close **Cancel**.
 3. If the CR revision changed before commit, the step refreshes its preview and shows an InfoBar "CR-1042 changed — review the new values" (T-13).
 
+**Proposed notes (Phase 4, pending owner review):**
+- The link, conflict-review and reload steps carry their own inline Back / Next / Use this CR / Apply to draft / Reload buttons; the dialog footer keeps Save and Cancel, and Save is disabled while a step is open.
+- While a link is pending, the Title box is replaced by the CR title preview. For an existing task the draft's own title moves to `PreLinkTitle` on Save; a new task created with its link has no own title.
+- Editor checklist items reorder with Move up / Move down (menu) rather than ListView drag reordering, because the draft list is exposed read-only to the view.
+- Archive and Restore run immediately (reversible, announced); Delete always confirms with Cancel as the default.
+
 ### 5.7 Delete confirmations (B-05, AC-30)
 | Record | Body | Buttons |
 |---|---|---|
@@ -596,7 +607,7 @@ The Dashboard "Needs attention" badge uses Warning glyph + text in `SystemFillCo
 | GlobalNavigationButton | E700 | Pane toggle | Add | E710 | New |
 | ViewDashboard | F246† | Dashboard | Search | E721 | Search |
 | Tiles | ECA5† | Board | Filter | E71C | Filters |
-| GridView | F0E2† | Grid | More | E712 | ⋯ menus |
+| Table grid | E80A | Grid (Phase 3: F0E2 looked like Tiles) | More | E712 | ⋯ menus |
 | Calendar | E787 | Calendar | Edit | E70F | Edit/Rename |
 | CheckList | E9D5† | Checklists | Delete | E74D | Delete |
 | Setting | E713 | Settings | Copy | E8C8 | Copy |
