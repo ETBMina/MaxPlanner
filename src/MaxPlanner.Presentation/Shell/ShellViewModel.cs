@@ -163,6 +163,9 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         ActivatePage(page);
     }
 
+    /// <summary>A formatted shell string, for example the Checklists badge's accessible name.</summary>
+    public string Format(string key, params object?[] args) => _strings.Format(key, args);
+
     /// <summary>The localized page name, e.g. for the placeholder of a page not built yet.</summary>
     public string PageTitle(AppPage page) => _strings.GetString($"Page_{page}_Title");
 
@@ -171,6 +174,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     {
         AppPage.Board => workspace.Board,
         AppPage.Grid => workspace.Grid,
+        AppPage.Calendar => workspace.Calendar,
         AppPage.Checklists => workspace.Checklists,
         _ => null,
     };
@@ -285,7 +289,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     private void OpenDataFolder() => _dataFolder.OpenDataFolder();
 }
 
-/// <summary>The NavigationView destinations (design §2.2). Dashboard, Calendar and Settings are not built in Phase 2.</summary>
+/// <summary>The NavigationView destinations (design §2.2). Dashboard and Settings are not built yet.</summary>
 public enum AppPage
 {
     Dashboard,

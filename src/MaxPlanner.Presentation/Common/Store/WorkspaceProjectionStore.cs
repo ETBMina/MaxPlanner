@@ -57,6 +57,7 @@ public sealed class WorkspaceProjectionStore : IDisposable
     private int _generation;
     private bool _hasLoaded;
     private long _sequence;
+    private int _todayDayNumber;
     private volatile bool _isDisposed;
 
     /// <param name="composer">Composes read models; constructed with the localized "General" label (ADR 0020).</param>
@@ -131,6 +132,12 @@ public sealed class WorkspaceProjectionStore : IDisposable
 
     /// <summary>The commit sequence the caches reflect; 0 before the first snapshot.</summary>
     public long Sequence => Interlocked.Read(ref _sequence);
+
+    /// <summary>
+    /// The local day the date-relative read models (CR overdue flags) were last composed for (B-15); the
+    /// Calendar marks this day as today so its marker and the overdue flags always agree.
+    /// </summary>
+    public DateOnly Today => DateOnly.FromDayNumber(Volatile.Read(ref _todayDayNumber));
 
     /// <summary>Live subscriptions to the store's caches, for disposal and navigation-budget tests (T-11).</summary>
     public int ActiveCacheSubscriptions => _subscriptions.Count;
@@ -390,6 +397,7 @@ public sealed class WorkspaceProjectionStore : IDisposable
         Write(_reviewItems, delta.ReviewItems, delta.RemovedReviewItems);
         Write(_generalTodos, delta.GeneralTodos, delta.RemovedGeneralTodos);
         Interlocked.Exchange(ref _sequence, sequence);
+        Volatile.Write(ref _todayDayNumber, _records.Today.DayNumber);
         _committed.OnNext(new ProjectionCommit(sequence, reason, _records.Today));
     }
 

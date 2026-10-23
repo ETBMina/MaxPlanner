@@ -337,6 +337,20 @@ States: Loading, Empty, Filtered-empty (distinct from Empty; when only archived 
 
 States: Loading; Empty ("No CRs yet" + New CR); Filtered-empty (the grid still renders, and an InfoBar says "No CRs match your filters"); Error. When an edited CR becomes hidden by the filters, the save message says "Saved CR-1042. It is hidden by the current filters." with a Clear filters action (B-08.12).
 
+**Proposed notes (Phase 7, pending owner review):**
+- **Open linked tasks** (backlog card, bar and Records menus, and the backlog card's "n tasks" link) opens the CR editor, whose Linked tasks (n) section is the complete list with its count (B-08.3, §5.3 group 8). There is no separate list dialog.
+- The day flyout's **New CR on this date** opens the CR editor for a new CR with a one-day planned range on that day and the configured scheduling status, like a scheduled backlog CR (B-08.5). Cancel without changes does not ask about unsaved changes.
+- **Resize by drag** stays within the bar's week row (the ghost is the bar itself, re-spanned live, with the date in the handle's tooltip). Ranges that cross rows are changed with the keyboard (Shift/Ctrl+Shift+arrows, one command after 600 ms or Enter) or **Edit dates…** (Ctrl+E, two date pickers, one command). Keyboard steps are calendar days, so an endpoint can land on a hidden Friday/Saturday; the bar then shows no cue for the hidden part (B-08.6).
+- The bar edge handles are a `Thumb` inside a small panel that sets the horizontal resize cursor (`Thumb` is sealed). Handles are pointer-only (`IsTabStop=False`); the keyboard route above is the equivalent.
+- **Move to backlog** asks first in a light flyout from a bar (Ctrl+Shift+B or the bar menu). The Records row menu and the CR editor's More menu run it directly, because choosing the command there is the explicit step (B-08.11).
+- A drop on a day of a CR that already has dates asks in a dialog ("Replace Oct 4 – Oct 9 with Oct 13?"); **Schedule on…** shows the same question inline in its flyout.
+- Records rows also offer **Schedule on…** (the backlog route), so a CR that is unscheduled but not in a backlog status can still be scheduled from Records.
+- The lane cap is fixed at 4. Rows use `Auto` heights with a minimum, so enlarged text grows the row instead of dropping lanes (a simplification of §9).
+- There is no bar selection model yet, so the **Selected** bar state (§6.3) is not shown; focus uses the system focus visual.
+- The **Backlog (n)** toggle is shown at every breakpoint. The pane opens inline at L and closes when the window narrows below L; its open state is not persisted yet.
+- Calendar search is in place; the CR **Filters** flyout, active-filter chips and the "hidden by the current filters" save message (B-08.12) arrive with Phase 11.
+- The temporary Board overflow **New CR…** (Phase 6) is removed; **New CR** (Ctrl+N) lives on the Calendar.
+
 ### 4.5 Checklists (B-09, B-16, B-17, AC-06/32/33)
 **Purpose:** work through General to-dos, task checklist items and Review items.
 
@@ -366,6 +380,16 @@ States:
 **Proposed notes (Phase 5, pending owner review):**
 - Until Phase 8 the item **⋯** menu offers only **Pop out to card**; Rename, Move up/down and Delete arrive with the rest of the Checklists work, as does Ctrl+Shift+P (§7.6).
 - "Open card" is a link beside the status-bar text (`Shell_SaveStatusActionLink`). It stays for 15 seconds or until the next command, so a keyboard user can reach it; the announcement reads "Moved to a Subtask card in Backlog". The status name is read from the committed card, never guessed.
+
+**Proposed notes (Phase 8, pending owner review):**
+- **Layout:** the groups surface uses a custom virtualizing `ColumnPackingLayout` (Presentation) instead of `UniformGridLayout`: each card goes to the shortest column in order, so the General to-dos card is always first (top left) and cards keep their own heights. Columns: up to 3 at L, 2 at M, 1 at S (`MinColumnWidth` 380 at L/M). Cards not yet measured use the average measured height, so positions below the viewport can shift as cards are realized.
+- **Reorder** uses Move up / Move down (menu, Alt+Shift+Up/Down) within the item's own section; drag reordering of checklist items and reviews is not built.
+- **Rename** shows an inline `TextBox` (F2, double-click, or menu Rename): Enter saves, Esc cancels; leaving an unchanged box closes it, and a changed box stays open until Enter or Esc.
+- **Search:** a task group shows when its title, service, CR number or task number matches, or when an item matches; when the group itself matches all its items show, otherwise only the matching items. The SelectorBar items show "Checklists (5 matches)" / "Reviews (2 matches)" while searching.
+- **Add to task…** is a flyout with a task search box. Choosing a task shows its group for the rest of the session even when it has no items, clears the search, and focuses the group's Add box.
+- **New to-do** (accent, Ctrl+N) focuses the General to-dos Add box; there is no separate dialog.
+- The **Reviews** list is a `ListView` inside the section's `ScrollViewer` (not virtualized); review volumes are expected to be small.
+- The Checklists nav item's `InfoBadge` counts open General to-dos, open checklist items of active tasks, and open reviews; its accessible name is "Checklists, n open".
 
 ### 4.6 Settings (B-04, B-11, T-09)
 **Purpose:** appearance, workflow, lookups, fields, defaults and data.
@@ -506,7 +530,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 - "Make {name} the default CR Owner" is offered whenever no default exists, also on an existing CR, and saving with it checked sets the default in the same transaction.
 - The four field pairs (Number · Task number, Owner · Squad, Status · Priority, Planned start · end) are side by side at L (window ≥ 1008 epx) and stacked below that.
 - **+ Create task** on a saved, unchanged CR closes the editor and opens the task editor with that CR preselected as a pending permanent link (§5.1 "Pending"); closing that new task without other changes does not ask about unsaved changes. A new or changed CR first shows the inline step "Save CR-1042 and create a task?" with **Save and create**.
-- A linked task row opens the task (Enter or click) after this dialog closes. **Link existing task…** (reverse picker, §5.6) and **Move to backlog** are not built yet (Phase 7 with the Calendar); custom fields are Phase 10.
+- A linked task row opens the task (Enter or click) after this dialog closes. **Link existing task…** (reverse picker, §5.6) is not built yet; custom fields are Phase 10. **Move to backlog** is in the More menu since Phase 7: the editor closes (after §5.8) and the command runs with the committed CR's revision.
 - An empty CR has the text "No tasks are linked to this CR yet." instead of an empty list.
 
 ### 5.4 Review editor (B-17)
@@ -515,6 +539,12 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 - **CR number:** when it matches an existing CR's normalized number, an **Open CR CR-1042** `HyperlinkButton` appears beside it. It never links (B-17.3).
 - **More menu:** Delete….
 - The dialog title is "Review" in view/edit mode and "New review" when creating.
+
+**Proposed notes (Phase 8, pending owner review):**
+- Services use the TokenPicker with free-text chips only (no suggestions from other records). The picker's "Add 'name'" suggestion appears for names up to 100 characters (the people/tag limit), although a service may hold 250.
+- A conflict (the review changed elsewhere) keeps the draft and offers **Reload** only; the per-field conflict review of §5.10 is not built for reviews.
+- **More › Delete…** closes the editor first and then asks in a confirmation dialog (the row flyout is used from the list).
+- The Done caption reads "Completed on {date}" with the stored completion day, or local today for a newly checked box; the stored day is set by the save (B-17.1).
 
 ### 5.5 Copy task (B-06, AC-09)
 **Step 1, Copy options:**

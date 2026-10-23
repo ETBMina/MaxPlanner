@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Checklists;
+using MaxPlanner.Application.Reviews;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Presentation.ChangeRequests;
@@ -39,7 +40,23 @@ public sealed record WorkspaceUseCases(
     UpdateSubtaskCard UpdateSubtaskCard,
     CreateChangeRequest CreateChangeRequest,
     UpdateChangeRequest UpdateChangeRequest,
-    DeleteChangeRequest DeleteChangeRequest)
+    DeleteChangeRequest DeleteChangeRequest,
+    ScheduleChangeRequest ScheduleChangeRequest,
+    ResizeChangeRequest ResizeChangeRequest,
+    MoveChangeRequestToBacklog MoveChangeRequestToBacklog,
+    RenameChecklistItem RenameChecklistItem,
+    MoveChecklistItem MoveChecklistItem,
+    DeleteChecklistItem DeleteChecklistItem,
+    AddGeneralTodo AddGeneralTodo,
+    SetGeneralTodoCompleted SetGeneralTodoCompleted,
+    RenameGeneralTodo RenameGeneralTodo,
+    MoveGeneralTodo MoveGeneralTodo,
+    DeleteGeneralTodo DeleteGeneralTodo,
+    CreateReview CreateReview,
+    UpdateReview UpdateReview,
+    SetReviewDone SetReviewDone,
+    MoveReview MoveReview,
+    DeleteReview DeleteReview)
 {
     /// <summary>Every use case over one dataset's coordinator; the composition root and tests share this list.</summary>
     public static WorkspaceUseCases Create(IMutationCoordinator coordinator)
@@ -65,7 +82,23 @@ public sealed record WorkspaceUseCases(
             new UpdateSubtaskCard(coordinator),
             new CreateChangeRequest(coordinator),
             new UpdateChangeRequest(coordinator),
-            new DeleteChangeRequest(coordinator));
+            new DeleteChangeRequest(coordinator),
+            new ScheduleChangeRequest(coordinator),
+            new ResizeChangeRequest(coordinator),
+            new MoveChangeRequestToBacklog(coordinator),
+            new RenameChecklistItem(coordinator),
+            new MoveChecklistItem(coordinator),
+            new DeleteChecklistItem(coordinator),
+            new AddGeneralTodo(coordinator),
+            new SetGeneralTodoCompleted(coordinator),
+            new RenameGeneralTodo(coordinator),
+            new MoveGeneralTodo(coordinator),
+            new DeleteGeneralTodo(coordinator),
+            new CreateReview(coordinator),
+            new UpdateReview(coordinator),
+            new SetReviewDone(coordinator),
+            new MoveReview(coordinator),
+            new DeleteReview(coordinator));
     }
 }
 

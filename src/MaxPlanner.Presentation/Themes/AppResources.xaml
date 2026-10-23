@@ -23,6 +23,18 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="CalendarBarBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
+            <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
+            <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
+            <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="CalendarCompletedBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
+            <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="CalendarDropTargetStrokeBrush" ResourceKey="AccentFillColorDefaultBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <StaticResource x:Key="ChipStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
@@ -40,6 +52,18 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="CalendarBarBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
+            <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
+            <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
+            <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="CalendarCompletedBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
+            <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="CalendarDropTargetStrokeBrush" ResourceKey="AccentFillColorDefaultBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <!-- Design §3 rule 3: chips render as ButtonFace with ButtonText border and text; glyphs carry meaning. -->
@@ -58,6 +82,19 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <!-- Design §6.3 HC: bars are ButtonFace with a ButtonText border; the glyph and text carry the state. -->
+            <StaticResource x:Key="CalendarBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="SystemColorGrayTextColorBrush" />
+            <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarCompletedBarForegroundBrush" ResourceKey="SystemColorGrayTextColorBrush" />
+            <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="SystemColorGrayTextColorBrush" />
+            <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="CalendarDropTargetStrokeBrush" ResourceKey="SystemColorHighlightColorBrush" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -119,5 +156,64 @@
     <Style x:Key="PageSubtitleTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Calendar surface (design §4.4, §6.3). Built in code by CalendarMonthView, which looks these styles up. -->
+    <Style x:Key="CalendarDayCellButtonStyle" BasedOn="{StaticResource DefaultButtonStyle}" TargetType="Button">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,1,0" />
+    </Style>
+    <Style x:Key="CalendarBarButtonStyle" BasedOn="{StaticResource DefaultButtonStyle}" TargetType="Button">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="6,1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Background" Value="{ThemeResource CalendarBarBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource CalendarBarForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CalendarBarAccentBrush}" />
+        <Setter Property="BorderThickness" Value="3,0,0,0" />
+    </Style>
+    <Style x:Key="CalendarOverdueBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource CalendarOverdueBarBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CalendarOverdueBarStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style x:Key="CalendarCompletedBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource CalendarCompletedBarBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource CalendarCompletedBarForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CalendarCompletedBarStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style x:Key="CalendarTodayBadgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CalendarTodayBackgroundBrush}" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="MinWidth" Value="24" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="Padding" Value="4,0" />
+    </Style>
+    <Style x:Key="CalendarTodayTextStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource CalendarTodayForegroundBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="CalendarDayTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Margin" Value="2,2,0,0" />
+    </Style>
+    <Style x:Key="CalendarAdjacentDayTextStyle" BasedOn="{StaticResource CalendarDayTextStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource CalendarAdjacentDayForegroundBrush}" />
+    </Style>
+    <Style x:Key="CalendarStubBorderStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource LayerFillColorAltBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
     </Style>
 </ResourceDictionary>

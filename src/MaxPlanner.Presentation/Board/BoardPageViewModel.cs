@@ -342,12 +342,6 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         return card.Model.Cr.ChangeRequestId is { } id ? _context.ChangeRequests.OpenAsync(id) : Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Overflow "New CR…". Interim entry point until the Calendar (Phase 7), the CR editor's home (B-03.1).
-    /// </summary>
-    [RelayCommand]
-    private Task NewChangeRequestAsync() => _context.ChangeRequests.NewAsync();
-
     /// <summary>Accent New task (default status) or a column's + (that status, B-02.1).</summary>
     public Task NewTaskAsync(BoardColumnViewModel? column = null) => _context.Tasks.NewAsync(column?.StatusId);
 

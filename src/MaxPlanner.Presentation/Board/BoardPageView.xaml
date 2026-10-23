@@ -343,7 +343,6 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <AutoSuggestBox
                     x:Name="SearchBox"
@@ -369,28 +368,6 @@
                         <TextBlock x:Uid="Board_NewTaskText" />
                     </StackPanel>
                 </Button>
-                <!--
-                    Overflow-only CommandBar (design §2.4). "New CR" is interim here until the Calendar page
-                    (Phase 7), the CR editor's home (B-03.1); remove it then.
-                -->
-                <CommandBar
-                    Grid.Column="2"
-                    VerticalAlignment="Center"
-                    AutomationProperties.AutomationId="Board_CommandBar"
-                    Background="Transparent"
-                    DefaultLabelPosition="Right"
-                    IsDynamicOverflowEnabled="False">
-                    <CommandBar.SecondaryCommands>
-                        <AppBarButton
-                            x:Uid="Board_NewCrButton"
-                            AutomationProperties.AutomationId="Board_NewCrButton"
-                            Command="{x:Bind ViewModel.NewChangeRequestCommand}">
-                            <AppBarButton.Icon>
-                                <FontIcon Glyph="&#xE710;" />
-                            </AppBarButton.Icon>
-                        </AppBarButton>
-                    </CommandBar.SecondaryCommands>
-                </CommandBar>
             </Grid>
             <!-- Design §4.2 S: one column per viewport, chosen here or with the previous/next buttons. -->
             <Grid

@@ -145,6 +145,9 @@ public interface IReviewStore
     void Delete(ReviewItemId id);
 
     long? MaxRank();
+
+    /// <summary>Every review's ID and rank (B-17.2 explicit order), for reordering; callers sort by rank, then ID.</summary>
+    IReadOnlyList<(ReviewItemId Id, long Rank)> ListOrder();
 }
 
 public interface IGeneralTodoStore
@@ -158,6 +161,9 @@ public interface IGeneralTodoStore
     void Delete(GeneralTodoId id);
 
     long? MaxRank();
+
+    /// <summary>Every to-do's ID and rank (B-09 explicit order), for reordering; callers sort by rank, then ID.</summary>
+    IReadOnlyList<(GeneralTodoId Id, long Rank)> ListOrder();
 }
 
 public interface IWorkflowReader

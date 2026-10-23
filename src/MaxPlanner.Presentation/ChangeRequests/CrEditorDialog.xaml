@@ -33,7 +33,7 @@
                 <KeyboardAccelerator Key="Left" Invoked="OnBackAccelerator" Modifiers="Menu" />
             </StackPanel.KeyboardAccelerators>
 
-            <!-- Title row: caption and the More menu (design §5.3: Delete…; CRs are not archived). -->
+            <!-- Title row: caption and the More menu (design §5.3: Move to backlog, Delete…; CRs are not archived). -->
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -52,6 +52,15 @@
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
                     <DropDownButton.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuFlyoutItem
+                                x:Uid="CrEditor_MoreMoveToBacklog"
+                                AutomationProperties.AutomationId="CrEditor_MoreMoveToBacklogItem"
+                                Click="OnMoveToBacklogClick"
+                                IsEnabled="{x:Bind ViewModel.CanMoveToBacklog, Mode=OneWay}">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE72B;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                             <MenuFlyoutItem x:Uid="CrEditor_MoreDelete" AutomationProperties.AutomationId="CrEditor_MoreDeleteItem" Click="OnDeleteClick">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE74D;" />

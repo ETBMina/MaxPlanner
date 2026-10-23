@@ -269,6 +269,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
         }
 
         public long? MaxRank() => data.Reviews.Values.Select(r => (long?)r.Rank).Max();
+
+        public IReadOnlyList<(ReviewItemId Id, long Rank)> ListOrder() => [.. data.Reviews.Values.Select(r => (r.Id, r.Rank))];
     }
 
     private sealed class GeneralTodoStore(InMemoryDataset data, Action<string> beforeWrite) : IGeneralTodoStore
@@ -307,6 +309,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
         }
 
         public long? MaxRank() => data.GeneralTodos.Values.Select(t => (long?)t.Rank).Max();
+
+        public IReadOnlyList<(GeneralTodoId Id, long Rank)> ListOrder() => [.. data.GeneralTodos.Values.Select(t => (t.Id, t.Rank))];
     }
 
     private sealed class WorkflowReader(InMemoryDataset data) : IWorkflowReader

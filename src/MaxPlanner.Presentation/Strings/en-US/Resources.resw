@@ -596,10 +596,10 @@
     <value>Completed ({0})</value>
   </data>
   <data name="Checklists_Summary" xml:space="preserve">
-    <value>Checklist items of active tasks · {0} open in {1} tasks</value>
+    <value>General to-dos and checklist items of active tasks · {0} open</value>
   </data>
   <data name="Checklists_SummaryOne" xml:space="preserve">
-    <value>Checklist items of active tasks · 1 open in {1} tasks</value>
+    <value>General to-dos and checklist items of active tasks · 1 open</value>
   </data>
   <data name="Checklists_AddItemBox.PlaceholderText" xml:space="preserve">
     <value>Add an item</value>
@@ -1474,12 +1474,6 @@
   <data name="Board_MenuOpenCr" xml:space="preserve">
     <value>Open CR</value>
   </data>
-  <data name="Board_NewCrButton.Label" xml:space="preserve">
-    <value>New CR…</value>
-  </data>
-  <data name="Board_NewCrButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>New change request (until the Calendar page is available)</value>
-  </data>
   <data name="Checklists_ItemMenuName" xml:space="preserve">
     <value>More actions for {0}</value>
   </data>
@@ -1494,5 +1488,482 @@
   </data>
   <data name="PopOut_Announced" xml:space="preserve">
     <value>Moved to a Subtask card in {0}</value>
+  </data>
+  <data name="Calendar_PageTitle.Text" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="Calendar_ModeMonthItem.Text" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="Calendar_ModeWeekItem.Text" xml:space="preserve">
+    <value>Week</value>
+  </data>
+  <data name="Calendar_ModeRecordsItem.Text" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Calendar_TodayButton.Content" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Calendar_TodayButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Go to today (Ctrl+T)</value>
+  </data>
+  <data name="Calendar_NewCrButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New CR</value>
+  </data>
+  <data name="Calendar_NewCrButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>New change request (Ctrl+N)</value>
+  </data>
+  <data name="Calendar_NewCrText.Text" xml:space="preserve">
+    <value>New CR</value>
+  </data>
+  <data name="Calendar_SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search CRs</value>
+  </data>
+  <data name="Calendar_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search change requests</value>
+  </data>
+  <data name="Calendar_ClearSearchButton.Content" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="Calendar_StateView.LoadingMessage" xml:space="preserve">
+    <value>Loading change requests…</value>
+  </data>
+  <data name="Calendar_StateView.EmptyTitle" xml:space="preserve">
+    <value>No CRs yet</value>
+  </data>
+  <data name="Calendar_StateView.EmptyMessage" xml:space="preserve">
+    <value>Create a change request to plan it on the calendar.</value>
+  </data>
+  <data name="Calendar_StateView.EmptyActionText" xml:space="preserve">
+    <value>New CR</value>
+  </data>
+  <data name="Calendar_BacklogHeading.Text" xml:space="preserve">
+    <value>Backlog</value>
+  </data>
+  <data name="Calendar_BacklogHint.Text" xml:space="preserve">
+    <value>Drag a CR onto a date to schedule it, or select it and choose Schedule.</value>
+  </data>
+  <data name="Calendar_BacklogList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Backlog CRs</value>
+  </data>
+  <data name="Calendar_AgendaList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Calendar agenda</value>
+  </data>
+  <data name="Calendar_RecordsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>CR records</value>
+  </data>
+  <data name="Calendar_Range" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="Calendar_LinkedTaskOne" xml:space="preserve">
+    <value>1 task</value>
+  </data>
+  <data name="Calendar_LinkedTasks" xml:space="preserve">
+    <value>{0} tasks</value>
+  </data>
+  <data name="Calendar_OverdueOne" xml:space="preserve">
+    <value>Overdue · 1 day</value>
+  </data>
+  <data name="Calendar_Overdue" xml:space="preserve">
+    <value>Overdue · {0} days</value>
+  </data>
+  <data name="Calendar_Ends" xml:space="preserve">
+    <value>ends {0}</value>
+  </data>
+  <data name="Calendar_RecordName" xml:space="preserve">
+    <value>{0} {1}, owner {2}, {3}, {4}</value>
+  </data>
+  <data name="Calendar_OpenLinkedTasksName" xml:space="preserve">
+    <value>Open the linked tasks of {0}</value>
+  </data>
+  <data name="Calendar_BacklogToggle" xml:space="preserve">
+    <value>Backlog ({0})</value>
+  </data>
+  <data name="Calendar_WeekPeriod" xml:space="preserve">
+    <value>{0} – {1}, {2}</value>
+  </data>
+  <data name="Calendar_PreviousWeek" xml:space="preserve">
+    <value>Previous week</value>
+  </data>
+  <data name="Calendar_NextWeek" xml:space="preserve">
+    <value>Next week</value>
+  </data>
+  <data name="Calendar_PreviousMonth" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="Calendar_NextMonth" xml:space="preserve">
+    <value>Next month</value>
+  </data>
+  <data name="Calendar_PeriodHelp" xml:space="preserve">
+    <value>Opens a date selector</value>
+  </data>
+  <data name="Calendar_NoMatches" xml:space="preserve">
+    <value>No CRs match your search.</value>
+  </data>
+  <data name="Calendar_ReplaceDatesTitle" xml:space="preserve">
+    <value>Replace planned dates?</value>
+  </data>
+  <data name="Calendar_ReplaceDates" xml:space="preserve">
+    <value>Replace {0} with {1}?</value>
+  </data>
+  <data name="Calendar_ScheduleButton" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="Calendar_ScheduleOnButton" xml:space="preserve">
+    <value>Schedule on {0}</value>
+  </data>
+  <data name="Calendar_DayNameOne" xml:space="preserve">
+    <value>{0}, 1 CR</value>
+  </data>
+  <data name="Calendar_DayName" xml:space="preserve">
+    <value>{0}, {1} CRs</value>
+  </data>
+  <data name="Calendar_TodayMarker" xml:space="preserve">
+    <value>today</value>
+  </data>
+  <data name="Calendar_Completed" xml:space="preserve">
+    <value>completed</value>
+  </data>
+  <data name="Calendar_ContinuesBefore" xml:space="preserve">
+    <value>continues from previous week</value>
+  </data>
+  <data name="Calendar_ContinuesAfter" xml:space="preserve">
+    <value>continues into next week</value>
+  </data>
+  <data name="Calendar_More" xml:space="preserve">
+    <value>+{0} more</value>
+  </data>
+  <data name="Calendar_MoreName" xml:space="preserve">
+    <value>{0} more CRs on {1}</value>
+  </data>
+  <data name="Calendar_OutsideName" xml:space="preserve">
+    <value>{0} CRs outside visible workdays</value>
+  </data>
+  <data name="Calendar_OutsideHeader" xml:space="preserve">
+    <value>Outside visible workdays</value>
+  </data>
+  <data name="Calendar_WorkweekCaption" xml:space="preserve">
+    <value>Workweek Sunday–Thursday · Friday and Saturday hidden</value>
+  </data>
+  <data name="Calendar_RecordsSummary" xml:space="preserve">
+    <value>{0} of {1} CRs · {2}</value>
+  </data>
+  <data name="Calendar_Scheduled" xml:space="preserve">
+    <value>{0} scheduled {1}</value>
+  </data>
+  <data name="Calendar_Rescheduled" xml:space="preserve">
+    <value>{0} now {1} to {2}</value>
+  </data>
+  <data name="Calendar_MovedToBacklog" xml:space="preserve">
+    <value>{0} moved to the backlog</value>
+  </data>
+  <data name="Calendar_OverdueLabel" xml:space="preserve">
+    <value>Overdue</value>
+  </data>
+  <data name="Calendar_BarHelp" xml:space="preserve">
+    <value>Press Shift F10 for actions. Shift plus Left or Right changes the end date; Ctrl plus Shift plus Left or Right changes the start date.</value>
+  </data>
+  <data name="Calendar_StartHandleName" xml:space="preserve">
+    <value>Resize the start of {0}</value>
+  </data>
+  <data name="Calendar_EndHandleName" xml:space="preserve">
+    <value>Resize the end of {0}</value>
+  </data>
+  <data name="Calendar_StubName" xml:space="preserve">
+    <value>Friday {0} and Saturday {1}, hidden</value>
+  </data>
+  <data name="Calendar_MenuOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Calendar_MenuEditDates" xml:space="preserve">
+    <value>Edit dates… (Ctrl+E)</value>
+  </data>
+  <data name="Calendar_MenuOpenLinkedTasks" xml:space="preserve">
+    <value>Open linked tasks</value>
+  </data>
+  <data name="Calendar_MenuMoveToBacklog" xml:space="preserve">
+    <value>Move to backlog</value>
+  </data>
+  <data name="Calendar_MenuDelete" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="Calendar_MenuScheduleOn" xml:space="preserve">
+    <value>Schedule on…</value>
+  </data>
+  <data name="Calendar_MenuCreateTask" xml:space="preserve">
+    <value>Create task</value>
+  </data>
+  <data name="Calendar_NoCrsOnDay" xml:space="preserve">
+    <value>No CRs on this date.</value>
+  </data>
+  <data name="Calendar_NewCrOnDate" xml:space="preserve">
+    <value>New CR on this date</value>
+  </data>
+  <data name="Calendar_PlannedStartHeader" xml:space="preserve">
+    <value>Planned start</value>
+  </data>
+  <data name="Calendar_PlannedEndHeader" xml:space="preserve">
+    <value>Planned end</value>
+  </data>
+  <data name="Calendar_MoveToBacklogPrompt" xml:space="preserve">
+    <value>Move {0} to the backlog? Its planned dates are cleared.</value>
+  </data>
+  <data name="Calendar_PendingRange" xml:space="preserve">
+    <value>New dates {0} to {1}; saved after a pause or Enter</value>
+  </data>
+  <data name="Calendar_DropCaption" xml:space="preserve">
+    <value>Schedule on {0}</value>
+  </data>
+  <data name="Calendar_ColumnNumber" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="Calendar_ColumnTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Calendar_ColumnOwner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Calendar_ColumnSquad" xml:space="preserve">
+    <value>Squad</value>
+  </data>
+  <data name="Calendar_ColumnStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Calendar_ColumnPriority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Calendar_ColumnPlannedStart" xml:space="preserve">
+    <value>Planned start</value>
+  </data>
+  <data name="Calendar_ColumnPlannedEnd" xml:space="preserve">
+    <value>Planned end</value>
+  </data>
+  <data name="Calendar_ColumnLinkedTasks" xml:space="preserve">
+    <value>Linked tasks</value>
+  </data>
+  <data name="Calendar_ColumnOverdue" xml:space="preserve">
+    <value>Overdue</value>
+  </data>
+  <data name="Calendar_SortByName" xml:space="preserve">
+    <value>Sort by {0}</value>
+  </data>
+  <data name="Calendar_SortedAscendingName" xml:space="preserve">
+    <value>{0}, sorted ascending</value>
+  </data>
+  <data name="Calendar_SortedDescendingName" xml:space="preserve">
+    <value>{0}, sorted descending</value>
+  </data>
+  <data name="CrEditor_MoreMoveToBacklog.Text" xml:space="preserve">
+    <value>Move to backlog</value>
+  </data>
+  <data name="Checklists_RenameBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Item text</value>
+  </data>
+  <data name="Checklists_ItemRename.Text" xml:space="preserve">
+    <value>Rename (F2)</value>
+  </data>
+  <data name="Checklists_ItemMoveUp.Text" xml:space="preserve">
+    <value>Move up (Alt+Shift+Up)</value>
+  </data>
+  <data name="Checklists_ItemMoveDown.Text" xml:space="preserve">
+    <value>Move down (Alt+Shift+Down)</value>
+  </data>
+  <data name="Checklists_ItemDelete.Text" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="Checklists_GeneralTitle.Text" xml:space="preserve">
+    <value>General to-dos</value>
+  </data>
+  <data name="Checklists_ReviewEdit.Text" xml:space="preserve">
+    <value>View/Edit</value>
+  </data>
+  <data name="Checklists_AddToTaskButton.Content" xml:space="preserve">
+    <value>Add to task…</value>
+  </data>
+  <data name="Checklists_AddToTaskButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Add a checklist item to a task</value>
+  </data>
+  <data name="Checklists_TaskPickerBox.PlaceholderText" xml:space="preserve">
+    <value>Search active tasks</value>
+  </data>
+  <data name="Checklists_TaskPickerBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Choose a task</value>
+  </data>
+  <data name="Checklists_NewTodoButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New to-do</value>
+  </data>
+  <data name="Checklists_NewTodoButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>New General to-do (Ctrl+N)</value>
+  </data>
+  <data name="Checklists_NewTodoText.Text" xml:space="preserve">
+    <value>New to-do</value>
+  </data>
+  <data name="Checklists_NewReviewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New review</value>
+  </data>
+  <data name="Checklists_NewReviewButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>New review</value>
+  </data>
+  <data name="Checklists_NewReviewText.Text" xml:space="preserve">
+    <value>New review</value>
+  </data>
+  <data name="Checklists_SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search checklists and reviews</value>
+  </data>
+  <data name="Checklists_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search checklists and reviews</value>
+  </data>
+  <data name="Checklists_ClearSearchButton.Content" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="Checklists_ReviewsEmptyTitle.Text" xml:space="preserve">
+    <value>No reviews yet</value>
+  </data>
+  <data name="Checklists_ReviewsEmptyMessage.Text" xml:space="preserve">
+    <value>Record a review of someone else's work without creating a CR or task.</value>
+  </data>
+  <data name="Checklists_ReviewsEmptyButton.Content" xml:space="preserve">
+    <value>New review</value>
+  </data>
+  <data name="Checklists_ReviewsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Open reviews</value>
+  </data>
+  <data name="Checklists_ReviewsCompletedList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Completed reviews</value>
+  </data>
+  <data name="Checklists_DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Checklists_DeletePrompt" xml:space="preserve">
+    <value>Delete '{0}'? This can't be undone.</value>
+  </data>
+  <data name="Checklists_ItemDeleted" xml:space="preserve">
+    <value>Deleted {0}</value>
+  </data>
+  <data name="Checklists_ItemDoneAnnounced" xml:space="preserve">
+    <value>{0}, done</value>
+  </data>
+  <data name="Checklists_ItemNotDoneAnnounced" xml:space="preserve">
+    <value>{0}, not done</value>
+  </data>
+  <data name="Checklists_ItemHelp" xml:space="preserve">
+    <value>F2 renames, Alt+Shift+Up or Down reorders, Delete deletes.</value>
+  </data>
+  <data name="Checklists_ItemHelpTask" xml:space="preserve">
+    <value>F2 renames, Alt+Shift+Up or Down reorders, Ctrl+Shift+P pops out to a Subtask card, Delete deletes.</value>
+  </data>
+  <data name="Checklists_NoMatches" xml:space="preserve">
+    <value>No items match '{0}'</value>
+  </data>
+  <data name="Checklists_ReviewCheckName" xml:space="preserve">
+    <value>Done: {0}</value>
+  </data>
+  <data name="Checklists_ReviewsSummary" xml:space="preserve">
+    <value>Reviews of other people's work · {0} open of {1}</value>
+  </data>
+  <data name="Checklists_SectionChecklists" xml:space="preserve">
+    <value>Checklists</value>
+  </data>
+  <data name="Checklists_SectionReviewsPlain" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="Checklists_SectionReviews" xml:space="preserve">
+    <value>Reviews ({0} open)</value>
+  </data>
+  <data name="Checklists_SectionMatches" xml:space="preserve">
+    <value>{0} ({1} matches)</value>
+  </data>
+  <data name="Record_GeneralTodo" xml:space="preserve">
+    <value>to-do</value>
+  </data>
+  <data name="Record_Review" xml:space="preserve">
+    <value>review</value>
+  </data>
+  <data name="Field_CrNumber" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="Field_Services" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="Field_Developer" xml:space="preserve">
+    <value>Developer</value>
+  </data>
+  <data name="Field_Comments" xml:space="preserve">
+    <value>Review comments</value>
+  </data>
+  <data name="ReviewEditor_MoreMenu.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More review actions</value>
+  </data>
+  <data name="ReviewEditor_MoreMenu.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>More review actions</value>
+  </data>
+  <data name="ReviewEditor_MoreDelete.Text" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="ReviewEditor_TitleBox.Header" xml:space="preserve">
+    <value>Title *</value>
+  </data>
+  <data name="ReviewEditor_CrNumberBox.Header" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="ReviewEditor_TaskNumberBox.Header" xml:space="preserve">
+    <value>Task number</value>
+  </data>
+  <data name="ReviewEditor_ServicesPicker.Header" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="ReviewEditor_DeveloperPicker.Header" xml:space="preserve">
+    <value>Developer</value>
+  </data>
+  <data name="ReviewEditor_CommentsBox.Header" xml:space="preserve">
+    <value>Review comments</value>
+  </data>
+  <data name="ReviewEditor_DoneCheck.Content" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="ReviewEditor_CompletedOn" xml:space="preserve">
+    <value>Completed on {0}</value>
+  </data>
+  <data name="ReviewEditor_CreateButton" xml:space="preserve">
+    <value>Create review</value>
+  </data>
+  <data name="ReviewEditor_Title" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="ReviewEditor_TitleNew" xml:space="preserve">
+    <value>New review</value>
+  </data>
+  <data name="Reviews_Created" xml:space="preserve">
+    <value>Created review {0}</value>
+  </data>
+  <data name="Reviews_Saved" xml:space="preserve">
+    <value>Saved review {0}</value>
+  </data>
+  <data name="Reviews_DeleteTitle" xml:space="preserve">
+    <value>Delete review?</value>
+  </data>
+  <data name="Reviews_DeleteButton" xml:space="preserve">
+    <value>Delete review</value>
+  </data>
+  <data name="Reviews_DeletedElsewhere" xml:space="preserve">
+    <value>This review was deleted elsewhere. It can't be saved.</value>
+  </data>
+  <data name="Reviews_DoneAnnounced" xml:space="preserve">
+    <value>Review {0} done, completed today</value>
+  </data>
+  <data name="Reviews_OpenAnnounced" xml:space="preserve">
+    <value>Review {0} not done</value>
+  </data>
+  <data name="Reviews_DoneOn" xml:space="preserve">
+    <value>Done {0}</value>
+  </data>
+  <data name="Reviews_Open" xml:space="preserve">
+    <value>open</value>
+  </data>
+  <data name="Reviews_TaskReference" xml:space="preserve">
+    <value>Task {0}</value>
+  </data>
+  <data name="Shell_NavChecklistsBadgeName" xml:space="preserve">
+    <value>Checklists, {0} open</value>
   </data>
 </root>

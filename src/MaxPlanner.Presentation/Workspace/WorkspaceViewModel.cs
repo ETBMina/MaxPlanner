@@ -1,6 +1,7 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using MaxPlanner.Presentation.Board;
+using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
@@ -16,8 +17,10 @@ namespace MaxPlanner.Presentation.Workspace;
 public sealed class WorkspaceViewModel : IDisposable
 {
     private readonly IDisposable _stateSubscription;
+    private readonly IDisposable _badgeSubscription;
     private BoardPageViewModel? _board;
     private GridPageViewModel? _grid;
+    private CalendarPageViewModel? _calendar;
     private ChecklistsPageViewModel? _checklists;
     private bool _isClosing;
     private bool _isDisposed;
@@ -35,7 +38,17 @@ public sealed class WorkspaceViewModel : IDisposable
         SaveStatus = new SaveStatusViewModel(strings, dispatcher, time);
         Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher);
         _stateSubscription = store.State.ObserveOn(uiScheduler).Subscribe(OnStoreState);
+        _badgeSubscription = store.Committed.ObserveOn(uiScheduler).Subscribe(_ => UpdateOpenChecklistCount(store));
     }
+
+    /// <summary>Raised when <see cref="OpenChecklistCount"/> changed (the Checklists nav badge, design §2.2).</summary>
+    public event EventHandler? OpenChecklistCountChanged;
+
+    /// <summary>
+    /// Open General to-dos, open checklist items of active tasks, and open reviews: what the Checklists page lists
+    /// as still to do. Kept here so the badge is right before the page is first visited.
+    /// </summary>
+    public int OpenChecklistCount { get; private set; }
 
     public WorkspaceContext Context { get; }
 
@@ -45,11 +58,13 @@ public sealed class WorkspaceViewModel : IDisposable
 
     public GridPageViewModel Grid => _grid ??= new GridPageViewModel(Live());
 
+    public CalendarPageViewModel Calendar => _calendar ??= new CalendarPageViewModel(Live());
+
     public ChecklistsPageViewModel Checklists => _checklists ??= new ChecklistsPageViewModel(Live());
 
     /// <summary>The pages created so far (for disposal and the navigation-budget evidence).</summary>
     public IEnumerable<IPageViewModel> CreatedPages =>
-        new IPageViewModel?[] { _board, _grid, _checklists }.OfType<IPageViewModel>();
+        new IPageViewModel?[] { _board, _grid, _calendar, _checklists }.OfType<IPageViewModel>();
 
     /// <summary>The app is closing (T-06.6): no new command may start, whatever the store reports.</summary>
     public void BeginClose()
@@ -67,6 +82,7 @@ public sealed class WorkspaceViewModel : IDisposable
 
         _isDisposed = true;
         _stateSubscription.Dispose();
+        _badgeSubscription.Dispose();
         foreach (var page in CreatedPages)
         {
             page.Dispose();
@@ -76,6 +92,18 @@ public sealed class WorkspaceViewModel : IDisposable
     }
 
     private WorkspaceContext Live() => _isDisposed ? throw new ObjectDisposedException(nameof(WorkspaceViewModel)) : Context;
+
+    private void UpdateOpenChecklistCount(WorkspaceProjectionStore store)
+    {
+        var count = store.GeneralTodos.Items.Count(t => !t.IsCompleted)
+            + store.Tasks.Items.Where(t => !t.IsArchived).Sum(t => t.ChecklistTotal - t.ChecklistDone)
+            + store.ReviewItems.Items.Count(r => !r.IsDone);
+        if (count != OpenChecklistCount)
+        {
+            OpenChecklistCount = count;
+            OpenChecklistCountChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     private void OnStoreState(ProjectionState state)
     {

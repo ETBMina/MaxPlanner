@@ -189,6 +189,8 @@ public sealed partial class CrEditorDialog : ContentDialog
 
     private void OnDeleteClick(object sender, RoutedEventArgs e) => ViewModel.BeginDelete();
 
+    private void OnMoveToBacklogClick(object sender, RoutedEventArgs e) => ViewModel.RequestMoveToBacklog();
+
     private void OnConfirmDeleteClick(object sender, RoutedEventArgs e) => _ = ViewModel.ConfirmDeleteAsync();
 
     private void OnDirtySaveClick(object sender, RoutedEventArgs e) => _ = ViewModel.SaveFromPromptAsync();

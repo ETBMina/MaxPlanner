@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using MaxPlanner.Presentation.Board;
+using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Grid;
+using MaxPlanner.Presentation.Workspace;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -22,17 +24,17 @@ public sealed partial class ShellView : UserControl
     public static readonly DependencyProperty SaveStatusProperty = DependencyProperty.Register(
         nameof(SaveStatus), typeof(SaveStatusViewModel), typeof(ShellView), new PropertyMetadata(null));
 
-    // Design §6.4: ViewDashboard, Calendar, Setting; used on the pages that are not built yet.
+    // Design §6.4: ViewDashboard, Setting; used on the pages that are not built yet.
     private static readonly Dictionary<AppPage, string> PlaceholderGlyphs = new()
     {
         [AppPage.Dashboard] = "",
-        [AppPage.Calendar] = "",
         [AppPage.Settings] = "",
     };
 
     private readonly Dictionary<AppPage, UIElement> _pageViews = [];
     private readonly DialogHost _dialogs;
     private ShellViewModel? _viewModel;
+    private WorkspaceViewModel? _badgeSource;
     private SaveStatusViewModel? _saveStatus;
     private bool _isSyncingSelection;
 
@@ -73,6 +75,7 @@ public sealed partial class ShellView : UserControl
 
             AttachSaveStatus(value?.Workspace?.SaveStatus);
             _dialogs.Attach(value?.Workspace?.Context);
+            AttachBadge(value?.Workspace);
             ShowCurrentPage(moveFocus: false);
         }
     }
@@ -108,6 +111,7 @@ public sealed partial class ShellView : UserControl
 
                 AttachSaveStatus(_viewModel?.Workspace?.SaveStatus);
                 _dialogs.Attach(_viewModel?.Workspace?.Context);
+                AttachBadge(_viewModel?.Workspace);
                 ShowCurrentPage(moveFocus: false);
                 break;
             case nameof(ShellViewModel.CurrentPage):
@@ -132,6 +136,7 @@ public sealed partial class ShellView : UserControl
             {
                 AppPage.Board => new BoardPageView(workspace.Board),
                 AppPage.Grid => new GridPageView(workspace.Grid),
+                AppPage.Calendar => new CalendarPageView(workspace.Calendar),
                 AppPage.Checklists => new ChecklistsPageView(workspace.Checklists),
                 _ => new PlaceholderPageView(page, _viewModel.PageTitle(page), PlaceholderGlyphs[page]),
             };
@@ -157,6 +162,9 @@ public sealed partial class ShellView : UserControl
                 break;
             case BoardPageView board:
                 board.FocusTitle();
+                break;
+            case CalendarPageView calendar:
+                calendar.FocusTitle();
                 break;
             case ChecklistsPageView checklists:
                 checklists.FocusTitle();
@@ -244,6 +252,47 @@ public sealed partial class ShellView : UserControl
                 }
             };
             KeyboardAccelerators.Add(accelerator);
+        }
+    }
+
+    private void AttachBadge(WorkspaceViewModel? workspace)
+    {
+        if (ReferenceEquals(_badgeSource, workspace))
+        {
+            return;
+        }
+
+        if (_badgeSource is not null)
+        {
+            _badgeSource.OpenChecklistCountChanged -= OnOpenChecklistCountChanged;
+        }
+
+        _badgeSource = workspace;
+        if (workspace is not null)
+        {
+            workspace.OpenChecklistCountChanged += OnOpenChecklistCountChanged;
+        }
+
+        OnOpenChecklistCountChanged(this, EventArgs.Empty);
+    }
+
+    // Design §2.2: the Checklists item carries an InfoBadge with the open count; its accessible name includes it.
+    private void OnOpenChecklistCountChanged(object? sender, EventArgs e)
+    {
+        if (Nav.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(i => i.Tag as string == nameof(AppPage.Checklists)) is not { } item)
+        {
+            return;
+        }
+
+        var count = _badgeSource?.OpenChecklistCount ?? 0;
+        item.InfoBadge = count > 0 ? new InfoBadge { Value = count } : null;
+        if (count > 0 && _viewModel is not null)
+        {
+            AutomationProperties.SetName(item, _viewModel.Format("Shell_NavChecklistsBadgeName", count));
+        }
+        else
+        {
+            item.ClearValue(AutomationProperties.NameProperty);
         }
     }
 

@@ -284,6 +284,19 @@ internal sealed class SqliteReviewStore(SqliteWriteTransaction tx) : IReviewStor
         return command.ExecuteScalar() is long rank ? rank : null;
     }
 
+    public IReadOnlyList<(ReviewItemId Id, long Rank)> ListOrder()
+    {
+        using var command = tx.Command("SELECT id, rank FROM review_items;");
+        using var reader = command.ExecuteReader();
+        var order = new List<(ReviewItemId, long)>();
+        while (reader.Read())
+        {
+            order.Add((new ReviewItemId(reader.GetGuid(0, "review_items", "id")), reader.GetInt64(1)));
+        }
+
+        return order;
+    }
+
     private static void Bind(SqliteCommand command, ReviewItem item)
     {
         command.Add("$id", item.Id.Value);
@@ -372,6 +385,19 @@ internal sealed class SqliteGeneralTodoStore(SqliteWriteTransaction tx) : IGener
     {
         using var command = tx.Command("SELECT MAX(rank) FROM general_todos;");
         return command.ExecuteScalar() is long rank ? rank : null;
+    }
+
+    public IReadOnlyList<(GeneralTodoId Id, long Rank)> ListOrder()
+    {
+        using var command = tx.Command("SELECT id, rank FROM general_todos;");
+        using var reader = command.ExecuteReader();
+        var order = new List<(GeneralTodoId, long)>();
+        while (reader.Read())
+        {
+            order.Add((new GeneralTodoId(reader.GetGuid(0, "general_todos", "id")), reader.GetInt64(1)));
+        }
+
+        return order;
     }
 
     private static void Bind(SqliteCommand command, GeneralTodo todo)

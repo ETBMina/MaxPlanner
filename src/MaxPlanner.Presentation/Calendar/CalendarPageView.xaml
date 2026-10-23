@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Calendar page (design §4.4, B-08): SelectorBar Month · Week · Records [gallery-selectorbar-1], period
+    navigation with a CalendarView flyout [gallery-calendarview-1], the Backlog SplitView [gallery-splitview-1],
+    the custom CalendarMonthView surface, the S agenda list, and the Records table (ListView + header Grid).
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Calendar.CalendarPageView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:board="using:MaxPlanner.Presentation.Board"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:local="using:MaxPlanner.Presentation.Calendar"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <!-- Backlog CR card (design §4.4): number link, priority chip, title, owner, "Squad · n tasks", ⋯ menu. -->
+        <DataTemplate x:Key="BacklogCardTemplate" x:DataType="local:CalendarRecordViewModel">
+            <Border
+                Margin="0,4"
+                Padding="12,8"
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_BacklogCard_', Id), Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                Style="{StaticResource CardBorderStyle}"
+                Tag="{x:Bind Mode=OneTime}">
+                <Grid ColumnSpacing="8" RowSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_BacklogNumberLink_', Id), Mode=OneTime}"
+                            Click="OnBacklogOpenClick"
+                            Content="{x:Bind Number, Mode=OneWay}"
+                            Tag="{x:Bind Mode=OneTime}" />
+                        <Border AutomationProperties.Name="{x:Bind PriorityAccessibleName, Mode=OneWay}" Style="{x:Bind board:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="{x:Bind board:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
+                                <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind PriorityName, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <Button
+                        Grid.Column="1"
+                        Padding="6,4"
+                        VerticalAlignment="Top"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_BacklogMenuButton_', Id), Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind MenuName, Mode=OneWay}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="OnBacklogMenuClick"
+                        Tag="{x:Bind Mode=OneTime}"
+                        ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
+                        <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    </Button>
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.ColumnSpan="2"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Title, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.ColumnSpan="2"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind OwnerName, Mode=OneWay}" />
+                    <StackPanel
+                        Grid.Row="3"
+                        Grid.ColumnSpan="2"
+                        Orientation="Horizontal"
+                        Spacing="4">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind SquadName, Mode=OneWay}" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="·" />
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_BacklogLinkedTasksLink_', Id), Mode=OneTime}"
+                            AutomationProperties.Name="{x:Bind OpenLinkedTasksName, Mode=OneWay}"
+                            Click="OnBacklogLinkedTasksClick"
+                            FontSize="12"
+                            Tag="{x:Bind Mode=OneTime}">
+                            <TextBlock Text="{x:Bind LinkedTasksLinkText, Mode=OneWay}" />
+                        </HyperlinkButton>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- Records row at L/M (design §4.4): every column; the table scrolls horizontally when narrower. -->
+        <DataTemplate x:Key="RecordRowTemplate" x:DataType="local:CalendarRecordViewModel">
+            <Grid
+                MinHeight="40"
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_RecordRow_', Id), Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                ColumnSpacing="8"
+                Tag="{x:Bind Mode=OneTime}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="240" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="80" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="44" />
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{x:Bind OwnerName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="{x:Bind SquadName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="{x:Bind StatusName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="5" VerticalAlignment="Center" Text="{x:Bind PriorityName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="6" VerticalAlignment="Center" Text="{x:Bind PlannedStartText, Mode=OneWay}" />
+                <TextBlock Grid.Column="7" VerticalAlignment="Center" Text="{x:Bind PlannedEndText, Mode=OneWay}" />
+                <TextBlock Grid.Column="8" VerticalAlignment="Center" Text="{x:Bind LinkedTasksText, Mode=OneWay}" />
+                <StackPanel
+                    Grid.Column="9"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="4"
+                    Visibility="{x:Bind common:BindFunctions.Visible(IsOverdue), Mode=OneWay}">
+                    <FontIcon
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="12"
+                        Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                        Glyph="&#xE7BA;" />
+                    <TextBlock Text="{x:Bind OverdueText, Mode=OneWay}" />
+                </StackPanel>
+                <Button
+                    Grid.Column="10"
+                    Padding="6,4"
+                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_RecordMenuButton_', Id), Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind MenuName, Mode=OneWay}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="OnRecordMenuClick"
+                    Tag="{x:Bind Mode=OneTime}"
+                    ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                </Button>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Records row at S (design §4.4): number + title / owner · status · end · overdue. -->
+        <DataTemplate x:Key="CompactRecordTemplate" x:DataType="local:CalendarRecordViewModel">
+            <Grid
+                Padding="0,6"
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_RecordRow_', Id), Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="2">
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap">
+                        <Run Text="{x:Bind Number, Mode=OneWay}" />
+                        <Run Text="{x:Bind Title, Mode=OneWay}" />
+                    </TextBlock>
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind CompactLine, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+                <Button
+                    Grid.Column="1"
+                    Padding="6,4"
+                    VerticalAlignment="Top"
+                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_RecordMenuButton_', Id), Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind MenuName, Mode=OneWay}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="OnRecordMenuClick"
+                    Tag="{x:Bind Mode=OneTime}"
+                    ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                </Button>
+            </Grid>
+        </DataTemplate>
+
+        <!-- S agenda (design §4.4): a date header per visible workday, then its CRs with their range. -->
+        <DataTemplate x:Key="AgendaRowTemplate" x:DataType="local:CalendarAgendaRow">
+            <Grid AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind HeaderText, Mode=OneTime}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(IsHeader), Mode=OneTime}" />
+                <StackPanel
+                    Padding="0,4"
+                    AutomationProperties.Name="{x:Bind Record.AccessibleName, Mode=OneTime}"
+                    Spacing="2"
+                    Visibility="{x:Bind common:BindFunctions.Visible(IsRecord), Mode=OneTime}">
+                    <TextBlock TextWrapping="Wrap">
+                        <Run FontWeight="SemiBold" Text="{x:Bind Record.Number, Mode=OneTime}" />
+                        <Run Text="{x:Bind Record.Title, Mode=OneTime}" />
+                    </TextBlock>
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Record.RangeText, Mode=OneTime}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Record.CompactLine, Mode=OneTime}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Page header (design §2.3). The shared CR Filters flyout is Phase 11. -->
+        <StackPanel
+            x:Name="HeaderRoot"
+            Padding="32,24,32,12"
+            Spacing="8">
+            <TextBlock
+                x:Name="PageTitle"
+                x:Uid="Calendar_PageTitle"
+                AutomationProperties.AutomationId="Calendar_PageTitle"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource PageTitleTextStyle}" />
+            <Grid x:Name="CommandRow" ColumnSpacing="12" RowSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <SelectorBar
+                    x:Name="ModeBar"
+                    AutomationProperties.AutomationId="Calendar_ModeBar"
+                    SelectionChanged="OnModeChanged">
+                    <SelectorBarItem
+                        x:Name="MonthItem"
+                        x:Uid="Calendar_ModeMonthItem"
+                        AutomationProperties.AutomationId="Calendar_ModeMonthItem"
+                        Tag="Month" />
+                    <SelectorBarItem
+                        x:Name="WeekItem"
+                        x:Uid="Calendar_ModeWeekItem"
+                        AutomationProperties.AutomationId="Calendar_ModeWeekItem"
+                        Tag="Week" />
+                    <SelectorBarItem
+                        x:Name="RecordsItem"
+                        x:Uid="Calendar_ModeRecordsItem"
+                        AutomationProperties.AutomationId="Calendar_ModeRecordsItem"
+                        Tag="Records" />
+                </SelectorBar>
+                <!-- Period navigation (Month/Week only): Today, ‹, the period button with the date selector, ›. -->
+                <StackPanel
+                    x:Name="PeriodPanel"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="4"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSurfaceMode), Mode=OneWay}">
+                    <Button
+                        x:Uid="Calendar_TodayButton"
+                        AutomationProperties.AutomationId="Calendar_TodayButton"
+                        Command="{x:Bind ViewModel.GoToTodayCommand}">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="T" Modifiers="Control" />
+                        </Button.KeyboardAccelerators>
+                    </Button>
+                    <Button
+                        AutomationProperties.AutomationId="Calendar_PrevButton"
+                        AutomationProperties.Name="{x:Bind ViewModel.PreviousName, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.PreviousCommand}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.PreviousName, Mode=OneWay}">
+                        <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                    </Button>
+                    <Button
+                        x:Name="PeriodButton"
+                        AutomationProperties.AutomationId="Calendar_PeriodButton"
+                        AutomationProperties.HelpText="{x:Bind ViewModel.Text('Calendar_PeriodHelp'), Mode=OneTime}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{x:Bind ViewModel.PeriodText, Mode=OneWay}" />
+                            <FontIcon
+                                AutomationProperties.AccessibilityView="Raw"
+                                FontSize="10"
+                                Glyph="&#xE70D;" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout x:Name="PeriodFlyout" Opening="OnPeriodFlyoutOpening">
+                                <CalendarView
+                                    x:Name="PeriodCalendar"
+                                    AutomationProperties.AutomationId="Calendar_PeriodCalendar"
+                                    FirstDayOfWeek="Sunday"
+                                    SelectedDatesChanged="OnPeriodDateSelected"
+                                    SelectionMode="Single" />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button
+                        AutomationProperties.AutomationId="Calendar_NextButton"
+                        AutomationProperties.Name="{x:Bind ViewModel.NextName, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.NextCommand}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.NextName, Mode=OneWay}">
+                        <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                    </Button>
+                </StackPanel>
+                <Button
+                    x:Uid="Calendar_NewCrButton"
+                    Grid.Column="2"
+                    AutomationProperties.AutomationId="Calendar_NewCrButton"
+                    Command="{x:Bind ViewModel.NewChangeRequestCommand}"
+                    Style="{StaticResource AccentButtonStyle}">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="N" Modifiers="Control" />
+                    </Button.KeyboardAccelerators>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                        <TextBlock x:Uid="Calendar_NewCrText" />
+                    </StackPanel>
+                </Button>
+                <StackPanel
+                    Grid.Row="1"
+                    Grid.ColumnSpan="3"
+                    Orientation="Horizontal"
+                    Spacing="12">
+                    <AutoSuggestBox
+                        x:Uid="Calendar_SearchBox"
+                        Width="280"
+                        AutomationProperties.AutomationId="Calendar_SearchBox"
+                        AutomationProperties.LandmarkType="Search"
+                        QueryIcon="Find"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <ToggleButton
+                        AutomationProperties.AutomationId="Calendar_BacklogToggle"
+                        Content="{x:Bind ViewModel.BacklogToggleText, Mode=OneWay}"
+                        IsChecked="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+
+        <!-- B-10: no matches is distinct from an empty dataset; the surface still renders (design §4.4 states). -->
+        <InfoBar
+            Grid.Row="1"
+            Margin="32,0,32,8"
+            AutomationProperties.AutomationId="Calendar_NoMatchesInfoBar"
+            IsClosable="False"
+            IsOpen="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}"
+            Message="{x:Bind ViewModel.NoMatchesText, Mode=OneTime}"
+            Severity="Informational">
+            <InfoBar.ActionButton>
+                <Button
+                    x:Uid="Calendar_ClearSearchButton"
+                    AutomationProperties.AutomationId="Calendar_ClearSearchButton"
+                    Click="OnClearSearchClick" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+
+        <controls:StateView
+            x:Uid="Calendar_StateView"
+            Grid.Row="2"
+            EmptyActionCommand="{x:Bind ViewModel.NewChangeRequestCommand}"
+            EmptyGlyph="&#xE787;"
+            PageKey="Calendar"
+            State="{x:Bind ViewModel.State, Mode=OneWay}">
+            <SplitView
+                x:Name="Split"
+                DisplayMode="Inline"
+                IsPaneOpen="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}"
+                OpenPaneLength="280"
+                PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                PanePlacement="Left">
+                <SplitView.Pane>
+                    <Grid Padding="12" RowSpacing="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            x:Uid="Calendar_BacklogHeading"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Uid="Calendar_BacklogHint"
+                            Grid.Row="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <ListView
+                            x:Name="BacklogList"
+                            x:Uid="Calendar_BacklogList"
+                            Grid.Row="2"
+                            AutomationProperties.AutomationId="Calendar_BacklogList"
+                            CanDragItems="True"
+                            DragItemsStarting="OnBacklogDragStarting"
+                            ItemTemplate="{StaticResource BacklogCardTemplate}"
+                            ItemsSource="{x:Bind ViewModel.Backlog, Mode=OneTime}"
+                            KeyDown="OnBacklogKeyDown"
+                            SelectionMode="Single">
+                            <ListView.ItemContainerStyle>
+                                <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                    </Grid>
+                </SplitView.Pane>
+
+                <Grid x:Name="ContentRoot" Padding="32,0,32,16">
+                    <!-- Month/Week surface (L/M). The surface is not virtualized: at most six week rows. -->
+                    <ScrollViewer
+                        x:Name="SurfaceScroller"
+                        AutomationProperties.AutomationId="Calendar_SurfaceScroller"
+                        VerticalScrollBarVisibility="Auto">
+                        <local:CalendarMonthView x:Name="MonthView" />
+                    </ScrollViewer>
+
+                    <!-- S agenda presentation of Month/Week (design §4.4). -->
+                    <ListView
+                        x:Name="AgendaList"
+                        x:Uid="Calendar_AgendaList"
+                        AutomationProperties.AutomationId="Calendar_AgendaList"
+                        IsItemClickEnabled="True"
+                        ItemClick="OnAgendaItemClick"
+                        ItemTemplate="{StaticResource AgendaRowTemplate}"
+                        ItemsSource="{x:Bind ViewModel.Agenda, Mode=OneTime}"
+                        SelectionMode="None"
+                        Visibility="Collapsed" />
+
+                    <!-- Records (B-08.4): every status and every unscheduled CR; header buttons sort. -->
+                    <ScrollViewer
+                        x:Name="RecordsScroller"
+                        HorizontalScrollBarVisibility="Auto"
+                        HorizontalScrollMode="Enabled"
+                        VerticalScrollBarVisibility="Disabled"
+                        VerticalScrollMode="Disabled"
+                        Visibility="Collapsed">
+                        <Grid Width="1420" RowSpacing="4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid
+                                x:Name="RecordsHeader"
+                                Padding="12,0,12,0"
+                                AutomationProperties.AutomationId="Calendar_RecordsHeader"
+                                ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110" />
+                                    <ColumnDefinition Width="240" />
+                                    <ColumnDefinition Width="140" />
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="110" />
+                                    <ColumnDefinition Width="110" />
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                            </Grid>
+                            <ListView
+                                x:Name="RecordsList"
+                                x:Uid="Calendar_RecordsList"
+                                Grid.Row="1"
+                                AutomationProperties.AutomationId="Calendar_RecordsList"
+                                IsItemClickEnabled="True"
+                                ItemClick="OnRecordItemClick"
+                                ItemTemplate="{StaticResource RecordRowTemplate}"
+                                ItemsSource="{x:Bind ViewModel.Records, Mode=OneTime}"
+                                SelectionMode="None" />
+                        </Grid>
+                    </ScrollViewer>
+                    <ListView
+                        x:Name="CompactRecordsList"
+                        x:Uid="Calendar_RecordsList"
+                        AutomationProperties.AutomationId="Calendar_RecordsList"
+                        IsItemClickEnabled="True"
+                        ItemClick="OnRecordItemClick"
+                        ItemTemplate="{StaticResource CompactRecordTemplate}"
+                        ItemsSource="{x:Bind ViewModel.Records, Mode=OneTime}"
+                        SelectionMode="None"
+                        Visibility="Collapsed" />
+                </Grid>
+            </SplitView>
+        </controls:StateView>
+    </Grid>
+</UserControl>

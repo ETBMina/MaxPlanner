@@ -157,6 +157,15 @@ public sealed record ChangeRequest
         return range.Map(r => (this with { Planned = r }).Touch(nowUtc));
     }
 
+    /// <summary>
+    /// B-08.8 date-editor route: replaces both endpoints of an existing range in one change, so an
+    /// intermediate inverted range never exists. The status is unchanged; inverted ranges are rejected.
+    /// </summary>
+    public DomainResult<ChangeRequest> Reschedule(DateOnly start, DateOnly end, DateTimeOffset nowUtc) =>
+        Planned is null
+            ? DomainResult.Failure<ChangeRequest>(DomainErrorCodes.Required, "PlannedStart")
+            : PlannedRange.Create(start, end).Map(r => (this with { Planned = r }).Touch(nowUtc));
+
     /// <summary>B-08.11: explicitly clears both planned dates and sets the backlog status.</summary>
     public ChangeRequest MoveToBacklog(CrStatusDefinition backlogStatus, DateTimeOffset nowUtc)
     {

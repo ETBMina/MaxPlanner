@@ -50,6 +50,9 @@ public enum CrEditorFollowUp
     CreateTask,
     OpenTask,
     OpenOtherCr,
+
+    /// <summary>More › Move to backlog (B-08.11): the command runs after the editor closed.</summary>
+    MoveToBacklog,
 }
 
 /// <summary>
@@ -89,6 +92,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         nameof(HasValidationSummary), nameof(HasSaveError), nameof(IsOverdue), nameof(OverdueMessage), nameof(LinkedTasksHeader),
         nameof(HasLinkedTasks), nameof(TaskNumberHelper), nameof(SaveAndCreatePrompt), nameof(ShowMakeDefaultOwner), nameof(MakeDefaultOwnerText),
         nameof(CanOpenUrl), nameof(PlannedCaption), nameof(HasDuplicate), nameof(OpenDuplicateText), nameof(DisplayNumber),
+        nameof(CanMoveToBacklog),
     ];
 
     private readonly WorkspaceContext _context;
@@ -106,7 +110,11 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     private OperationId? _retryOperation;
 
     /// <param name="changeRequestId">The CR to edit, or null for a new CR.</param>
-    public CrEditorViewModel(WorkspaceContext context, ChangeRequestId? changeRequestId)
+    /// <param name="plannedDay">
+    /// Calendar day flyout "New CR on this date": a new CR starts as a one-day range on that day with the
+    /// scheduling status, like a scheduled backlog CR (B-08.5). Ignored for an existing CR.
+    /// </param>
+    public CrEditorViewModel(WorkspaceContext context, ChangeRequestId? changeRequestId, DateOnly? plannedDay = null)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _workflow = context.Store.CurrentWorkflow
@@ -133,6 +141,12 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             SelectedStatus = StatusOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultCrStatusId);
             SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultPriorityId);
             SelectedSquad = SquadOptions[0];
+            if (plannedDay is { } day)
+            {
+                PlannedStart = DraftDates.ToPicker(day);
+                PlannedEnd = DraftDates.ToPicker(day);
+                SelectedStatus = StatusOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.CalendarSchedulingStatusId) ?? SelectedStatus;
+            }
 
             // B-03.1: a new CR prefills the default CR Owner when one is set.
             if (_workflow.Defaults.DefaultCrOwnerId is { } owner && _workflow.FindPerson(owner) is { } person)
@@ -336,6 +350,9 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     public bool CanDelete => !IsNew && !IsReadOnly && !IsSaving;
 
+    /// <summary>More › Move to backlog: offered while the CR has dates or a non-backlog status (B-08.11).</summary>
+    public bool CanMoveToBacklog => CanDelete && Latest is { } cr && (cr.PlannedStart is not null || !cr.IsBacklog);
+
     public bool CanCreateTask => !IsReadOnly && !IsSaving && CurrentStep == CrEditorStep.Form;
 
     public bool IsFormStep => CurrentStep == CrEditorStep.Form;
@@ -477,6 +494,18 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     {
         var url = HttpUrl.CreateOptional(SolutionDesignUrl);
         return url is { IsSuccess: true, Value: { } link } && await _context.UrlLauncher.OpenAsync(link.Value).ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// More › Move to backlog (B-08.11): the editor closes (after the dirty prompt, so a draft is never saved
+    /// implicitly) and the explicit command clears the dates and sets the backlog status.
+    /// </summary>
+    public void RequestMoveToBacklog()
+    {
+        if (CanMoveToBacklog)
+        {
+            RequestFollowUp(CrEditorFollowUp.MoveToBacklog);
+        }
     }
 
     /// <summary>More › Delete… (design §5.7): the cascade step with the counts of what goes with the CR.</summary>
