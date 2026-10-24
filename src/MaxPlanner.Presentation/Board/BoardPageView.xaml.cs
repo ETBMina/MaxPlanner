@@ -32,7 +32,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
+        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -54,10 +54,10 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
     public static string PriorityGlyph(PriorityLevel level) => level switch
     {
-        PriorityLevel.Level1 => "",
-        PriorityLevel.Level2 => "",
-        PriorityLevel.Lowest => "",
-        _ => "",
+        PriorityLevel.Level1 => "\uE8C9",
+        PriorityLevel.Level2 => "\uE70E",
+        PriorityLevel.Lowest => "\uE70D",
+        _ => "\uE738",
     };
 
     /// <summary>Design §4.2: 60% opacity while the card is being moved; the "Moving" caption says it in text.</summary>

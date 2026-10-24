@@ -40,7 +40,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
+        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         MonthView.ViewModel = viewModel;
         BuildSortHeaders();
         SyncModeBar();

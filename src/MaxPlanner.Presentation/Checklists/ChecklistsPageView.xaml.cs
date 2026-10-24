@@ -31,7 +31,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
+        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         SyncSectionBar();
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusAddBoxRequested += OnFocusAddBoxRequested;

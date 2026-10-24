@@ -57,7 +57,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
+        _search = new CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         Table.Host = this;
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();

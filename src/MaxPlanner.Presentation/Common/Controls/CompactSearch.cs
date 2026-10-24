@@ -29,12 +29,13 @@ public sealed class CompactSearch
     /// <param name="box">The search box, in its header panel when this is created.</param>
     /// <param name="toggle">The S-breakpoint Search button; collapsed at M and L.</param>
     /// <param name="compactRow">An empty full-width panel under the header commands; collapsed until expanded.</param>
-    public CompactSearch(AutoSuggestBox box, ToggleButton toggle, Panel compactRow)
+    /// <param name="wideHost">The panel hosting the search box in wide mode. When null, resolved from the box's parent.</param>
+    public CompactSearch(AutoSuggestBox box, ToggleButton toggle, Panel compactRow, Panel? wideHost = null)
     {
         _box = box ?? throw new ArgumentNullException(nameof(box));
         _toggle = toggle ?? throw new ArgumentNullException(nameof(toggle));
         _compactRow = compactRow ?? throw new ArgumentNullException(nameof(compactRow));
-        _wideHost = box.Parent as Panel ?? throw new ArgumentException("The search box must be the child of a panel.", nameof(box));
+        _wideHost = wideHost ?? box.Parent as Panel ?? throw new ArgumentException("The search box must be the child of a panel.", nameof(box));
         _wideIndex = _wideHost.Children.IndexOf(box);
         _wideMaxWidth = box.MaxWidth;
         _hasFixedWidth = !double.IsNaN(box.Width);

@@ -73,7 +73,10 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
 
     /// <summary>Segoe Fluent Icons from the status flags (design §6.2); empty when no flag applies.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGlyph))]
     public partial string Glyph { get; private set; } = string.Empty;
+
+    public bool HasGlyph => !string.IsNullOrEmpty(Glyph);
 
     /// <summary>"6", or "4 of 6" while the Board is filtered: visible / total active (B-07).</summary>
     [ObservableProperty]
@@ -106,7 +109,7 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
     internal void Update(TaskStatusDefinition status)
     {
         Name = status.Name.Display;
-        Glyph = status.IsCompleted ? "" : status.SetsStartDate ? "" : status.IsBacklog ? "" : string.Empty;
+        Glyph = status.IsCompleted ? "\uE930" : status.SetsStartDate ? "\uE768" : status.IsBacklog ? "\uEA3A" : string.Empty;
     }
 
     /// <summary>Applies the shared task filter (B-10) to this column; hidden cards keep their ranks (B-07).</summary>

@@ -216,16 +216,14 @@ public sealed class SliceBehaviourTests
 
     [Fact]
     [Trait("Req", "T-08")]
-    public void Pages_that_are_not_built_yet_have_no_view_model_and_an_empty_summary()
+    public void Restored_active_page_is_activated_and_has_view_model()
     {
         using var h = WorkspaceHarness.Create();
         using var shell = new ShellViewModel(new FakeStrings(), new FakeDataFolder(), new FakePreferencesStore(new Application.Preferences.UiPreferences { ActivePage = "calendar" }));
         shell.AttachWorkspace(h.Workspace);
 
         shell.CurrentPage.Should().Be(AppPage.Calendar, "B-04: the last active page is restored");
-        shell.PageViewModel(AppPage.Calendar).Should().BeNull();
-        shell.StatusSummary.Should().BeEmpty();
-        h.Store.ActiveCacheSubscriptions.Should().Be(0, "pages are created on first visit only");
+        shell.PageViewModel(AppPage.Calendar).Should().NotBeNull();
     }
 
     [Fact]

@@ -347,6 +347,7 @@
                     </StackPanel>
                 </Button>
                 <StackPanel
+                    x:Name="SearchBoxHost"
                     Grid.Row="1"
                     Grid.ColumnSpan="3"
                     Orientation="Horizontal"

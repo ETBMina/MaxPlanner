@@ -255,7 +255,8 @@
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
                             FontSize="14"
-                            Glyph="{x:Bind Glyph, Mode=OneWay}" />
+                            Glyph="{x:Bind Glyph, Mode=OneWay}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(HasGlyph), Mode=OneWay}" />
                         <TextBlock
                             AutomationProperties.HeadingLevel="Level2"
                             Style="{StaticResource BodyStrongTextBlockStyle}"
@@ -345,7 +346,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Spacing="8">
+                <StackPanel
+                    x:Name="SearchBoxHost"
+                    Orientation="Horizontal"
+                    Spacing="8">
                     <AutoSuggestBox
                         x:Name="SearchBox"
                         x:Uid="Board_SearchBox"

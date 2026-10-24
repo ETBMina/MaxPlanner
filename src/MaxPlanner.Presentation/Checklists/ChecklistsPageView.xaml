@@ -393,7 +393,10 @@
                     Style="{StaticResource PageSubtitleTextStyle}"
                     Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
             </StackPanel>
-            <Grid ColumnSpacing="12" RowSpacing="8">
+            <Grid
+                x:Name="SearchBoxHost"
+                ColumnSpacing="12"
+                RowSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
