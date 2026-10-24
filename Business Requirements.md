@@ -403,7 +403,7 @@ CR planned dates are either both null (unscheduled) or both present with Planned
 
 - Tasks support reversible archive/restore. Archived tasks retain all content, IDs, links, timestamps, status, checklist items, and Subtask cards. Archive is not completion. **CRs are not archived.**
 - Board and Checklists show active tasks; archiving a task also hides its Subtask cards and checklist group. Grid provides a persisted Show archived toggle, off by default, with clear archived styling and Restore commands.
-- Archived tasks are read-only until restored, with one exception: an archived unlinked task may be linked to a CR (B-03.6).
+- Archived tasks are read-only until restored, with one exception: an archived unlinked task may be linked to a CR (B-03.6). If it has no Service, the link confirmation asks for one and saves it together with the link (B-02.2); an existing Service is kept and cannot be changed there.
 - Restoring a task inserts it at the end of its current Board column deterministically and shows its Subtask cards again. Other content is unchanged.
 - Active task checklists depend on the task's archive state.
 - Delete is permanent after explicit confirmation naming the record and affected content. For tasks, offer Archive as the reversible alternative. Do not simulate Undo unless an actual undo mechanism exists.

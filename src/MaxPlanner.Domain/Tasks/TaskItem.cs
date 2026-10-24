@@ -355,14 +355,25 @@ public sealed record TaskItem
     /// preserved metadata; from now on the CR supplies the title (ADR 0005). Archived tasks may be
     /// linked (D11).
     /// </summary>
-    public DomainResult<TaskItem> LinkTo(ChangeRequestId changeRequest, DateTimeOffset nowUtc)
+    /// <param name="serviceForLink">
+    /// Owner decision 2026-10-24: the Link step asks for the Service when the task has none (D10), and it is
+    /// saved with the link. This is the only Service write allowed on an archived task; a task that already
+    /// has a Service keeps it, so a different value here is refused rather than silently ignored.
+    /// </param>
+    public DomainResult<TaskItem> LinkTo(ChangeRequestId changeRequest, DateTimeOffset nowUtc, ServiceText? serviceForLink = null)
     {
         if (IsLinked)
         {
             return DomainResult.Failure<TaskItem>(DomainErrorCodes.TaskAlreadyLinked, "ChangeRequest");
         }
 
-        if (Service is null)
+        if (Service is not null && serviceForLink is not null && serviceForLink != Service)
+        {
+            return DomainResult.Failure<TaskItem>(DomainErrorCodes.ArchivedReadOnly, "Service");
+        }
+
+        var service = Service ?? serviceForLink;
+        if (service is null)
         {
             return DomainResult.Failure<TaskItem>(DomainErrorCodes.ServiceRequiredWhenLinked, "Service");
         }
@@ -370,6 +381,7 @@ public sealed record TaskItem
         return DomainResult.Success((this with
         {
             ChangeRequestId = changeRequest,
+            Service = service,
             OwnTitle = null,
             Preserved = Preserved with { PreLinkTitle = OwnTitle?.Value },
         }).Touch(nowUtc));

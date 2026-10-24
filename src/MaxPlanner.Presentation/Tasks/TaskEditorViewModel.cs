@@ -276,6 +276,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public partial bool IsConflict { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLinkServiceLocked))]
     public partial bool IsArchived { get; private set; }
 
     [ObservableProperty]
@@ -286,6 +287,12 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public partial CrChoice? PendingLink { get; private set; }
 
     public bool IsReadOnly => IsArchived || IsDeletedElsewhere;
+
+    /// <summary>
+    /// The Link step's Service box: an archived task that already has a Service keeps it (B-05); one without a
+    /// Service gets it from this box, saved with the link (D10).
+    /// </summary>
+    public bool IsLinkServiceLocked => IsArchived && _base?.Service is not null;
 
     public bool IsLinked => _base?.Cr.ChangeRequestId is not null;
 
@@ -921,11 +928,13 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
         var task = _base!;
 
-        // B-05: an archived task is read-only; the one permitted change is linking it (B-03.6).
+        // B-05: an archived task is read-only; the one permitted change is linking it (B-03.6), together with
+        // the Service the Link step asked for when the task had none (D10, owner decision 2026-10-24).
         if (IsArchived)
         {
+            var linkService = task.Service is null ? Service : null;
             var linked = await useCases.LinkTaskToChangeRequest.ExecuteAsync(
-                new LinkTaskToChangeRequestCommand(operation, task.Id, task.Revision, link!.Id, link.ExpectedRevision), CancellationToken.None).ConfigureAwait(true);
+                new LinkTaskToChangeRequestCommand(operation, task.Id, task.Revision, link!.Id, link.ExpectedRevision, linkService), CancellationToken.None).ConfigureAwait(true);
             return linked.IsSuccess ? (null, linked.Value.CommitSequence) : (linked.Error, 0);
         }
 

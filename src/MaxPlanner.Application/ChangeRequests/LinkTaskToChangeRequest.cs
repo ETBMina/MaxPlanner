@@ -3,16 +3,19 @@ using MaxPlanner.Application.Common;
 using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Domain.Values;
 
 namespace MaxPlanner.Application.ChangeRequests;
 
 /// <param name="ExpectedCrRevision">The CR revision whose title/owner/squad the confirmation previewed (T-13).</param>
+/// <param name="Service">The Service typed in the Link step for a task that has none (D10); null keeps the task's own.</param>
 public sealed record LinkTaskToChangeRequestCommand(
     OperationId OperationId,
     TaskId TaskId,
     long ExpectedTaskRevision,
     ChangeRequestId ChangeRequestId,
-    long ExpectedCrRevision);
+    long ExpectedCrRevision,
+    string? Service = null);
 
 /// <summary>
 /// Permanently links an unlinked task (active or archived) to a CR (B-03.6, ADR 0006). There is
@@ -52,7 +55,13 @@ public sealed class LinkTaskToChangeRequest
             return TransactionGuards.Reject<long>(DomainErrorCodes.TaskAlreadyLinked, "ChangeRequest");
         }
 
-        var linked = task.LinkTo(changeRequest.Id, tx.UtcNow);
+        var service = ServiceText.CreateOptional(command.Service);
+        if (service.Error is { } invalidService)
+        {
+            return TransactionGuards.Reject<long>(invalidService);
+        }
+
+        var linked = task.LinkTo(changeRequest.Id, tx.UtcNow, service.Value);
         if (linked.Error is { } invalid)
         {
             return TransactionGuards.Reject<long>(invalid);

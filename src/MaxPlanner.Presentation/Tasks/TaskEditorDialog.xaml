@@ -591,6 +591,7 @@
                     x:Uid="LinkCr_ServiceBox"
                     AutomationProperties.AutomationId="LinkCr_ServiceBox"
                     AutomationProperties.IsRequiredForForm="True"
+                    IsReadOnly="{x:Bind ViewModel.IsLinkServiceLocked, Mode=OneWay}"
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Service, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <local:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
