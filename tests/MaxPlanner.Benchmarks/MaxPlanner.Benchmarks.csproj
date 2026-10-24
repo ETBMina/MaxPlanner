@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- T-11 non-UI performance budgets measured with BenchmarkDotNet on the benchmark fixture (Phase 17). It uses the
+       WinUI props only so it can reference the WinUI Presentation library for the projection store, like
+       Presentation.Tests (ADR 0016). Development tool: never published; publish-portable.ps1 publishes only
+       MaxPlanner.Desktop and checks that no benchmark assembly reaches the ZIP. -->
+  <Import Project="..\..\eng\WinUI.Common.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <!-- BenchmarkDotNet requires optimized code; scripts/run-performance.ps1 always runs it with -c Release. -->
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MaxPlanner.Presentation\MaxPlanner.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\MaxPlanner.Infrastructure\MaxPlanner.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+</Project>

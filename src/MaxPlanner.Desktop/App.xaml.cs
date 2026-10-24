@@ -69,6 +69,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         AppInstance.GetCurrent().Activated += (_, _) =>
             window.DispatcherQueue.TryEnqueue(() => NativeMethods.BringToFront(windowHandle));
 
+        window.Shell.PageShown += OnPageShown;
         window.AppWindow.Closing += OnClosing;
         window.Activate();
         var elapsedMs = _context.ElapsedMilliseconds;
@@ -77,6 +78,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         _coordinator = _services.GetRequiredService<StartupCoordinator>();
         _ = _coordinator.RunAsync();
     }
+
+    private void OnPageShown(object? sender, PageShownEventArgs e) => Log.PageShown(_logger, e.Page, (long)e.Elapsed.TotalMilliseconds);
 
     private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
@@ -88,6 +91,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         // T-06.6: the first close is cancelled so commits can drain without blocking the UI thread; the
         // window closes for real once ShutdownAsync has finished.
         args.Cancel = true;
+
+        // Design §5.8: an editor with unsaved changes asks Save / Discard / Continue editing first; the shutdown
+        // starts only after Save succeeded or Discard, and Continue editing keeps the window open.
+        if (_shutdown == ShutdownState.Running && _window is { } window && !window.Shell.TryApproveWindowClose(BeginClose))
+        {
+            return;
+        }
+
         BeginClose();
     }
 
@@ -157,5 +168,9 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         [LoggerMessage(EventId = 5604, Level = LogLevel.Critical, Message = "Unhandled exception on the UI thread.")]
         public static partial void UnhandledUiException(ILogger logger, Exception exception);
+
+        // T-11 page-switch budget; scripts/run-performance.ps1 reads this line (event 5605).
+        [LoggerMessage(EventId = 5605, Level = LogLevel.Information, Message = "Page shown: {Page} rendered {ElapsedMs} ms after the navigation request.")]
+        public static partial void PageShown(ILogger logger, AppPage page, long elapsedMs);
     }
 }

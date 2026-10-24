@@ -23,6 +23,12 @@ public sealed class DrillDownNavigator
     /// <summary>Asks the shell to show a page.</summary>
     public event EventHandler<AppPage>? NavigationRequested;
 
+    /// <summary>
+    /// Raised just before Return or Back shows the Dashboard again, so the view can give focus back to the element the
+    /// drill-down started from (design §7.7).
+    /// </summary>
+    public event EventHandler? Returning;
+
     /// <summary>Raised by the Dashboard; the workspace applies the replacement context and navigates.</summary>
     public event EventHandler<DrillDownRequest>? DrillDownRequested;
 
@@ -62,6 +68,7 @@ public sealed class DrillDownNavigator
         var index = _stack.FindIndex(e => e.Destination == destination);
         if (index < 0)
         {
+            Returning?.Invoke(this, EventArgs.Empty);
             NavigationRequested?.Invoke(this, AppPage.Dashboard);
             return;
         }
@@ -70,6 +77,7 @@ public sealed class DrillDownNavigator
         _stack.RemoveAt(index);
         entry.EndContext();
         StackChanged?.Invoke(this, EventArgs.Empty);
+        Returning?.Invoke(this, EventArgs.Empty);
         NavigationRequested?.Invoke(this, AppPage.Dashboard);
     }
 

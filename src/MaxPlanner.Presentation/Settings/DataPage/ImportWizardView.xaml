@@ -107,7 +107,7 @@
                                     <StackPanel Margin="0,0,0,16" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{StaticResource ControlCornerRadius}" Spacing="8">
                                         <TextBlock AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Name, Mode=OneTime}" />
                                         <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind RowCountText, Mode=OneTime}" />
-                                        <ComboBox x:Uid="Import_EntityCombo" MinWidth="220" ItemsSource="{x:Bind EntityChoices, Mode=OneTime}" SelectedIndex="{x:Bind EntityIndex, Mode=TwoWay}" />
+                                        <ComboBox x:Uid="Import_EntityCombo" MinWidth="220" AutomationProperties.AutomationId="{x:Bind EntityAutomationId, Mode=OneTime}" ItemsSource="{x:Bind EntityChoices, Mode=OneTime}" SelectedIndex="{x:Bind EntityIndex, Mode=TwoWay}" />
                                         <ItemsControl ItemsSource="{x:Bind Columns, Mode=OneTime}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="local:ImportColumnViewModel">
@@ -125,6 +125,7 @@
                                                         <ComboBox
                                                             Grid.Column="2"
                                                             HorizontalAlignment="Stretch"
+                                                            AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
                                                             AutomationProperties.Name="{x:Bind Header, Mode=OneTime}"
                                                             ItemsSource="{x:Bind FieldChoices, Mode=OneTime}"
                                                             SelectedIndex="{x:Bind FieldIndex, Mode=TwoWay}" />
@@ -150,7 +151,7 @@
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=": " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
-                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="{x:Bind Detail, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Detail, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -165,7 +166,7 @@
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
-                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -181,7 +182,7 @@
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock VerticalAlignment="Center" Text="{x:Bind Label, Mode=OneTime}" TextWrapping="Wrap" />
-                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

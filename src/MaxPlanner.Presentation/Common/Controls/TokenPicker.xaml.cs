@@ -74,6 +74,15 @@ public sealed partial class TokenPicker : UserControl
         }
     }
 
+    // Design §8.1: repeated items carry a record key, {picker}_Chip_{Guid:N}; recycled elements get the new item's ID.
+    private void OnChipPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    {
+        if (args.Element is FrameworkElement { DataContext: TokenViewModel token } chip && !string.IsNullOrEmpty(BoxAutomationId))
+        {
+            AutomationProperties.SetAutomationId(chip, BoxAutomationId + "_Chip_" + token.Id.ToString("N"));
+        }
+    }
+
     // Design §5.0: Delete removes the focused chip.
     private void OnChipKeyDown(object sender, KeyRoutedEventArgs e)
     {

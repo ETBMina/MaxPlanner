@@ -35,10 +35,9 @@
                     Unchecked="OnItemToggled"
                     Visibility="{x:Bind common:BindFunctions.Collapsed(IsRenaming), Mode=OneWay}">
                     <TextBlock
-                        Foreground="{x:Bind local:ChecklistsPageView.ItemForeground(IsChecked), Mode=OneWay}"
+                        Style="{x:Bind local:ChecklistsPageView.ItemTextStyle(IsChecked), Mode=OneWay}"
                         Text="{x:Bind Text, Mode=OneWay}"
-                        TextDecorations="{x:Bind local:ChecklistsPageView.Strike(IsChecked), Mode=OneWay}"
-                        TextWrapping="Wrap" />
+                        TextDecorations="{x:Bind local:ChecklistsPageView.Strike(IsChecked), Mode=OneWay}" />
                 </CheckBox>
                 <StackPanel Spacing="2" Visibility="{x:Bind common:BindFunctions.Visible(IsRenaming), Mode=OneWay}">
                     <TextBox
@@ -422,6 +421,13 @@
                     Grid.Column="1"
                     Orientation="Horizontal"
                     Spacing="8">
+                    <!-- Design §2.3 S: the search box moves to the full-width row below; this button opens it. -->
+                    <ToggleButton
+                        x:Name="SearchToggle"
+                        x:Uid="Checklists_SearchToggle"
+                        AutomationProperties.AutomationId="Checklists_SearchToggle">
+                        <FontIcon FontSize="14" Glyph="&#xE721;" />
+                    </ToggleButton>
                     <Button
                         x:Name="AddToTaskButton"
                         x:Uid="Checklists_AddToTaskButton"
@@ -479,6 +485,7 @@
                     QueryIcon="Find"
                     Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </Grid>
+            <Grid x:Name="CompactSearchRow" />
             <!-- Design §2.9: a review drill-down shows its context and a removable "From Dashboard" chip. -->
             <InfoBar
                 AutomationProperties.AutomationId="Checklists_DashboardInfoBar"
@@ -534,6 +541,7 @@
         </InfoBar>
 
         <controls:StateView
+            x:Name="PageContent"
             x:Uid="Checklists_StateView"
             Grid.Row="2"
             EmptyGlyph="&#xE9D5;"
@@ -561,17 +569,26 @@
                     </ItemsRepeater>
                 </ScrollViewer>
 
-                <!-- Reviews section (B-17.2, design §4.5): one list card, then Completed (n) collapsed. -->
-                <ScrollViewer
-                    x:Name="ReviewsScroller"
+                <!--
+                    Reviews section (B-17.2, design §4.5): one list card, then Completed (n) collapsed. T-08/T-11: the
+                    lists sit in bounded rows (no outer ScrollViewer) so each ListView scrolls and virtualizes itself;
+                    a ListView inside a StackPanel inside a ScrollViewer realizes every row.
+                -->
+                <Grid
+                    x:Name="ReviewsPanel"
+                    MaxWidth="880"
+                    Margin="32,0,32,24"
+                    HorizontalAlignment="Left"
                     AutomationProperties.AutomationId="Checklists_Reviews"
+                    RowSpacing="12"
+                    SizeChanged="OnReviewsPanelSizeChanged"
                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReviewsSection), Mode=OneWay}">
-                    <StackPanel
-                        x:Name="ReviewsPanel"
-                        MaxWidth="880"
-                        Margin="32,0,32,24"
-                        HorizontalAlignment="Left"
-                        Spacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
                         <!-- Reviews empty state (design §4.5): "No reviews yet" + New review. -->
                         <StackPanel
                             Padding="0,24"
@@ -586,7 +603,9 @@
                                 Command="{x:Bind ViewModel.NewReviewCommand}" />
                         </StackPanel>
                         <Border
+                            Grid.Row="1"
                             Padding="12,4"
+                            VerticalAlignment="Top"
                             Style="{StaticResource CardBorderStyle}"
                             Visibility="{x:Bind common:BindFunctions.Visible(Reviews.HasOpen), Mode=OneWay}">
                             <ListView
@@ -600,6 +619,7 @@
                                 SelectionMode="None" />
                         </Border>
                         <TextBlock
+                            Grid.Row="2"
                             AutomationProperties.LiveSetting="Assertive"
                             Foreground="{ThemeResource ErrorTextBrush}"
                             Style="{StaticResource CaptionTextBlockStyle}"
@@ -607,6 +627,7 @@
                             TextWrapping="Wrap"
                             Visibility="{x:Bind common:BindFunctions.Visible(Reviews.HasActionError), Mode=OneWay}" />
                         <Expander
+                            Grid.Row="3"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Stretch"
                             AutomationProperties.AutomationId="Checklists_ReviewsCompletedExpander"
@@ -614,6 +635,7 @@
                             IsExpanded="False"
                             Visibility="{x:Bind common:BindFunctions.Visible(Reviews.HasCompleted), Mode=OneWay}">
                             <ListView
+                                x:Name="CompletedReviewsList"
                                 x:Uid="Checklists_ReviewsCompletedList"
                                 AutomationProperties.AutomationId="Checklists_ReviewsCompletedList"
                                 IsItemClickEnabled="True"
@@ -623,8 +645,7 @@
                                 KeyDown="OnReviewListKeyDown"
                                 SelectionMode="None" />
                         </Expander>
-                    </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Grid>
         </controls:StateView>
     </Grid>

@@ -61,16 +61,31 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <ItemsControl
+            <!--
+                Design §2.3 row 3: chips wrap; at S (IsCompact) a row that would need more than two lines becomes one
+                horizontally scrolling line, so the header never pushes the content off screen.
+            -->
+            <ScrollViewer
+                x:Name="ChipsScroller"
+                HorizontalScrollBarVisibility="Disabled"
+                HorizontalScrollMode="Disabled"
                 IsTabStop="False"
-                ItemTemplate="{StaticResource ChipTemplate}"
-                ItemsSource="{x:Bind Scope.Chips, Mode=OneWay}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <controls:WrapPanel Spacing="6" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-            </ItemsControl>
+                SizeChanged="OnChipsScrollerSizeChanged"
+                VerticalScrollBarVisibility="Disabled"
+                VerticalScrollMode="Disabled">
+                <ItemsControl
+                    x:Name="ChipsList"
+                    IsTabStop="False"
+                    ItemTemplate="{StaticResource ChipTemplate}"
+                    ItemsSource="{x:Bind Scope.Chips, Mode=OneWay}"
+                    Loaded="OnChipsListLoaded">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <controls:WrapPanel Spacing="6" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ScrollViewer>
             <HyperlinkButton
                 x:Name="ClearAllLink"
                 x:Uid="Filters_ClearAllLink"

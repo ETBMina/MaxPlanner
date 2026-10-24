@@ -26,7 +26,7 @@ namespace MaxPlanner.Presentation.Grid;
 /// the frozen first column at S, focus and scroll (§7.7), and the error/conflict popup. Every decision about
 /// saving and layout belongs to <see cref="GridPageViewModel"/>.
 /// </summary>
-public sealed partial class GridPageView : UserControl, IGridCellHost
+public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPageView
 {
     public static readonly DependencyProperty PopupRowProperty = DependencyProperty.Register(
         nameof(PopupRow), typeof(GridRowViewModel), typeof(GridPageView), new PropertyMetadata(null));
@@ -51,11 +51,13 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
     private string? _draggedColumn;
     private Flyout? _editorFlyout;
     private bool _flyoutCloseApproved;
+    private readonly CompactSearch _search;
 
     public GridPageView(GridPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        _search = new CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
         Table.Host = this;
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();
@@ -116,7 +118,20 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
     private bool IsFrozen => _isSmall && _displayColumns.Count > 1 && _displayColumns[0].Key == GridColumns.Title;
 
     /// <summary>Gives the page title keyboard focus after navigation (design §7.7).</summary>
+    /// <inheritdoc/>
+    public FrameworkElement HeaderElement => HeaderRoot;
+
+    /// <inheritdoc/>
+    public FrameworkElement? ContentElement => PageContent;
+
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    /// <inheritdoc/>
+    public bool FocusSearch()
+    {
+        _search.FocusSearch();
+        return true;
+    }
 
     // ----- Layout: displayed columns, header cells, frozen column -----
 
@@ -459,6 +474,16 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
                 var target = Math.Clamp(rowIndex + (e.Key == VirtualKey.PageDown ? page : -page), 0, ViewModel.Rows.Count - 1);
                 FocusCell(ViewModel.Rows[target], cell.Column);
                 break;
+
+            // Design §7.1: Delete… (always confirmed) and Ctrl+D Copy… for the focused record.
+            case VirtualKey.Delete:
+                e.Handled = true;
+                _ = ViewModel.DeleteRowAsync(row);
+                break;
+            case VirtualKey.D when IsDown(VirtualKey.Control) && row.Model.Task is not null:
+                e.Handled = true;
+                _ = ViewModel.CopyRowAsync(row);
+                break;
             default:
                 break;
         }
@@ -724,8 +749,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
                 break;
         }
 
-        var error = new TextBlock { TextWrapping = TextWrapping.Wrap, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["CaptionTextBlockStyle"], MaxWidth = 360 };
-        error.Foreground = (Brush)Microsoft.UI.Xaml.Application.Current.Resources["SystemFillColorCriticalBrush"];
+        var error = new TextBlock { Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["ErrorCaptionTextStyle"], MaxWidth = 360 };
         AutomationProperties.SetLiveSetting(error, AutomationLiveSetting.Assertive);
         AutomationProperties.SetAutomationId(error, "Grid_CellError");
         var ring = new ProgressRing { Width = 16, Height = 16, IsActive = false };
@@ -1032,6 +1056,8 @@ public sealed partial class GridPageView : UserControl, IGridCellHost
         // Design §4.3 S: only New task keeps its label inline; the CommandBar overflows the rest by itself.
         NewTaskText.Visibility = width >= 500 ? Visibility.Visible : Visibility.Collapsed;
         var small = width < 640;
+        _search.Apply(width);
+        ChipsBar.IsCompact = small;
         if (small != _isSmall)
         {
             _isSmall = small;

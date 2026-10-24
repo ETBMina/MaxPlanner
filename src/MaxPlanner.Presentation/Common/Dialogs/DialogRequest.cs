@@ -8,6 +8,24 @@ public interface IDialogViewModel
     event EventHandler? CloseRequested;
 }
 
+/// <summary>
+/// An editor whose unsaved draft must survive a main-window close (design §5.8): closing the window while it is
+/// open asks the same Save / Discard / Continue editing question as Esc does, and the window closes only after
+/// the user chose Save (and it succeeded) or Discard.
+/// </summary>
+public interface IWindowCloseGuard
+{
+    /// <summary>
+    /// True from a refused <see cref="TryCloseForWindow"/> until the prompt is answered with Continue editing or a
+    /// failed save. While it stays true, the dialog closing means the window may close too.
+    /// </summary>
+    bool IsWindowClosePending { get; }
+
+    /// <summary>Called on the UI thread when the main window is asked to close while this editor is open.</summary>
+    /// <returns>True when nothing would be lost and the window may close now; false when the dirty prompt is shown.</returns>
+    bool TryCloseForWindow();
+}
+
 /// <summary>One dialog to show (design §5.0: dialogs are serialized and never stack).</summary>
 public sealed class DialogRequest
 {

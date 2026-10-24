@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
@@ -219,7 +220,7 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         Tables.Clear();
         foreach (var table in _source.Tables)
         {
-            Tables.Add(new ImportTableViewModel(table, Entities, EntityChoices, Strings));
+            Tables.Add(new ImportTableViewModel(table, Entities, EntityChoices, Strings, Tables.Count));
         }
 
         ValueChoices.Clear();
@@ -278,14 +279,16 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             ids.AddRange(entries.Select(e => (object?)e.Id));
             var selected = value.ChosenId is { } chosen ? ids.IndexOf(chosen) : 0;
             ValueChoices.Add(new ImportChoiceViewModel(value.Key, Strings.GetString("LookupKind_" + value.Kind), value.SourceName, labels, ids,
-                previousValues.GetValueOrDefault(value.Key, Math.Max(0, selected))));
+                previousValues.GetValueOrDefault(value.Key, Math.Max(0, selected)))
+            { AutomationId = "Data_ImportValueCombo_" + ValueChoices.Count.ToString(CultureInfo.InvariantCulture) });
         }
 
         CrConflicts.Clear();
         foreach (var conflict in draft.CrConflicts)
         {
             CrConflicts.Add(new ImportChoiceViewModel(conflict.Key, conflict.CrNumber, Strings.GetString("Import_CrField_" + conflict.Field),
-                [.. conflict.Candidates], [.. conflict.Candidates.Cast<object?>()], conflict.Chosen is { } c ? conflict.Candidates.ToList().IndexOf(c) : -1));
+                [.. conflict.Candidates], [.. conflict.Candidates.Cast<object?>()], conflict.Chosen is { } c ? conflict.Candidates.ToList().IndexOf(c) : -1)
+            { AutomationId = "Data_ImportCrConflictCombo_" + CrConflicts.Count.ToString(CultureInfo.InvariantCulture) });
         }
 
         CrReferenceChoices.Clear();
@@ -296,7 +299,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             var values = new List<object?> { null };
             values.AddRange(choice.Numbers);
             var selected = !choice.IsChosen ? -1 : choice.Chosen is { } number ? choice.Numbers.ToList().IndexOf(number) + 1 : 0;
-            CrReferenceChoices.Add(new ImportChoiceViewModel(choice.Key, choice.SourceKey, Strings.GetString("Import_CrChoiceHelp"), labels, values, selected));
+            CrReferenceChoices.Add(new ImportChoiceViewModel(choice.Key, choice.SourceKey, Strings.GetString("Import_CrChoiceHelp"), labels, values, selected)
+            { AutomationId = "Data_ImportCrChoiceCombo_" + CrReferenceChoices.Count.ToString(CultureInfo.InvariantCulture) });
         }
 
         HasNoDecisions = ValueChoices.Count == 0 && CrConflicts.Count == 0 && CrReferenceChoices.Count == 0;
@@ -409,10 +413,14 @@ public sealed partial class ImportTableViewModel : ObservableObject
 {
     private readonly IReadOnlyList<ExternalEntity> _entities;
     private readonly ILocalizedStrings _strings;
+    private readonly int _index;
 
-    public ImportTableViewModel(ExternalTable table, IReadOnlyList<ExternalEntity> entities, IReadOnlyList<string> entityChoices, ILocalizedStrings strings)
+    /// <param name="index">The table's position in the source, which keys its AutomationIds (design §8.1: never display text).</param>
+    public ImportTableViewModel(ExternalTable table, IReadOnlyList<ExternalEntity> entities, IReadOnlyList<string> entityChoices, ILocalizedStrings strings, int index = 0)
     {
         Table = table;
+        _index = index;
+        EntityAutomationId = "Data_ImportEntityCombo_" + index.ToString(CultureInfo.InvariantCulture);
         _entities = entities;
         _strings = strings;
         EntityChoices = entityChoices;
@@ -421,6 +429,8 @@ public sealed partial class ImportTableViewModel : ObservableObject
     }
 
     public ExternalTable Table { get; }
+
+    public string EntityAutomationId { get; }
 
     public string Name => Table.Name;
 
@@ -448,7 +458,10 @@ public sealed partial class ImportTableViewModel : ObservableObject
             var sample = Table.Rows.Select(r => i < r.Values.Count ? r.Values[i] : null).FirstOrDefault(v => v is { IsEmpty: false });
             var sampleText = sample?.Text ?? (sample?.Items is { } items ? string.Join(", ", items) : string.Empty);
             Columns.Add(new ImportColumnViewModel(Table.Columns[i], sampleText.Length > 80 ? sampleText[..80] + "…" : sampleText, fields,
-                [.. fields.Select(f => _strings.GetString("Import_Field_" + f))], Math.Max(0, fields.ToList().IndexOf(proposals[i].Field)), proposals[i].IsAmbiguous));
+                [.. fields.Select(f => _strings.GetString("Import_Field_" + f))], Math.Max(0, fields.ToList().IndexOf(proposals[i].Field)), proposals[i].IsAmbiguous)
+            {
+                AutomationId = string.Create(CultureInfo.InvariantCulture, $"Data_ImportFieldCombo_{_index}_{i}"),
+            });
         }
     }
 }
@@ -457,6 +470,9 @@ public sealed partial class ImportTableViewModel : ObservableObject
 public sealed partial class ImportColumnViewModel(string header, string sample, IReadOnlyList<ExternalField> fields, IReadOnlyList<string> fieldChoices, int fieldIndex, bool isAmbiguous) : ObservableObject
 {
     public string Header { get; } = header;
+
+    /// <summary><c>Data_ImportFieldCombo_{table}_{column}</c>, positional (design §8.1: never display text).</summary>
+    public string AutomationId { get; init; } = string.Empty;
 
     public string Sample { get; } = sample;
 
@@ -476,6 +492,9 @@ public sealed partial class ImportColumnViewModel(string header, string sample, 
 public sealed partial class ImportChoiceViewModel(string key, string label, string detail, IReadOnlyList<string> options, IReadOnlyList<object?> values, int selectedIndex) : ObservableObject
 {
     public string Key { get; } = key;
+
+    /// <summary>A positional AutomationId for the choice's ComboBox (design §8.1).</summary>
+    public string AutomationId { get; init; } = string.Empty;
 
     public string Label { get; } = label;
 

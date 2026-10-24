@@ -7,7 +7,7 @@ namespace MaxPlanner.Presentation.Dashboard;
 /// The Dashboard view (design §4.1). Code-behind arranges the L/M/S layouts, forwards list-row clicks, and keeps the
 /// scroll position across drill-down and Back (AC-20), because the retained view is removed from the tree meanwhile.
 /// </summary>
-public sealed partial class DashboardPageView : UserControl
+public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 {
     public DashboardPageView(DashboardPageViewModel viewModel)
     {
@@ -31,7 +31,16 @@ public sealed partial class DashboardPageView : UserControl
 
     public DashboardPageViewModel ViewModel { get; }
 
+    /// <inheritdoc/>
+    public FrameworkElement HeaderElement => HeaderRoot;
+
+    /// <inheritdoc/>
+    public FrameworkElement? ContentElement => PageContent;
+
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    /// <inheritdoc/>
+    public bool FocusSearch() => false;
 
     private void ApplyBreakpoint(double width)
     {

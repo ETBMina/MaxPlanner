@@ -18,18 +18,20 @@ namespace MaxPlanner.Presentation.Checklists;
 /// row ViewModels, inline rename focus, the delete confirmation flyouts, the task picker, focusing an Add box, and
 /// the breakpoint padding (design §4.5, §7.6).
 /// </summary>
-public sealed partial class ChecklistsPageView : UserControl
+public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
 {
     // The strings of the code-built confirmation flyout.
     private static readonly ResourceStrings Strings = new();
 
     private FrameworkElement? _menuAnchor;
     private bool _isSyncingSection;
+    private readonly Common.Controls.CompactSearch _search;
 
     public ChecklistsPageView(ChecklistsPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
         SyncSectionBar();
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusAddBoxRequested += OnFocusAddBoxRequested;
@@ -44,10 +46,29 @@ public sealed partial class ChecklistsPageView : UserControl
     /// <summary>Completed rows are struck through as well as listed under Completed (P3: never color alone).</summary>
     public static TextDecorations Strike(bool isDone) => isDone ? TextDecorations.Strikethrough : TextDecorations.None;
 
-    public static Brush ItemForeground(bool isDone) =>
-        (Brush)Microsoft.UI.Xaml.Application.Current.Resources[isDone ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush"];
+    /// <summary>Secondary text for done items through a style, so it follows the window theme and High Contrast.</summary>
+    public static Style ItemTextStyle(bool isDone) =>
+        (Style)Microsoft.UI.Xaml.Application.Current.Resources[isDone ? "ChecklistDoneItemTextStyle" : "ChecklistItemTextStyle"];
+
+    /// <inheritdoc/>
+    public FrameworkElement HeaderElement => HeaderRoot;
+
+    /// <inheritdoc/>
+    public FrameworkElement? ContentElement => PageContent;
 
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    /// <inheritdoc/>
+    public bool FocusSearch()
+    {
+        _search.FocusSearch();
+        return true;
+    }
+
+    // The Completed list gets at most half of the section's height, so it keeps a bounded viewport and virtualizes
+    // when expanded while the open list above stays visible.
+    private void OnReviewsPanelSizeChanged(object sender, SizeChangedEventArgs e) =>
+        CompletedReviewsList.MaxHeight = Math.Max(160, e.NewSize.Height / 2);
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -356,7 +377,7 @@ public sealed partial class ChecklistsPageView : UserControl
             var index = IndexOfCard(groupKey);
             if (index >= 0 && GroupsRepeater.GetOrCreateElement(index) is FrameworkElement card)
             {
-                card.StartBringIntoView();
+                card.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = Common.Services.MotionSettings.AnimationsEnabled });
                 if (FindByAutomationId(card, automationId) is Control box)
                 {
                     box.Focus(FocusState.Keyboard);
@@ -418,6 +439,8 @@ public sealed partial class ChecklistsPageView : UserControl
         GroupsRepeater.Margin = new Thickness(padding, 0, padding, 24);
         ReviewsPanel.Margin = new Thickness(padding, 0, padding, 24);
         ReviewsPanel.MaxWidth = width >= 1008 ? 880 : double.PositiveInfinity;
+        ReviewsPanel.HorizontalAlignment = width >= 1008 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        _search.Apply(width);
         NoMatchesBar.Margin = new Thickness(padding, 0, padding, 8);
         GroupsLayout.MaxColumns = width >= 1008 ? 3 : width >= 640 ? 2 : 1;
         GroupsLayout.MinColumnWidth = width >= 640 ? 380 : 0;

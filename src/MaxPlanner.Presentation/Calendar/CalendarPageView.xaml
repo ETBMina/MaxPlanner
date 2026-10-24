@@ -352,12 +352,20 @@
                     Orientation="Horizontal"
                     Spacing="12">
                     <AutoSuggestBox
+                        x:Name="SearchBox"
                         x:Uid="Calendar_SearchBox"
                         Width="280"
                         AutomationProperties.AutomationId="Calendar_SearchBox"
                         AutomationProperties.LandmarkType="Search"
                         QueryIcon="Find"
                         Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <!-- Design §2.3 S: the search box moves to the full-width row below; this button opens it. -->
+                    <ToggleButton
+                        x:Name="SearchToggle"
+                        x:Uid="Calendar_SearchToggle"
+                        AutomationProperties.AutomationId="Calendar_SearchToggle">
+                        <FontIcon FontSize="14" Glyph="&#xE721;" />
+                    </ToggleButton>
                     <filters:FilterButton PageKey="Calendar" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
                     <ToggleButton
                         AutomationProperties.AutomationId="Calendar_BacklogToggle"
@@ -365,7 +373,11 @@
                         IsChecked="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}" />
                 </StackPanel>
             </Grid>
-            <filters:FilterChipsBar PageKey="Calendar" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+            <Grid x:Name="CompactSearchRow" />
+            <filters:FilterChipsBar
+                x:Name="ChipsBar"
+                PageKey="Calendar"
+                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
             <!-- B-08.12: a saved CR hidden by the current filters stays discoverable. -->
             <InfoBar
                 AutomationProperties.AutomationId="Calendar_SavedHiddenInfoBar"
@@ -399,6 +411,7 @@
         </InfoBar>
 
         <controls:StateView
+            x:Name="PageContent"
             x:Uid="Calendar_StateView"
             Grid.Row="2"
             EmptyActionCommand="{x:Bind ViewModel.NewChangeRequestCommand}"

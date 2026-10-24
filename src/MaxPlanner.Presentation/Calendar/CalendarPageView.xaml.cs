@@ -16,7 +16,7 @@ namespace MaxPlanner.Presentation.Calendar;
 /// The Calendar page view. Code-behind handles view mechanics only: mode and breakpoint switching, the period
 /// flyout, menus and flyouts built for a row, drag data, and re-rendering the custom surface.
 /// </summary>
-public sealed partial class CalendarPageView : UserControl
+public sealed partial class CalendarPageView : UserControl, Shell.IPageView
 {
     private static readonly (RecordSortColumn Column, string Key)[] SortHeaders =
     [
@@ -34,11 +34,13 @@ public sealed partial class CalendarPageView : UserControl
 
     private bool _isSyncingMode;
     private bool? _wasWide;
+    private readonly Common.Controls.CompactSearch _search;
 
     public CalendarPageView(CalendarPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
         MonthView.ViewModel = viewModel;
         BuildSortHeaders();
         SyncModeBar();
@@ -51,7 +53,20 @@ public sealed partial class CalendarPageView : UserControl
 
     public CalendarPageViewModel ViewModel { get; }
 
+    /// <inheritdoc/>
+    public FrameworkElement HeaderElement => HeaderRoot;
+
+    /// <inheritdoc/>
+    public FrameworkElement? ContentElement => PageContent;
+
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    /// <inheritdoc/>
+    public bool FocusSearch()
+    {
+        _search.FocusSearch();
+        return true;
+    }
 
     private void OnSurfaceChanged(object? sender, EventArgs e) => MonthView.Render(ViewModel.Surface);
 
@@ -112,6 +127,8 @@ public sealed partial class CalendarPageView : UserControl
         HeaderRoot.Padding = wide ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
         ContentRoot.Padding = new Thickness(padding, 0, padding, 16);
         ViewModel.SetCompact(width < 640);
+        _search.Apply(width);
+        ChipsBar.IsCompact = width < 640;
         Split.DisplayMode = wide ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
         Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280;
         if (_wasWide != wide)

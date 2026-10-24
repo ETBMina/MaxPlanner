@@ -16,7 +16,7 @@
             Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
             UpdateTextOnSelect="False" />
         <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. -->
-        <ItemsRepeater ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}">
+        <ItemsRepeater ElementPrepared="OnChipPrepared" ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}">
             <ItemsRepeater.Layout>
                 <LinedFlowLayout LineSpacing="6" MinItemSpacing="6" />
             </ItemsRepeater.Layout>

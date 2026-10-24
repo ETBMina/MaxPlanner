@@ -9,6 +9,7 @@ using MaxPlanner.Application.Dashboard;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common.Scheduling;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Workspace;
@@ -75,10 +76,13 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         // ADR 0010: compute on the store scheduler, where the caches are consistent after each batch notification,
         // then show the result on the UI thread. A day change arrives as a batch too, so overdue CRs and the review
         // week/month counts refresh together at midnight, on resume, and on a time-zone change (AC-21).
+        // T-11: a burst of batches (import, resync, quick successive commits) is coalesced into one recompute of the
+        // newest state rather than one per batch; a single commit still recomputes immediately.
         _results = store.Committed.Select(_ => Unit.Default)
             .StartWith(Unit.Default)
             .SubscribeOn(store.Scheduler)
             .CombineLatest(_filter.ObserveOn(store.Scheduler), (_, filter) => filter)
+            .CoalesceLatest(store.Scheduler)
             .Select(filter => (Result: store.CurrentWorkflow is { } workflow ? Compute(store, workflow, filter, labels) : null, store.Today))
             .Where(r => r.Result is not null)
             .ObserveOn(context.UiScheduler)

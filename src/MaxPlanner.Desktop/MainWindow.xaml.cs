@@ -30,6 +30,9 @@ public sealed partial class MainWindow : Window
 
     public ShellViewModel ViewModel { get; }
 
+    /// <summary>The window content, for the close guard and the page-switch timing (T-11).</summary>
+    public ShellView Shell => ShellContent;
+
     /// <summary>The element that carries the app theme mode (design §3 rule 1).</summary>
     public FrameworkElement RootElement => RootGrid;
 

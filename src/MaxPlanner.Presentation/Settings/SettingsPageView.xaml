@@ -253,7 +253,10 @@
             Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
             Severity="Error" />
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer
+            x:Name="PageContent"
+            Grid.Row="2"
+            VerticalScrollBarVisibility="Auto">
             <Grid x:Name="CapWrapper" Padding="32,0,32,32">
                 <StackPanel
                     x:Name="CardsPanel"

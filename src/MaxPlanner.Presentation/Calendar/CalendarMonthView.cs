@@ -208,7 +208,7 @@ public sealed partial class CalendarMonthView : UserControl
         cell.Click += (_, _) => ShowDayFlyout(viewModel, cell, day);
         cell.KeyDown += (_, e) => OnDayKeyDown(viewModel, day, e);
         cell.DragOver += (_, e) => OnDayDragOver(viewModel, cell, day, e);
-        cell.DragLeave += (_, _) => cell.ClearValue(Control.BorderBrushProperty);
+        cell.DragLeave += (_, _) => cell.Style = StyleOf("CalendarDayCellButtonStyle");
         cell.Drop += (_, e) => OnDayDrop(viewModel, cell, day, e);
         return cell;
     }
@@ -486,7 +486,7 @@ public sealed partial class CalendarMonthView : UserControl
         var endPicker = new CalendarDatePicker { Header = viewModel.Text("Calendar_PlannedEndHeader"), Date = new DateTimeOffset(end.ToDateTime(TimeOnly.MinValue)), FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday };
         AutomationProperties.SetAutomationId(startPicker, "Calendar_EditStartDate");
         AutomationProperties.SetAutomationId(endPicker, "Calendar_EditEndDate");
-        var error = new TextBlock { Style = StyleOf("CaptionTextBlockStyle"), Foreground = (Brush)Microsoft.UI.Xaml.Application.Current.Resources["SystemFillColorCriticalBrush"], TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+        var error = new TextBlock { Style = StyleOf("ErrorCaptionTextStyle"), Visibility = Visibility.Collapsed };
         AutomationProperties.SetLiveSetting(error, AutomationLiveSetting.Assertive);
         var save = new Button { Content = viewModel.Text("TaskEditor_SaveButton"), Style = StyleOf("AccentButtonStyle") };
         AutomationProperties.SetAutomationId(save, "Calendar_EditDatesSaveButton");
@@ -664,12 +664,12 @@ public sealed partial class CalendarMonthView : UserControl
         e.AcceptedOperation = DataPackageOperation.Copy;
         e.DragUIOverride.Caption = viewModel.Format("Calendar_DropCaption", day.Date.ToString("MMM d", CultureInfo.CurrentCulture));
         e.DragUIOverride.IsCaptionVisible = true;
-        cell.BorderBrush = (Brush)Microsoft.UI.Xaml.Application.Current.Resources["CalendarDropTargetStrokeBrush"];
+        cell.Style = StyleOf("CalendarDayCellDropTargetButtonStyle");
     }
 
     private static void OnDayDrop(CalendarPageViewModel viewModel, Button cell, CalendarDayCell day, DragEventArgs e)
     {
-        cell.ClearValue(Control.BorderBrushProperty);
+        cell.Style = StyleOf("CalendarDayCellButtonStyle");
         if (e.DataView.Properties.TryGetValue(DragCrIdProperty, out var value) && value is string text && Guid.TryParse(text, out var id))
         {
             _ = viewModel.ScheduleFromDropAsync(id, day.Date);

@@ -13,7 +13,7 @@ namespace MaxPlanner.Presentation.Settings;
 /// The Settings page view. Code-behind handles view mechanics only (AGENTS.md §4): row menus, focus for inline
 /// rename, Enter/Esc keys, and the S/M/L layout. Every change is made by <see cref="SettingsPageViewModel"/>.
 /// </summary>
-public sealed partial class SettingsPageView : UserControl
+public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 {
     private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
 
@@ -32,6 +32,15 @@ public sealed partial class SettingsPageView : UserControl
 
     /// <summary>Gives the page title keyboard focus after navigation (design §7.7).</summary>
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    /// <inheritdoc/>
+    public FrameworkElement HeaderElement => HeaderRoot;
+
+    /// <inheritdoc/>
+    public FrameworkElement? ContentElement => PageContent;
+
+    /// <inheritdoc/>
+    public bool FocusSearch() => false;
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {

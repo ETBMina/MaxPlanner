@@ -44,7 +44,7 @@ public sealed record PriorityOption(PriorityId Id, string Name)
 /// always show its current committed state (T-13). A link chosen here is pending until Save and is permanent
 /// once saved; there is no unlink or change (B-03.7, AC-29).</para>
 /// </remarks>
-public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewModel, IDisposable
+public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
@@ -470,10 +470,32 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         return true;
     }
 
-    public Task<bool> SaveFromPromptAsync()
+    public async Task<bool> SaveFromPromptAsync()
     {
         IsDirtyClosePromptOpen = false;
-        return SaveAsync();
+        var saved = await SaveAsync().ConfigureAwait(true);
+        if (!saved)
+        {
+            // A failed save keeps the editor open; the window close the prompt answered is abandoned.
+            IsWindowClosePending = false;
+        }
+
+        return saved;
+    }
+
+    /// <inheritdoc/>
+    public bool IsWindowClosePending { get; private set; }
+
+    /// <inheritdoc/>
+    public bool TryCloseForWindow()
+    {
+        if (TryClose())
+        {
+            return true;
+        }
+
+        IsWindowClosePending = IsDirtyClosePromptOpen;
+        return false;
     }
 
     /// <summary>Discard: closes without saving; nothing is created, including new people and tags (B-02.6).</summary>
@@ -487,6 +509,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public void ContinueEditing()
     {
         IsDirtyClosePromptOpen = false;
+        IsWindowClosePending = false;
         FollowUp = EditorFollowUp.None;
     }
 

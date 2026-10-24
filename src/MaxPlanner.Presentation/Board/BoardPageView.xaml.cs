@@ -16,7 +16,7 @@ namespace MaxPlanner.Presentation.Board;
 /// drag visuals and the drop index, keyboard routing, the card menu, focus after a move, and the S-breakpoint
 /// column scroll. Every move and command is run by <see cref="BoardPageViewModel"/>.
 /// </summary>
-public sealed partial class BoardPageView : UserControl
+public sealed partial class BoardPageView : UserControl, Shell.IPageView
 {
     private static readonly ResourceStrings Strings = new();
 
@@ -26,11 +26,13 @@ public sealed partial class BoardPageView : UserControl
     private bool _isSmall;
     private BoardCardViewModel? _dragged;
     private BoardColumnViewModel? _dragSource;
+    private readonly Common.Controls.CompactSearch _search;
 
     public BoardPageView(BoardPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow);
         SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -61,7 +63,20 @@ public sealed partial class BoardPageView : UserControl
     /// <summary>Design §4.2: 60% opacity while the card is being moved; the "Moving" caption says it in text.</summary>
     public static double MovingOpacity(bool isMoving) => isMoving ? 0.6 : 1.0;
 
+    /// <inheritdoc/>
+    public FrameworkElement HeaderElement => HeaderRoot;
+
+    /// <inheritdoc/>
+    public FrameworkElement? ContentElement => PageContent;
+
     public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+
+    /// <inheritdoc/>
+    public bool FocusSearch()
+    {
+        _search.FocusSearch();
+        return true;
+    }
 
     private static bool IsDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
@@ -109,6 +124,8 @@ public sealed partial class BoardPageView : UserControl
         // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
         ColumnsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
         _isSmall = width < 640;
+        _search.Apply(width);
+        ChipsBar.IsCompact = _isSmall;
         ColumnsScroller.HorizontalSnapPointsType = _isSmall ? SnapPointsType.MandatorySingle : SnapPointsType.None;
         ColumnPickerRow.Visibility = _isSmall ? Visibility.Visible : Visibility.Collapsed;
         foreach (var column in _columns)
@@ -148,7 +165,8 @@ public sealed partial class BoardPageView : UserControl
         var index = ViewModel.Columns.IndexOf(column);
         if (index >= 0)
         {
-            ColumnsScroller.ChangeView(index * (_columnWidth + 12), null, null);
+            // Design §9: no scroll animation when Windows animations are turned off.
+            ColumnsScroller.ChangeView(index * (_columnWidth + 12), null, null, disableAnimation: !Common.Services.MotionSettings.AnimationsEnabled);
         }
     }
 

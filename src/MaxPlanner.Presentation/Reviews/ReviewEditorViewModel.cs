@@ -26,7 +26,7 @@ public enum ReviewEditorFollowUp
 /// matches an existing CR, never a link), Task number, Services, Developer (add-new on save), Review comments and
 /// Done. It edits a draft and commits it through one use case with a revision check (B-02.8–9). Use on the UI thread.
 /// </summary>
-public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogViewModel, IDisposable
+public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
@@ -279,10 +279,32 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
         return true;
     }
 
-    public Task<bool> SaveFromPromptAsync()
+    public async Task<bool> SaveFromPromptAsync()
     {
         IsDirtyClosePromptOpen = false;
-        return SaveAsync();
+        var saved = await SaveAsync().ConfigureAwait(true);
+        if (!saved)
+        {
+            // A failed save keeps the editor open; the window close the prompt answered is abandoned.
+            IsWindowClosePending = false;
+        }
+
+        return saved;
+    }
+
+    /// <inheritdoc/>
+    public bool IsWindowClosePending { get; private set; }
+
+    /// <inheritdoc/>
+    public bool TryCloseForWindow()
+    {
+        if (TryClose())
+        {
+            return true;
+        }
+
+        IsWindowClosePending = IsDirtyClosePromptOpen;
+        return false;
     }
 
     public void DiscardChanges()
@@ -294,6 +316,7 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
     public void ContinueEditing()
     {
         IsDirtyClosePromptOpen = false;
+        IsWindowClosePending = false;
         FollowUp = ReviewEditorFollowUp.None;
     }
 

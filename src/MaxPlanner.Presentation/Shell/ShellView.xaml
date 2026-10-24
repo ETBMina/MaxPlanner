@@ -167,6 +167,7 @@
 
                 <!-- Status bar (design §2.8): page summary left, actual save status right. -->
                 <Grid
+                    x:Name="StatusBar"
                     Grid.Row="1"
                     Padding="16,0"
                     Background="{ThemeResource LayerFillColorDefaultBrush}"

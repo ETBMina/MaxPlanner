@@ -23,11 +23,14 @@ public sealed partial class FieldOptionRowViewModel : ObservableObject
         Label = label;
         RemoveName = removeName;
         AutomationId = "FieldDialog_OptionBox_" + id.Value.ToString("N");
+        RemoveAutomationId = "FieldDialog_OptionRemoveButton_" + id.Value.ToString("N");
     }
 
     public FieldOptionId Id { get; }
 
     public string AutomationId { get; }
+
+    public string RemoveAutomationId { get; }
 
     public string RemoveName { get; }
 

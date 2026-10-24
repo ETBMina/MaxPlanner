@@ -69,7 +69,7 @@ public enum CrEditorFollowUp
 /// task IDs it showed is sent; if the set changed meanwhile, the deletion is refused and the step shows the
 /// new counts for a new confirmation (AC-30).</para>
 /// </remarks>
-public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewModel, IDisposable
+public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
 {
     private const string NumberKey = "Number";
     private const string TaskNumberKey = "TaskNumber";
@@ -612,10 +612,32 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         return true;
     }
 
-    public Task<bool> SaveFromPromptAsync()
+    public async Task<bool> SaveFromPromptAsync()
     {
         IsDirtyClosePromptOpen = false;
-        return SaveAsync();
+        var saved = await SaveAsync().ConfigureAwait(true);
+        if (!saved)
+        {
+            // A failed save keeps the editor open; the window close the prompt answered is abandoned.
+            IsWindowClosePending = false;
+        }
+
+        return saved;
+    }
+
+    /// <inheritdoc/>
+    public bool IsWindowClosePending { get; private set; }
+
+    /// <inheritdoc/>
+    public bool TryCloseForWindow()
+    {
+        if (TryClose())
+        {
+            return true;
+        }
+
+        IsWindowClosePending = IsDirtyClosePromptOpen;
+        return false;
     }
 
     public void DiscardChanges()
@@ -627,6 +649,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     public void ContinueEditing()
     {
         IsDirtyClosePromptOpen = false;
+        IsWindowClosePending = false;
         FollowUp = CrEditorFollowUp.None;
     }
 

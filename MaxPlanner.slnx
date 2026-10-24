@@ -17,6 +17,7 @@
     <Project Path="tests/MaxPlanner.Presentation.Tests/MaxPlanner.Presentation.Tests.csproj" />
     <Project Path="tests/MaxPlanner.Architecture.Tests/MaxPlanner.Architecture.Tests.csproj" />
     <Project Path="tests/MaxPlanner.Desktop.SmokeTests/MaxPlanner.Desktop.SmokeTests.csproj" />
+    <Project Path="tests/MaxPlanner.Benchmarks/MaxPlanner.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/MaxPlanner.FixtureGenerator/MaxPlanner.FixtureGenerator.csproj" />

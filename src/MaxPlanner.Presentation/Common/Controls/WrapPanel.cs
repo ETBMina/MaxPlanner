@@ -13,30 +13,69 @@ public sealed partial class WrapPanel : Panel
     public static readonly DependencyProperty SpacingProperty = DependencyProperty.Register(
         nameof(Spacing), typeof(double), typeof(WrapPanel), new PropertyMetadata(8d, (d, _) => ((WrapPanel)d).InvalidateMeasure()));
 
+    public static readonly DependencyProperty MaxLinesProperty = DependencyProperty.Register(
+        nameof(MaxLines), typeof(int), typeof(WrapPanel), new PropertyMetadata(0, (d, _) => ((WrapPanel)d).InvalidateMeasure()));
+
+    public static readonly DependencyProperty WrapWidthProperty = DependencyProperty.Register(
+        nameof(WrapWidth), typeof(double), typeof(WrapPanel), new PropertyMetadata(0d, (d, _) => ((WrapPanel)d).InvalidateMeasure()));
+
+    private bool _isSingleLine;
+
     public double Spacing
     {
         get => (double)GetValue(SpacingProperty);
         set => SetValue(SpacingProperty, value);
     }
 
+    /// <summary>
+    /// When above zero and the children would need more lines than this, they are laid out on one line instead, for
+    /// a horizontally scrolling host (design §2.3: the chips row at S scrolls when it would exceed two rows).
+    /// </summary>
+    public int MaxLines
+    {
+        get => (int)GetValue(MaxLinesProperty);
+        set => SetValue(MaxLinesProperty, value);
+    }
+
+    /// <summary>
+    /// The width to wrap at when the host measures with unlimited width (a horizontally scrolling ScrollViewer passes
+    /// infinity); zero uses the available width.
+    /// </summary>
+    public double WrapWidth
+    {
+        get => (double)GetValue(WrapWidthProperty);
+        set => SetValue(WrapWidthProperty, value);
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
-        var width = availableSize.Width;
+        var width = WrapWidth > 0 ? WrapWidth : availableSize.Width;
+        var lines = 1;
+        double singleLineWidth = 0, singleLineHeight = 0;
         double lineWidth = 0, lineHeight = 0, totalWidth = 0, totalHeight = 0;
         foreach (var child in Children)
         {
             child.Measure(new Size(width, double.PositiveInfinity));
             var size = child.DesiredSize;
+            singleLineWidth += (singleLineWidth > 0 ? Spacing : 0) + size.Width;
+            singleLineHeight = Math.Max(singleLineHeight, size.Height);
             if (lineWidth > 0 && lineWidth + Spacing + size.Width > width)
             {
                 totalWidth = Math.Max(totalWidth, lineWidth);
                 totalHeight += lineHeight + Spacing;
                 lineWidth = 0;
                 lineHeight = 0;
+                lines++;
             }
 
             lineWidth += (lineWidth > 0 ? Spacing : 0) + size.Width;
             lineHeight = Math.Max(lineHeight, size.Height);
+        }
+
+        _isSingleLine = MaxLines > 0 && lines > MaxLines;
+        if (_isSingleLine)
+        {
+            return new Size(singleLineWidth, singleLineHeight);
         }
 
         totalWidth = Math.Max(totalWidth, lineWidth);
@@ -46,11 +85,12 @@ public sealed partial class WrapPanel : Panel
 
     protected override Size ArrangeOverride(Size finalSize)
     {
+        var wrapWidth = _isSingleLine ? double.PositiveInfinity : WrapWidth > 0 ? Math.Min(WrapWidth, finalSize.Width) : finalSize.Width;
         double x = 0, y = 0, lineHeight = 0;
         foreach (var child in Children)
         {
             var size = child.DesiredSize;
-            if (x > 0 && x + size.Width > finalSize.Width)
+            if (x > 0 && x + size.Width > wrapWidth)
             {
                 x = 0;
                 y += lineHeight + Spacing;

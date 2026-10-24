@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Development tool: creates disposable datasets through the real use cases. Never part of the portable ZIP
-       (publish-portable.ps1 publishes only MaxPlanner.Desktop). -->
+  <!-- Development tool: creates disposable datasets (incl. the T-11 benchmark fixture) through the real use cases.
+       Never part of the portable ZIP (publish-portable.ps1 publishes only MaxPlanner.Desktop and checks for it). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- People have no use case until Phase 10; the tool inserts the lookup rows directly (see Program.cs). -->
+    <!-- set-schema-version writes PRAGMA user_version for the newer-schema release gate (see Program.cs). -->
     <PackageReference Include="Microsoft.Data.Sqlite" />
   </ItemGroup>
 </Project>

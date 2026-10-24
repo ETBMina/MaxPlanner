@@ -364,10 +364,28 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
         var store = _session!.Store;
         var elapsedMs = _context.ElapsedMilliseconds;
         Log.Ready(_logger, elapsedMs, store.Tasks.Count, store.ChangeRequests.Count, store.ReviewItems.Count);
+        LogFirstRenderedFrame();
 
         // ADR 0015: after the first view is usable, so the backup never delays startup. The online backup
         // reads one WAL snapshot and runs alongside commits.
         _backupTask = RunDailyBackupAsync(_session.Backups);
+    }
+
+    // T-11 startup budget ("usable initial view"): the first frame rendered after the store became ready. The
+    // low-priority enqueue lets the page bindings that the ready state scheduled run first. scripts/run-performance.ps1
+    // reads this line (event 5016).
+    private void LogFirstRenderedFrame()
+    {
+        Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            void OnRendered(object? sender, Microsoft.UI.Xaml.Media.RenderedEventArgs e)
+            {
+                Microsoft.UI.Xaml.Media.CompositionTarget.Rendered -= OnRendered;
+                Log.FirstViewRendered(_logger, _context.ElapsedMilliseconds);
+            }
+
+            Microsoft.UI.Xaml.Media.CompositionTarget.Rendered += OnRendered;
+        });
     }
 
     private async Task RunDailyBackupAsync(DailyBackupService backups)
@@ -435,6 +453,9 @@ internal sealed partial class StartupCoordinator : IRecoveryActions, IDisposable
 
         [LoggerMessage(EventId = 5015, Level = LogLevel.Warning, Message = "Interrupted restore recovery: {Outcome:l}.")]
         public static partial void RestoreRecovered(ILogger logger, string outcome);
+
+        [LoggerMessage(EventId = 5016, Level = LogLevel.Information, Message = "Startup rendered: first frame with the ready view at {ElapsedMs} ms after launch.")]
+        public static partial void FirstViewRendered(ILogger logger, long elapsedMs);
 
         [LoggerMessage(EventId = 5010, Level = LogLevel.Information, Message = "Navigated to {Page:l}; live store subscriptions {Subscriptions}; working set {WorkingSetMiB} MiB.")]
         public static partial void Navigated(ILogger logger, string page, int subscriptions, long workingSetMiB);

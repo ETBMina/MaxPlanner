@@ -41,6 +41,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <StackPanel VerticalAlignment="Center" Spacing="2">
                 <TextBlock
@@ -132,16 +133,29 @@
                     AutomationProperties.LandmarkType="Search"
                     QueryIcon="Find"
                     Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <!-- Design §2.3 S: the search box moves to the full-width row below; this button opens it. -->
+                <ToggleButton
+                    x:Name="SearchToggle"
+                    x:Uid="Grid_SearchToggle"
+                    AutomationProperties.AutomationId="Grid_SearchToggle">
+                    <FontIcon FontSize="14" Glyph="&#xE721;" />
+                </ToggleButton>
                 <filters:FilterButton PageKey="Grid" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
             </StackPanel>
-            <filters:FilterChipsBar
+            <Grid
+                x:Name="CompactSearchRow"
                 Grid.Row="2"
+                Grid.ColumnSpan="3" />
+            <filters:FilterChipsBar
+                x:Name="ChipsBar"
+                Grid.Row="3"
                 Grid.ColumnSpan="3"
                 PageKey="Grid"
                 Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
         </Grid>
 
         <controls:StateView
+            x:Name="PageContent"
             x:Uid="Grid_StateView"
             Grid.Row="1"
             EmptyActionCommand="{x:Bind ViewModel.NewTaskCommand}"

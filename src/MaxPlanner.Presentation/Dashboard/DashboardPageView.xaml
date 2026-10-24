@@ -188,6 +188,7 @@
         </StackPanel>
 
         <controls:StateView
+            x:Name="PageContent"
             x:Uid="Dashboard_StateView"
             Grid.Row="1"
             PageKey="Dashboard"

@@ -20,8 +20,12 @@ Package versions are pinned in `Directory.Packages.props` (ADR 0002). Lock files
 ./scripts/build.ps1 -Configuration Release -Locked
 ./scripts/test.ps1                      # all test projects via Microsoft Testing Platform; TRX in artifacts/test-results
 ./scripts/publish-portable.ps1 -Version 0.1.0   # self-contained win-x64 ZIP + SHA-256 in artifacts/
-./scripts/verify-portable.ps1 -Zip artifacts/MaxPlanner-0.1.0-win-x64.zip
+./scripts/verify-portable.ps1 -Zip artifacts/MaxPlanner-0.1.0-win-x64.zip   # T-03/T-11.6 release gates (-Gates to select)
+./scripts/run-performance.ps1                   # T-11 fixture + BenchmarkDotNet suite + app runs on the published ZIP
+./tools/Generate-Notices.ps1                    # regenerate THIRD-PARTY-NOTICES.txt after a dependency change
+dotnet run --project tools/MaxPlanner.FixtureGenerator -p:Platform=x64 -- benchmark <app-folder> [--scale 0.1]
 ```
+End-user prerequisites and the release procedure are in [deployment-guide.md](deployment-guide.md).
 
 ## Running the app during development
 ```powershell

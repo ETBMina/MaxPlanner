@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
@@ -12,6 +13,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace MaxPlanner.Presentation.Shell;
@@ -36,6 +38,10 @@ public sealed partial class ShellView : UserControl
     private readonly DialogHost _dialogs;
     private ShellViewModel? _viewModel;
     private WorkspaceViewModel? _badgeSource;
+    private DrillDownNavigator? _navigator;
+    private WeakReference<UIElement>? _dashboardFocus;
+    private bool _isReturningToDashboard;
+    private long _navigationStarted;
     private SaveStatusViewModel? _saveStatus;
     private bool _isSyncingSelection;
 
@@ -67,6 +73,19 @@ public sealed partial class ShellView : UserControl
     /// <summary>Raised when the NavigationView enters or leaves LeftMinimal, where the title bar shows the pane toggle (design §2.1).</summary>
     public event EventHandler? TitleBarPaneToggleChanged;
 
+    /// <summary>
+    /// T-11 evidence: raised once the first frame after a page switch has rendered, with the time from the navigation
+    /// request to that frame. The Desktop host logs it for the performance gate (page switch p95 &lt;= 250 ms).
+    /// </summary>
+    public event EventHandler<PageShownEventArgs>? PageShown;
+
+    /// <summary>
+    /// Design §5.8: asks before the main window closes. An open editor with unsaved changes shows its dirty prompt and
+    /// the close waits; <paramref name="resumeClose"/> runs when the user chose Save (and it succeeded) or Discard.
+    /// </summary>
+    /// <returns>True when the window may close now.</returns>
+    public bool TryApproveWindowClose(Action resumeClose) => _dialogs.TryApproveWindowClose(resumeClose);
+
     public ShellViewModel? ViewModel
     {
         get => _viewModel;
@@ -86,6 +105,7 @@ public sealed partial class ShellView : UserControl
             AttachSaveStatus(value?.Workspace?.SaveStatus);
             _dialogs.Attach(value?.Workspace?.Context);
             AttachBadge(value?.Workspace);
+            AttachNavigator(value?.Workspace?.Context.Navigator);
             ShowCurrentPage(moveFocus: false);
         }
     }
@@ -122,10 +142,14 @@ public sealed partial class ShellView : UserControl
                 AttachSaveStatus(_viewModel?.Workspace?.SaveStatus);
                 _dialogs.Attach(_viewModel?.Workspace?.Context);
                 AttachBadge(_viewModel?.Workspace);
+                AttachNavigator(_viewModel?.Workspace?.Context.Navigator);
                 ShowCurrentPage(moveFocus: false);
                 break;
             case nameof(ShellViewModel.CurrentPage):
+                RememberDashboardFocus();
+                _navigationStarted = Stopwatch.GetTimestamp();
                 ShowCurrentPage(moveFocus: true);
+                ReportWhenRendered(_viewModel?.CurrentPage ?? AppPage.Dashboard, _navigationStarted);
                 break;
             case nameof(ShellViewModel.CanGoBack):
                 BackStateChanged?.Invoke(this, EventArgs.Empty);
@@ -161,40 +185,136 @@ public sealed partial class ShellView : UserControl
         PageHost.Content = view;
         SyncSelection();
 
-        // Design §7.7: after navigation focus goes to the page title, so the heading is announced.
+        // Design §7.7: after navigation focus goes to the page title, so the heading is announced. Returning from a
+        // drill-down gives focus back to the Dashboard element the drill-down started from, when it still exists.
         if (moveFocus)
         {
-            DispatcherQueue.TryEnqueue(() => FocusTitle(view));
+            var returning = _isReturningToDashboard && page == AppPage.Dashboard;
+            _isReturningToDashboard = false;
+            var origin = returning && _dashboardFocus is { } weak && weak.TryGetTarget(out var element) ? element : null;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (origin is FrameworkElement { IsLoaded: true } && IsWithin(origin, view) && origin.Focus(FocusState.Keyboard))
+                {
+                    return;
+                }
+
+                (view as IPageView)?.FocusTitle();
+            });
         }
     }
 
-    private static void FocusTitle(UIElement view)
+    private static bool IsWithin(DependencyObject? element, DependencyObject? ancestor)
     {
-        switch (view)
+        if (ancestor is null)
         {
-            case GridPageView grid:
-                grid.FocusTitle();
-                break;
-            case DashboardPageView dashboard:
-                dashboard.FocusTitle();
-                break;
-            case BoardPageView board:
-                board.FocusTitle();
-                break;
-            case CalendarPageView calendar:
-                calendar.FocusTitle();
-                break;
-            case ChecklistsPageView checklists:
-                checklists.FocusTitle();
-                break;
-            case SettingsPageView settings:
-                settings.FocusTitle();
-                break;
-            case PlaceholderPageView placeholder:
-                placeholder.FocusTitle();
-                break;
+            return false;
+        }
+
+        for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (ReferenceEquals(current, ancestor))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Design §7.7: remembers the focused Dashboard element while the Dashboard is left, for Return/Back.
+    private void RememberDashboardFocus()
+    {
+        if (PageHost.Content is DashboardPageView dashboard && XamlRoot is { } root
+            && FocusManager.GetFocusedElement(root) is UIElement focused && IsWithin(focused, dashboard))
+        {
+            _dashboardFocus = new WeakReference<UIElement>(focused);
+        }
+    }
+
+    private void AttachNavigator(DrillDownNavigator? navigator)
+    {
+        if (ReferenceEquals(_navigator, navigator))
+        {
+            return;
+        }
+
+        if (_navigator is not null)
+        {
+            _navigator.Returning -= OnReturningToDashboard;
+        }
+
+        _navigator = navigator;
+        _dashboardFocus = null;
+        if (navigator is not null)
+        {
+            navigator.Returning += OnReturningToDashboard;
+        }
+    }
+
+    private void OnReturningToDashboard(object? sender, EventArgs e) => _isReturningToDashboard = true;
+
+    // T-11: the time to the first rendered frame after the page swap and its queued layout work. The low-priority
+    // enqueue runs after the binding updates that the page swap scheduled, so the next frame shows the page.
+    private void ReportWhenRendered(AppPage page, long started)
+    {
+        if (PageShown is null)
+        {
+            return;
+        }
+
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            void OnRendered(object? sender, RenderedEventArgs e)
+            {
+                CompositionTarget.Rendered -= OnRendered;
+                if (started == _navigationStarted)
+                {
+                    PageShown?.Invoke(this, new PageShownEventArgs(page, Stopwatch.GetElapsedTime(started)));
+                }
+            }
+
+            CompositionTarget.Rendered += OnRendered;
+        });
+    }
+
+    // Design §7.1: F6 / Shift+F6 cycle navigation pane → page header → content → status bar.
+    private void CycleFocus(bool backwards)
+    {
+        if (PageHost.Content is not IPageView page || XamlRoot is not { } root)
+        {
+            return;
+        }
+
+        var focused = FocusManager.GetFocusedElement(root) as DependencyObject;
+        var zone = IsWithin(focused, StatusBar) ? 3
+            : page.ContentElement is { } content && IsWithin(focused, content) ? 2
+            : IsWithin(focused, page.HeaderElement) ? 1
+            : IsWithin(focused, Nav) ? 0
+            : -1;
+        for (var step = 1; step <= 4; step++)
+        {
+            var next = zone < 0 ? (backwards ? 4 - step : step - 1) : (((zone + (backwards ? -step : step)) % 4) + 4) % 4;
+            if (FocusZone(next, page))
+            {
+                return;
+            }
+        }
+    }
+
+    private bool FocusZone(int zone, IPageView page)
+    {
+        switch (zone)
+        {
+            case 0:
+                return Nav.SelectedItem is Control { IsLoaded: true } item && item.Focus(FocusState.Keyboard);
+            case 1:
+                page.FocusTitle();
+                return true;
+            case 2:
+                return page.ContentElement is { } content && FocusManager.FindFirstFocusableElement(content) is UIElement first && first.Focus(FocusState.Keyboard);
             default:
-                break;
+                return FocusManager.FindFirstFocusableElement(StatusBar) is UIElement status && status.Focus(FocusState.Keyboard);
         }
     }
 
@@ -273,6 +393,32 @@ public sealed partial class ShellView : UserControl
                 }
             };
             KeyboardAccelerators.Add(accelerator);
+        }
+
+        // Design §7.1: Ctrl+F focuses the page search (at S it expands the compact search row first).
+        var search = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
+        search.Invoked += (_, e) =>
+        {
+            if (_viewModel is { IsReady: true } && PageHost.Content is IPageView page)
+            {
+                e.Handled = page.FocusSearch();
+            }
+        };
+        KeyboardAccelerators.Add(search);
+
+        // Design §7.1: F6 / Shift+F6 move between the navigation pane, page header, content and status bar.
+        foreach (var modifiers in new[] { VirtualKeyModifiers.None, VirtualKeyModifiers.Shift })
+        {
+            var cycle = new KeyboardAccelerator { Key = VirtualKey.F6, Modifiers = modifiers };
+            cycle.Invoked += (_, e) =>
+            {
+                if (_viewModel is { IsReady: true })
+                {
+                    e.Handled = true;
+                    CycleFocus(backwards: modifiers == VirtualKeyModifiers.Shift);
+                }
+            };
+            KeyboardAccelerators.Add(cycle);
         }
 
         // Design §7.1: Alt+Left returns to the drill-down origin, like the TitleBar Back button.

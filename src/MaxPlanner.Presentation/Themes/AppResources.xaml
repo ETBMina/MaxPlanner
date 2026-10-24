@@ -199,6 +199,30 @@
         <Setter Property="BorderThickness" Value="0,0,1,0" />
     </Style>
 
+    <!--
+        Theme-following text and glyph styles for elements built or switched in code. A brush looked up from
+        Application.Resources in code resolves for the application theme once, so it would neither follow the
+        window's Light/Dark choice nor High Contrast; a style's ThemeResource setter resolves per element.
+    -->
+    <Style x:Key="ErrorCaptionTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource ErrorTextBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="ChecklistItemTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="ChecklistDoneItemTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="WarningGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCautionBrush}" />
+    </Style>
+    <Style x:Key="ErrorGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}" />
+    </Style>
+
     <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->
     <Style x:Key="PageTitleTextStyle" BasedOn="{StaticResource TitleTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="TextWrapping" Value="NoWrap" />
@@ -220,6 +244,11 @@
         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
         <Setter Property="BorderThickness" Value="0,1,1,0" />
+    </Style>
+    <!-- Design §6.3/§9: a drop target shows a 2-epx stroke (plus the drag caption), never a fill change alone. -->
+    <Style x:Key="CalendarDayCellDropTargetButtonStyle" BasedOn="{StaticResource CalendarDayCellButtonStyle}" TargetType="Button">
+        <Setter Property="BorderBrush" Value="{ThemeResource CalendarDropTargetStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
     </Style>
     <Style x:Key="CalendarBarButtonStyle" BasedOn="{StaticResource DefaultButtonStyle}" TargetType="Button">
         <Setter Property="HorizontalAlignment" Value="Stretch" />

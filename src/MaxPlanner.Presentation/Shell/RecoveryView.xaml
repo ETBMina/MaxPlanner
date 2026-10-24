@@ -49,8 +49,8 @@
                     VerticalAlignment="Center"
                     AutomationProperties.AccessibilityView="Raw"
                     FontSize="32"
-                    Foreground="{x:Bind common:BindFunctions.SeverityBrush(ViewModel.IsWarning), Mode=OneWay}"
-                    Glyph="{x:Bind common:BindFunctions.SeverityGlyph(ViewModel.IsWarning), Mode=OneWay}" />
+                    Glyph="{x:Bind common:BindFunctions.SeverityGlyph(ViewModel.IsWarning), Mode=OneWay}"
+                    Style="{x:Bind common:BindFunctions.SeverityGlyphStyle(ViewModel.IsWarning), Mode=OneWay}" />
                 <TextBlock
                     Grid.Column="1"
                     VerticalAlignment="Center"
