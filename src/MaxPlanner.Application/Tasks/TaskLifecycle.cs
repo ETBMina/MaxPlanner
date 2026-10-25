@@ -1,7 +1,7 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Domain.Policies;
 
 namespace MaxPlanner.Application.Tasks;
 
@@ -68,8 +68,14 @@ public sealed class RestoreTask
                 return TxResult.Abort<long>(error);
             }
 
-            // The column's maximum covers active cards only, so the archived task itself never counts.
-            var restored = task.Restore(RankPolicy.After(tx.Tasks.MaxBoardRank(task.StatusId)), tx.UtcNow);
+            if (tx.Workflow.Read().FindTaskStatus(task.StatusId) is not { } column)
+            {
+                return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
+            }
+
+            // B-07: a restored task returns to the top of its column. The column covers active cards only,
+            // so the archived task itself never counts.
+            var restored = task.Restore(BoardColumnRanks.TopRank(tx, column, new BoardCardKey(BoardCardKind.Task, task.Id.Value)), tx.UtcNow);
             if (restored.Error is { } invalid)
             {
                 return TransactionGuards.Reject<long>(invalid);

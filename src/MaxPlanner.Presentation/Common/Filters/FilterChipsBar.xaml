@@ -67,6 +67,7 @@
             -->
             <ScrollViewer
                 x:Name="ChipsScroller"
+                common:WheelScrolling.RoutesMouseWheel="True"
                 HorizontalScrollBarVisibility="Disabled"
                 HorizontalScrollMode="Disabled"
                 IsTabStop="False"

@@ -13,6 +13,17 @@ public static class RankPolicy
     public static long After(long? lastRank) => (lastRank ?? 0) + Step;
 
     /// <summary>
+    /// Rank for an item placed before <paramref name="firstRank"/> (null for an empty list), or null when
+    /// no rank below it is representable and the list must be renumbered first.
+    /// </summary>
+    public static long? Before(long? firstRank) => firstRank switch
+    {
+        null => Step,
+        { } first when first > long.MinValue + Step => first - Step,
+        _ => null,
+    };
+
+    /// <summary>
     /// A rank strictly between two neighbours, or null when there is no room and the list must be
     /// renumbered first.
     /// </summary>

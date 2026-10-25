@@ -1,8 +1,8 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Domain.Policies;
 using MaxPlanner.Domain.Values;
 
 namespace MaxPlanner.Application.SubtaskCards;
@@ -63,9 +63,9 @@ public sealed class UpdateSubtaskCard
             return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
         }
 
-        // B-07: a status change from the editor appends to the end of the full destination column, the same
-        // rule as the task editor, so it never renumbers cards hidden by filters.
-        var rank = target.Id == current.Id ? card.Rank : RankPolicy.After(tx.Tasks.MaxBoardRank(target.Id));
+        // B-07: a status change from the editor places the card at the top of the full destination column,
+        // the same rule as the task editor; an unchanged status keeps its rank.
+        var rank = target.Id == current.Id ? card.Rank : BoardColumnRanks.TopRank(tx, target, new BoardCardKey(BoardCardKind.SubtaskCard, card.Id.Value));
         var updated = card.Update(subtitle, notes, current, target, rank, command.Start, command.End, tx.LocalToday, tx.UtcNow);
         if (updated.Error is { } invalid)
         {

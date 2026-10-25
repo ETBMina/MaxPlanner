@@ -112,6 +112,13 @@ internal sealed class SqliteTaskStore(SqliteWriteTransaction tx) : ITaskStore
         return command.ExecuteScalar() is long rank ? rank : null;
     }
 
+    public long? MinBoardRank(TaskStatusId status)
+    {
+        using var command = tx.Command($"SELECT MIN(rank) FROM ({BoardColumnSql});");
+        command.Add("$status", status.Value);
+        return command.ExecuteScalar() is long rank ? rank : null;
+    }
+
     public IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardColumn(TaskStatusId status)
     {
         var cards = new List<(BoardCardKey Key, long Rank)>();

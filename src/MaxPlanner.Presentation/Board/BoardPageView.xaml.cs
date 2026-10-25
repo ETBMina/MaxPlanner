@@ -27,6 +27,11 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private bool _isSmall;
     private BoardCardViewModel? _dragged;
     private BoardColumnViewModel? _dragSource;
+
+    // Drop feedback (design §4.2): the list under the drag, its scroller, and the last list-local pointer Y.
+    private BoardCardList? _feedbackList;
+    private ScrollViewer? _feedbackScroller;
+    private double _feedbackPointerY;
     private readonly Common.Controls.CompactSearch _search;
 
     // Drag edge auto-scroll: depth into the edge zone, signed by direction (-1..1), per axis.
@@ -53,7 +58,11 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         ColumnsScroller.AddHandler(DragOverEvent, new DragEventHandler(OnScrollerDragOver), true);
         ColumnsScroller.AddHandler(DragLeaveEvent, new DragEventHandler(OnScrollerDragLeave), true);
         ColumnsScroller.AddHandler(DropEvent, new DragEventHandler((_, _) => StopAutoScroll()), true);
-        Unloaded += (_, _) => StopAutoScroll();
+        Unloaded += (_, _) =>
+        {
+            StopAutoScroll();
+            ClearDropFeedback();
+        };
     }
 
     public BoardPageViewModel ViewModel { get; }
@@ -244,19 +253,12 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         {
             var target = new MenuFlyoutSubItem { Text = column.Name };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(target, "Board_MenuMoveTo_" + column.StatusId.Value.ToString("N"));
-            if (ViewModel.IsFiltered)
-            {
-                // B-07: while filtered a status move appends to the end of the full column; nothing else is offered.
-                target.Items.Add(Item("Board_MenuEndOfColumn", "Board_MenuEnd_" + column.StatusId.Value.ToString("N"), null,
-                    () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Bottom), enabled: ViewModel.ColumnOf(card) != column));
-            }
-            else
-            {
-                target.Items.Add(Item("Board_MenuTopOfColumn", "Board_MenuTop_" + column.StatusId.Value.ToString("N"), null,
-                    () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Top)));
-                target.Items.Add(Item("Board_MenuBottomOfColumn", "Board_MenuBottom_" + column.StatusId.Value.ToString("N"), null,
-                    () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Bottom)));
-            }
+            // B-07: while filtered Top/Bottom address the full column and same-column reordering is off.
+            var enabled = !ViewModel.IsFiltered || ViewModel.ColumnOf(card) != column;
+            target.Items.Add(Item("Board_MenuTopOfColumn", "Board_MenuTop_" + column.StatusId.Value.ToString("N"), null,
+                () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Top), enabled));
+            target.Items.Add(Item("Board_MenuBottomOfColumn", "Board_MenuBottom_" + column.StatusId.Value.ToString("N"), null,
+                () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Bottom), enabled));
 
             moveTo.Items.Add(target);
         }
@@ -433,6 +435,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
         _dragged = null;
         _dragSource = null;
+        ClearDropFeedback();
         StopAutoScroll();
     }
 
@@ -450,20 +453,31 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             // B-07: positional reordering is off while filtered; the forbidden cursor and caption say so (§9).
             e.AcceptedOperation = DataPackageOperation.None;
             e.DragUIOverride.Caption = Strings.GetString("Board_ReorderOffCaption");
+            ClearDropFeedback();
             return;
         }
 
         e.AcceptedOperation = DataPackageOperation.Move;
         e.DragUIOverride.Caption = ViewModel.IsFiltered ? column.AppendCaption : column.DropCaption;
-        list.BorderThickness = new Thickness(2);
+        ShowDropFeedback(list, e.GetPosition(list).Y);
     }
 
     private void OnListDragLeave(object sender, DragEventArgs e)
     {
-        if (sender is BoardCardList list)
+        if (sender is not BoardCardList list || !ReferenceEquals(list, _feedbackList))
         {
-            list.BorderThickness = new Thickness(0);
+            return;
         }
+
+        // Leave events also bubble up from the cards as the pointer crosses between them inside the list; only
+        // leaving the list's own bounds clears its feedback (the next DragOver elsewhere also moves it).
+        var point = e.GetPosition(list);
+        if (point.X > 1 && point.Y > 1 && point.X < list.ActualWidth - 1 && point.Y < list.ActualHeight - 1)
+        {
+            return;
+        }
+
+        ClearDropFeedback();
     }
 
     private void OnListDrop(object sender, DragEventArgs e)
@@ -473,8 +487,9 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             return;
         }
 
-        list.BorderThickness = new Thickness(0);
-        var index = DropIndex(list, e);
+        // The indicator and the drop share one slot computation, so the card lands where the line was drawn.
+        var index = DropSlot(list, e.GetPosition(list).Y).Index;
+        ClearDropFeedback();
 
         // The view model's index excludes the dragged card itself, so a later slot in its own column shifts by one.
         var current = column.Cards.IndexOf(card);
@@ -483,22 +498,106 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             index--;
         }
 
+        // The slots directly above and below the card are its own position: nothing to move, so undim it here
+        // (the accepted drop means DragItemsCompleted will not).
+        if (current >= 0 && current == index && !ViewModel.IsFiltered)
+        {
+            card.IsMoving = false;
+            return;
+        }
+
         _ = ViewModel.DropAsync(card, column, index);
     }
 
-    /// <summary>The slot under the pointer: before the first card whose upper half contains it, else the end.</summary>
-    private static int DropIndex(BoardCardList list, DragEventArgs e)
+    /// <summary>
+    /// The insert slot for a list-local pointer Y and the Y of its insertion line: before the first card whose
+    /// midpoint is below the pointer, else the end (also for an empty column or the space under the last card).
+    /// While filtered a cross-column drop appends to the full column (B-07), so the slot is always the end.
+    /// </summary>
+    private (int Index, double LineY) DropSlot(BoardCardList list, double pointerY)
     {
-        for (var i = 0; i < list.Items.Count; i++)
+        var count = list.Items.Count;
+        var endY = 0.0;
+        var lastRealized = -1;
+        for (var i = 0; i < count; i++)
         {
-            if (list.ContainerFromIndex(i) is UIElement container && e.GetPosition(container).Y < container.ActualSize.Y / 2)
+            // Unrealized containers lie outside the viewport and its cache, never under the pointer.
+            if (list.ContainerFromIndex(i) is not FrameworkElement container)
             {
-                return i;
+                continue;
+            }
+
+            var top = container.TransformToVisual(list).TransformPoint(default).Y;
+            if (!ViewModel.IsFiltered && pointerY < top + (container.ActualHeight / 2))
+            {
+                return (i, top);
+            }
+
+            endY = top + container.ActualHeight;
+            lastRealized = i;
+        }
+
+        // An end slot below the realized cards (a long filtered column) is pinned to the list's visible bottom.
+        return (count, count > 0 && lastRealized < count - 1 ? list.ActualHeight : endY);
+    }
+
+    private void ShowDropFeedback(BoardCardList list, double pointerY)
+    {
+        if (!ReferenceEquals(list, _feedbackList))
+        {
+            ClearDropFeedback();
+            _feedbackList = list;
+            list.BorderThickness = new Thickness(2);
+
+            // Edge auto-scroll moves the cards under a still pointer, so the line follows the list's own scrolling.
+            _feedbackScroller = FindScroller(list);
+            if (_feedbackScroller is { } scroller)
+            {
+                scroller.ViewChanged += OnFeedbackScrollerViewChanged;
             }
         }
 
-        return list.Items.Count;
+        _feedbackPointerY = pointerY;
+        PositionInsertionLine();
     }
+
+    private void OnFeedbackScrollerViewChanged(object? sender, ScrollViewerViewChangedEventArgs e) => PositionInsertionLine();
+
+    private void PositionInsertionLine()
+    {
+        if (_feedbackList is not { } list || InsertionLine(list) is not { RenderTransform: TranslateTransform offset } line)
+        {
+            return;
+        }
+
+        var lineY = DropSlot(list, _feedbackPointerY).LineY;
+        offset.Y = Math.Clamp(lineY - (line.Height / 2), 0, Math.Max(0, list.ActualHeight - line.Height));
+        line.Visibility = Visibility.Visible;
+    }
+
+    private void ClearDropFeedback()
+    {
+        if (_feedbackScroller is { } scroller)
+        {
+            scroller.ViewChanged -= OnFeedbackScrollerViewChanged;
+        }
+
+        if (_feedbackList is { } list)
+        {
+            list.BorderThickness = new Thickness(0);
+            if (InsertionLine(list) is { } line)
+            {
+                line.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        _feedbackList = null;
+        _feedbackScroller = null;
+    }
+
+    // The column template places the insertion line beside the list in the same Grid cell.
+    private static Microsoft.UI.Xaml.Shapes.Rectangle? InsertionLine(BoardCardList list) =>
+        VisualTreeHelper.GetParent(list) is Panel panel ? panel.Children.OfType<Microsoft.UI.Xaml.Shapes.Rectangle>().FirstOrDefault() : null;
 
     // ----- Drag edge auto-scroll: view mechanics only; the drop and its move rules are unchanged (B-07). -----
     private void OnScrollerDragOver(object sender, DragEventArgs e)

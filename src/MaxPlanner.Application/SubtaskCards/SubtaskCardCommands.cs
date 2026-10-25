@@ -1,8 +1,8 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Domain.Policies;
 using MaxPlanner.Domain.Tasks;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
@@ -188,7 +188,7 @@ internal static class SubtaskCardRules
             : null;
     }
 
-    /// <summary>Creates the card at the end of its Board column with B-04 creation dates for the card only.</summary>
+    /// <summary>Creates the card at the top of its Board column with B-04 creation dates for the card only.</summary>
     public static TxResult<SubtaskCardId> Insert(
         IWriteTransaction tx,
         SubtaskCardId id,
@@ -200,7 +200,7 @@ internal static class SubtaskCardRules
         DateIntent end)
     {
         var created = SubtaskCard.Create(id, parentId, subtitle, notes, status, start, end,
-            RankPolicy.After(tx.Tasks.MaxBoardRank(status.Id)), tx.LocalToday, tx.UtcNow);
+            BoardColumnRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.SubtaskCard, id.Value)), tx.LocalToday, tx.UtcNow);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<SubtaskCardId>(invalid);

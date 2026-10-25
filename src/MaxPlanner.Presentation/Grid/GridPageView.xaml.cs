@@ -57,6 +57,8 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     private string? _draggedColumn;
     private Flyout? _editorFlyout;
     private bool _flyoutCloseApproved;
+    private ScrollViewer? _rowScroller;
+    private bool _isRowThumbDragging;
     private readonly CompactSearch _search;
 
     public GridPageView(GridPageViewModel viewModel)
@@ -365,6 +367,75 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         root.Children.Add(scroller);
         root.Children.Add(reset);
         ColumnsFlyout.Content = root;
+    }
+
+    // ----- Viewport-pinned row scroll bar (mirrors the row list's own scroller, whose bar is hidden) -----
+
+    private void OnTableLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_rowScroller is not null || FindDescendant<ScrollViewer>(Table, _ => true) is not { } scroller)
+        {
+            return;
+        }
+
+        // The page owns both the list and its template scroller, so these handlers share the page's lifetime.
+        _rowScroller = scroller;
+        scroller.ViewChanged += (_, _) => SyncRowScrollBar();
+        scroller.RegisterPropertyChangedCallback(ScrollViewer.ScrollableHeightProperty, (_, _) => SyncRowScrollBar());
+        scroller.RegisterPropertyChangedCallback(ScrollViewer.ViewportHeightProperty, (_, _) => SyncRowScrollBar());
+        HeaderBorder.SizeChanged += (_, args) => RowScrollBar.Margin = new Thickness(0, args.NewSize.Height, 0, 0);
+
+        // The bar sits outside the table, so a wheel turned over it is forwarded: the normal wheel to the rows, and the
+        // tilt wheel or Shift+wheel to the table's horizontal scroller (design §9 Mouse wheel).
+        RowScrollBar.PointerWheelChanged += (_, args) =>
+        {
+            var properties = args.GetCurrentPoint(RowScrollBar).Properties;
+            if (properties.IsHorizontalMouseWheel || (args.KeyModifiers & VirtualKeyModifiers.Shift) != 0)
+            {
+                Common.WheelScrolling.ScrollByWheel(HorizontalScroller, Orientation.Horizontal, properties);
+            }
+            else
+            {
+                Common.WheelScrolling.ScrollByWheel(scroller, Orientation.Vertical, properties);
+            }
+
+            args.Handled = true;
+        };
+        RowScrollBar.Margin = new Thickness(0, HeaderBorder.ActualHeight, 0, 0);
+        SyncRowScrollBar();
+    }
+
+    private void SyncRowScrollBar()
+    {
+        if (_rowScroller is not { } scroller)
+        {
+            return;
+        }
+
+        var scrollable = scroller.ScrollableHeight;
+        RowScrollBar.Visibility = scrollable > 0.5 ? Visibility.Visible : Visibility.Collapsed;
+        RowScrollBar.Maximum = Math.Max(0, scrollable);
+        RowScrollBar.ViewportSize = scroller.ViewportHeight;
+        RowScrollBar.SmallChange = GridColumnLayout.RowHeight;
+        RowScrollBar.LargeChange = Math.Max(GridColumnLayout.RowHeight, scroller.ViewportHeight - GridColumnLayout.RowHeight);
+
+        // While the thumb is dragged the bar leads; echoing the trailing offsets back would make the thumb jitter.
+        if (!_isRowThumbDragging)
+        {
+            RowScrollBar.Value = scroller.VerticalOffset;
+        }
+    }
+
+    private void OnRowScrollBarScroll(object sender, ScrollEventArgs e)
+    {
+        _isRowThumbDragging = e.ScrollEventType == ScrollEventType.ThumbTrack;
+        if (e.ScrollEventType == ScrollEventType.EndScroll)
+        {
+            SyncRowScrollBar();
+            return;
+        }
+
+        _rowScroller?.ChangeView(null, e.NewValue, null, disableAnimation: true);
     }
 
     private void OnHorizontalViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)

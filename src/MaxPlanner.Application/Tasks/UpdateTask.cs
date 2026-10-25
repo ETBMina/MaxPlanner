@@ -5,7 +5,6 @@ using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Domain.Policies;
 using MaxPlanner.Domain.Tasks;
 using MaxPlanner.Domain.Values;
 
@@ -122,9 +121,9 @@ public sealed class UpdateTask
             return TxResult.Abort<long>(itemError!);
         }
 
-        // B-07: a status change from the editor appends to the end of the full destination column, the
-        // same rule as Grid and filtered Board moves, so it never renumbers cards the user cannot see.
-        var rank = targetStatus.Id == current.Id ? task.Rank : RankPolicy.After(tx.Tasks.MaxBoardRank(targetStatus.Id));
+        // B-07: a status change from the editor places the task at the top of the full destination column,
+        // the same rule as Grid and Board menu moves; an unchanged status keeps its rank.
+        var rank = targetStatus.Id == current.Id ? task.Rank : BoardColumnRanks.TopRank(tx, targetStatus, new BoardCardKey(BoardCardKind.Task, task.Id.Value));
         var edited = task.Edit(
             new TaskEdit(content, command.PriorityId, command.Start, command.End, items),
             current,

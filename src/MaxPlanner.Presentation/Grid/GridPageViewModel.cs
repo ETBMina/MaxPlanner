@@ -490,12 +490,12 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             (_, { } card, GridColumns.Subtitle) => await useCases.UpdateSubtaskCardContent.ExecuteAsync(
                 new UpdateSubtaskCardContentCommand(operation, card.Id, card.Revision, row.DraftText, card.Notes), CancellationToken.None),
 
-            // B-07: a status change from the Grid appends to the end of the full destination column, the same
-            // rule as a filtered Board move, so it never renumbers cards the user cannot see.
+            // B-07: a status change from the Grid places the card at the top of the full destination column,
+            // the same rule as the editors, so it never renumbers cards the user cannot see.
             ({ } task, _, GridColumns.Status) => await useCases.MoveTask.ExecuteAsync(
-                new MoveTaskCommand(operation, task.Id, task.Revision, row.DraftStatus!.Id, BoardPlacement.AppendToEnd), CancellationToken.None),
+                new MoveTaskCommand(operation, task.Id, task.Revision, row.DraftStatus!.Id, BoardPlacement.Top), CancellationToken.None),
             (_, { } card, GridColumns.Status) => await useCases.MoveSubtaskCard.ExecuteAsync(
-                new MoveSubtaskCardCommand(operation, card.Id, card.Revision, row.DraftStatus!.Id, BoardPlacement.AppendToEnd), CancellationToken.None),
+                new MoveSubtaskCardCommand(operation, card.Id, card.Revision, row.DraftStatus!.Id, BoardPlacement.Top), CancellationToken.None),
 
             // Every other task cell saves the whole task with one changed field, at the revision the edit began
             // from (UpdateTask: same status, so no transition and no automatic dates, B-04).

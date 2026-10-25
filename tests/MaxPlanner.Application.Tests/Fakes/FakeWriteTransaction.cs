@@ -106,6 +106,8 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
 
         public long? MaxBoardRank(TaskStatusId status) => Column(status).Select(c => (long?)c.Rank).Max();
 
+        public long? MinBoardRank(TaskStatusId status) => Column(status).Select(c => (long?)c.Rank).Min();
+
         public IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardColumn(TaskStatusId status) =>
             [.. Column(status).OrderBy(c => c.Rank).ThenBy(c => c.Key.Id)];
 

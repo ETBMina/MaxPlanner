@@ -5,7 +5,6 @@ using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Domain.Policies;
 using MaxPlanner.Domain.Tasks;
 using MaxPlanner.Domain.Values;
 
@@ -101,7 +100,7 @@ public sealed class CreateTask
         }
 
         var created = TaskItem.Create(command.NewTaskId, content, status, priorityId, command.Start, command.End, changeRequest?.Id,
-            RankPolicy.After(tx.Tasks.MaxBoardRank(status.Id)), tx.LocalToday, tx.UtcNow, items);
+            BoardColumnRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.Task, command.NewTaskId.Value)), tx.LocalToday, tx.UtcNow, items);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<TaskId>(invalid);

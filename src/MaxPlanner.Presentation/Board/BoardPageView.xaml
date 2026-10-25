@@ -237,6 +237,7 @@
                 Width="300"
                 Margin="0,0,12,0"
                 Padding="8,12,8,0"
+                common:WheelScrolling.VerticalWheelScrollsHorizontally="True"
                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_Column_', StatusId.Value), Mode=OneTime}"
                 AutomationProperties.Name="{x:Bind Name, Mode=OneWay}"
                 Loaded="OnColumnLoaded"
@@ -287,6 +288,7 @@
                     -->
                     <local:BoardCardList
                         Grid.Row="1"
+                        common:WheelScrolling.RoutesMouseWheel="True"
                         AllowDrop="True"
                         AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnList_', StatusId.Value), Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
@@ -315,6 +317,24 @@
                             </Style>
                         </local:BoardCardList.ItemContainerStyle>
                     </local:BoardCardList>
+                    <!--
+                        Design §4.2 drop slot: an overlay over the list, never an item in it (cards move only after the
+                        move commits, B-07). The view moves it to the slot under the pointer while a card is dragged.
+                    -->
+                    <Rectangle
+                        Grid.Row="1"
+                        Height="2"
+                        Margin="4,0"
+                        VerticalAlignment="Top"
+                        Fill="{ThemeResource BoardInsertionLineBrush}"
+                        IsHitTestVisible="False"
+                        RadiusX="1"
+                        RadiusY="1"
+                        Visibility="Collapsed">
+                        <Rectangle.RenderTransform>
+                            <TranslateTransform />
+                        </Rectangle.RenderTransform>
+                    </Rectangle>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -449,6 +469,7 @@
             -->
             <ScrollViewer
                 x:Name="ColumnsScroller"
+                common:WheelScrolling.RoutesMouseWheel="True"
                 AllowDrop="True"
                 Background="Transparent"
                 HorizontalScrollBarVisibility="Auto"

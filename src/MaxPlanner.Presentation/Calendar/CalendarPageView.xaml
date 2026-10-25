@@ -423,45 +423,54 @@
                 x:Name="Split"
                 DisplayMode="Inline"
                 IsPaneOpen="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}"
-                OpenPaneLength="280"
-                PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                OpenPaneLength="312"
+                PaneBackground="Transparent"
                 PanePlacement="Left">
+                <!--
+                    The pane is a nested card inset by the page gutter (design §3); the pane length is the 280-epx card
+                    plus that gutter, and ApplyBreakpoint keeps both in step with the content padding.
+                -->
                 <SplitView.Pane>
-                    <Grid Padding="12" RowSpacing="8">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBlock
-                            x:Uid="Calendar_BacklogHeading"
-                            AutomationProperties.HeadingLevel="Level2"
-                            Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock
-                            x:Uid="Calendar_BacklogHint"
-                            Grid.Row="1"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            TextWrapping="Wrap" />
-                        <ListView
-                            x:Name="BacklogList"
-                            x:Uid="Calendar_BacklogList"
-                            Grid.Row="2"
-                            AutomationProperties.AutomationId="Calendar_BacklogList"
-                            CanDragItems="True"
-                            DragItemsStarting="OnBacklogDragStarting"
-                            ItemTemplate="{StaticResource BacklogCardTemplate}"
-                            ItemsSource="{x:Bind ViewModel.Backlog, Mode=OneTime}"
-                            KeyDown="OnBacklogKeyDown"
-                            SelectionMode="Single">
-                            <ListView.ItemContainerStyle>
-                                <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0" />
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                        </ListView>
-                    </Grid>
+                    <Border
+                        x:Name="BacklogCard"
+                        Margin="32,0,0,16"
+                        Style="{StaticResource SecondaryCardBorderStyle}">
+                        <Grid Padding="12" RowSpacing="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock
+                                x:Uid="Calendar_BacklogHeading"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <TextBlock
+                                x:Uid="Calendar_BacklogHint"
+                                Grid.Row="1"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                TextWrapping="Wrap" />
+                            <ListView
+                                x:Name="BacklogList"
+                                x:Uid="Calendar_BacklogList"
+                                Grid.Row="2"
+                                AutomationProperties.AutomationId="Calendar_BacklogList"
+                                CanDragItems="True"
+                                DragItemsStarting="OnBacklogDragStarting"
+                                ItemTemplate="{StaticResource BacklogCardTemplate}"
+                                ItemsSource="{x:Bind ViewModel.Backlog, Mode=OneTime}"
+                                KeyDown="OnBacklogKeyDown"
+                                SelectionMode="Single">
+                                <ListView.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                        </Grid>
+                    </Border>
                 </SplitView.Pane>
 
                 <Grid x:Name="ContentRoot" Padding="32,0,32,16">
@@ -488,6 +497,8 @@
                     <!-- Records (B-08.4): every status and every unscheduled CR; header buttons sort. -->
                     <ScrollViewer
                         x:Name="RecordsScroller"
+                        common:WheelScrolling.RoutesMouseWheel="True"
+                        common:WheelScrolling.VerticalWheelTarget="{x:Bind RecordsList, Mode=OneTime}"
                         HorizontalScrollBarVisibility="Auto"
                         HorizontalScrollMode="Enabled"
                         VerticalScrollBarVisibility="Disabled"
@@ -521,6 +532,7 @@
                                 x:Name="RecordsList"
                                 x:Uid="Calendar_RecordsList"
                                 Grid.Row="1"
+                                common:WheelScrolling.RoutesMouseWheel="True"
                                 AutomationProperties.AutomationId="Calendar_RecordsList"
                                 IsItemClickEnabled="True"
                                 ItemClick="OnRecordItemClick"

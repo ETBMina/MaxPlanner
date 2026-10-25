@@ -39,8 +39,8 @@ public sealed record CalendarSurface(IReadOnlyList<CalendarWeek> Weeks, bool IsW
 }
 
 /// <summary>
-/// Builds the Calendar surface from CR read models with <see cref="CalendarLayoutPolicy"/> (B-08.6–9). Pure, so
-/// window size never changes the result (B-08.10) and it can be tested without XAML.
+/// Builds the Calendar surface from CR read models with <see cref="CalendarLayoutPolicy"/> (B-08.6–9). Pure, so it
+/// can be tested without XAML; window size only changes the lane cap, never schedule data (B-08.10).
 /// </summary>
 public static class CalendarSurfaceBuilder
 {

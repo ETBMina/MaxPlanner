@@ -34,6 +34,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
 
     private bool _isSyncingMode;
     private bool? _wasWide;
+    private double _gutter = 32;
     private readonly Common.Controls.CompactSearch _search;
 
     public CalendarPageView(CalendarPageViewModel viewModel)
@@ -49,6 +50,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         viewModel.SurfaceChanged += OnSurfaceChanged;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        SurfaceScroller.SizeChanged += (_, _) => FitSurface();
     }
 
     public CalendarPageViewModel ViewModel { get; }
@@ -68,7 +70,29 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         return true;
     }
 
-    private void OnSurfaceChanged(object? sender, EventArgs e) => MonthView.Render(ViewModel.Surface);
+    private void OnSurfaceChanged(object? sender, EventArgs e)
+    {
+        // A new period can change the week count and so the lane capacity; the rebuilt surface re-enters here.
+        if (FitSurface())
+        {
+            return;
+        }
+
+        MonthView.Render(ViewModel.Surface);
+    }
+
+    /// <summary>Design §9: the Month/Week surface fills the viewport without scrolling; true when the surface was rebuilt.</summary>
+    private bool FitSurface()
+    {
+        var surface = ViewModel.Surface;
+        if (SurfaceScroller.Visibility != Visibility.Visible || SurfaceScroller.ActualHeight <= 0 || surface.Weeks.Count == 0)
+        {
+            return false;
+        }
+
+        var lanes = MonthView.Fit(SurfaceScroller.ActualHeight, surface.Weeks.Count, surface.IsWeekMode);
+        return ViewModel.SetLaneCapacity(lanes);
+    }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -80,6 +104,9 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
                 break;
             case nameof(CalendarPageViewModel.IsCompact):
                 ApplyModeVisibility();
+                break;
+            case nameof(CalendarPageViewModel.IsBacklogOpen):
+                ApplyContentPadding();
                 break;
             case nameof(CalendarPageViewModel.SortColumn) or nameof(CalendarPageViewModel.IsSortDescending):
                 BuildSortHeaders();
@@ -125,17 +152,28 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         var wide = width >= 1008;
         var padding = wide ? 32 : width >= 640 ? 24 : 16;
         HeaderRoot.Padding = wide ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
-        ContentRoot.Padding = new Thickness(padding, 0, padding, 16);
+        _gutter = padding;
         ViewModel.SetCompact(width < 640);
         _search.Apply(width);
         ChipsBar.IsCompact = width < 640;
         Split.DisplayMode = wide ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
-        Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280;
+
+        // The backlog card sits inside the page gutter; at S the full-width pane keeps the gutter on both sides.
+        BacklogCard.Margin = new Thickness(padding, 0, width < 640 ? padding : 0, 16);
+        Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280 + padding;
+        ApplyContentPadding();
         if (_wasWide != wide)
         {
             _wasWide = wide;
             ViewModel.IsBacklogOpen = wide;
         }
+    }
+
+    // An open inline backlog already supplies the left gutter, so the content keeps only a 16-epx gap beside it.
+    private void ApplyContentPadding()
+    {
+        var left = Split.DisplayMode == SplitViewDisplayMode.Inline && ViewModel.IsBacklogOpen ? 16 : _gutter;
+        ContentRoot.Padding = new Thickness(left, 0, _gutter, 16);
     }
 
     private void BuildSortHeaders()

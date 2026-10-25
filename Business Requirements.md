@@ -404,7 +404,7 @@ CR planned dates are either both null (unscheduled) or both present with Planned
 - Tasks support reversible archive/restore. Archived tasks retain all content, IDs, links, timestamps, status, checklist items, and Subtask cards. Archive is not completion. **CRs are not archived.**
 - Board and Checklists show active tasks; archiving a task also hides its Subtask cards and checklist group. Grid provides a persisted Show archived toggle, off by default, with clear archived styling and Restore commands.
 - Archived tasks are read-only until restored, with one exception: an archived unlinked task may be linked to a CR (B-03.6). If it has no Service, the link confirmation asks for one and saves it together with the link (B-02.2); an existing Service is kept and cannot be changed there.
-- Restoring a task inserts it at the end of its current Board column deterministically and shows its Subtask cards again. Other content is unchanged.
+- Restoring a task inserts it at the top of its current Board column deterministically and shows its Subtask cards again. Other content is unchanged.
 - Active task checklists depend on the task's archive state.
 - Delete is permanent after explicit confirmation naming the record and affected content. For tasks, offer Archive as the reversible alternative. Do not simulate Undo unless an actual undo mechanism exists.
 - Deleting a task removes its checklist items, Subtask cards, and link atomically; its CR remains.
@@ -431,7 +431,7 @@ The copy dialog creates a genuinely new task with new task/checklist-item IDs, n
 - Render columns in configured task-status order, including empty columns. Task cards show the effective Title, optional CR/task reference and Service, inherited Squad (or “General”), Owner when linked, priority, checklist progress (completed/total), and the number of Subtask cards. Subtask cards show the parent's title and service (read-only), their own subtitle, the inherited CR/task reference, and a “Subtask of …” indicator (B-16).
 - Show incomplete checklist items with working checkboxes. Use a bounded preview for long lists and an accessible “Show all” action. A task with no checklist items must not look 100% complete.
 - Support open/edit, copy, archive, delete, add Subtask card, and create-in-column commands. Move task cards and Subtask cards within/across columns by drag/drop and an equivalent keyboard/menu command.
-- Persist status and order atomically. New cards append to the chosen column. Order uses persisted ranks with ID as the final deterministic tie-breaker; renumber only affected records when needed.
+- Persist status and order atomically. New, copied, and restored cards, and status changes made outside a positional Board drop (editors, Grid, Board menu and keyboard moves), are placed at the top of the destination column; an unfiltered Board drop keeps its dropped position. Order uses persisted ranks with ID as the final deterministic tie-breaker; renumber only affected records when needed.
 - **Design default for filtered Board:** allow changing a card's status, appending it to the full destination column; disable positional reordering until search/filters are cleared. Never renumber only visible cards and corrupt hidden order.
 - Keep scroll position during moves and show drop feedback. A failed move restores the last committed position/status and reports the failure.
 - Column counts reflect visible filtered active cards; when filtered, also show the total active count.

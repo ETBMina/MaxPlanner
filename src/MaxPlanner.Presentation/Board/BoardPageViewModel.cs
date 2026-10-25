@@ -253,20 +253,25 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         return PlaceAtAsync(card, target, insertIndex);
     }
 
-    /// <summary>Move to ▸ {status} Top/Bottom from the card menu. While filtered both append to the end (B-07).</summary>
+    /// <summary>
+    /// Move to ▸ {status} Top/Bottom from the card menu. While filtered the chosen edge applies to the full
+    /// column, so no hidden card is renumbered (B-07).
+    /// </summary>
     public Task<bool> MoveToColumnAsync(BoardCardViewModel card, BoardColumnViewModel target, BoardEdge edge)
     {
         ArgumentNullException.ThrowIfNull(card);
         ArgumentNullException.ThrowIfNull(target);
         if (IsFiltered)
         {
-            return ColumnOf(card) == target ? RefuseReorder() : MoveAsync(card, target, BoardPlacement.AppendToEnd);
+            return ColumnOf(card) == target
+                ? RefuseReorder()
+                : MoveAsync(card, target, edge == BoardEdge.Top ? BoardPlacement.Top : BoardPlacement.AppendToEnd);
         }
 
         return PlaceAtAsync(card, target, edge == BoardEdge.Top ? 0 : int.MaxValue);
     }
 
-    /// <summary>Alt+Shift+Left/Right (design §7.3): the previous/next status, appended to the end (B-07).</summary>
+    /// <summary>Alt+Shift+Left/Right (design §7.3): the previous/next status, placed at the top of the full column (B-07).</summary>
     public Task<bool> MoveToAdjacentColumnAsync(BoardCardViewModel card, int direction)
     {
         ArgumentNullException.ThrowIfNull(card);
@@ -274,7 +279,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         var target = index + Math.Sign(direction);
         return index < 0 || target < 0 || target >= _columns.Count
             ? Task.FromResult(false)
-            : MoveAsync(card, _columns[target], BoardPlacement.AppendToEnd);
+            : MoveAsync(card, _columns[target], BoardPlacement.Top);
     }
 
     /// <summary>Alt+Shift+Up/Down and Move up/down (design §7.3): reorder within the column; off while filtered.</summary>

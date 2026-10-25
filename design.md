@@ -252,7 +252,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 
 **Card menu items:**
 - Open (Enter)
-- Move to ▸ (every status, with Top/Bottom of column)
+- Move to ▸ (every status, with Top/Bottom of column; while filtered both address the full column and the card's own column is disabled)
 - Move up / Move down
 - Copy… (tasks only)
 - Add Subtask card (tasks only)
@@ -266,13 +266,15 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 | Header | Search inline | Search narrower | Search collapses (§2.3) |
 
 States: Loading; Empty (statuses exist but no tasks: "No tasks yet" + New task, and the empty columns still render); Filtered-empty (columns render with "0 of n"); Error. **Filtered mode:**
-- A page InfoBar (Informational) says "Reordering within a column is off while search or filters are active. Moving to another status adds the card to the end." The InfoBar has a Clear filters action.
+- A page InfoBar (Informational) says "Reordering within a column is off while search or filters are active. Dropping a card on another status adds it to the end of that column." The InfoBar has a Clear filters action.
 - Move up/down are disabled, and `CanReorderItems = false`.
 
 A failed move restores the committed position, sets the save status to Failed, and announces the failure (B-07).
 
+A card that is created, copied or restored, or whose status changes outside a positional Board drop (task or Subtask card editor, Grid status cell, Alt+Shift+Left/Right), lands at the **top** of its destination column (B-07). Only a drop uses the dropped slot (unfiltered) or the end of the column (filtered).
+
 **Proposed notes (Phase 3, pending owner review):**
-- Drop feedback is a 2-epx accent stroke on the destination list plus the drag caption ("Drop to move to Review" / "Will be added to the end of Review"); there is no insertion line. The card itself is dimmed with a "Moving" caption until the move is saved. A card moves on screen only after the move committed, so a failure needs no visual rollback.
+- Drop feedback is a 2-epx accent stroke on the destination list, the drag caption ("Drop to move to Review" / "Will be added to the end of Review"), and a 2-epx insertion line (`AccentFillColorDefaultBrush`; `SystemColorHighlightColorBrush` in High Contrast) at the slot the card will take. The slot follows the pointer live: before a card when the pointer is above its midpoint, otherwise after it; the space below the last card, or an empty column, is the end. The line is an overlay drawn over the list (no placeholder item), follows edge auto-scroll, and disappears when the drag leaves the list, drops, or ends; the drop uses the same slot. Dropping a card next to its own position is a no-op. While the Board is filtered the line marks the end of the destination list (the append rule above), and same-column reordering stays forbidden. The card itself is dimmed with a "Moving" caption until the move is saved. A card moves on screen only after the move committed, so a failure needs no visual rollback.
 - Board search is a task-scope `AutoSuggestBox` (B-10 subset) until the shared Filters flyout (Phase 11). The filtered rules above apply to it.
 - ~~"Add Subtask card" from the card menu opens a small dialog with a required Subtitle box. "Open" on a Subtask card opens its parent task until the Subtask card editor (§5.2, Phase 5).~~ Superseded in Phase 5: both open the Subtask card editor (§5.2).
 
@@ -380,7 +382,7 @@ States: Loading; Empty ("No CRs yet" + New CR); Filtered-empty (the grid still r
 - **Move to backlog** asks first in a light flyout from a bar (Ctrl+Shift+B or the bar menu). The Records row menu and the CR editor's More menu run it directly, because choosing the command there is the explicit step (B-08.11).
 - A drop on a day of a CR that already has dates asks in a dialog ("Replace Oct 4 – Oct 9 with Oct 13?"); **Schedule on…** shows the same question inline in its flyout.
 - Records rows also offer **Schedule on…** (the backlog route), so a CR that is unscheduled but not in a backlog status can still be scheduled from Records.
-- The lane cap is fixed at 4. Rows use `Auto` heights with a minimum, so enlarged text grows the row instead of dropping lanes (a simplification of §9).
+- **Fit to height (§9):** at L/M the Month surface fills the content height with no vertical scrolling; the 5 or 6 week rows share it equally (star rows), and Week mode's single row fills it the same way. The lane cap per row is derived from the row height (day header + lanes × bar height scaled by `TextScaleFactor` + the "+N more" row), at most 4 and at least 0, and is recomputed when the window is resized or the period changes (the surface is rebuilt only when the cap changes). Bars beyond the cap go to "+N more" (B-08.9). Only when not even a lane-less row fits does the surface keep its natural height and scroll.
 - There is no bar selection model yet, so the **Selected** bar state (§6.3) is not shown; focus uses the system focus visual.
 - The **Backlog (n)** toggle is shown at every breakpoint. The pane opens inline at L and closes when the window narrows below L; its open state is not persisted yet.
 - Calendar search is in place; the CR **Filters** flyout, active-filter chips and the "hidden by the current filters" save message (B-08.12) arrive with Phase 11.
@@ -758,7 +760,7 @@ Enter = Save (except inside multiline fields); **Ctrl+Enter** = Save from anywhe
 |---|---|
 | Up/Down, Home/End | Move within a column (ListView) |
 | Ctrl+Left/Right | Focus the adjacent column (same index, clamped) |
-| **Alt+Shift+Left/Right** | Move the card to the previous/next status (appends to the end; B-07) |
+| **Alt+Shift+Left/Right** | Move the card to the previous/next status (placed at the top; B-07) |
 | **Alt+Shift+Up/Down** | Reorder within the column (disabled while filtered) |
 | Space | Toggle a focused checklist checkbox on a card |
 | Shift+F10 → Move to ▸ | Any status, Top/Bottom |
@@ -855,6 +857,12 @@ Use `AutomationPeer.RaiseNotificationEvent` (`AutomationNotificationKind.ActionC
 - **Text scaling (100–225%):** text wraps in cards, headers and dialogs. Use `TextTrimming` only where the full text is also available in a tooltip and the accessible name.
   - Fixed heights are avoided. Board column width stays fixed, while card height grows. Calendar row height = header + lanes × (bar height scaled by `TextScaleFactor`). When lanes no longer fit, the lane cap drops and "+N more" absorbs the rest (B-08.9).
   - Test at 200% scale and with larger text at every breakpoint (AC-16, AC-27).
+- **Mouse wheel** (mouse input only; touch, pen and precision-touchpad gestures stay native):
+  - The normal wheel only ever scrolls vertically. A horizontal-only scroller (Grid table, Board columns, Calendar Records, filter chips) never turns it sideways: it goes to the innermost vertical scroller under the pointer (doing nothing at that list's end), else to the region's designated list (Grid header → Grid rows; Records header → Records rows), else to the nearest vertically scrolling ancestor, else nowhere.
+  - The tilt (side) wheel, and Shift+wheel, only ever scroll horizontally, to the nearest horizontally scrolling element under the pointer or ancestor, even from inside a vertical list (a Board column → the Board; Grid rows → the Grid's horizontal scroll). Tilt right and Shift+wheel down reveal content to the right.
+  - Board exception: the wheel over a column's card list scrolls that column; over the column header or other non-list parts of the column it scrolls the Board horizontally; over the gaps between and after columns it does nothing.
+  - Ctrl+wheel, popups and flyouts, dialogs, and controls that consume the wheel themselves (ComboBox lists, NumberBox, date pickers, multi-line text) keep their native behaviour. A routed step is 120 epx per wheel notch (one column per notch on the snapped Board at S), animated unless animations are off.
+  - Mechanism: `Common/WheelScrolling` (`RoutesMouseWheel` on the scroller or list, `VerticalWheelTarget`, `VerticalWheelScrollsHorizontally` on a region).
 - **Drag and drop:**
   - Use native `ListView` drag/reorder for Board columns, checklist items, reviews and Settings rows `[gallery-listview-3]`.
   - Calendar drop targets use `AllowDrop` and `DragOver` with an `AcceptedOperation` and `DragUIOverride.Caption` text such as "Schedule on Oct 13".

@@ -167,53 +167,75 @@
             FilteredTitle="{x:Bind ViewModel.FilteredTitle, Mode=OneWay}"
             PageKey="Grid"
             State="{x:Bind ViewModel.State, Mode=OneWay}">
-            <!--
-                Horizontal scrolling moves the header and the rows together, so they never desynchronize (the
-                TableView gate failure in ADR 0004). Vertical scrolling is disabled here, which gives the row
-                list a bounded height so its virtualization stays active (T-08).
-            -->
-            <ScrollViewer
-                x:Name="HorizontalScroller"
-                HorizontalScrollBarVisibility="Auto"
-                HorizontalScrollMode="Auto"
-                VerticalScrollBarVisibility="Disabled"
-                VerticalScrollMode="Disabled"
-                ViewChanged="OnHorizontalViewChanged">
-                <Grid x:Name="TableRoot">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <Border
-                        x:Name="HeaderBorder"
-                        Padding="32,0,0,0"
-                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                        BorderThickness="0,0,0,1">
-                        <local:GridHeaderPanel x:Name="HeaderRow" />
-                    </Border>
+            <Grid>
+                <!--
+                    Horizontal scrolling moves the header and the rows together, so they never desynchronize (the
+                    TableView gate failure in ADR 0004). Vertical scrolling is disabled here, which gives the row
+                    list a bounded height so its virtualization stays active (T-08).
+                -->
+                <ScrollViewer
+                    x:Name="HorizontalScroller"
+                    common:WheelScrolling.RoutesMouseWheel="True"
+                    common:WheelScrolling.VerticalWheelTarget="{x:Bind Table, Mode=OneTime}"
+                    HorizontalScrollBarVisibility="Auto"
+                    HorizontalScrollMode="Auto"
+                    VerticalScrollBarVisibility="Disabled"
+                    VerticalScrollMode="Disabled"
+                    ViewChanged="OnHorizontalViewChanged">
+                    <Grid x:Name="TableRoot">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border
+                            x:Name="HeaderBorder"
+                            Padding="32,0,0,0"
+                            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                            BorderThickness="0,0,0,1">
+                            <local:GridHeaderPanel x:Name="HeaderRow" />
+                        </Border>
 
-                    <local:GridTable
-                        x:Name="Table"
-                        x:Uid="Grid_Table"
-                        Grid.Row="1"
-                        Padding="32,0,0,0"
-                        AutomationProperties.AutomationId="Grid_Table"
-                        ContextRequested="OnRowContextRequested"
-                        IsItemClickEnabled="False"
-                        ItemTemplate="{StaticResource RowTemplate}"
-                        ItemsSource="{x:Bind ViewModel.Rows, Mode=OneTime}"
-                        SelectionMode="None">
-                        <local:GridTable.ItemContainerStyle>
-                            <Style TargetType="local:GridRowContainer">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="MinHeight" Value="44" />
-                                <Setter Property="IsTabStop" Value="False" />
-                            </Style>
-                        </local:GridTable.ItemContainerStyle>
-                    </local:GridTable>
-                </Grid>
-            </ScrollViewer>
+                        <local:GridTable
+                            x:Name="Table"
+                            x:Uid="Grid_Table"
+                            Grid.Row="1"
+                            Padding="32,0,0,0"
+                            common:WheelScrolling.RoutesMouseWheel="True"
+                            AutomationProperties.AutomationId="Grid_Table"
+                            ContextRequested="OnRowContextRequested"
+                            IsItemClickEnabled="False"
+                            ItemTemplate="{StaticResource RowTemplate}"
+                            ItemsSource="{x:Bind ViewModel.Rows, Mode=OneTime}"
+                            Loaded="OnTableLoaded"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                            SelectionMode="None">
+                            <local:GridTable.ItemContainerStyle>
+                                <Style TargetType="local:GridRowContainer">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="MinHeight" Value="44" />
+                                    <Setter Property="IsTabStop" Value="False" />
+                                </Style>
+                            </local:GridTable.ItemContainerStyle>
+                        </local:GridTable>
+                    </Grid>
+                </ScrollViewer>
+
+                <!--
+                    The row list's own vertical bar sits at the far right of the full table width, off screen until the
+                    table is scrolled right, so it is hidden (rows still scroll by wheel, keyboard and touch) and this
+                    bar, pinned to the viewport's right edge below the header, mirrors and drives the list's scroller.
+                -->
+                <ScrollBar
+                    x:Name="RowScrollBar"
+                    HorizontalAlignment="Right"
+                    AutomationProperties.AutomationId="Grid_RowScrollBar"
+                    IndicatorMode="MouseIndicator"
+                    IsTabStop="False"
+                    Orientation="Vertical"
+                    Scroll="OnRowScrollBarScroll"
+                    Visibility="Collapsed" />
+            </Grid>
         </controls:StateView>
 
         <!-- The cell error and single-cell conflict popup (design §4.3, §5.10), anchored under the editing cell. -->

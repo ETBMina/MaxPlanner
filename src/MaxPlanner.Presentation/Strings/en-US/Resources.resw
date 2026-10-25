@@ -631,9 +631,6 @@
   <data name="Board_MenuOpen" xml:space="preserve">
     <value>Open</value>
   </data>
-  <data name="Board_MenuEndOfColumn" xml:space="preserve">
-    <value>End of column</value>
-  </data>
   <data name="Board_MenuTopOfColumn" xml:space="preserve">
     <value>Top of column</value>
   </data>
@@ -689,7 +686,7 @@
     <value>Column</value>
   </data>
   <data name="Board_FilteredInfoBar.Message" xml:space="preserve">
-    <value>Reordering within a column is off while search or filters are active. Moving to another status adds the card to the end.</value>
+    <value>Reordering within a column is off while search or filters are active. Dropping a card on another status adds it to the end of that column.</value>
   </data>
   <data name="Board_ClearSearchButton.Content" xml:space="preserve">
     <value>Clear all filters</value>

@@ -41,13 +41,14 @@ public sealed partial class CalendarResizeHandle : WinGrid
 /// <summary>
 /// The custom Month/Week surface of design §4.4 (P1: no platform control fits). It renders a
 /// <see cref="CalendarSurface"/>: per week row, five focusable day cells (Sun–Thu, drop targets with accessible
-/// names), the Fri–Sat stub with the "Outside visible workdays" flyout, up to four bar lanes with continuation
-/// cues and edge handles, and "+N more" links. Pure view mechanics; every command goes to
+/// names), the Fri–Sat stub with the "Outside visible workdays" flyout, the bar lanes that fit (at most four) with
+/// continuation cues and edge handles, and "+N more" links. Pure view mechanics; every command goes to
 /// <see cref="CalendarPageViewModel"/>.
 /// </summary>
 /// <remarks>
 /// The surface is rebuilt after each committed batch. The focused day or bar is remembered by key and focused
-/// again in the new tree, so a commit elsewhere does not move keyboard focus (T-07).
+/// again in the new tree, so a commit elsewhere does not move keyboard focus (T-07). <see cref="Fit"/> sizes the
+/// week rows to the viewport and derives the lane cap from the row height (design §9).
 /// </remarks>
 public sealed partial class CalendarMonthView : UserControl
 {
@@ -56,10 +57,13 @@ public sealed partial class CalendarMonthView : UserControl
 
     private const double StubWidth = 28;
     private const double LaneGap = 2;
+    private const double DayHeaderHeight = 30;
+    private const double MoreRowHeight = 24;
 
     private static readonly TimeSpan KeyboardCommitDelay = TimeSpan.FromMilliseconds(600);
 
-    private readonly StackPanel _root = new() { Spacing = 0 };
+    private readonly WinGrid _root = new();
+    private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
     private readonly Dictionary<string, Control> _focusables = [];
     private readonly Dictionary<Guid, (DateOnly Start, DateOnly End)> _pendingKeyboard = [];
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _keyboardTimer;
@@ -92,16 +96,48 @@ public sealed partial class CalendarMonthView : UserControl
         _surface = surface;
         _focusables.Clear();
         _root.Children.Clear();
+        _root.RowDefinitions.Clear();
+        var scale = _uiSettings.TextScaleFactor;
+        _root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(NamesRowHeight(scale)) });
         _root.Children.Add(HeaderRow());
         foreach (var week in surface.Weeks)
         {
-            _root.Children.Add(WeekRow(viewModel, week, surface.IsWeekMode, surface.MaxLanes));
+            // Star rows share the fitted height equally; without a fitted height (the scroll fallback) they size to content.
+            _root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            var row = WeekRow(viewModel, week, surface.IsWeekMode, surface.MaxLanes, scale);
+            WinGrid.SetRow(row, _root.RowDefinitions.Count - 1);
+            _root.Children.Add(row);
         }
 
         if (hadFocus && _focusKey is not null && _focusables.TryGetValue(_focusKey, out var again))
         {
             again.Focus(FocusState.Keyboard);
         }
+    }
+
+    /// <summary>
+    /// Design §9: fits the surface to <paramref name="viewportHeight"/>. The week rows share the height, and the
+    /// lane cap is the number of bar lanes one row can hold (at most four); "+N more" absorbs the rest (B-08.9).
+    /// </summary>
+    /// <remarks>
+    /// Only the viewport height is read, never this control's desired size, so fitting cannot start a layout
+    /// cycle. When not even a lane-less row fits, the surface keeps its natural height and the host scrolls.
+    /// </remarks>
+    /// <returns>The lane capacity for <see cref="CalendarPageViewModel.SetLaneCapacity"/>.</returns>
+    public int Fit(double viewportHeight, int weekCount, bool isWeekMode)
+    {
+        var scale = _uiSettings.TextScaleFactor;
+        var rowHeight = (viewportHeight - NamesRowHeight(scale)) / Math.Max(1, weekCount);
+        var reserved = (DayHeaderHeight + MoreRowHeight) * scale;
+        if (rowHeight < reserved)
+        {
+            Height = double.NaN;
+            return 0;
+        }
+
+        Height = Math.Floor(viewportHeight);
+        var lanes = (int)Math.Floor((rowHeight - reserved) / LaneHeight(isWeekMode, scale));
+        return Math.Clamp(lanes, 0, CalendarLayoutPolicy.DefaultMaxLanes);
     }
 
     /// <summary>Focuses a day cell, for example after keyboard navigation moved the period.</summary>
@@ -115,6 +151,11 @@ public sealed partial class CalendarMonthView : UserControl
     private static string DateId(DateOnly day) => day.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
 
     private static Style StyleOf(string key) => (Style)Microsoft.UI.Xaml.Application.Current.Resources[key];
+
+    // A caption line (16 epx at 100% text) plus the 4-epx top and bottom margins of the day-name header.
+    private static double NamesRowHeight(double scale) => (16 * scale) + 8;
+
+    private static double LaneHeight(bool isWeekMode, double scale) => ((isWeekMode ? 40 : 22) * scale) + LaneGap;
 
     private static WinGrid Columns()
     {
@@ -147,18 +188,18 @@ public sealed partial class CalendarMonthView : UserControl
         return grid;
     }
 
-    private WinGrid WeekRow(CalendarPageViewModel viewModel, CalendarWeek week, bool isWeekMode, int maxLanes)
+    private WinGrid WeekRow(CalendarPageViewModel viewModel, CalendarWeek week, bool isWeekMode, int maxLanes, double scale)
     {
-        var barHeight = isWeekMode ? 40 : 22;
+        // Heights scale with TextScaleFactor and match Fit, so the fitted lanes always fit the row (design §9).
         var grid = Columns();
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto, MinHeight = 30 });
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(DayHeaderHeight * scale) });
         for (var lane = 0; lane < maxLanes; lane++)
         {
-            // Auto with a minimum: rows grow with enlarged text instead of clipping bar text (design §9).
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto, MinHeight = barHeight + LaneGap });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(LaneHeight(isWeekMode, scale)) });
         }
 
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto, MinHeight = isWeekMode ? 48 : 24 });
+        // The "+N more" row takes the rest of the fitted row height.
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star), MinHeight = MoreRowHeight * scale });
 
         // Tab order follows child order: each day cell, then the bars starting on it, then its "+N more" (design §7.5).
         foreach (var day in week.Days)
@@ -348,7 +389,7 @@ public sealed partial class CalendarMonthView : UserControl
 
     private HyperlinkButton MoreLink(CalendarPageViewModel viewModel, CalendarDayCell day, int maxLanes)
     {
-        var link = new HyperlinkButton { Content = viewModel.MoreText(day.HiddenCount), Padding = new Thickness(6, 0, 6, 2), FontSize = 12 };
+        var link = new HyperlinkButton { Content = viewModel.MoreText(day.HiddenCount), Padding = new Thickness(6, 0, 6, 2), FontSize = 12, VerticalAlignment = VerticalAlignment.Top };
         WinGrid.SetColumn(link, day.Column);
         WinGrid.SetRow(link, maxLanes + 1);
         AutomationProperties.SetAutomationId(link, "Calendar_MoreLink_" + DateId(day.Date));
@@ -395,7 +436,9 @@ public sealed partial class CalendarMonthView : UserControl
             panel.Children.Add(button);
         }
 
-        var stub = new Border { Style = StyleOf("CalendarStubBorderStyle"), Child = panel };
+        // A short fitted row scales the stub down instead of clipping the outside-workdays button.
+        var fitted = new Viewbox { Child = panel, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, VerticalAlignment = VerticalAlignment.Top };
+        var stub = new Border { Style = StyleOf("CalendarStubBorderStyle"), Child = fitted };
         AutomationProperties.SetName(stub, viewModel.Format("Calendar_StubName", friday.ToString("D", CultureInfo.CurrentCulture), saturday.ToString("D", CultureInfo.CurrentCulture)));
         WinGrid.SetColumn(stub, Workweek.VisibleDays.Count);
         WinGrid.SetRowSpan(stub, maxLanes + 2);

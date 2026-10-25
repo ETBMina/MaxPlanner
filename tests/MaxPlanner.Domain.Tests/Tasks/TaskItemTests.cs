@@ -68,7 +68,7 @@ public sealed class TaskItemTests
 
         archived.UpdateContent(Content(), Now).Error!.Code.Should().Be(DomainErrorCodes.ArchivedReadOnly);
         archived.LinkTo(Cr, Now).IsSuccess.Should().BeTrue();
-        var restored = archived.Restore(rankAtEndOfColumn: 99_000, Now).Value;
+        var restored = archived.Restore(rankAtTopOfColumn: 99_000, Now).Value;
         restored.IsArchived.Should().BeFalse();
         restored.Rank.Should().Be(99_000);
     }

@@ -392,10 +392,10 @@ public sealed record TaskItem
             ? DomainResult.Failure<TaskItem>(DomainErrorCodes.ArchivedReadOnly)
             : DomainResult.Success((this with { IsArchived = true }).Touch(nowUtc));
 
-    /// <summary>Restores at <paramref name="rankAtEndOfColumn"/>: B-05 puts a restored task at the end of its column.</summary>
-    public DomainResult<TaskItem> Restore(long rankAtEndOfColumn, DateTimeOffset nowUtc) =>
+    /// <summary>Restores at <paramref name="rankAtTopOfColumn"/>: B-05 puts a restored task at the top of its column.</summary>
+    public DomainResult<TaskItem> Restore(long rankAtTopOfColumn, DateTimeOffset nowUtc) =>
         IsArchived
-            ? DomainResult.Success((this with { IsArchived = false, Rank = rankAtEndOfColumn }).Touch(nowUtc))
+            ? DomainResult.Success((this with { IsArchived = false, Rank = rankAtTopOfColumn }).Touch(nowUtc))
             : DomainResult.Failure<TaskItem>(DomainErrorCodes.NotArchived);
 
     public DomainResult<TaskItem> AddChecklistItem(ChecklistItemId id, ChecklistText text, DateTimeOffset nowUtc)

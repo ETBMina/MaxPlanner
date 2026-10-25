@@ -121,7 +121,7 @@ public sealed class CopyTask
         }
 
         var created = TaskItem.Create(command.NewTaskId, content, status, priorityId, draft.Start, draft.End, changeRequest?.Id,
-            RankPolicy.After(tx.Tasks.MaxBoardRank(status.Id)), tx.LocalToday, tx.UtcNow, draft.ChecklistItems);
+            BoardColumnRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.Task, command.NewTaskId.Value)), tx.LocalToday, tx.UtcNow, draft.ChecklistItems);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<TaskId>(invalid);

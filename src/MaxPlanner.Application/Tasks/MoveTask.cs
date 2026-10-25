@@ -15,8 +15,14 @@ public abstract record BoardPlacement
     {
     }
 
-    /// <summary>The end of the full column. Used for status changes while the Board is filtered (B-07).</summary>
+    /// <summary>The end of the full column. Used for a cross-column drop while the Board is filtered (B-07).</summary>
     public static BoardPlacement AppendToEnd { get; } = new AppendToEndPlacement();
+
+    /// <summary>
+    /// The top of the full column. The default for status changes made outside a positional Board drop
+    /// (editors, Grid, Board menu and keyboard moves) and for new, copied and restored cards (B-07).
+    /// </summary>
+    public static BoardPlacement Top { get; } = new TopPlacement();
 
     /// <param name="beforeRank">Rank of the card that will precede the moved card, or null for the top.</param>
     /// <param name="afterRank">Rank of the card that will follow it, or null for the bottom.</param>
@@ -24,6 +30,8 @@ public abstract record BoardPlacement
 }
 
 public sealed record AppendToEndPlacement : BoardPlacement;
+
+public sealed record TopPlacement : BoardPlacement;
 
 public sealed record BetweenPlacement(long? BeforeRank, long? AfterRank) : BoardPlacement;
 
@@ -91,8 +99,16 @@ internal static class BoardColumnRanks
     {
         BetweenPlacement between => RankPolicy.Between(between.BeforeRank, between.AfterRank)
             ?? RenumberColumn(tx, column, moved, between.BeforeRank),
+        TopPlacement => RankPolicy.Before(tx.Tasks.MinBoardRank(column.Id)) ?? RenumberColumn(tx, column, moved, beforeRank: null),
         _ => RankPolicy.After(tx.Tasks.MaxBoardRank(column.Id)),
     };
+
+    /// <summary>
+    /// The rank for a card that enters <paramref name="column"/> without a positional drop: new, copied,
+    /// restored, or changed status elsewhere. It goes to the top of the full column (B-07).
+    /// </summary>
+    public static long TopRank(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey entering) =>
+        RankFor(tx, column, entering, BoardPlacement.Top);
 
     /// <summary>
     /// B-07: when two neighbours have no free rank between them, the full destination column (cards hidden

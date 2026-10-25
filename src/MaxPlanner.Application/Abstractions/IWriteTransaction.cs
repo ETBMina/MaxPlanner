@@ -86,6 +86,9 @@ public interface ITaskStore
     /// </summary>
     long? MaxBoardRank(TaskStatusId status);
 
+    /// <summary>The lowest rank in a Board column, or null when it is empty; same membership as <see cref="MaxBoardRank"/>.</summary>
+    long? MinBoardRank(TaskStatusId status);
+
     /// <summary>
     /// Every card of a Board column in order (rank, then ID), with the same membership as
     /// <see cref="MaxBoardRank"/>. Used to renumber the full column, filtered-out cards included (B-07).

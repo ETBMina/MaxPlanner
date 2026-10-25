@@ -33,18 +33,19 @@ public sealed record CalendarLayout(
     IReadOnlyList<Guid> OutsideVisibleWorkdays);
 
 /// <summary>
-/// Deterministic bar layout for Month and Week modes (B-08.6–9). Pure, so it is tested without XAML
-/// and resizing the window can never change the result.
+/// Deterministic bar layout for Month and Week modes (B-08.6–9). Pure, so it is tested without XAML; the
+/// lane cap is an input (the view derives it from the row height), never schedule data (B-08.10).
 /// </summary>
 public static class CalendarLayoutPolicy
 {
     public const int DefaultMaxLanes = 4;
 
+    /// <param name="maxLanes">Lanes per week row; 0 sends every bar to "+N more" (a very short window, design §9).</param>
     public static CalendarLayout Layout(IReadOnlyList<CalendarItem> items, IReadOnlyList<WeekRow> rows, int maxLanes = DefaultMaxLanes)
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(rows);
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxLanes, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxLanes);
 
         // B-08.6: the lane order is fixed by the full stored range, not the clipped piece, so a long
         // CR keeps the top lanes in every row it crosses.
