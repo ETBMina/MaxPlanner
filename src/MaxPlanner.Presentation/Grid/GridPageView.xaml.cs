@@ -56,7 +56,10 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     private double _frozenOffset;
     private string? _draggedColumn;
     private Flyout? _editorFlyout;
+    private (GridRowViewModel Row, GridColumnViewModel Column)? _editorFlyoutTarget;
+    private (GridRowViewModel Row, GridColumnViewModel Column)? _hiddenFlyoutTarget;
     private bool _flyoutCloseApproved;
+    private bool _isShown;
     private ScrollViewer? _rowScroller;
     private bool _isRowThumbDragging;
     private readonly CompactSearch _search;
@@ -70,15 +73,17 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();
         ((INotifyCollectionChanged)ViewModel.Rows).CollectionChanged += OnRowsChanged;
-        SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
-        Unloaded += (_, _) => CellPopup.IsOpen = false;
-        Loaded += (_, _) =>
+        SizeChanged += (_, e) =>
         {
-            if (PopupRow is { IsEditing: true, HasError: true } row)
+            // A collapsed (hidden) page has no width to adapt to; switching to S and back would rebuild every row.
+            if (e.NewSize.Width > 0)
             {
-                ShowPopup(row);
+                ApplyBreakpoint(e.NewSize.Width);
             }
         };
+
+        // Runs when the dataset closes and the view is dropped; a page switch only hides the view (OnHidden).
+        Unloaded += (_, _) => CellPopup.IsOpen = false;
         RefreshLayout();
     }
 
@@ -139,6 +144,61 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         _search.FocusSearch();
         return true;
+    }
+
+    /// <inheritdoc/>
+    public void OnShown()
+    {
+        _isShown = true;
+        PageContent.OnPageShown();
+        var showsPopup = PopupRow is { IsEditing: true, HasError: true };
+        var flyout = _hiddenFlyoutTarget;
+        _hiddenFlyoutTarget = null;
+        var reopensFlyout = flyout is { } target && target.Row.EditingColumn == target.Column.Key;
+        if (!showsPopup && !reopensFlyout)
+        {
+            return;
+        }
+
+        // The popup and the flyout are placed against their cell, which has no position until the page is laid out.
+        UpdateLayout();
+        if (showsPopup)
+        {
+            ShowPopup(PopupRow!);
+        }
+
+        if (reopensFlyout)
+        {
+            // Low priority: after the shell's title focus, so the editor ends with focus and is not light-dismissed.
+            var (row, column) = flyout!.Value;
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (_isShown && row.EditingColumn == column.Key && _editorFlyout is null)
+                {
+                    OpenEditorFlyout(row, column);
+                }
+            });
+        }
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// An inline editor stays in its cell: the shell's title focus makes it lose focus, which attempts the commit as
+    /// leaving the cell does (B-07); a refused draft stays with its error popup for the return. An open flyout editor
+    /// is closed without commit or cancel, so its draft and edit state are kept, and it is reopened by OnShown.
+    /// </remarks>
+    public void OnHidden()
+    {
+        _isShown = false;
+        CellPopup.IsOpen = false;
+        if (_editorFlyout is { IsOpen: true } open && _editorFlyoutTarget is { } target)
+        {
+            _hiddenFlyoutTarget = target;
+            _flyoutCloseApproved = true;
+            open.Hide();
+        }
+
+        PageContent.OnPageHidden();
     }
 
     // ----- Layout: displayed columns, header cells, frozen column -----
@@ -895,16 +955,28 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         root.Children.Add(error);
         root.Children.Add(buttons);
 
-        void Refresh(object? sender, PropertyChangedEventArgs e)
+        var flyout = new Flyout { Content = root, Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft, ShouldConstrainToRootBounds = true };
+        void Refresh(object? sender, PropertyChangedEventArgs? e)
         {
+            // An edit that ended elsewhere (a commit started before the page was hidden and this flyout reopened)
+            // leaves nothing to edit here.
+            if (row.EditingColumn != column.Key && flyout.IsOpen)
+            {
+                _flyoutCloseApproved = true;
+                flyout.Hide();
+                return;
+            }
+
             error.Text = row.ErrorMessage ?? string.Empty;
             ring.IsActive = row.IsSaving;
             save.IsEnabled = cancel.IsEnabled = !row.IsSaving;
         }
 
+        // A reopened flyout (OnShown) starts from the row's current error and saving state.
+        Refresh(null, null);
         row.PropertyChanged += Refresh;
-        var flyout = new Flyout { Content = root, Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft, ShouldConstrainToRootBounds = true };
         _editorFlyout = flyout;
+        _editorFlyoutTarget = (row, column);
         _flyoutCloseApproved = false;
         var tapOpenedAt = openedByTap ? Environment.TickCount64 : long.MinValue;
         save.Click += (_, _) => _ = CommitFlyoutAsync(flyout, cell, row);
@@ -947,6 +1019,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             if (ReferenceEquals(_editorFlyout, flyout))
             {
                 _editorFlyout = null;
+                _editorFlyoutTarget = null;
             }
 
             cell.Focus(FocusState.Programmatic);
@@ -1079,7 +1152,9 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
         RefreshPopupText(row);
         CellPopup.PlacementTarget = cell;
-        CellPopup.IsOpen = IsLoaded;
+
+        // A hidden page keeps the popup closed; OnShown opens it again for an edit that still has its error.
+        CellPopup.IsOpen = IsLoaded && _isShown;
     }
 
     private void ClosePopup()

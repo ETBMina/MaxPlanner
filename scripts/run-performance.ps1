@@ -177,7 +177,7 @@ try {
 
                         Start-Sleep -Seconds 5
                         $log = Read-AppLog $data
-                        $pages = $log | Select-String -Pattern 'Page shown: (\w+) rendered (\d+) ms' | ForEach-Object { [double]$_.Matches[0].Groups[2].Value }
+                        $pages = $log | Select-String -Pattern 'Page shown: "?(\w+)"? rendered (\d+) ms' | ForEach-Object { [double]$_.Matches[0].Groups[2].Value }
                         $navigated = $log | Select-String -Pattern 'live store subscriptions (\d+); working set (\d+) MiB'
                         $subscriptions = $navigated | ForEach-Object { [int]$_.Matches[0].Groups[1].Value }
                         $process.Refresh()

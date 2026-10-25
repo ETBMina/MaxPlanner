@@ -35,7 +35,14 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         SyncSectionBar();
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusAddBoxRequested += OnFocusAddBoxRequested;
-        SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        SizeChanged += (_, e) =>
+        {
+            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
+            if (e.NewSize.Width > 0)
+            {
+                ApplyBreakpoint(e.NewSize.Width);
+            }
+        };
     }
 
     public ChecklistsPageViewModel ViewModel { get; }
@@ -64,6 +71,12 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         _search.FocusSearch();
         return true;
     }
+
+    /// <inheritdoc/>
+    public void OnShown() => PageContent.OnPageShown();
+
+    /// <inheritdoc/>
+    public void OnHidden() => PageContent.OnPageHidden();
 
     // The Completed list gets at most half of the section's height, so it keeps a bounded viewport and virtualizes
     // when expanded while the open list above stays visible.

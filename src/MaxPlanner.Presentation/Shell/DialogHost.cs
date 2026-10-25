@@ -233,9 +233,23 @@ internal sealed class DialogHost
         public static bool IsAlive(UIElement? element) => element switch
         {
             null => false,
-            FrameworkElement framework => framework.IsLoaded && framework.XamlRoot is not null,
-            _ => element.XamlRoot is not null,
+            FrameworkElement framework => framework.IsLoaded && framework.XamlRoot is not null && IsShown(framework),
+            _ => element.XamlRoot is not null && IsShown(element),
         };
+
+        // A page left during the dialog (a drill-down) stays loaded but collapsed, and its elements cannot take focus.
+        private static bool IsShown(DependencyObject element)
+        {
+            for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+            {
+                if (current is UIElement { Visibility: Visibility.Collapsed })
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         public static FocusFallback? Capture(UIElement? focused)
         {

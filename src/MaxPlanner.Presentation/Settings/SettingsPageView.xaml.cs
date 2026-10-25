@@ -21,7 +21,14 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        SizeChanged += (_, e) =>
+        {
+            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
+            if (e.NewSize.Width > 0)
+            {
+                ApplyBreakpoint(e.NewSize.Width);
+            }
+        };
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         AttachDataPage();
     }

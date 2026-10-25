@@ -49,7 +49,14 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
-        SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        SizeChanged += (_, e) =>
+        {
+            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
+            if (e.NewSize.Width > 0)
+            {
+                ApplyBreakpoint(e.NewSize.Width);
+            }
+        };
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ColumnPicker.SelectedItem = ViewModel.SelectedColumn;
@@ -58,6 +65,8 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         ColumnsScroller.AddHandler(DragOverEvent, new DragEventHandler(OnScrollerDragOver), true);
         ColumnsScroller.AddHandler(DragLeaveEvent, new DragEventHandler(OnScrollerDragLeave), true);
         ColumnsScroller.AddHandler(DropEvent, new DragEventHandler((_, _) => StopAutoScroll()), true);
+
+        // Runs when the dataset closes and the view is dropped; a page switch only hides the view (OnHidden).
         Unloaded += (_, _) =>
         {
             StopAutoScroll();
@@ -102,6 +111,17 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         _search.FocusSearch();
         return true;
+    }
+
+    /// <inheritdoc/>
+    public void OnShown() => PageContent.OnPageShown();
+
+    /// <inheritdoc/>
+    public void OnHidden()
+    {
+        StopAutoScroll();
+        ClearDropFeedback();
+        PageContent.OnPageHidden();
     }
 
     private static bool IsDown(VirtualKey key) =>

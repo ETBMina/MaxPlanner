@@ -57,6 +57,7 @@ public sealed partial class StateView : UserControl
 
     private readonly DispatcherTimer _loadingTimer = new() { Interval = LoadingDelay };
     private ViewState? _announced;
+    private bool _isPageHidden;
 
     public StateView()
     {
@@ -117,6 +118,25 @@ public sealed partial class StateView : UserControl
 
     public ICommand? RetryCommand { get => (ICommand?)GetValue(RetryCommandProperty); set => SetValue(RetryCommandProperty, value); }
 
+    /// <summary>
+    /// The owning page was collapsed by the shell (it stays loaded): the loading delay and the progress ring stop, and
+    /// state changes are not announced until <see cref="OnPageShown"/>, so a hidden page never speaks.
+    /// </summary>
+    public void OnPageHidden()
+    {
+        _isPageHidden = true;
+        _loadingTimer.Stop();
+        LoadingRing.IsActive = false;
+    }
+
+    /// <summary>The owning page is visible again: resumes the current state and announces it if it changed meanwhile.</summary>
+    public void OnPageShown()
+    {
+        _isPageHidden = false;
+        LoadingRing.IsActive = LoadingPanel.Visibility == Visibility.Visible;
+        Apply();
+    }
+
     private static DependencyProperty Text(string name) =>
         DependencyProperty.Register(name, typeof(string), typeof(StateView), new PropertyMetadata(string.Empty, (d, _) => ((StateView)d).Apply()));
 
@@ -126,7 +146,7 @@ public sealed partial class StateView : UserControl
         BodyPresenter.Visibility = state == ViewState.Populated ? Visibility.Visible : Visibility.Collapsed;
         if (state == ViewState.Loading)
         {
-            if (LoadingPanel.Visibility == Visibility.Collapsed && !_loadingTimer.IsEnabled)
+            if (LoadingPanel.Visibility == Visibility.Collapsed && !_loadingTimer.IsEnabled && !_isPageHidden)
             {
                 _loadingTimer.Start();
             }
@@ -163,7 +183,7 @@ public sealed partial class StateView : UserControl
     // Design §2.5 announcements: Filtered-empty polite, Error assertive; Loading uses the text's live setting.
     private void Announce(ViewState state, string title)
     {
-        if (_announced == state || !IsLoaded)
+        if (_announced == state || !IsLoaded || _isPageHidden)
         {
             return;
         }

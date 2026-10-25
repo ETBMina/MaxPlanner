@@ -70,6 +70,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             window.DispatcherQueue.TryEnqueue(() => NativeMethods.BringToFront(windowHandle));
 
         window.Shell.PageShown += OnPageShown;
+        window.Shell.PagesPreloaded += OnPagesPreloaded;
         window.AppWindow.Closing += OnClosing;
         window.Activate();
         var elapsedMs = _context.ElapsedMilliseconds;
@@ -80,6 +81,21 @@ public partial class App : Microsoft.UI.Xaml.Application
     }
 
     private void OnPageShown(object? sender, PageShownEventArgs e) => Log.PageShown(_logger, e.Page, (long)e.Elapsed.TotalMilliseconds);
+
+    // T-11: the memory cost of the page preload is the working set after it against the idle budget (500 MiB).
+    private void OnPagesPreloaded(object? sender, PagesPreloadedEventArgs e)
+    {
+        var durationMs = (long)e.Elapsed.TotalMilliseconds;
+        var workingSetMiB = Environment.WorkingSet / (1024 * 1024);
+        if (e.Failure is { } failure)
+        {
+            Log.PagePreloadFailed(_logger, e.PageCount, durationMs, failure);
+        }
+        else
+        {
+            Log.PagesPreloaded(_logger, e.PageCount, durationMs, _context.ElapsedMilliseconds, workingSetMiB);
+        }
+    }
 
     private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
@@ -172,5 +188,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // T-11 page-switch budget; scripts/run-performance.ps1 reads this line (event 5605).
         [LoggerMessage(EventId = 5605, Level = LogLevel.Information, Message = "Page shown: {Page} rendered {ElapsedMs} ms after the navigation request.")]
         public static partial void PageShown(ILogger logger, AppPage page, long elapsedMs);
+
+        [LoggerMessage(EventId = 5606, Level = LogLevel.Information, Message = "Pages preloaded: {Pages} page(s) in {DurationMs} ms, finished at {ElapsedMs} ms after launch; working set {WorkingSetMiB} MiB.")]
+        public static partial void PagesPreloaded(ILogger logger, int pages, long durationMs, long elapsedMs, long workingSetMiB);
+
+        [LoggerMessage(EventId = 5607, Level = LogLevel.Warning, Message = "Page preload stopped after {Pages} page(s) and {DurationMs} ms; the other pages are created on their first visit.")]
+        public static partial void PagePreloadFailed(ILogger logger, int pages, long durationMs, Exception exception);
     }
 }

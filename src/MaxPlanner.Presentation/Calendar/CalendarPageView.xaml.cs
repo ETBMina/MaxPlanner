@@ -33,6 +33,8 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     ];
 
     private bool _isSyncingMode;
+    private bool _isShown;
+    private bool _isSurfaceStale;
     private bool? _wasWide;
     private double _gutter = 32;
     private readonly Common.Controls.CompactSearch _search;
@@ -49,7 +51,14 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         MonthView.Render(viewModel.Surface);
         viewModel.SurfaceChanged += OnSurfaceChanged;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        SizeChanged += (_, e) =>
+        {
+            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
+            if (e.NewSize.Width > 0)
+            {
+                ApplyBreakpoint(e.NewSize.Width);
+            }
+        };
         SurfaceScroller.SizeChanged += (_, _) => FitSurface();
     }
 
@@ -70,8 +79,35 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         return true;
     }
 
+    /// <inheritdoc/>
+    public void OnShown()
+    {
+        _isShown = true;
+        PageContent.OnPageShown();
+        if (_isSurfaceStale)
+        {
+            _isSurfaceStale = false;
+            OnSurfaceChanged(this, EventArgs.Empty);
+        }
+    }
+
+    /// <inheritdoc/>
+    public void OnHidden()
+    {
+        _isShown = false;
+        PageContent.OnPageHidden();
+    }
+
     private void OnSurfaceChanged(object? sender, EventArgs e)
     {
+        // T-11: the surface is rebuilt in code for every committed batch; a hidden page renders the latest one once,
+        // when it is shown again, instead of after each batch.
+        if (!_isShown)
+        {
+            _isSurfaceStale = true;
+            return;
+        }
+
         // A new period can change the week count and so the lane capacity; the rebuilt surface re-enters here.
         if (FitSurface())
         {

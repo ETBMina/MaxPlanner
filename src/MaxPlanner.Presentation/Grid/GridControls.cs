@@ -261,7 +261,8 @@ public sealed partial class GridRowPresenter : Panel
             _host.DisplayLayoutChanged += OnDisplayLayoutChanged;
         }
 
-        SetRow(DataContext as GridRowViewModel, force: true);
+        // Rebuild creates and fills every cell, so the row is attached without first refilling the cells it replaces.
+        SetRow(DataContext as GridRowViewModel, force: true, refresh: false);
         Rebuild();
     }
 
@@ -277,7 +278,7 @@ public sealed partial class GridRowPresenter : Panel
         SetRow(null);
     }
 
-    private void SetRow(GridRowViewModel? row, bool force = false)
+    private void SetRow(GridRowViewModel? row, bool force = false, bool refresh = true)
     {
         if (ReferenceEquals(row, _row) && !force)
         {
@@ -297,7 +298,10 @@ public sealed partial class GridRowPresenter : Panel
             _row.DisplayChanged += OnRowDisplayChanged;
         }
 
-        RefreshAll();
+        if (refresh)
+        {
+            RefreshAll();
+        }
     }
 
     private void OnDisplayLayoutChanged(object? sender, EventArgs e) => Rebuild();

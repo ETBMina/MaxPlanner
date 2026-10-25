@@ -4,8 +4,9 @@ using Microsoft.UI.Xaml.Controls;
 namespace MaxPlanner.Presentation.Dashboard;
 
 /// <summary>
-/// The Dashboard view (design §4.1). Code-behind arranges the L/M/S layouts, forwards list-row clicks, and keeps the
-/// scroll position across drill-down and Back (AC-20), because the retained view is removed from the tree meanwhile.
+/// The Dashboard view (design §4.1). Code-behind arranges the L/M/S layouts, forwards list-row clicks, and records the
+/// scroll position for drill-down and Back (AC-20). The retained view is only collapsed while another page is shown,
+/// so its ScrollViewer keeps the offset itself; the recorded offset restores it when the view is loaded.
 /// </summary>
 public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 {
@@ -13,7 +14,15 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
+        SizeChanged += (_, e) =>
+        {
+            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
+            if (e.NewSize.Width > 0)
+            {
+                ApplyBreakpoint(e.NewSize.Width);
+            }
+        };
+
         // Restored after layout, when the content has its height again.
         Loaded += (_, _) =>
         {
@@ -41,6 +50,12 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 
     /// <inheritdoc/>
     public bool FocusSearch() => false;
+
+    /// <inheritdoc/>
+    public void OnShown() => PageContent.OnPageShown();
+
+    /// <inheritdoc/>
+    public void OnHidden() => PageContent.OnPageHidden();
 
     private void ApplyBreakpoint(double width)
     {

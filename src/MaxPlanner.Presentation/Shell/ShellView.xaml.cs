@@ -20,8 +20,9 @@ namespace MaxPlanner.Presentation.Shell;
 
 /// <summary>
 /// The window content: App InfoBars, startup/recovery/failure states, and in Ready the NavigationView with
-/// the page host and status bar (design §2). Code-behind keeps one view per visited page and swaps it into
-/// the host, so page views and their bindings are created once per session.
+/// the page host and status bar (design §2). Code-behind keeps one view per page in the host and shows only the
+/// current one, so page views and their bindings are created once per session. After the first rendered frame the
+/// main pages are preloaded one at a time, so their first visit is a page switch too (T-11, design §2.2).
 /// </summary>
 public sealed partial class ShellView : UserControl
 {
@@ -34,7 +35,20 @@ public sealed partial class ShellView : UserControl
         [AppPage.Settings] = "",
     };
 
-    private readonly Dictionary<AppPage, UIElement> _pageViews = [];
+    // T-11: the heaviest first visits (Board and Grid build a card or row per record) go first; the current page is
+    // skipped. Settings is not preloaded.
+    private static readonly AppPage[] PreloadOrder = [AppPage.Board, AppPage.Grid, AppPage.Calendar, AppPage.Checklists, AppPage.Dashboard];
+
+    // A minimized or occluded window renders no frames; the preload then goes on without waiting for one.
+    private static readonly TimeSpan PreloadFrameTimeout = TimeSpan.FromSeconds(1);
+
+    // A page whose data never arrives (a faulted load) is preloaded in its Loading state after this.
+    private static readonly TimeSpan PreloadDataTimeout = TimeSpan.FromSeconds(10);
+
+    private readonly Dictionary<AppPage, PageSlot> _pageSlots = [];
+    private PageSlot? _currentSlot;
+    private WorkspaceViewModel? _preloadWorkspace;
+    private int _preloadRun;
     private readonly DialogHost _dialogs;
     private ShellViewModel? _viewModel;
     private WorkspaceViewModel? _badgeSource;
@@ -80,6 +94,12 @@ public sealed partial class ShellView : UserControl
     public event EventHandler<PageShownEventArgs>? PageShown;
 
     /// <summary>
+    /// T-11 evidence: raised once per opened dataset when the startup page preload finished or failed (not when a
+    /// closing dataset cancelled it). The Desktop host logs it with the working set to measure its memory cost.
+    /// </summary>
+    public event EventHandler<PagesPreloadedEventArgs>? PagesPreloaded;
+
+    /// <summary>
     /// Design §5.8: asks before the main window closes. An open editor with unsaved changes shows its dirty prompt and
     /// the close waits; <paramref name="resumeClose"/> runs when the user chose Save (and it succeeded) or Discard.
     /// </summary>
@@ -106,7 +126,9 @@ public sealed partial class ShellView : UserControl
             _dialogs.Attach(value?.Workspace?.Context);
             AttachBadge(value?.Workspace);
             AttachNavigator(value?.Workspace?.Context.Navigator);
+            CancelPreload();
             ShowCurrentPage(moveFocus: false);
+            StartPreload();
         }
     }
 
@@ -132,11 +154,15 @@ public sealed partial class ShellView : UserControl
         switch (e.PropertyName)
         {
             case nameof(ShellViewModel.Workspace):
+                // A preload of the previous dataset stops at its next step, before it touches the workspace again.
+                CancelPreload();
                 if (_viewModel?.Workspace is null)
                 {
-                    // The dataset is closing; drop the views so nothing binds to disposed page ViewModels.
-                    _pageViews.Clear();
-                    PageHost.Content = null;
+                    // The dataset is closing; drop the views so nothing binds to disposed page ViewModels. Leaving the
+                    // tree runs each view's Unloaded cleanup (row detach, timers, popups).
+                    _pageSlots.Clear();
+                    _currentSlot = null;
+                    PageHost.Children.Clear();
                 }
 
                 AttachSaveStatus(_viewModel?.Workspace?.SaveStatus);
@@ -144,6 +170,10 @@ public sealed partial class ShellView : UserControl
                 AttachBadge(_viewModel?.Workspace);
                 AttachNavigator(_viewModel?.Workspace?.Context.Navigator);
                 ShowCurrentPage(moveFocus: false);
+                StartPreload();
+                break;
+            case nameof(ShellViewModel.IsReady):
+                StartPreload();
                 break;
             case nameof(ShellViewModel.CurrentPage):
                 RememberDashboardFocus();
@@ -166,23 +196,11 @@ public sealed partial class ShellView : UserControl
             return;
         }
 
+        // A page that is not created or preloaded yet is created now; navigation never waits for the preload.
         var page = _viewModel.CurrentPage;
-        if (!_pageViews.TryGetValue(page, out var view))
-        {
-            view = page switch
-            {
-                AppPage.Dashboard => new DashboardPageView(workspace.Dashboard),
-                AppPage.Board => new BoardPageView(workspace.Board),
-                AppPage.Grid => new GridPageView(workspace.Grid),
-                AppPage.Calendar => new CalendarPageView(workspace.Calendar),
-                AppPage.Checklists => new ChecklistsPageView(workspace.Checklists),
-                AppPage.Settings when workspace.Settings is { } settings => new SettingsPageView(settings),
-                _ => new PlaceholderPageView(page, _viewModel.PageTitle(page), PlaceholderGlyphs[page]),
-            };
-            _pageViews[page] = view;
-        }
-
-        PageHost.Content = view;
+        var slot = _pageSlots.TryGetValue(page, out var existing) ? existing : AddPage(page, workspace, isPreload: false);
+        var view = slot.Page;
+        ShowView(slot);
         SyncSelection();
 
         // Design §7.7: after navigation focus goes to the page title, so the heading is announced. Returning from a
@@ -201,6 +219,262 @@ public sealed partial class ShellView : UserControl
 
                 (view as IPageView)?.FocusTitle();
             });
+        }
+    }
+
+    private PageSlot AddPage(AppPage page, WorkspaceViewModel workspace, bool isPreload)
+    {
+        UIElement view = page switch
+        {
+            AppPage.Dashboard => new DashboardPageView(workspace.Dashboard),
+            AppPage.Board => new BoardPageView(workspace.Board),
+            AppPage.Grid => new GridPageView(workspace.Grid),
+            AppPage.Calendar => new CalendarPageView(workspace.Calendar),
+            AppPage.Checklists => new ChecklistsPageView(workspace.Checklists),
+            AppPage.Settings when workspace.Settings is { } settings => new SettingsPageView(settings),
+            _ => new PlaceholderPageView(page, _viewModel!.PageTitle(page), PlaceholderGlyphs[page]),
+        };
+        var slot = new PageSlot(view);
+        if (isPreload)
+        {
+            // A preloaded page starts out hidden, as if another page had been shown after it: its StateView neither
+            // starts the loading delay nor announces, and OnShown runs only when the user navigates to it.
+            (view as IPageView)?.OnHidden();
+            slot.BeginPreload();
+
+            // Below the current page; the slot is transparent anyway, and only one slot is visible once it is collapsed.
+            PageHost.Children.Insert(0, slot);
+        }
+        else
+        {
+            PageHost.Children.Add(slot);
+        }
+
+        _pageSlots[page] = slot;
+        return slot;
+    }
+
+    /// <summary>
+    /// T-11/AC-17: makes <paramref name="slot"/> the visible page. Replacing the host's content took the previous page
+    /// out of the tree, so every switch re-ran Unloaded/Loaded across it: each realized Grid row rebuilt its cells,
+    /// each Board column list re-realized its cards, and templates were re-applied and re-measured. A collapsed page
+    /// keeps its realized items, scroll offsets, selection and drafts, and costs no layout until it is shown again.
+    /// </summary>
+    /// <remarks>
+    /// A collapsed page cannot take input: WinUI raises a keyboard accelerator only when its owner and all of its
+    /// ancestors are visible, and collapsed elements cannot take focus and are left out of UI Automation, so the
+    /// page-scoped Ctrl+N, Ctrl+Shift+F and Ctrl+Shift+L keep acting on the visible page only.
+    /// </remarks>
+    private void ShowView(PageSlot slot)
+    {
+        if (ReferenceEquals(_currentSlot, slot))
+        {
+            return;
+        }
+
+        if (_currentSlot is { } previous)
+        {
+            previous.Visibility = Visibility.Collapsed;
+            (previous.Page as IPageView)?.OnHidden();
+            CloseLightDismissPopups();
+        }
+
+        // A page navigated to during its preload frame becomes an ordinary visible page at once.
+        slot.EndPreload();
+        slot.Visibility = Visibility.Visible;
+        _currentSlot = slot;
+        (slot.Page as IPageView)?.OnShown();
+    }
+
+    private void CancelPreload()
+    {
+        _preloadRun++;
+        _preloadWorkspace = null;
+    }
+
+    // T-11/AC-17: once per opened dataset, after it is Ready. A run that stopped because the shell left Ready (a faulted
+    // load) starts again at the next Ready and skips the pages it already created.
+    private void StartPreload()
+    {
+        if (_viewModel is not { IsReady: true, Workspace: { } workspace } || ReferenceEquals(_preloadWorkspace, workspace))
+        {
+            return;
+        }
+
+        _preloadWorkspace = workspace;
+        _ = PreloadPagesAsync(++_preloadRun, workspace);
+    }
+
+    private bool IsPreloadCurrent(int run, WorkspaceViewModel workspace) =>
+        run == _preloadRun && _viewModel is { IsReady: true } shell && ReferenceEquals(shell.Workspace, workspace);
+
+    /// <summary>
+    /// Creates the page ViewModels and views that are not created yet, one step at a time at low dispatcher priority,
+    /// so input, committed changes and navigation stay ahead of it. A preloaded view is laid out for one frame while
+    /// transparent (<see cref="PageSlot.BeginPreload"/>), because a collapsed element is not measured and its first
+    /// visit would otherwise still apply its templates and realize its rows and cards.
+    /// </summary>
+    /// <remarks>
+    /// Every step runs on the UI thread and checks <paramref name="run"/> first: the shell drops the views and starts a
+    /// new run before the dataset's workspace is disposed, so no step touches a closed workspace.
+    /// </remarks>
+    private async Task PreloadPagesAsync(int run, WorkspaceViewModel workspace)
+    {
+        var count = 0;
+        var started = Stopwatch.GetTimestamp();
+        try
+        {
+            // After the first frame with the initial page (and its queued data), so startup to a usable view is
+            // not spent on the other pages.
+            if (!await YieldAsync())
+            {
+                return;
+            }
+
+            await NextFrameAsync();
+            started = Stopwatch.GetTimestamp();
+            foreach (var page in PreloadOrder)
+            {
+                if (!await YieldAsync() || !IsPreloadCurrent(run, workspace))
+                {
+                    StopPreload(run);
+                    return;
+                }
+
+                if (_pageSlots.ContainsKey(page))
+                {
+                    continue;
+                }
+
+                // The ViewModel first: Board and Grid build their item ViewModels when the store's snapshot reaches
+                // them on the UI thread. The view is created in a later step, once that data is in place.
+                if (_viewModel?.PageViewModel(page) is { } pageViewModel)
+                {
+                    await WhenLoadedAsync(pageViewModel);
+                }
+
+                if (!await YieldAsync() || !IsPreloadCurrent(run, workspace))
+                {
+                    StopPreload(run);
+                    return;
+                }
+
+                if (_pageSlots.ContainsKey(page))
+                {
+                    continue;
+                }
+
+                var slot = AddPage(page, workspace, isPreload: true);
+                await NextFrameAsync();
+                slot.EndPreload();
+                count++;
+            }
+        }
+        catch (Exception ex)
+        {
+            // The preload only saves time: a page it did not create is created on its first visit, as before.
+            if (run == _preloadRun)
+            {
+                PagesPreloaded?.Invoke(this, new PagesPreloadedEventArgs(count, Stopwatch.GetElapsedTime(started), ex));
+            }
+
+            return;
+        }
+
+        if (run == _preloadRun)
+        {
+            PagesPreloaded?.Invoke(this, new PagesPreloadedEventArgs(count, Stopwatch.GetElapsedTime(started), null));
+        }
+    }
+
+    // Stopped by a closing dataset (a newer run) or by leaving Ready; only the latter starts again at the next Ready.
+    private void StopPreload(int run)
+    {
+        if (run == _preloadRun)
+        {
+            _preloadWorkspace = null;
+        }
+    }
+
+    // False when the dispatcher no longer accepts work (the window is closing).
+    private Task<bool> YieldAsync()
+    {
+        var done = new TaskCompletionSource<bool>();
+        return DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => done.SetResult(true))
+            ? done.Task
+            : Task.FromResult(false);
+    }
+
+    // The next rendered frame, or the timeout when no frame renders (a minimized window).
+    private Task NextFrameAsync()
+    {
+        var done = new TaskCompletionSource();
+        var timer = DispatcherQueue.CreateTimer();
+        void OnRendered(object? sender, RenderedEventArgs e) => Finish();
+        void Finish()
+        {
+            CompositionTarget.Rendered -= OnRendered;
+            timer.Stop();
+            done.TrySetResult();
+        }
+
+        timer.Interval = PreloadFrameTimeout;
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) => Finish();
+        CompositionTarget.Rendered += OnRendered;
+        timer.Start();
+        return done.Task;
+    }
+
+    // Completes when the page has its first data (State leaves Loading), or after the timeout.
+    private Task WhenLoadedAsync(IPageViewModel page)
+    {
+        if (page.State != ViewState.Loading)
+        {
+            return Task.CompletedTask;
+        }
+
+        var done = new TaskCompletionSource();
+        var timer = DispatcherQueue.CreateTimer();
+        void OnChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (page.State != ViewState.Loading)
+            {
+                Finish();
+            }
+        }
+
+        void Finish()
+        {
+            page.PropertyChanged -= OnChanged;
+            timer.Stop();
+            done.TrySetResult();
+        }
+
+        timer.Interval = PreloadDataTimeout;
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) => Finish();
+        page.PropertyChanged += OnChanged;
+        timer.Start();
+        return done.Task;
+    }
+
+    // The previous page is still in the tree, so a menu, flyout or drop-down it opened would stay over the next page.
+    // Navigation dismisses that transient UI like a click outside it would; ContentDialogs are not light-dismiss and
+    // stay open. Closing the popup is what FlyoutBase.Hide does itself, so a flyout's own state stays consistent.
+    private void CloseLightDismissPopups()
+    {
+        if (XamlRoot is not { } root)
+        {
+            return;
+        }
+
+        foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(root))
+        {
+            if (popup.IsLightDismissEnabled)
+            {
+                popup.IsOpen = false;
+            }
         }
     }
 
@@ -225,7 +499,7 @@ public sealed partial class ShellView : UserControl
     // Design §7.7: remembers the focused Dashboard element while the Dashboard is left, for Return/Back.
     private void RememberDashboardFocus()
     {
-        if (PageHost.Content is DashboardPageView dashboard && XamlRoot is { } root
+        if (_currentSlot?.Page is DashboardPageView dashboard && XamlRoot is { } root
             && FocusManager.GetFocusedElement(root) is UIElement focused && IsWithin(focused, dashboard))
         {
             _dashboardFocus = new WeakReference<UIElement>(focused);
@@ -281,7 +555,7 @@ public sealed partial class ShellView : UserControl
     // Design §7.1: F6 / Shift+F6 cycle navigation pane → page header → content → status bar.
     private void CycleFocus(bool backwards)
     {
-        if (PageHost.Content is not IPageView page || XamlRoot is not { } root)
+        if (_currentSlot?.Page is not IPageView page || XamlRoot is not { } root)
         {
             return;
         }
@@ -399,7 +673,7 @@ public sealed partial class ShellView : UserControl
         var search = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
         search.Invoked += (_, e) =>
         {
-            if (_viewModel is { IsReady: true } && PageHost.Content is IPageView page)
+            if (_viewModel is { IsReady: true } && _currentSlot?.Page is IPageView page)
             {
                 e.Handled = page.FocusSearch();
             }

@@ -157,13 +157,18 @@
                     <RowDefinition Height="32" />
                 </Grid.RowDefinitions>
 
-                <!-- Retained page views; the content swaps without recreating their ViewModels (AC-17). -->
+                <!--
+                    Retained page views (AC-17, T-11): every visited or preloaded page stays in this Grid in a PageSlot
+                    and only the current one is Visible, so a page switch is a visibility change, not a tree
+                    replacement (ShellView.ShowView, ShellView.PreloadPagesAsync).
+                -->
                 <ContentControl
-                    x:Name="PageHost"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"
                     AutomationProperties.LandmarkType="Main"
-                    IsTabStop="False" />
+                    IsTabStop="False">
+                    <Grid x:Name="PageHost" />
+                </ContentControl>
 
                 <!-- Status bar (design §2.8): page summary left, actual save status right. -->
                 <Grid

@@ -259,6 +259,12 @@ public interface IPageViewModel : INotifyPropertyChanged, IDisposable
 {
     /// <summary>The status-bar page summary (design §2.8).</summary>
     string Summary { get; }
+
+    /// <summary>
+    /// The page's data-region state (design §2.5); Loading until its first data arrived. A page without one is
+    /// always Populated. The shell's page preload waits for it before it creates the page view.
+    /// </summary>
+    ViewState State => ViewState.Populated;
 }
 
 /// <summary>UI preferences kept in memory only, for a workspace without a preferences file (tests).</summary>
