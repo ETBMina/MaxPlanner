@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using MaxPlanner.Presentation.Common.Services;
+using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -28,6 +29,16 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private BoardColumnViewModel? _dragSource;
     private readonly Common.Controls.CompactSearch _search;
 
+    // Drag edge auto-scroll: depth into the edge zone, signed by direction (-1..1), per axis.
+    private const double AutoScrollZone = 56;
+    private const double AutoScrollMaxStep = 18;
+    private const double SmallPageThreshold = 40;
+    private DispatcherQueueTimer? _autoScrollTimer;
+    private double _horizontalDepth;
+    private double _verticalDepth;
+    private ScrollViewer? _verticalScroller;
+    private double _pageProgress;
+
     public BoardPageView(BoardPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -37,6 +48,12 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ColumnPicker.SelectedItem = ViewModel.SelectedColumn;
+
+        // Edge auto-scroll watches drag events that column lists may already have handled.
+        ColumnsScroller.AddHandler(DragOverEvent, new DragEventHandler(OnScrollerDragOver), true);
+        ColumnsScroller.AddHandler(DragLeaveEvent, new DragEventHandler(OnScrollerDragLeave), true);
+        ColumnsScroller.AddHandler(DropEvent, new DragEventHandler((_, _) => StopAutoScroll()), true);
+        Unloaded += (_, _) => StopAutoScroll();
     }
 
     public BoardPageViewModel ViewModel { get; }
@@ -276,6 +293,9 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
     }
 
+    // A click anywhere on the card that is not a drag or a child control's press, or UIA Invoke.
+    private void OnCardInvoked(object? sender, BoardCardViewModel card) => _ = ViewModel.OpenAsync(card);
+
     private static MenuFlyoutItem Item(string textKey, string automationId, string? glyph, Action action, bool enabled = true)
     {
         var item = new MenuFlyoutItem { Text = Strings.GetString(textKey), IsEnabled = enabled };
@@ -315,6 +335,12 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
                 FocusAdjacentColumn(column, column.Cards.IndexOf(card), e.Key == VirtualKey.Left ? -1 : 1);
                 break;
             case VirtualKey.Enter when !alt && !control && !shift:
+                e.Handled = true;
+                _ = ViewModel.OpenAsync(card);
+                break;
+
+            // Space opens only from the card itself, so a focused checkbox on the card keeps its toggle (§7.3).
+            case VirtualKey.Space when !alt && !control && !shift && e.OriginalSource is BoardCardContainer:
                 e.Handled = true;
                 _ = ViewModel.OpenAsync(card);
                 break;
@@ -407,6 +433,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
         _dragged = null;
         _dragSource = null;
+        StopAutoScroll();
     }
 
     private void OnListDragOver(object sender, DragEventArgs e)
@@ -473,13 +500,182 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         return list.Items.Count;
     }
 
-    private static BoardCardContainer? FindContainer(DependencyObject? element)
+    // ----- Drag edge auto-scroll: view mechanics only; the drop and its move rules are unchanged (B-07). -----
+    private void OnScrollerDragOver(object sender, DragEventArgs e)
     {
-        while (element is not null and not BoardCardContainer)
+        if (_dragged is null)
+        {
+            return;
+        }
+
+        var point = e.GetPosition(ColumnsScroller);
+        SetHorizontalDepth(EdgeDepth(point.X, ColumnsScroller.ActualWidth));
+
+        _verticalScroller = FindAncestor<BoardCardList>(e.OriginalSource as DependencyObject) is { } list ? FindScroller(list) : null;
+        _verticalDepth = _verticalScroller is { } scroller ? EdgeDepth(e.GetPosition(scroller).Y, scroller.ActualHeight) : 0;
+        UpdateAutoScrollTimer();
+    }
+
+    private void OnScrollerDragLeave(object sender, DragEventArgs e)
+    {
+        // Leave events bubble from the column lists too; only leaving the scroller itself stops the horizontal axis.
+        var point = e.GetPosition(ColumnsScroller);
+        if (point.X < 0 || point.Y < 0 || point.X > ColumnsScroller.ActualWidth || point.Y > ColumnsScroller.ActualHeight)
+        {
+            StopAutoScroll();
+            return;
+        }
+
+        _verticalDepth = 0;
+        _verticalScroller = null;
+        UpdateAutoScrollTimer();
+    }
+
+    /// <summary>How deep (0..1) the pointer is in the leading (negative) or trailing (positive) edge zone.</summary>
+    private static double EdgeDepth(double position, double extent)
+    {
+        if (extent <= 2 * AutoScrollZone)
+        {
+            return 0;
+        }
+
+        if (position < AutoScrollZone)
+        {
+            return -Math.Min(1, (AutoScrollZone - position) / AutoScrollZone);
+        }
+
+        return position > extent - AutoScrollZone ? Math.Min(1, (position - (extent - AutoScrollZone)) / AutoScrollZone) : 0;
+    }
+
+    private void SetHorizontalDepth(double depth)
+    {
+        if (Math.Sign(depth) != Math.Sign(_horizontalDepth))
+        {
+            _pageProgress = 0;
+        }
+
+        _horizontalDepth = depth;
+    }
+
+    private void UpdateAutoScrollTimer()
+    {
+        if (_horizontalDepth == 0 && _verticalDepth == 0)
+        {
+            _autoScrollTimer?.Stop();
+            return;
+        }
+
+        if (_autoScrollTimer is null)
+        {
+            _autoScrollTimer = DispatcherQueue.CreateTimer();
+            _autoScrollTimer.Interval = TimeSpan.FromMilliseconds(16);
+            _autoScrollTimer.IsRepeating = true;
+            _autoScrollTimer.Tick += OnAutoScrollTick;
+        }
+
+        if (!_autoScrollTimer.IsRunning)
+        {
+            _autoScrollTimer.Start();
+        }
+    }
+
+    private void OnAutoScrollTick(DispatcherQueueTimer sender, object args)
+    {
+        var moving = false;
+        if (_horizontalDepth != 0)
+        {
+            var scrolled = _isSmall ? PageColumn() : ScrollBy(ColumnsScroller, _horizontalDepth * AutoScrollMaxStep, horizontal: true);
+            if (scrolled)
+            {
+                // The lists moved under the pointer; the next DragOver picks the list now under it.
+                _verticalDepth = 0;
+                _verticalScroller = null;
+            }
+
+            moving |= scrolled;
+        }
+
+        if (_verticalDepth != 0 && _verticalScroller is { } scroller)
+        {
+            moving |= ScrollBy(scroller, _verticalDepth * AutoScrollMaxStep, horizontal: false);
+        }
+
+        if (!moving)
+        {
+            sender.Stop();
+        }
+    }
+
+    private static bool ScrollBy(ScrollViewer scroller, double delta, bool horizontal)
+    {
+        var offset = horizontal ? scroller.HorizontalOffset : scroller.VerticalOffset;
+        var target = Math.Clamp(offset + delta, 0, horizontal ? scroller.ScrollableWidth : scroller.ScrollableHeight);
+        if (Math.Abs(target - offset) < 0.5)
+        {
+            return false;
+        }
+
+        // Per-tick steps without animation give a continuous scroll at the tick rate.
+        return horizontal
+            ? scroller.ChangeView(target, null, null, disableAnimation: true)
+            : scroller.ChangeView(null, target, null, disableAnimation: true);
+    }
+
+    // At S the scroller snaps to one column per viewport (§4.2), so a free offset would snap back; dwelling in
+    // the edge zone pages one column instead, sooner the deeper the pointer is.
+    private bool PageColumn()
+    {
+        _pageProgress += Math.Abs(_horizontalDepth);
+        if (_pageProgress < SmallPageThreshold)
+        {
+            return true;
+        }
+
+        _pageProgress = 0;
+        var command = _horizontalDepth < 0 ? ViewModel.PreviousColumnCommand : ViewModel.NextColumnCommand;
+        if (!command.CanExecute(null))
+        {
+            return false;
+        }
+
+        command.Execute(null);
+        return true;
+    }
+
+    private void StopAutoScroll()
+    {
+        _autoScrollTimer?.Stop();
+        _horizontalDepth = 0;
+        _verticalDepth = 0;
+        _verticalScroller = null;
+        _pageProgress = 0;
+    }
+
+    private static ScrollViewer? FindScroller(DependencyObject element)
+    {
+        // A ListView's template places its ScrollViewer within the first few levels.
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
+        {
+            var child = VisualTreeHelper.GetChild(element, i);
+            if ((child as ScrollViewer ?? FindScroller(child)) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static BoardCardContainer? FindContainer(DependencyObject? element) => FindAncestor<BoardCardContainer>(element);
+
+    private static T? FindAncestor<T>(DependencyObject? element)
+        where T : DependencyObject
+    {
+        while (element is not null and not T)
         {
             element = VisualTreeHelper.GetParent(element);
         }
 
-        return element as BoardCardContainer;
+        return element as T;
     }
 }

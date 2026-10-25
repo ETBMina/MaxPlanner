@@ -41,6 +41,12 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         nameof(PopupDraftText), typeof(string), typeof(GridPageView), new PropertyMetadata(string.Empty));
 
     private const double ResizeStep = 16;
+
+    /// <summary>
+    /// Windows' default double-click time. A click-opened list or flyout ignores the dismissal caused by the
+    /// second click of a double-click that started it (design §4.3 single-tap editing).
+    /// </summary>
+    private const long DoubleClickGuardMs = 500;
     private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
 
     private readonly List<GridHeaderCell> _headerCells = [];
@@ -512,6 +518,57 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         }
     }
 
+    async void IGridCellHost.OnCellTapped(GridCell cell)
+    {
+        // Same path as double-tap and F2 (BeginEdit via BeginEditAndFocus), so no second business-rule route exists.
+        // Text cells keep focus-then-double-click; read-only cells and a blocked store do nothing, not even an error.
+        if (cell.Row is not { IsSaving: false } row
+            || row.EditingColumn == cell.Column
+            || ViewModel.IsEditingBlocked
+            || !row.CanEdit(cell.Column)
+            || _displayColumns.FirstOrDefault(c => c.Key == cell.Column) is not { } tapped
+            || !GridCellContent.OpensOnTap(tapped))
+        {
+            return;
+        }
+
+        try
+        {
+            // B-07: clicking another cell leaves the open edit, which commits it first; a refused commit keeps
+            // that editor (and its error) open instead of opening the tapped one.
+            foreach (var editing in ViewModel.Rows.Where(r => r.IsEditing).ToList())
+            {
+                if (editing.IsSaving || editing.EditingColumn is not { } open || FindCell(editing, open) is not { } openCell)
+                {
+                    return;
+                }
+
+                await CommitAsync(openCell, editing, move: 0, restoreFocus: false);
+                if (editing.IsEditing)
+                {
+                    return;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            row.ShowError(Strings.Value.GetString("Error_Unexpected"));
+            ShowPopup(row);
+            return;
+        }
+
+        if (row.IsEditing || row.IsSaving
+            || ViewModel.IsEditingBlocked
+            || !row.CanEdit(cell.Column)
+            || _displayColumns.FirstOrDefault(c => c.Key == cell.Column) is not { } column
+            || !GridCellContent.OpensOnTap(column))
+        {
+            return;
+        }
+
+        BeginEditAndFocus(row, cell.Column, null, openOnTap: true);
+    }
+
     void IGridCellHost.BeginEditFromAutomation(GridCell cell)
     {
         if (cell.Row is { } row && row.EditingColumn != cell.Column)
@@ -646,7 +703,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private static bool StartsByTyping(string column) => column is GridColumns.Title or GridColumns.Subtitle or GridColumns.Service || GridColumns.IsCustom(column);
 
-    private void BeginEditAndFocus(GridRowViewModel row, string column, string? initialText)
+    private void BeginEditAndFocus(GridRowViewModel row, string column, string? initialText, bool openOnTap = false)
     {
         if (!ViewModel.BeginEdit(row, column, initialText))
         {
@@ -661,11 +718,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         ClosePopup();
         if (_displayColumns.FirstOrDefault(c => c.Key == column) is { UsesFlyout: true } flyoutColumn)
         {
-            OpenEditorFlyout(row, flyoutColumn);
+            OpenEditorFlyout(row, flyoutColumn, openedByTap: openOnTap);
             return;
         }
 
-        FocusEditorSoon(row, column, selectAll: initialText is null);
+        FocusEditorSoon(row, column, selectAll: initialText is null, openPicker: openOnTap);
     }
 
     /// <summary>
@@ -707,7 +764,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     // ----- Flyout editors (design §4.3: Notes with Save Ctrl+Enter / Cancel; people and tag pickers; list fields) -----
 
-    private void OpenEditorFlyout(GridRowViewModel row, GridColumnViewModel column)
+    private void OpenEditorFlyout(GridRowViewModel row, GridColumnViewModel column, bool openedByTap = false)
     {
         if (FindCell(row, column.Key) is not { } cell)
         {
@@ -778,6 +835,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         var flyout = new Flyout { Content = root, Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft, ShouldConstrainToRootBounds = true };
         _editorFlyout = flyout;
         _flyoutCloseApproved = false;
+        var tapOpenedAt = openedByTap ? Environment.TickCount64 : long.MinValue;
         save.Click += (_, _) => _ = CommitFlyoutAsync(flyout, cell, row);
         cancel.Click += (_, _) => CancelFlyout(flyout, row);
 
@@ -805,7 +863,9 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             }
 
             args.Cancel = true;
-            if (!row.IsSaving)
+
+            // The second click of the double-click that opened this flyout lands on the light-dismiss layer; keep it open.
+            if (!row.IsSaving && !IsWithinDoubleClickWindow(tapOpenedAt))
             {
                 _ = CommitFlyoutAsync(flyout, cell, row);
             }
@@ -991,7 +1051,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         peer?.RaiseNotificationEvent(AutomationNotificationKind.ActionAborted, AutomationNotificationProcessing.ImportantMostRecent, message, "GridCellError");
     }
 
-    private void FocusEditorSoon(GridRowViewModel row, string column, bool selectAll)
+    private void FocusEditorSoon(GridRowViewModel row, string column, bool selectAll, bool openPicker = false)
     {
         // The editor is created when the row's editing state changes; focus it after that layout pass.
         Table.ScrollIntoView(row);
@@ -1004,6 +1064,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             }
 
             editor.Focus(FocusState.Keyboard);
+            if (openPicker)
+            {
+                OpenPicker(row, editor);
+            }
+
             if (editor is TextBox text)
             {
                 if (selectAll)
@@ -1016,6 +1081,54 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
                 }
             }
         });
+    }
+
+    private static bool IsWithinDoubleClickWindow(long startedAt) => Environment.TickCount64 - startedAt < DoubleClickGuardMs;
+
+    /// <summary>
+    /// Opens a ComboBox list or calendar for a single-tap edit. The second click of a double-click lands on the
+    /// popup's light-dismiss layer and would close the list just opened, so the first close inside the
+    /// double-click window with the choice unchanged (and no Esc) reopens it once.
+    /// </summary>
+    private void OpenPicker(GridRowViewModel row, Control editor)
+    {
+        var openedAt = Environment.TickCount64;
+        var column = row.EditingColumn;
+        bool IsStrayClose() => IsWithinDoubleClickWindow(openedAt) && row.EditingColumn == column && !row.IsSaving && !IsDown(VirtualKey.Escape);
+
+        switch (editor)
+        {
+            case ComboBox combo:
+                var selected = combo.SelectedItem;
+                EventHandler<object>? onDropDownClosed = null;
+                onDropDownClosed = (_, _) =>
+                {
+                    combo.DropDownClosed -= onDropDownClosed;
+                    if (IsStrayClose() && ReferenceEquals(combo.SelectedItem, selected))
+                    {
+                        DispatcherQueue.TryEnqueue(() => combo.IsDropDownOpen = combo.IsLoaded);
+                    }
+                };
+                combo.DropDownClosed += onDropDownClosed;
+                combo.IsDropDownOpen = true;
+                break;
+            case CalendarDatePicker picker:
+                var date = picker.Date;
+                EventHandler<object>? onCalendarClosed = null;
+                onCalendarClosed = (_, _) =>
+                {
+                    picker.Closed -= onCalendarClosed;
+                    if (IsStrayClose() && picker.Date == date)
+                    {
+                        DispatcherQueue.TryEnqueue(() => picker.IsCalendarOpen = picker.IsLoaded);
+                    }
+                };
+                picker.Closed += onCalendarClosed;
+                picker.IsCalendarOpen = true;
+                break;
+            default:
+                break;
+        }
     }
 
     private void FocusCell(GridRowViewModel row, string column)

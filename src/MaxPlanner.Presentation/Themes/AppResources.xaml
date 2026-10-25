@@ -193,6 +193,17 @@
     <Style x:Key="GridCellSecondaryTextStyle" BasedOn="{StaticResource GridCellTextStyle}" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
     </Style>
+    <!-- The chevron or calendar glyph that makes a choice cell look like its ComboBox or date picker at rest. -->
+    <Style x:Key="GridCellAffordanceGlyphStyle" TargetType="FontIcon">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <!-- A transparent background makes the whole cell hit-testable, so one click anywhere in it reaches the cell. -->
+    <Style x:Key="GridCellStyle" TargetType="ContentControl">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
     <Style x:Key="GridFrozenCellStyle" TargetType="ContentControl">
         <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />

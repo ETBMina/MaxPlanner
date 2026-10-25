@@ -293,12 +293,14 @@
                         BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
                         BorderThickness="0"
                         CanDragItems="True"
+                        CardInvoked="OnCardInvoked"
                         ContextRequested="OnCardContextRequested"
                         DragItemsCompleted="OnDragItemsCompleted"
                         DragItemsStarting="OnDragItemsStarting"
                         DragLeave="OnListDragLeave"
                         DragOver="OnListDragOver"
                         Drop="OnListDrop"
+                        IsItemClickEnabled="True"
                         ItemTemplateSelector="{StaticResource CardTemplateSelector}"
                         ItemsSource="{x:Bind Cards, Mode=OneTime}"
                         Loaded="OnListLoaded"
@@ -441,9 +443,14 @@
             Grid.Row="1"
             PageKey="Board"
             State="{x:Bind ViewModel.State, Mode=OneWay}">
-            <!-- Design §4.2: the page scrolls horizontally and each column scrolls vertically. -->
+            <!--
+                Design §4.2: the page scrolls horizontally and each column scrolls vertically. AllowDrop and the
+                transparent background only let drag events reach the scroller for edge auto-scroll; it accepts no drop.
+            -->
             <ScrollViewer
                 x:Name="ColumnsScroller"
+                AllowDrop="True"
+                Background="Transparent"
                 HorizontalScrollBarVisibility="Auto"
                 HorizontalScrollMode="Enabled"
                 VerticalScrollBarVisibility="Disabled"

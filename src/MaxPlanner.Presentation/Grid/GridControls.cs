@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Domain.Fields;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Xaml;
@@ -41,6 +42,9 @@ internal interface IGridCellHost
 
     void OnCellDoubleTapped(GridCell cell);
 
+    /// <summary>A single tap on a cell: choice and flyout cells open their editor at once (design §4.3); other cells ignore it.</summary>
+    void OnCellTapped(GridCell cell);
+
     /// <summary>UIA Invoke on a cell: opens its editor, like F2.</summary>
     void BeginEditFromAutomation(GridCell cell);
 
@@ -70,6 +74,9 @@ public sealed partial class GridCell : ContentControl
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
         VerticalContentAlignment = VerticalAlignment.Center;
         Padding = new Thickness(8, 0, 8, 0);
+
+        // The row container handles pointer input for focus, so listen even when it marked the tap handled.
+        AddHandler(TappedEvent, new TappedEventHandler((_, _) => Host?.OnCellTapped(this)), handledEventsToo: true);
     }
 
     /// <summary>The column key (<see cref="GridColumns"/>).</summary>
@@ -356,7 +363,7 @@ public sealed partial class GridRowPresenter : Panel
 
     private void Refresh(GridCell cell, GridColumnViewModel column, bool isFrozen)
     {
-        cell.Style = isFrozen ? (Style)Microsoft.UI.Xaml.Application.Current.Resources["GridFrozenCellStyle"] : null;
+        cell.Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources[isFrozen ? "GridFrozenCellStyle" : "GridCellStyle"];
         if (_row is not { } row || _host is not { } host)
         {
             cell.Content = null;
@@ -410,6 +417,9 @@ internal static class GridCellContent
 {
     public const string EditorTag = "GridCellEditor";
 
+    private const string ChevronDownGlyph = "";
+    private const string CalendarGlyph = "";
+
     private static Style CellText => (Style)Microsoft.UI.Xaml.Application.Current.Resources["GridCellTextStyle"];
 
     private static Style SecondaryCellText => (Style)Microsoft.UI.Xaml.Application.Current.Resources["GridCellSecondaryTextStyle"];
@@ -428,6 +438,7 @@ internal static class GridCellContent
             GridColumns.Kind => KindCell(row, text, host),
             GridColumns.Title when row.IsTitleLocked => LockedTitle(row, text),
             GridColumns.Archived when row.IsArchived => ArchivedChip(row.DisplayValue(column.Key)),
+            _ when row.CanEdit(column.Key) && PickerGlyph(column) is { } glyph => PickerCell(text, glyph),
             _ => text,
         };
 
@@ -445,6 +456,35 @@ internal static class GridCellContent
         }
 
         return content;
+    }
+
+    /// <summary>
+    /// The glyph that makes a cell look like its ComboBox (chevron) or date picker (calendar) at rest, or null for
+    /// other columns. A look-alike display is used instead of a real control per row to keep virtualization cheap (T-08).
+    /// </summary>
+    private static string? PickerGlyph(GridColumnViewModel column) => column.EditorKind switch
+    {
+        GridEditorKind.Status or GridEditorKind.Priority => ChevronDownGlyph,
+        GridEditorKind.Date => CalendarGlyph,
+        GridEditorKind.Custom when column.Field?.Kind == FieldKind.Lookup => ChevronDownGlyph,
+        GridEditorKind.Custom when column.Field?.Kind == FieldKind.Date => CalendarGlyph,
+        _ => null,
+    };
+
+    /// <summary>Whether one tap opens the column's editor: a drop-down, a calendar, or a flyout (the caller checks editability).</summary>
+    public static bool OpensOnTap(GridColumnViewModel column) => column.UsesFlyout || PickerGlyph(column) is not null;
+
+    private static WinGrid PickerCell(TextBlock text, string glyph)
+    {
+        var grid = new WinGrid { ColumnSpacing = 8 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var icon = new FontIcon { Glyph = glyph, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["GridCellAffordanceGlyphStyle"] };
+        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
+        WinGrid.SetColumn(icon, 1);
+        grid.Children.Add(text);
+        grid.Children.Add(icon);
+        return grid;
     }
 
     public static FrameworkElement CreateEditor(GridRowViewModel row, GridColumnViewModel column, IGridCellHost host)
