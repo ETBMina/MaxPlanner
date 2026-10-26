@@ -31,6 +31,27 @@
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="CalendarCompletedBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <!-- Design §6.3 per-CR bar palette (blue, teal, purple, orange, magenta, green, indigo, brown, cyan, rose): tinted fills keep primary text above 4.5:1; stripes are the stronger accent. No entry reuses the Caution yellow of overdue. -->
+            <SolidColorBrush x:Key="CalendarBarFill0" Color="#FFDCE9F8" />
+            <SolidColorBrush x:Key="CalendarBarStripe0" Color="#FF2F6FB5" />
+            <SolidColorBrush x:Key="CalendarBarFill1" Color="#FFD6F0EC" />
+            <SolidColorBrush x:Key="CalendarBarStripe1" Color="#FF1A8577" />
+            <SolidColorBrush x:Key="CalendarBarFill2" Color="#FFE9E0F5" />
+            <SolidColorBrush x:Key="CalendarBarStripe2" Color="#FF7B4FB8" />
+            <SolidColorBrush x:Key="CalendarBarFill3" Color="#FFFBE3D2" />
+            <SolidColorBrush x:Key="CalendarBarStripe3" Color="#FFC25A12" />
+            <SolidColorBrush x:Key="CalendarBarFill4" Color="#FFF6DDEB" />
+            <SolidColorBrush x:Key="CalendarBarStripe4" Color="#FFB03A7A" />
+            <SolidColorBrush x:Key="CalendarBarFill5" Color="#FFDFEFD8" />
+            <SolidColorBrush x:Key="CalendarBarStripe5" Color="#FF4C8A2E" />
+            <SolidColorBrush x:Key="CalendarBarFill6" Color="#FFDFE1F6" />
+            <SolidColorBrush x:Key="CalendarBarStripe6" Color="#FF4B53B0" />
+            <SolidColorBrush x:Key="CalendarBarFill7" Color="#FFEEE4D8" />
+            <SolidColorBrush x:Key="CalendarBarStripe7" Color="#FF8A6236" />
+            <SolidColorBrush x:Key="CalendarBarFill8" Color="#FFD5EEF6" />
+            <SolidColorBrush x:Key="CalendarBarStripe8" Color="#FF1C7FA3" />
+            <SolidColorBrush x:Key="CalendarBarFill9" Color="#FFF8DCDC" />
+            <SolidColorBrush x:Key="CalendarBarStripe9" Color="#FFB83A3A" />
             <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
@@ -63,6 +84,27 @@
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="CalendarCompletedBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <!-- Design §6.3 per-CR bar palette, same hue order as Light: dark tinted fills under light primary text, lighter stripes. -->
+            <SolidColorBrush x:Key="CalendarBarFill0" Color="#FF1F3550" />
+            <SolidColorBrush x:Key="CalendarBarStripe0" Color="#FF6AA6EA" />
+            <SolidColorBrush x:Key="CalendarBarFill1" Color="#FF173F3A" />
+            <SolidColorBrush x:Key="CalendarBarStripe1" Color="#FF4FC7B5" />
+            <SolidColorBrush x:Key="CalendarBarFill2" Color="#FF352A4B" />
+            <SolidColorBrush x:Key="CalendarBarStripe2" Color="#FFB392E6" />
+            <SolidColorBrush x:Key="CalendarBarFill3" Color="#FF4A2E1A" />
+            <SolidColorBrush x:Key="CalendarBarStripe3" Color="#FFF0995A" />
+            <SolidColorBrush x:Key="CalendarBarFill4" Color="#FF47243A" />
+            <SolidColorBrush x:Key="CalendarBarStripe4" Color="#FFE87BB6" />
+            <SolidColorBrush x:Key="CalendarBarFill5" Color="#FF26391E" />
+            <SolidColorBrush x:Key="CalendarBarStripe5" Color="#FF8CC66A" />
+            <SolidColorBrush x:Key="CalendarBarFill6" Color="#FF282C4E" />
+            <SolidColorBrush x:Key="CalendarBarStripe6" Color="#FF8E96EC" />
+            <SolidColorBrush x:Key="CalendarBarFill7" Color="#FF3E3123" />
+            <SolidColorBrush x:Key="CalendarBarStripe7" Color="#FFC9A076" />
+            <SolidColorBrush x:Key="CalendarBarFill8" Color="#FF163B47" />
+            <SolidColorBrush x:Key="CalendarBarStripe8" Color="#FF5EC4E6" />
+            <SolidColorBrush x:Key="CalendarBarFill9" Color="#FF4A2323" />
+            <SolidColorBrush x:Key="CalendarBarStripe9" Color="#FFEE8585" />
             <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
@@ -97,6 +139,27 @@
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="SystemColorGrayTextColorBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="CalendarCompletedBarForegroundBrush" ResourceKey="SystemColorGrayTextColorBrush" />
+            <!-- Design §3 rule 3: no custom palette in High Contrast; every entry is ButtonFace with a ButtonText stripe. -->
+            <StaticResource x:Key="CalendarBarFill0" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe0" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill1" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe1" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill2" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe2" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill3" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe3" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill4" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe4" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill5" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe5" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill6" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe6" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill7" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe7" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill8" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe8" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="CalendarBarFill9" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="CalendarBarStripe9" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="SystemColorGrayTextColorBrush" />
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
@@ -247,7 +310,11 @@
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
-    <!-- Calendar surface (design §4.4, §6.3). Built in code by CalendarMonthView, which looks these styles up. -->
+    <!--
+        Calendar surface (design §4.4, §6.3). Built in code by CalendarMonthView, which looks these styles up. In Light
+        and Dark the bar styles' brushes are replaced by the CR's palette entry (CalendarBarPalette); they apply as-is
+        in High Contrast and if the palette cannot be resolved.
+    -->
     <Style x:Key="CalendarDayCellButtonStyle" BasedOn="{StaticResource DefaultButtonStyle}" TargetType="Button">
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
@@ -285,7 +352,6 @@
         <Setter Property="Background" Value="{ThemeResource CalendarCompletedBarBackgroundBrush}" />
         <Setter Property="Foreground" Value="{ThemeResource CalendarCompletedBarForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CalendarCompletedBarStrokeBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style x:Key="CalendarTodayBadgeStyle" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource CalendarTodayBackgroundBrush}" />

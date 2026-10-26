@@ -64,11 +64,14 @@ public sealed partial class CalendarMonthView : UserControl
 
     private readonly WinGrid _root = new();
     private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
+    private readonly Windows.UI.ViewManagement.AccessibilitySettings _accessibility = new();
     private readonly Dictionary<string, Control> _focusables = [];
     private readonly Dictionary<Guid, (DateOnly Start, DateOnly End)> _pendingKeyboard = [];
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _keyboardTimer;
     private CalendarSurface _surface = CalendarSurface.Empty;
     private string? _focusKey;
+    private string? _paletteTheme;
+    private CalendarBarPalette? _palette;
 
     public CalendarMonthView()
     {
@@ -76,6 +79,16 @@ public sealed partial class CalendarMonthView : UserControl
         Content = _root;
         AutomationProperties.SetAutomationId(this, "Calendar_Surface");
         AutomationProperties.SetLandmarkType(this, AutomationLandmarkType.Main);
+
+        // Bar colors are local brushes of one theme (CalendarBarPalette), so a Light/Dark or High Contrast switch
+        // re-renders the surface. Loaded covers a switch while the cached page was out of the tree.
+        ActualThemeChanged += (_, _) => RenderIfThemeChanged();
+        Loaded += (_, _) =>
+        {
+            _uiSettings.ColorValuesChanged += OnColorValuesChanged;
+            RenderIfThemeChanged();
+        };
+        Unloaded += (_, _) => _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
     }
 
     public CalendarPageViewModel? ViewModel { get; set; }
@@ -90,6 +103,13 @@ public sealed partial class CalendarMonthView : UserControl
         if (ViewModel is not { } viewModel)
         {
             return;
+        }
+
+        var themeKey = ThemeKey();
+        if (themeKey != _paletteTheme)
+        {
+            _paletteTheme = themeKey;
+            _palette = CalendarBarPalette.Resolve(themeKey);
         }
 
         var hadFocus = _focusKey is not null && _focusables.TryGetValue(_focusKey, out var focused) && focused.FocusState != FocusState.Unfocused;
@@ -143,6 +163,20 @@ public sealed partial class CalendarMonthView : UserControl
     /// <summary>Focuses a day cell, for example after keyboard navigation moved the period.</summary>
     public bool FocusDay(DateOnly day) =>
         _focusables.TryGetValue(DayKey(day), out var cell) && cell.Focus(FocusState.Keyboard);
+
+    private string ThemeKey() => CalendarBarPalette.ThemeKey(ActualTheme, _accessibility.HighContrast);
+
+    private void RenderIfThemeChanged()
+    {
+        if (_paletteTheme is not null && ThemeKey() != _paletteTheme)
+        {
+            Render(_surface);
+        }
+    }
+
+    // UISettings raises this off the UI thread; it also fires when High Contrast turns on or off.
+    private void OnColorValuesChanged(Windows.UI.ViewManagement.UISettings sender, object args) =>
+        DispatcherQueue?.TryEnqueue(RenderIfThemeChanged);
 
     private static string DayKey(DateOnly day) => "day:" + day.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
 
@@ -258,7 +292,13 @@ public sealed partial class CalendarMonthView : UserControl
     {
         var cr = bar.Cr;
         var record = viewModel.ViewModelFor(cr);
-        var style = cr.IsOverdue ? "CalendarOverdueBarButtonStyle" : cr.IsCompleted ? "CalendarCompletedBarButtonStyle" : "CalendarBarButtonStyle";
+        var state = cr.IsOverdue ? CalendarBarState.Overdue : cr.IsCompleted ? CalendarBarState.Completed : CalendarBarState.Scheduled;
+        var style = state switch
+        {
+            CalendarBarState.Overdue => "CalendarOverdueBarButtonStyle",
+            CalendarBarState.Completed => "CalendarCompletedBarButtonStyle",
+            _ => "CalendarBarButtonStyle",
+        };
         var content = new WinGrid { ColumnSpacing = 4 };
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -306,6 +346,7 @@ public sealed partial class CalendarMonthView : UserControl
 
         var name = viewModel.BarName(bar);
         var body = new Button { Style = StyleOf(style), Content = content, Tag = cr.Id.Value };
+        ApplyBarColors(body, cr.Id.Value, state);
         AutomationProperties.SetAutomationId(body, "Calendar_Bar_" + cr.Id.Value.ToString("N") + "_" + DateId(bar.SegmentStart));
         AutomationProperties.SetName(body, name);
         AutomationProperties.SetHelpText(body, viewModel.Text("Calendar_BarHelp"));
@@ -326,6 +367,11 @@ public sealed partial class CalendarMonthView : UserControl
         WinGrid.SetColumn(host, bar.StartColumn);
         WinGrid.SetColumnSpan(host, bar.EndColumn - bar.StartColumn + 1);
         WinGrid.SetRow(host, 1 + bar.Lane);
+
+        // The day cells of the later days the bar spans come after it in the row (tab order, §7.5) and would sit
+        // on top of it, sending clicks past its first day to the day flyout; ZIndex lifts the bar without
+        // changing the tab order.
+        Canvas.SetZIndex(host, 1);
         if (bar.ShowStartHandle)
         {
             host.Children.Add(Handle(viewModel, week, bar, host, isStart: true));
@@ -337,6 +383,29 @@ public sealed partial class CalendarMonthView : UserControl
         }
 
         return host;
+    }
+
+    /// <summary>
+    /// Design §6.3: the CR's palette fill and stripe, also for hover and pressed through lightweight styling (the
+    /// template's visual states read the Button* resources, which would otherwise replace the bar's color). In High
+    /// Contrast there is no palette and the bar keeps its style's system brushes.
+    /// </summary>
+    private void ApplyBarColors(Button body, Guid id, CalendarBarState state)
+    {
+        if (_palette is null)
+        {
+            return;
+        }
+
+        var colors = _palette.ColorsFor(id, state);
+        body.Background = colors.Fill;
+        body.BorderBrush = colors.Stroke;
+        body.Resources["ButtonBackground"] = colors.Fill;
+        body.Resources["ButtonBackgroundPointerOver"] = colors.Hover;
+        body.Resources["ButtonBackgroundPressed"] = colors.Pressed;
+        body.Resources["ButtonBorderBrush"] = colors.Stroke;
+        body.Resources["ButtonBorderBrushPointerOver"] = colors.Stroke;
+        body.Resources["ButtonBorderBrushPressed"] = colors.Stroke;
     }
 
     // Decorative: the owner's accessible name already says it (continues, overdue, completed).

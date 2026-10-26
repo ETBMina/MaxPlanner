@@ -10,6 +10,8 @@ namespace MaxPlanner.Presentation.Dashboard;
 /// </summary>
 public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 {
+    private bool _isCardFitPending;
+
     public DashboardPageView(DashboardPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -22,6 +24,19 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
                 ApplyBreakpoint(e.NewSize.Width);
             }
         };
+
+        // A caption or badge that changes can change a card's height. The view and the page ViewModel share the
+        // dataset's lifetime, so these subscriptions need no removal.
+        foreach (var card in ViewModel.Cards)
+        {
+            card.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(DashboardCardViewModel.Caption) or nameof(DashboardCardViewModel.HasBadge))
+                {
+                    ScheduleCardHeightFit();
+                }
+            };
+        }
 
         // Restored after layout, when the content has its height again.
         Loaded += (_, _) =>
@@ -56,6 +71,60 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 
     /// <inheritdoc/>
     public void OnHidden() => PageContent.OnPageHidden();
+
+    private void OnCardPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args) => ScheduleCardHeightFit();
+
+    private void OnCardsSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width != e.PreviousSize.Width)
+        {
+            ScheduleCardHeightFit();
+        }
+    }
+
+    private void ScheduleCardHeightFit()
+    {
+        if (!_isCardFitPending)
+        {
+            _isCardFitPending = true;
+            DispatcherQueue.TryEnqueue(FitCardHeight);
+        }
+    }
+
+    /// <summary>
+    /// UniformGridLayout gives every card the desired height of the first one, so a card with a longer (wrapping)
+    /// caption, a "Needs attention" badge or secondary links was clipped. The tallest realized card, measured at the
+    /// card width the layout will use, becomes the minimum height of all of them; text scaling is included.
+    /// </summary>
+    private void FitCardHeight()
+    {
+        _isCardFitPending = false;
+        var available = CardsRepeater.ActualWidth;
+        if (available <= 0 || CardsRepeater.ItemsSourceView is not { } items)
+        {
+            return;
+        }
+
+        var spacing = CardsLayout.MinColumnSpacing;
+        var columns = Math.Max(1, Math.Floor((available + spacing) / (CardsLayout.MinItemWidth + spacing)));
+        var cardWidth = Math.Max(CardsLayout.MinItemWidth, (available - (spacing * (columns - 1))) / columns);
+
+        var tallest = 0.0;
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (CardsRepeater.TryGetElement(i) is FrameworkElement card)
+            {
+                card.Measure(new Windows.Foundation.Size(cardWidth, double.PositiveInfinity));
+                tallest = Math.Max(tallest, card.DesiredSize.Height);
+            }
+        }
+
+        // Only grow or shrink on a real change, so the re-layout this causes cannot loop.
+        if (tallest > 0 && Math.Abs(CardsLayout.MinItemHeight - tallest) > 0.5)
+        {
+            CardsLayout.MinItemHeight = tallest;
+        }
+    }
 
     private void ApplyBreakpoint(double width)
     {

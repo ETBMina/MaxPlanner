@@ -236,10 +236,14 @@
                     </StackPanel>
 
                     <StackPanel Spacing="16" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasData), Mode=OneWay}">
+                        <!-- UniformGridLayout sizes every card like the first one; code-behind raises MinItemHeight to the tallest card. -->
                         <ItemsRepeater
+                            x:Name="CardsRepeater"
                             AutomationProperties.AutomationId="Dashboard_Cards"
+                            ElementPrepared="OnCardPrepared"
                             ItemTemplate="{StaticResource CardTemplate}"
-                            ItemsSource="{x:Bind ViewModel.Cards, Mode=OneTime}">
+                            ItemsSource="{x:Bind ViewModel.Cards, Mode=OneTime}"
+                            SizeChanged="OnCardsSizeChanged">
                             <ItemsRepeater.Layout>
                                 <UniformGridLayout
                                     x:Name="CardsLayout"

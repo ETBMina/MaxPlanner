@@ -704,12 +704,15 @@ There is no per-status color in release 1 (§11 Q8).
 ### 6.3 Calendar bars and dashboard emphasis
 | State | Background | Stroke | Text/glyph | HC |
 |---|---|---|---|---|
-| Scheduled | `SystemFillColorAttentionBackgroundBrush` | 3-epx left accent `AccentFillColorDefaultBrush` | Number + title + status text | ButtonFace + ButtonText border |
-| **Overdue** | `SystemFillColorCautionBackgroundBrush` | 1-epx `SystemFillColorCautionBrush` | Warning glyph + "Overdue" + status | ButtonFace + Warning glyph + text |
-| **Completed** | `SubtleFillColorSecondaryBrush` | `ControlStrokeColorDefaultBrush` | Completed glyph + "Completed", secondary text | GrayText + glyph |
+| Scheduled | The CR's palette fill `CalendarBarFill{i}` | 3-epx left stripe `CalendarBarStripe{i}` | Number + title + status text | ButtonFace + 3-epx ButtonText stripe |
+| **Overdue** | The CR's palette fill | 1-epx `SystemFillColorCautionBrush` outline (replaces the stripe) | Warning glyph + "Overdue" + status | ButtonFace + ButtonText outline + Warning glyph + text |
+| **Completed** | The CR's palette fill and stripe at 50 % opacity | 3-epx faded left stripe | Completed glyph + "Completed" status, secondary text | ButtonFace + GrayText stripe and text + glyph |
+| Hover / pressed | The palette fill blended 20 % / 32 % toward the stripe, so the bar keeps its own hue | Unchanged | Unchanged | System button hover/pressed brushes |
 | Selected | (unchanged) | 2-epx `AccentFillColorDefaultBrush` + the system focus visual when focused | Name suffix ", selected" | Highlight / HighlightText |
 | Drop target day | `SubtleFillColorSecondaryBrush` | Dashed accent | "Drop to schedule on Oct 13" caption | Highlight |
 | Continuation | — | — | ChevronLeft/ChevronRight glyph at the clipped edge | Same |
+
+**Per-CR palette (owner decision 2026-10-26).** Bars are colored per CR so neighbouring CRs are easy to tell apart. `CalendarBarPalette` picks one of 10 entries from the CR Id (FNV-1a over the Guid bytes, mod 10; never `string.GetHashCode`, which changes per process), so a CR has the same color on every week row and in Month and Week. The entries are `CalendarBarFill0…9` (tinted, low-saturation fill) and `CalendarBarStripe0…9` (stronger accent) in `Themes/AppResources.xaml`, defined for Light and Dark in the same hue order: blue, teal, purple, orange, magenta, green, indigo, brown, cyan, rose. Primary text stays at or above 4.5:1 on every fill, including the hover, pressed and faded completed states. No entry reuses the Caution yellow, and hue never carries meaning: state is still glyph + text (P3), and the palette is only an identity aid. These are the only custom color literals in the app (a deliberate exception to §3 rule 2). In High Contrast every entry maps to ButtonFace/ButtonText and the bars use their styles' system brushes (§3 rule 3). The palette is resolved for the surface's current theme and applied as local brushes plus lightweight `Button*` overrides, so the surface re-renders on a Light/Dark change, on a High Contrast change, and when it is loaded after a theme change made while the page was cached. The agenda list (S) has no bar visual and stays uncolored.
 
 The Dashboard "Needs attention" badge uses Warning glyph + text in `SystemFillColorCautionBrush`, and the Overdue list "Days overdue" column shows a number + "days".
 
@@ -892,7 +895,7 @@ Use `AutomationPeer.RaiseNotificationEvent` (`AutomationNotificationKind.ActionC
 | No Owner anywhere | Owner on the CR editor (required), cards, Grid, Records, Dashboard filter | D14 |
 | No Reviews or Subtask cards | Checklists › Reviews; Subtask cards on Board/Grid; Dashboard cards and chart | D17, D18 |
 | Import/Export as menu items | Settings › Data page with `BreadcrumbBar` and wizards | D13 |
-| Overdue amber bar | Caution brush + Warning glyph + "Overdue" text | P3 |
+| Overdue amber bar | The CR's palette fill + Caution outline + Warning glyph + "Overdue" text | P3, §6.3 |
 | Fixed desktop layout | S/M/L layouts per page | T-08.1 |
 | "✓ All changes saved · F2 to edit…" Grid footer | Shell status bar; hints at L only | Consistent save status for every page |
 
