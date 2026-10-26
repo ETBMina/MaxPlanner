@@ -22,14 +22,20 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
 {
     private readonly WorkspaceContext _context;
     private readonly ChecklistCommandQueue _queue;
+    private readonly ChecklistCompletionTracker _completions;
+    private readonly Action<TaskId> _keepVisible;
     private readonly ObservableCollection<ChecklistItemViewModel> _openItems = [];
     private readonly ObservableCollection<ChecklistItemViewModel> _completedItems = [];
     private string _query = string.Empty;
 
-    public ChecklistGroupViewModel(TaskReadModel model, WorkspaceContext context)
+    /// <param name="completions">The page's completion recency, shared by every group (B-09 Completed order).</param>
+    /// <param name="keepVisible">Called before an item command, so the group stays shown when it leaves no open item.</param>
+    public ChecklistGroupViewModel(TaskReadModel model, WorkspaceContext context, ChecklistCompletionTracker completions, Action<TaskId> keepVisible)
         : base(model)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _completions = completions ?? throw new ArgumentNullException(nameof(completions));
+        _keepVisible = keepVisible ?? throw new ArgumentNullException(nameof(keepVisible));
         _queue = new ChecklistCommandQueue(context, "Record_Task");
         OpenItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_openItems);
         CompletedItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_completedItems);
@@ -121,6 +127,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         ArgumentNullException.ThrowIfNull(item);
         return _queue.Enqueue(async () =>
         {
+            _keepVisible(Model.Id);
             item.IsPending = true;
             var cardId = await _context.Tasks.PopOutAsync(Model, new ChecklistItemId(item.Id)).ConfigureAwait(true);
             item.IsPending = false;
@@ -139,6 +146,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
                 return;
             }
 
+            _keepVisible(Model.Id);
             item.IsPending = true;
             ToggleError = await _queue.RunAsync(op => _context.UseCases.SetChecklistItemCompleted.ExecuteAsync(
                 new SetChecklistItemCompletedCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), isChecked), CancellationToken.None)).ConfigureAwait(true);
@@ -169,14 +177,14 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         return error;
     }
 
-    public bool CanMove(ChecklistItemViewModel item, bool up) => ChecklistSections.Neighbour(_openItems, _completedItems, item, up) is not null;
+    public bool CanMove(ChecklistItemViewModel item, bool up) => ChecklistSections.Neighbour(_openItems, item, up) is not null;
 
     public Task MoveAsync(ChecklistItemViewModel item, bool up)
     {
         ArgumentNullException.ThrowIfNull(item);
         return _queue.Enqueue(async () =>
         {
-            if (ChecklistSections.Neighbour(_openItems, _completedItems, item, up) is not { } anchor)
+            if (ChecklistSections.Neighbour(_openItems, item, up) is not { } anchor)
             {
                 return;
             }
@@ -193,6 +201,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         ArgumentNullException.ThrowIfNull(item);
         return _queue.Enqueue(async () =>
         {
+            _keepVisible(Model.Id);
             item.IsPending = true;
             ToggleError = await _queue.RunAsync(op => _context.UseCases.DeleteChecklistItem.ExecuteAsync(
                 new DeleteChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id)), CancellationToken.None)).ConfigureAwait(true);
@@ -241,9 +250,12 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
     private void SyncItems()
     {
         var showAll = HeaderMatches(_query);
+
+        // Every item is observed, matching or not, so a completion hidden by the search still counts as recent.
+        var recency = Model.ChecklistItems.ToDictionary(i => i.Id.Value, i => _completions.Observe(i.Id.Value, i.IsCompleted));
         var items = Model.ChecklistItems
             .Where(i => showAll || i.Text.Contains(_query, StringComparison.CurrentCultureIgnoreCase))
-            .Select(i => (i.Id.Value, i.Text, i.IsCompleted))
+            .Select(i => (i.Id.Value, i.Text, i.IsCompleted, recency[i.Id.Value]))
             .ToList();
         ChecklistSections.Sync(_openItems, _completedItems, items, (id, text, done) => new ChecklistItemViewModel(id, text, done, this, _context.Strings));
         OnPropertyChanged(nameof(CompletedHeader));
@@ -255,37 +267,56 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
 internal static class ChecklistSections
 {
     /// <summary>
-    /// Puts each item in the open or completed section, in stored order, keeping each row's ViewModel instance so
-    /// a focused checkbox keeps its container (T-07). Completed items keep their stored relative order (B-09).
+    /// Puts each item in the open or completed section, keeping each row's ViewModel instance so a focused checkbox
+    /// keeps its container (T-07). Open items follow the stored order; completed items are shown most recently
+    /// completed first (higher <c>Recency</c>), ties in stored order (B-09). Stored ranks are never changed.
     /// </summary>
     public static void Sync(
         ObservableCollection<ChecklistItemViewModel> open,
         ObservableCollection<ChecklistItemViewModel> completed,
-        IReadOnlyList<(Guid Id, string Text, bool IsCompleted)> ordered,
+        IReadOnlyList<(Guid Id, string Text, bool IsCompleted, long Recency)> ordered,
         Func<Guid, string, bool, ChecklistItemViewModel> create)
     {
         var existing = open.Concat(completed).ToDictionary(i => i.Id);
-        ChecklistItemViewModel Reuse((Guid Id, string Text, bool IsCompleted) model) =>
-            existing.TryGetValue(model.Id, out var item) ? item : create(model.Id, model.Text, model.IsCompleted);
+
+        // An item moving between sections is inserted into the other list as a new key, so the reused ViewModel
+        // must take the new state here; otherwise its row in the other section renders the previous IsChecked.
+        ChecklistItemViewModel Reuse((Guid Id, string Text, bool IsCompleted, long Recency) model)
+        {
+            if (!existing.TryGetValue(model.Id, out var item))
+            {
+                return create(model.Id, model.Text, model.IsCompleted);
+            }
+
+            item.Update(model.Text, model.IsCompleted);
+            return item;
+        }
+
         KeyedCollectionSync.Sync(open, [.. ordered.Where(i => !i.IsCompleted)], m => m.Id, vm => vm.Id, Reuse, (vm, m) => vm.Update(m.Text, m.IsCompleted));
-        KeyedCollectionSync.Sync(completed, [.. ordered.Where(i => i.IsCompleted)], m => m.Id, vm => vm.Id, Reuse, (vm, m) => vm.Update(m.Text, m.IsCompleted));
+        KeyedCollectionSync.Sync(completed, [.. CompletedDisplayOrder(ordered)], m => m.Id, vm => vm.Id, Reuse, (vm, m) => vm.Update(m.Text, m.IsCompleted));
         foreach (var item in open.Concat(completed))
         {
             item.RefreshCommands();
         }
     }
 
-    /// <summary>The visible neighbour in the item's own section; Move up places the item before it, Move down after it.</summary>
+    /// <summary>B-09: completed items, most recently completed first; the sort is stable, so ties keep stored order.</summary>
+    public static IEnumerable<(Guid Id, string Text, bool IsCompleted, long Recency)> CompletedDisplayOrder(
+        IEnumerable<(Guid Id, string Text, bool IsCompleted, long Recency)> ordered) =>
+        ordered.Where(i => i.IsCompleted).OrderByDescending(i => i.Recency);
+
+    /// <summary>
+    /// The visible neighbour in the open section; Move up places the item before it, Move down after it. Completed
+    /// items are shown in completion order, so moving one would not change what is shown (B-09).
+    /// </summary>
     public static ChecklistItemViewModel? Neighbour(
         IReadOnlyList<ChecklistItemViewModel> open,
-        IReadOnlyList<ChecklistItemViewModel> completed,
         ChecklistItemViewModel item,
         bool up)
     {
-        var section = open.Contains(item) ? open : completed;
-        var index = IndexOf(section, item);
+        var index = IndexOf(open, item);
         var target = up ? index - 1 : index + 1;
-        return index >= 0 && target >= 0 && target < section.Count ? section[target] : null;
+        return index >= 0 && target >= 0 && target < open.Count ? open[target] : null;
     }
 
     private static int IndexOf(IReadOnlyList<ChecklistItemViewModel> list, ChecklistItemViewModel item)
@@ -299,5 +330,33 @@ internal static class ChecklistSections
         }
 
         return -1;
+    }
+}
+
+/// <summary>
+/// Completion recency of task checklist items for the Completed order (B-09). Task items carry no completion
+/// timestamp, so recency is the order in which this page saw items change from open to done during the session;
+/// items already done when first seen have recency 0 and keep their stored order. Use on the UI thread.
+/// </summary>
+public sealed class ChecklistCompletionTracker
+{
+    private readonly Dictionary<Guid, bool> _lastSeen = [];
+    private readonly Dictionary<Guid, long> _recency = [];
+    private long _sequence;
+
+    /// <returns>The item's recency: higher is more recently completed; 0 when unknown or open.</returns>
+    public long Observe(Guid id, bool isCompleted)
+    {
+        if (!isCompleted)
+        {
+            _recency.Remove(id);
+        }
+        else if (_lastSeen.TryGetValue(id, out var wasCompleted) && !wasCompleted)
+        {
+            _recency[id] = ++_sequence;
+        }
+
+        _lastSeen[id] = isCompleted;
+        return _recency.GetValueOrDefault(id);
     }
 }

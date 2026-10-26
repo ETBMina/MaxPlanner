@@ -458,6 +458,8 @@
                                 AutomationProperties.AutomationId="Calendar_BacklogList"
                                 CanDragItems="True"
                                 DragItemsStarting="OnBacklogDragStarting"
+                                IsItemClickEnabled="True"
+                                ItemClick="OnBacklogItemClick"
                                 ItemTemplate="{StaticResource BacklogCardTemplate}"
                                 ItemsSource="{x:Bind ViewModel.Backlog, Mode=OneTime}"
                                 KeyDown="OnBacklogKeyDown"

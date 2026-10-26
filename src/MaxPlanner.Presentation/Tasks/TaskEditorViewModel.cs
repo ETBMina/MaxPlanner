@@ -44,7 +44,7 @@ public sealed record PriorityOption(PriorityId Id, string Name)
 /// always show its current committed state (T-13). A link chosen here is pending until Save and is permanent
 /// once saved; there is no unlink or change (B-03.7, AC-29).</para>
 /// </remarks>
-public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
+public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
@@ -144,7 +144,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     public event EventHandler? CloseRequested;
 
-    /// <summary>Asks the view to focus a field: a field key such as <c>Title</c>, or <c>DirtyClose</c> (design §5.0, §5.8).</summary>
+    /// <summary>Asks the view to focus a field: a field key such as <c>Title</c> (design §5.0).</summary>
     public event EventHandler<string>? FocusRequested;
 
     public bool IsNew { get; }
@@ -449,8 +449,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     }
 
     /// <summary>
-    /// The dialog is closing by Esc, Cancel, or the close button. A dirty draft (or a pending link) cancels
-    /// the close and shows the inline Save / Discard / Continue editing prompt (design §5.8).
+    /// The dialog is closing by Esc, Cancel, an outside click or a follow-up. A dirty draft (or a pending link) cancels
+    /// the close and asks for the Save / Discard / Continue editing confirmation (design §5.8).
     /// </summary>
     /// <returns>True when the dialog may close.</returns>
     public bool TryClose()
@@ -469,7 +469,6 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         if (IsDirty || (PendingLink is not null && PendingLink.Id != _presetLinkId))
         {
             IsDirtyClosePromptOpen = true;
-            FocusRequested?.Invoke(this, "DirtyClose");
             return false;
         }
 

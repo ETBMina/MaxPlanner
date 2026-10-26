@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MaxPlanner.Presentation.Common.Dialogs;
@@ -24,6 +25,34 @@ public interface IWindowCloseGuard
     /// <summary>Called on the UI thread when the main window is asked to close while this editor is open.</summary>
     /// <returns>True when nothing would be lost and the window may close now; false when the dirty prompt is shown.</returns>
     bool TryCloseForWindow();
+}
+
+/// <summary>A dialog whose closing by Esc, Cancel or an outside click is ignored while its command runs (design §5.0).</summary>
+public interface IBusyDialog
+{
+    bool IsSaving { get; }
+}
+
+/// <summary>
+/// An editor that holds a draft (design §5.8). A refused <see cref="TryClose"/> sets
+/// <see cref="IsDirtyClosePromptOpen"/>; the dialog host then shows the Save / Discard / Continue editing
+/// confirmation and answers with exactly one of <see cref="SaveFromPromptAsync"/>, <see cref="DiscardChanges"/>
+/// or <see cref="ContinueEditing"/>. Property changes are raised on the UI thread.
+/// </summary>
+public interface IDirtyCloseEditor : IBusyDialog, IWindowCloseGuard, INotifyPropertyChanged
+{
+    bool IsDirtyClosePromptOpen { get; }
+
+    /// <summary>The dialog is closing by Esc, Cancel, an outside click or a follow-up command.</summary>
+    /// <returns>True when the dialog may close; false while saving or when the confirmation is needed.</returns>
+    bool TryClose();
+
+    /// <summary>Runs the normal Save; the editor closes only when it succeeds and otherwise shows its errors.</summary>
+    Task<bool> SaveFromPromptAsync();
+
+    void DiscardChanges();
+
+    void ContinueEditing();
 }
 
 /// <summary>One dialog to show (design §5.0: dialogs are serialized and never stack).</summary>

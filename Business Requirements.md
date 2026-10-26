@@ -465,12 +465,12 @@ The copy dialog creates a genuinely new task with new task/checklist-item IDs, n
 
 ### B-09. Checklists
 
-- Show three kinds of groups: an always-available **General to-dos** group, task-owned checklist groups, and a **Reviews** section (B-17). Task groups include active tasks only; task completion status alone does not hide incomplete checklist items.
+- Show three kinds of groups on one surface: an always-available **General to-dos** group, an always-available pinned **Reviews** card (B-17), and task-owned checklist groups. Task groups include active tasks with at least one incomplete checklist item; task completion status alone does not hide incomplete checklist items. A task group whose last incomplete item is checked (or that has no items left) while the user is on the page stays visible until the user leaves the page; it is hidden on the next visit.
 - Incomplete items appear in the active section. Completed items appear in a collapsed-by-default Completed section and can be unchecked.
-- Add, rename, toggle, reorder, and explicitly delete items; task groups also offer Open task, and each checklist item offers **Pop out to card** (B-16). Provide an Add to task picker so a task with zero checklist items is still reachable.
+- Add, rename, toggle, reorder, and explicitly delete items; task groups also offer Open task, and each checklist item offers **Pop out to card** (B-16). Provide an Add to task picker so a task with zero or only completed checklist items is still reachable; choosing it shows its group until the user leaves the page.
 - All views edit the same persisted checklist item by ID. A checkbox change immediately updates Board progress, the task editor, and Checklists after commit.
 - General to-dos are independent database records; they do not need a task, CR, or status.
-- Task group order is newest parent first, then ID; item order is explicit. Completed items retain their stored relative order. Archive removes the task group from active/completed checklist views; restore brings it back.
+- Card order is General to-dos, Reviews, then task groups newest parent first, then ID; incomplete item order is explicit. Completed items are shown most recently completed first; this display order never renumbers the stored order. Archive removes the task group from active/completed checklist views; restore brings it back.
 - Parent status is independent of checklist completion. Completing every checkbox does not automatically complete the task.
 - Search matches item text, parent title/CR reference, and review fields. Keep a clear empty state and Add action.
 
@@ -486,7 +486,7 @@ The copy dialog creates a genuinely new task with new task/checklist-item IDs, n
 - Calendar planned-range filtering uses interval overlap: PlannedStart ≤ filter To and PlannedEnd ≥ filter From, ignoring absent bounds; undated inclusion is explicit. Do not label this as an exact-date filter.
 - Custom fields use type-appropriate operators: text contains, number comparison/range, date range, lookup membership. Unsupported preserved legacy fields remain exportable but need not be filterable.
 - Filter panel uses a draft: Apply commits filters; Cancel/outside-close discards draft; Clear clears the draft and takes effect only after Apply. Offer an immediate “Clear all filters” command outside the panel.
-- Dashboard drill-down replaces the Grid filter context with the displayed scope plus the selected metric/category, and shows a removable “From Dashboard” filter indicator. Preserve the previous Board/Grid filter context for Back/Return; never accidentally intersect hidden old filters with a chart selection. Overdue-CR drill-down opens Calendar Records mode with the CR-specific scope; review drill-down opens Checklists › Reviews. Neither may open Grid or treat CRs/reviews as tasks.
+- Dashboard drill-down replaces the Grid filter context with the displayed scope plus the selected metric/category, and shows a removable “From Dashboard” filter indicator. Preserve the previous Board/Grid filter context for Back/Return; never accidentally intersect hidden old filters with a chart selection. Overdue-CR drill-down opens Calendar Records mode with the CR-specific scope; review drill-down opens the Checklists page at its Reviews card. Neither may open Grid or treat CRs/reviews as tasks.
 - Filters do not modify records, status/order, exports of the complete dataset, or automatic date rules. “No matching results” is distinct from an empty database.
 - On startup, invalid saved lookup filters are flagged/cleared visibly rather than hiding all records silently.
 
@@ -575,7 +575,7 @@ Provide a one-way import wizard (a page under Settings › Data) for user-select
 | AC-17 | Repeatedly navigate/filter/edit with the benchmark dataset | T-11 budgets met; no duplicated subscriptions or progressive UI degradation |
 | AC-18 | Dashboard has active/completed/archived tasks across statuses and squads, plus Subtask cards and reviews | Status/squad chart totals match the non-archived task total; task cards/lists/drill-down agree; no checklist items, Subtask cards, reviews, or CRs inflate task counts |
 | AC-19 | CR planned end is yesterday, today, tomorrow, or null; CR is incomplete/completed | Only incomplete CRs ending before today count as overdue; linked task completion cannot override CR status |
-| AC-20 | Open Overdue CRs, a task metric/chart category, or a review metric | Open Calendar Records mode, task Grid, or Checklists › Reviews respectively, with matching visible filters and counts; previous navigation context is restorable |
+| AC-20 | Open Overdue CRs, a task metric/chart category, or a review metric | Open Calendar Records mode, task Grid, or the Checklists Reviews card respectively, with matching visible filters and counts; previous navigation context is restorable |
 | AC-21 | Local midnight, resume, time-zone change, or CR date/status edit occurs | Overdue-CR count/list and review week/month counts refresh together; no task overdue metric is introduced |
 | AC-22 | Link an unlinked task, copy a linked task, rename its CR's title/squad/owner, rename the squad or owner person, or cascade-delete its CR | Title/TaskNumber/Squad/Owner resolve from the current CR; copies inherit nothing until linked; cascade deletion removes the tasks; no stale inherited values remain |
 | AC-23 | Select System, Light, and Dark appearance modes and restart; change Windows theme while System is selected | Entire UI changes immediately and consistently; manual choice persists; System follows Windows without restart; charts, dialogs, flyouts, and custom controls remain readable |
@@ -588,7 +588,7 @@ Provide a one-way import wizard (a page under Settings › Data) for user-select
 | AC-30 | Delete a CR with linked active and archived tasks that have checklist items and Subtask cards; inject a failure mid-transaction; add a linked task between confirmation and commit | Confirmation shows correct counts; a successful delete removes all of them atomically; the failure leaves everything intact; the changed scope is refused and re-confirmed |
 | AC-31 | Set a default CR Owner, create a CR, change its owner, rename the person, then try to remove that person | New CR prefills the default; tasks show the owner read-only and update after each change; removal requires a replacement |
 | AC-32 | Pop out a checklist item from a completed task, move the new Subtask card to In Progress, then complete it | Item removal and card creation are atomic; the card gets its own dates by B-04; the parent task's status and dates never change |
-| AC-33 | Add, edit, complete, and uncomplete review items; view the Dashboard | Reviews appear only in Checklists › Reviews and Dashboard review metrics; completion date is set/cleared; counts and drill-down agree |
+| AC-33 | Add, edit, complete, and uncomplete review items; view the Dashboard | Reviews appear only in the Checklists Reviews card and Dashboard review metrics; completion date is set/cleared; counts and drill-down agree |
 
 ### B-15. Dashboard
 
@@ -613,10 +613,10 @@ Provide a one-way import wizard (a page under Settings › Data) for user-select
 
 1. **Tasks by status:** horizontal bars in configured task-status order, with readable labels/counts and zero-count statuses. Total equals Active tasks + Completed tasks in the current task scope.
 2. **Tasks by squad:** horizontal bars using inherited squad, with “General” for unlinked tasks and linked CRs without a squad. Use configured squad order, show zero-count configured squads, and count each task in one bucket. Total equals the status-chart total.
-3. **Open reviews by developer:** horizontal bars of open review items grouped by Developer, with “Unassigned” for none. Drill-down opens Checklists › Reviews filtered to that developer.
+3. **Open reviews by developer:** horizontal bars of open review items grouped by Developer, with “Unassigned” for none. Drill-down opens the Checklists Reviews card filtered to that developer.
 4. **Overdue CRs:** display CR Number, Title, Owner, Squad, Status, Priority, PlannedEnd, and DaysOverdue. Sort PlannedEnd ascending, priority rank ascending, then CR.Id. A row opens the CR editor; the card and “View all” open Calendar Records mode with the matching overdue predicate and filters.
 5. **Unlinked tasks:** display active tasks with no CR link, showing Title, Service, Status, Priority, and people. Sort CreatedAt descending, then Task.Id. A row opens the task editor so a CR can be linked; “View all” opens the matching Grid results.
-6. Each list shows at most ten preview rows plus its full matching count and “View all”. Task and Subtask card cards and chart categories open Grid with exactly their predicate; Overdue CRs always opens Records mode; review metrics open Checklists › Reviews. Preserve Dashboard scroll/filter state and the prior destination filter context on return.
+6. Each list shows at most ten preview rows plus its full matching count and “View all”. Task and Subtask card cards and chart categories open Grid with exactly their predicate; Overdue CRs always opens Records mode; review metrics open the Checklists Reviews card. Preserve Dashboard scroll/filter state and the prior destination filter context on return.
 7. Zero counts remain visible. An empty dataset offers Create CR/Create task. A filtered-empty state offers Clear filters. Loading/error is distinct from a successful zero; do not show zero before data is available.
 8. Successful task/Subtask card/review creation/edit, status change, link creation, CR Title/TaskNumber/Squad/Owner/planned-date/status edit, lookup rename, archive/restore/delete, cascade delete, or import refreshes affected cards/charts/lists through the shared change pipeline. Failure retains the previous committed result.
 9. Local midnight or clock/time-zone changes refresh overdue CRs and review week/month counts even without a data edit. Resume from sleep and activation must not leave yesterday's metrics displayed.
@@ -639,7 +639,7 @@ A Subtask card lets work continue on an existing task—for example a new change
 Review items record reviews of other people's work without creating a CR or task.
 
 1. Fields: optional **CR number** (free text), required **Title**, optional **Task number** (free text), **Services** (a list of free-text service names), optional **Developer** (a person from the People list, with add-new on save), **Review comments** (multiline), and **Done** (checkbox). Checking Done sets CompletedOn to local today; unchecking clears it.
-2. Review items appear only in the **Reviews** section of the Checklists page, one line per item: Done checkbox, Title, and the CR/task reference. Each line has a “⋯” button whose menu offers View/Edit (a dialog with all fields) and Delete. Completed items move to a collapsed-by-default Completed section and can be unchecked. Items keep an explicit order.
+2. Review items appear only in the pinned **Reviews** card of the Checklists page, one line per item: Done checkbox, Title, and the CR/task reference. Each line has a “⋯” button whose menu offers View/Edit (a dialog with all fields) and Delete. Completed items move to a collapsed-by-default Completed section and can be unchecked. Items keep an explicit order.
 3. The CR number and Task number are text, not links or identities. When the typed CR number matches an existing CR's normalized number, the editor offers “Open CR”; it never links or changes that CR.
 4. Review items have no status workflow, priority, squad, owner, Board card, Grid row, or Calendar presence. Developer rename keeps references; removing a person used as a review Developer requires a replacement or clearing.
 5. Search in Checklists covers all review text fields. Dashboard review metrics follow B-15. Review items are included in backup, full JSON, CSV, and XLSX transfer, and the simple external JSON envelope.

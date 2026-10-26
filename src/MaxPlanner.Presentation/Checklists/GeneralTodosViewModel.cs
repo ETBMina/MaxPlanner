@@ -52,7 +52,7 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     /// <summary>Open to-dos in the dataset, whatever the search (the page subtitle and nav badge count).</summary>
     public int OpenCount => TotalCount - DoneCount;
 
-    /// <summary>Items matching the current search, for the SelectorBar match count.</summary>
+    /// <summary>Items matching the current search (the page's filtered-empty state).</summary>
     public int MatchCount => _openItems.Count + _completedItems.Count;
 
     public string ProgressText => _context.Strings.Format("Checklists_Progress", DoneCount, TotalCount);
@@ -137,14 +137,14 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
         return error;
     }
 
-    public bool CanMove(ChecklistItemViewModel item, bool up) => ChecklistSections.Neighbour(_openItems, _completedItems, item, up) is not null;
+    public bool CanMove(ChecklistItemViewModel item, bool up) => ChecklistSections.Neighbour(_openItems, item, up) is not null;
 
     public Task MoveAsync(ChecklistItemViewModel item, bool up)
     {
         ArgumentNullException.ThrowIfNull(item);
         return _queue.Enqueue(async () =>
         {
-            if (ChecklistSections.Neighbour(_openItems, _completedItems, item, up) is not { } anchor || Find(item) is not { } todo)
+            if (ChecklistSections.Neighbour(_openItems, item, up) is not { } anchor || Find(item) is not { } todo)
             {
                 return;
             }
@@ -213,7 +213,7 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
         OnPropertyChanged(nameof(OpenCount));
         var items = all
             .Where(t => _query.Length == 0 || t.Text.Value.Contains(_query, StringComparison.CurrentCultureIgnoreCase))
-            .Select(t => (t.Id.Value, t.Text.Value, t.IsCompleted))
+            .Select(t => (t.Id.Value, t.Text.Value, t.IsCompleted, t.UpdatedAtUtc.UtcTicks))
             .ToList();
         ChecklistSections.Sync(_openItems, _completedItems, items, (id, text, done) => new ChecklistItemViewModel(id, text, done, this, _context.Strings));
         OnPropertyChanged(nameof(CompletedHeader));

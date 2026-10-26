@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Checklists page (design §4.5, B-09, B-17): SelectorBar Checklists · Reviews [gallery-selectorbar-1], the
-    General to-dos card and task groups in a virtualizing ItemsRepeater [gallery-itemsrepeater-2] with the
-    variable-height ColumnPackingLayout, and the Reviews ListView with a Completed Expander [gallery-expander-1].
+    Checklists page (design §4.5, B-09, B-17): one surface with the General to-dos card, the pinned Reviews card and
+    the task groups in a virtualizing ItemsRepeater [gallery-itemsrepeater-2] with the variable-height
+    ColumnPackingLayout; each card has a collapsed Completed Expander [gallery-expander-1].
 -->
 <UserControl
     x:Class="MaxPlanner.Presentation.Checklists.ChecklistsPageView"
@@ -26,13 +26,12 @@
                 <CheckBox
                     AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ItemCheck_', Id), Mode=OneTime}"
                     AutomationProperties.HelpText="{x:Bind HelpText, Mode=OneTime}"
-                    Checked="OnItemToggled"
+                    Click="OnItemClick"
                     DoubleTapped="OnItemDoubleTapped"
                     IsChecked="{x:Bind IsChecked, Mode=OneWay}"
                     IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}"
                     KeyDown="OnItemKeyDown"
                     Tag="{x:Bind Mode=OneTime}"
-                    Unchecked="OnItemToggled"
                     Visibility="{x:Bind common:BindFunctions.Collapsed(IsRenaming), Mode=OneWay}">
                     <TextBlock
                         Style="{x:Bind local:ChecklistsPageView.ItemTextStyle(IsChecked), Mode=OneWay}"
@@ -286,12 +285,7 @@
             </Border>
         </DataTemplate>
 
-        <local:ChecklistCardTemplateSelector
-            x:Key="CardTemplateSelector"
-            GeneralTemplate="{StaticResource GeneralTemplate}"
-            GroupTemplate="{StaticResource GroupTemplate}" />
-
-        <!-- One line per review (B-17.2): Done, Title, and the reference as plain text, plus ⋯. -->
+        <!-- One line per review (B-17.2): Done, Title, and the reference as plain text, plus ⋯. Tapping the text or Enter opens View/Edit. -->
         <DataTemplate x:Key="ReviewTemplate" x:DataType="local:ReviewRowViewModel">
             <Grid
                 Padding="0,4"
@@ -309,12 +303,18 @@
                     VerticalAlignment="Top"
                     AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ReviewCheck_', Id), Mode=OneTime}"
                     AutomationProperties.Name="{x:Bind CheckName, Mode=OneWay}"
-                    Checked="OnReviewToggled"
+                    Click="OnReviewClick"
                     IsChecked="{x:Bind IsDone, Mode=OneWay}"
                     IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}"
+                    KeyDown="OnReviewKeyDown"
+                    Tag="{x:Bind Mode=OneTime}" />
+                <StackPanel
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    Spacing="2"
                     Tag="{x:Bind Mode=OneTime}"
-                    Unchecked="OnReviewToggled" />
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    Tapped="OnReviewTextTapped">
                     <TextBlock
                         Text="{x:Bind Title, Mode=OneWay}"
                         TextDecorations="{x:Bind local:ChecklistsPageView.Strike(IsDone), Mode=OneWay}"
@@ -367,6 +367,102 @@
                 </Button>
             </Grid>
         </DataTemplate>
+
+        <!-- Reviews card (B-17.2, design §4.5): pinned second and always shown, styled like General to-dos. -->
+        <DataTemplate x:Key="ReviewsTemplate" x:DataType="local:ReviewsViewModel">
+            <Border
+                Padding="16"
+                AutomationProperties.AutomationId="Checklists_ReviewsGroup"
+                Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="16"
+                            Glyph="&#xED15;" />
+                        <TextBlock
+                            x:Uid="Checklists_ReviewsTitle"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            AutomationProperties.AutomationId="Checklists_Progress_Reviews"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ProgressText, Mode=OneWay}" />
+                        <ProgressBar
+                            AutomationProperties.Name="{x:Bind ProgressText, Mode=OneWay}"
+                            Maximum="100"
+                            Value="{x:Bind ProgressPercent, Mode=OneWay}" />
+                    </StackPanel>
+                    <TextBlock
+                        AutomationProperties.LiveSetting="Assertive"
+                        Foreground="{ThemeResource ErrorTextBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ActionError, Mode=OneWay}"
+                        TextWrapping="Wrap"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasActionError), Mode=OneWay}" />
+                    <ItemsRepeater ItemTemplate="{StaticResource ReviewTemplate}" ItemsSource="{x:Bind Open, Mode=OneTime}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="2" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                    <Grid ColumnSpacing="8" Tag="{x:Bind Mode=OneTime}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Uid="Checklists_AddReviewBox"
+                            AutomationProperties.AutomationId="Checklists_AddItemBox_Reviews"
+                            IsEnabled="{x:Bind common:BindFunctions.Not(IsAdding), Mode=OneWay}"
+                            KeyDown="OnReviewsAddBoxKeyDown"
+                            MaxLength="250"
+                            Tag="{x:Bind Mode=OneTime}"
+                            Text="{x:Bind NewItemText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button
+                            x:Uid="Checklists_AddReviewButton"
+                            Grid.Column="1"
+                            AutomationProperties.AutomationId="Checklists_AddItemButton_Reviews"
+                            Command="{x:Bind AddReviewCommand}">
+                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                        </Button>
+                    </Grid>
+                    <TextBlock
+                        AutomationProperties.AutomationId="Checklists_AddItemError_Reviews"
+                        AutomationProperties.LiveSetting="Assertive"
+                        Foreground="{ThemeResource ErrorTextBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind NewItemError, Mode=OneWay}"
+                        TextWrapping="Wrap"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasNewItemError), Mode=OneWay}" />
+                    <HyperlinkButton
+                        x:Uid="Checklists_NewReviewLink"
+                        Padding="0"
+                        AutomationProperties.AutomationId="Checklists_NewReviewLink"
+                        Command="{x:Bind NewReviewCommand}" />
+                    <Expander
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        AutomationProperties.AutomationId="Checklists_CompletedExpander_Reviews"
+                        Header="{x:Bind CompletedHeader, Mode=OneWay}"
+                        IsExpanded="False"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasCompleted), Mode=OneWay}">
+                        <ItemsRepeater ItemTemplate="{StaticResource ReviewTemplate}" ItemsSource="{x:Bind Completed, Mode=OneTime}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Spacing="2" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </Expander>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <local:ChecklistCardTemplateSelector
+            x:Key="CardTemplateSelector"
+            GeneralTemplate="{StaticResource GeneralTemplate}"
+            GroupTemplate="{StaticResource GroupTemplate}"
+            ReviewsTemplate="{StaticResource ReviewsTemplate}" />
     </UserControl.Resources>
 
     <Grid>
@@ -401,25 +497,6 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <SelectorBar
-                    x:Name="SectionBar"
-                    AutomationProperties.AutomationId="Checklists_SectionBar"
-                    SelectionChanged="OnSectionChanged">
-                    <SelectorBarItem
-                        x:Name="ChecklistsItem"
-                        AutomationProperties.AutomationId="Checklists_SectionChecklistsItem"
-                        Tag="Checklists"
-                        Text="{x:Bind ViewModel.ChecklistsTabText, Mode=OneWay}" />
-                    <SelectorBarItem
-                        x:Name="ReviewsItem"
-                        AutomationProperties.AutomationId="Checklists_SectionReviewsItem"
-                        Tag="Reviews"
-                        Text="{x:Bind ViewModel.ReviewsTabText, Mode=OneWay}" />
-                </SelectorBar>
                 <StackPanel
                     Grid.Column="1"
                     Orientation="Horizontal"
@@ -434,8 +511,7 @@
                     <Button
                         x:Name="AddToTaskButton"
                         x:Uid="Checklists_AddToTaskButton"
-                        AutomationProperties.AutomationId="Checklists_AddToTaskButton"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsChecklistsSection), Mode=OneWay}">
+                        AutomationProperties.AutomationId="Checklists_AddToTaskButton">
                         <Button.Flyout>
                             <Flyout x:Name="AddToTaskFlyout" Opening="OnAddToTaskOpening">
                                 <AutoSuggestBox
@@ -454,8 +530,7 @@
                         x:Uid="Checklists_NewTodoButton"
                         AutomationProperties.AutomationId="Checklists_NewTodoButton"
                         Command="{x:Bind ViewModel.NewTodoCommand}"
-                        Style="{StaticResource AccentButtonStyle}"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsChecklistsSection), Mode=OneWay}">
+                        Style="{StaticResource AccentButtonStyle}">
                         <Button.KeyboardAccelerators>
                             <KeyboardAccelerator Key="N" Modifiers="Control" />
                         </Button.KeyboardAccelerators>
@@ -464,22 +539,10 @@
                             <TextBlock x:Uid="Checklists_NewTodoText" />
                         </StackPanel>
                     </Button>
-                    <Button
-                        x:Uid="Checklists_NewReviewButton"
-                        AutomationProperties.AutomationId="Checklists_NewReviewButton"
-                        Command="{x:Bind ViewModel.NewReviewCommand}"
-                        Style="{StaticResource AccentButtonStyle}"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReviewsSection), Mode=OneWay}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="14" Glyph="&#xE710;" />
-                            <TextBlock x:Uid="Checklists_NewReviewText" />
-                        </StackPanel>
-                    </Button>
                 </StackPanel>
                 <AutoSuggestBox
                     x:Name="SearchBox"
                     x:Uid="Checklists_SearchBox"
-                    Grid.Row="1"
                     MinWidth="200"
                     MaxWidth="320"
                     HorizontalAlignment="Left"
@@ -550,106 +613,23 @@
             EmptyGlyph="&#xE9D5;"
             PageKey="Checklists"
             State="{x:Bind ViewModel.State, Mode=OneWay}">
-            <Grid>
-                <!-- The outer ScrollViewer gives the repeaters their viewport, so both levels virtualize (design §4.5). -->
-                <ScrollViewer
-                    x:Name="GroupsScroller"
-                    AutomationProperties.AutomationId="Checklists_Groups"
-                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsChecklistsSection), Mode=OneWay}">
-                    <ItemsRepeater
-                        x:Name="GroupsRepeater"
-                        Margin="32,0,32,24"
-                        ItemTemplate="{StaticResource CardTemplateSelector}"
-                        ItemsSource="{x:Bind ViewModel.Cards, Mode=OneTime}">
-                        <ItemsRepeater.Layout>
-                            <controls:ColumnPackingLayout
-                                x:Name="GroupsLayout"
-                                ColumnSpacing="12"
-                                MaxColumns="3"
-                                MinColumnWidth="380"
-                                RowSpacing="12" />
-                        </ItemsRepeater.Layout>
-                    </ItemsRepeater>
-                </ScrollViewer>
-
-                <!--
-                    Reviews section (B-17.2, design §4.5): one list card, then Completed (n) collapsed. T-08/T-11: the
-                    lists sit in bounded rows (no outer ScrollViewer) so each ListView scrolls and virtualizes itself;
-                    a ListView inside a StackPanel inside a ScrollViewer realizes every row.
-                -->
-                <Grid
-                    x:Name="ReviewsPanel"
-                    MaxWidth="880"
+            <!-- The outer ScrollViewer gives the repeaters their viewport, so both levels virtualize (design §4.5). -->
+            <ScrollViewer x:Name="GroupsScroller" AutomationProperties.AutomationId="Checklists_Groups">
+                <ItemsRepeater
+                    x:Name="GroupsRepeater"
                     Margin="32,0,32,24"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="Checklists_Reviews"
-                    RowSpacing="12"
-                    SizeChanged="OnReviewsPanelSizeChanged"
-                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReviewsSection), Mode=OneWay}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <!-- Reviews empty state (design §4.5): "No reviews yet" + New review. -->
-                        <StackPanel
-                            Padding="0,24"
-                            AutomationProperties.AutomationId="Checklists_ReviewsEmpty"
-                            Spacing="8"
-                            Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasNoReviews), Mode=OneWay}">
-                            <TextBlock x:Uid="Checklists_ReviewsEmptyTitle" Style="{StaticResource SubtitleTextBlockStyle}" />
-                            <TextBlock x:Uid="Checklists_ReviewsEmptyMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
-                            <Button
-                                x:Uid="Checklists_ReviewsEmptyButton"
-                                AutomationProperties.AutomationId="Checklists_ReviewsEmptyButton"
-                                Command="{x:Bind ViewModel.NewReviewCommand}" />
-                        </StackPanel>
-                        <Border
-                            Grid.Row="1"
-                            Padding="12,4"
-                            VerticalAlignment="Top"
-                            Style="{StaticResource CardBorderStyle}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(Reviews.HasOpen), Mode=OneWay}">
-                            <ListView
-                                x:Uid="Checklists_ReviewsList"
-                                AutomationProperties.AutomationId="Checklists_ReviewsList"
-                                IsItemClickEnabled="True"
-                                ItemClick="OnReviewItemClick"
-                                ItemTemplate="{StaticResource ReviewTemplate}"
-                                ItemsSource="{x:Bind Reviews.Open, Mode=OneTime}"
-                                KeyDown="OnReviewListKeyDown"
-                                SelectionMode="None" />
-                        </Border>
-                        <TextBlock
-                            Grid.Row="2"
-                            AutomationProperties.LiveSetting="Assertive"
-                            Foreground="{ThemeResource ErrorTextBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind Reviews.ActionError, Mode=OneWay}"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind common:BindFunctions.Visible(Reviews.HasActionError), Mode=OneWay}" />
-                        <Expander
-                            Grid.Row="3"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Stretch"
-                            AutomationProperties.AutomationId="Checklists_ReviewsCompletedExpander"
-                            Header="{x:Bind Reviews.CompletedHeader, Mode=OneWay}"
-                            IsExpanded="False"
-                            Visibility="{x:Bind common:BindFunctions.Visible(Reviews.HasCompleted), Mode=OneWay}">
-                            <ListView
-                                x:Name="CompletedReviewsList"
-                                x:Uid="Checklists_ReviewsCompletedList"
-                                AutomationProperties.AutomationId="Checklists_ReviewsCompletedList"
-                                IsItemClickEnabled="True"
-                                ItemClick="OnReviewItemClick"
-                                ItemTemplate="{StaticResource ReviewTemplate}"
-                                ItemsSource="{x:Bind Reviews.Completed, Mode=OneTime}"
-                                KeyDown="OnReviewListKeyDown"
-                                SelectionMode="None" />
-                        </Expander>
-                </Grid>
-            </Grid>
+                    ItemTemplate="{StaticResource CardTemplateSelector}"
+                    ItemsSource="{x:Bind ViewModel.Cards, Mode=OneTime}">
+                    <ItemsRepeater.Layout>
+                        <controls:ColumnPackingLayout
+                            x:Name="GroupsLayout"
+                            ColumnSpacing="12"
+                            MaxColumns="3"
+                            MinColumnWidth="380"
+                            RowSpacing="12" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+            </ScrollViewer>
         </controls:StateView>
     </Grid>
 </UserControl>

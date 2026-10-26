@@ -551,10 +551,10 @@
     <value>Completed ({0})</value>
   </data>
   <data name="Checklists_Summary" xml:space="preserve">
-    <value>General to-dos and checklist items of active tasks · {0} open</value>
+    <value>General to-dos, checklist items of active tasks and reviews · {0} open</value>
   </data>
   <data name="Checklists_SummaryOne" xml:space="preserve">
-    <value>General to-dos and checklist items of active tasks · 1 open</value>
+    <value>General to-dos, checklist items of active tasks and reviews · 1 open</value>
   </data>
   <data name="Checklists_AddItemBox.PlaceholderText" xml:space="preserve">
     <value>Add an item</value>
@@ -1114,8 +1114,11 @@
   <data name="TaskEditor_ValidationInfoBar.Title" xml:space="preserve">
     <value>Can't save</value>
   </data>
-  <data name="DirtyClose_InfoBar.Message" xml:space="preserve">
-    <value>You have unsaved changes.</value>
+  <data name="DirtyClose_Title.Text" xml:space="preserve">
+    <value>Unsaved changes</value>
+  </data>
+  <data name="DirtyClose_Message.Text" xml:space="preserve">
+    <value>You have unsaved changes. Do you want to save them?</value>
   </data>
   <data name="DirtyClose_SaveButton.Content" xml:space="preserve">
     <value>Save</value>
@@ -1726,6 +1729,24 @@
   <data name="Checklists_GeneralTitle.Text" xml:space="preserve">
     <value>General to-dos</value>
   </data>
+  <data name="Checklists_ReviewsTitle.Text" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="Checklists_AddReviewBox.PlaceholderText" xml:space="preserve">
+    <value>Add a review</value>
+  </data>
+  <data name="Checklists_AddReviewBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add a review</value>
+  </data>
+  <data name="Checklists_AddReviewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add review</value>
+  </data>
+  <data name="Checklists_AddReviewButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Add review (Enter)</value>
+  </data>
+  <data name="Checklists_NewReviewLink.Content" xml:space="preserve">
+    <value>New review…</value>
+  </data>
   <data name="Checklists_ReviewEdit.Text" xml:space="preserve">
     <value>View/Edit</value>
   </data>
@@ -1750,15 +1771,6 @@
   <data name="Checklists_NewTodoText.Text" xml:space="preserve">
     <value>New to-do</value>
   </data>
-  <data name="Checklists_NewReviewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>New review</value>
-  </data>
-  <data name="Checklists_NewReviewButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>New review</value>
-  </data>
-  <data name="Checklists_NewReviewText.Text" xml:space="preserve">
-    <value>New review</value>
-  </data>
   <data name="Checklists_SearchBox.PlaceholderText" xml:space="preserve">
     <value>Search checklists and reviews</value>
   </data>
@@ -1767,21 +1779,6 @@
   </data>
   <data name="Checklists_ClearSearchButton.Content" xml:space="preserve">
     <value>Clear search</value>
-  </data>
-  <data name="Checklists_ReviewsEmptyTitle.Text" xml:space="preserve">
-    <value>No reviews yet</value>
-  </data>
-  <data name="Checklists_ReviewsEmptyMessage.Text" xml:space="preserve">
-    <value>Record a review of someone else's work without creating a CR or task.</value>
-  </data>
-  <data name="Checklists_ReviewsEmptyButton.Content" xml:space="preserve">
-    <value>New review</value>
-  </data>
-  <data name="Checklists_ReviewsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Open reviews</value>
-  </data>
-  <data name="Checklists_ReviewsCompletedList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Completed reviews</value>
   </data>
   <data name="Checklists_DeleteButton" xml:space="preserve">
     <value>Delete</value>
@@ -1809,21 +1806,6 @@
   </data>
   <data name="Checklists_ReviewCheckName" xml:space="preserve">
     <value>Done: {0}</value>
-  </data>
-  <data name="Checklists_ReviewsSummary" xml:space="preserve">
-    <value>Reviews of other people's work · {0} open of {1}</value>
-  </data>
-  <data name="Checklists_SectionChecklists" xml:space="preserve">
-    <value>Checklists</value>
-  </data>
-  <data name="Checklists_SectionReviewsPlain" xml:space="preserve">
-    <value>Reviews</value>
-  </data>
-  <data name="Checklists_SectionReviews" xml:space="preserve">
-    <value>Reviews ({0} open)</value>
-  </data>
-  <data name="Checklists_SectionMatches" xml:space="preserve">
-    <value>{0} ({1} matches)</value>
   </data>
   <data name="Record_GeneralTodo" xml:space="preserve">
     <value>to-do</value>

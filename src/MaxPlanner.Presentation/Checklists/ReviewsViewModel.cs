@@ -95,8 +95,9 @@ public sealed partial class ReviewRowViewModel : ObservableObject
 }
 
 /// <summary>
-/// Checklists › Reviews (B-17, design §4.5): one line per review in explicit order, a collapsed Completed
-/// section, the review editor, and search over every review field (B-17.5). Use on the UI thread.
+/// The pinned Reviews card of the Checklists page (B-17, design §4.5): open reviews in explicit order, an inline
+/// Add a review box, a collapsed Completed section, the review editor, and search over every review field
+/// (B-17.5). Use on the UI thread.
 /// </summary>
 public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
 {
@@ -122,14 +123,39 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
 
     public ReadOnlyObservableCollection<ReviewRowViewModel> Completed { get; }
 
-    /// <summary>Open reviews in the dataset, whatever the search ("Reviews (n open)").</summary>
+    /// <summary>Open reviews in the dataset, whatever the search (page subtitle and nav badge).</summary>
     [ObservableProperty]
     public partial int OpenCount { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressText), nameof(ProgressPercent))]
     public partial int TotalCount { get; private set; }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressText), nameof(ProgressPercent))]
+    public partial int DoneCount { get; private set; }
+
     public int MatchCount => _open.Count + _completed.Count;
+
+    public string ProgressText => _context.Strings.Format("Checklists_Progress", DoneCount, TotalCount);
+
+    public double ProgressPercent => TotalCount == 0 ? 0 : 100.0 * DoneCount / TotalCount;
+
+    /// <summary>The Add a review box's draft; bound two-way and kept when adding fails.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddReviewCommand))]
+    public partial string NewItemText { get; set; } = string.Empty;
+
+    /// <summary>The inline error under the Add a review box (blank title, storage).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNewItemError))]
+    public partial string? NewItemError { get; private set; }
+
+    public bool HasNewItemError => NewItemError is not null;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddReviewCommand))]
+    public partial bool IsAdding { get; private set; }
 
     public string CompletedHeader => _context.Strings.Format("Checklists_CompletedHeader", _completed.Count);
 
@@ -163,7 +189,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
         Sync();
     }
 
-    /// <summary>Accent "New review" (design §4.5): the review editor in create mode.</summary>
+    /// <summary>The Reviews card's "New review…" (design §4.5): the review editor in create mode.</summary>
     [RelayCommand]
     public Task NewReviewAsync() => RunEditorAsync(null);
 
@@ -227,6 +253,31 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
 
     public void Dispose() => _commits.Dispose();
 
+    /// <summary>
+    /// B-09 completed order for reviews: most recently completed first, by CompletedOn and then the audit timestamp
+    /// within a day; the sort is stable, so ties keep the explicit order of <paramref name="ranked"/>.
+    /// </summary>
+    public static IEnumerable<ReviewItem> CompletedDisplayOrder(IEnumerable<ReviewItem> ranked) =>
+        ranked.Where(r => r.IsDone).OrderByDescending(r => r.CompletedOn).ThenByDescending(r => r.UpdatedAtUtc);
+
+    /// <summary>Enter in the Add a review box or its Add button: a title-only review; blank text shows an inline error.</summary>
+    [RelayCommand(CanExecute = nameof(CanAddReview))]
+    private Task AddReviewAsync() => _queue.Enqueue(async () =>
+    {
+        IsAdding = true;
+        var draft = new ReviewDraft(NewItemText, CrNumber: null, TaskNumber: null, Services: [], DeveloperId: null, Comments: null);
+        NewItemError = await _queue.RunAsync(op => _context.UseCases.CreateReview.ExecuteAsync(
+            new CreateReviewCommand(op, new ReviewItemId(Guid.NewGuid()), draft, NewDeveloper: null, IsDone: false), CancellationToken.None)).ConfigureAwait(true);
+        if (NewItemError is null)
+        {
+            NewItemText = string.Empty;
+        }
+
+        IsAdding = false;
+    });
+
+    private bool CanAddReview() => !IsAdding;
+
     private Task DeleteAsync(ReviewItemId id, string title) => _queue.Enqueue(async () =>
     {
         if (_context.Store.ReviewItems.Lookup(id) is not { HasValue: true } review)
@@ -284,12 +335,12 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     private ReviewItem? Find(ReviewRowViewModel row) =>
         _context.Store.ReviewItems.Lookup(row.Model.Id) is { HasValue: true } review ? review.Value : null;
 
+    // Move up/down applies to open reviews; completed ones are shown in completion order (B-09).
     private ReviewRowViewModel? Neighbour(ReviewRowViewModel row, bool up)
     {
-        var section = _open.Contains(row) ? _open : _completed;
-        var index = section.IndexOf(row);
+        var index = _open.IndexOf(row);
         var target = up ? index - 1 : index + 1;
-        return index >= 0 && target >= 0 && target < section.Count ? section[target] : null;
+        return index >= 0 && target >= 0 && target < _open.Count ? _open[target] : null;
     }
 
     private bool Matches(ReviewItem review)
@@ -316,12 +367,26 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     {
         var all = _context.Store.ReviewItems.Items.OrderBy(r => r.Rank).ThenBy(r => r.Id.Value).ToList();
         TotalCount = all.Count;
-        OpenCount = all.Count(r => !r.IsDone);
+        DoneCount = all.Count(r => r.IsDone);
+        OpenCount = TotalCount - DoneCount;
         var shown = all.Where(Matches).ToList();
         var existing = _open.Concat(_completed).ToDictionary(r => r.Id);
-        ReviewRowViewModel Reuse(ReviewItem model) => existing.TryGetValue(model.Id.Value, out var row) ? row : new ReviewRowViewModel(model, this, _context.Strings);
+
+        // A row moving between sections is inserted as a new key there, so the reused row takes the new model
+        // first; otherwise it renders its previous Done state (see ChecklistSections.Sync).
+        ReviewRowViewModel Reuse(ReviewItem model)
+        {
+            if (!existing.TryGetValue(model.Id.Value, out var row))
+            {
+                return new ReviewRowViewModel(model, this, _context.Strings);
+            }
+
+            row.Update(model);
+            return row;
+        }
+
         KeyedCollectionSync.Sync(_open, [.. shown.Where(r => !r.IsDone)], m => m.Id.Value, vm => vm.Id, Reuse, (vm, m) => vm.Update(m));
-        KeyedCollectionSync.Sync(_completed, [.. shown.Where(r => r.IsDone)], m => m.Id.Value, vm => vm.Id, Reuse, (vm, m) => vm.Update(m));
+        KeyedCollectionSync.Sync(_completed, [.. CompletedDisplayOrder(shown)], m => m.Id.Value, vm => vm.Id, Reuse, (vm, m) => vm.Update(m));
         foreach (var row in _open.Concat(_completed))
         {
             row.RefreshCommands();

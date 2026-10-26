@@ -15,7 +15,7 @@ namespace MaxPlanner.Presentation.Settings;
 /// replacement (or clearing, where allowed), and runs the removal as one command with the confirmed counts.
 /// If the usage changed before commit, the counts refresh and a new confirmation is needed.
 /// </summary>
-public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogViewModel
+public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogViewModel, IBusyDialog
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 

@@ -44,7 +44,7 @@ public enum SubtaskEditorFollowUp
 /// silently: a save against a newer revision is a conflict, reviewed field by field or reloaded (B-02.9).</para>
 /// <para>B-16.6: while the parent is archived the card is read-only.</para>
 /// </remarks>
-public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
+public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
 {
     private const string SubtitleKey = "Subtitle";
     private const string StatusKey = "Status";
@@ -121,7 +121,7 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
 
     public event EventHandler? CloseRequested;
 
-    /// <summary>Asks the view to focus a field key such as <c>Subtitle</c>, or <c>DirtyClose</c> (design §5.0, §5.8).</summary>
+    /// <summary>Asks the view to focus a field key such as <c>Subtitle</c> (design §5.0).</summary>
     public event EventHandler<string>? FocusRequested;
 
     public bool IsNew { get; }
@@ -319,7 +319,7 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
         return true;
     }
 
-    /// <summary>Esc, Cancel, or the close button: a dirty draft shows the inline Save / Discard / Continue prompt (design §5.8).</summary>
+    /// <summary>Esc, Cancel, an outside click or a follow-up: a dirty draft asks for the Save / Discard / Continue editing confirmation (design §5.8).</summary>
     /// <returns>True when the dialog may close.</returns>
     public bool TryClose()
     {
@@ -336,7 +336,6 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
         if (IsDirty && !IsReadOnly)
         {
             IsDirtyClosePromptOpen = true;
-            FocusRequested?.Invoke(this, "DirtyClose");
             return false;
         }
 

@@ -69,7 +69,7 @@ public enum CrEditorFollowUp
 /// task IDs it showed is sent; if the set changed meanwhile, the deletion is refused and the step shows the
 /// new counts for a new confirmation (AC-30).</para>
 /// </remarks>
-public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
+public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
 {
     private const string NumberKey = "Number";
     private const string TaskNumberKey = "TaskNumber";
@@ -185,7 +185,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     public event EventHandler? CloseRequested;
 
-    /// <summary>Asks the view to focus a field key such as <c>Number</c>, or <c>DirtyClose</c> (design §5.0, §5.8).</summary>
+    /// <summary>Asks the view to focus a field key such as <c>Number</c> (design §5.0).</summary>
     public event EventHandler<string>? FocusRequested;
 
     public bool IsNew { get; }
@@ -588,7 +588,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         return true;
     }
 
-    /// <summary>Esc, Cancel, or the close button: a dirty draft shows the inline Save / Discard / Continue prompt (design §5.8).</summary>
+    /// <summary>Esc, Cancel, an outside click or a follow-up: a dirty draft asks for the Save / Discard / Continue editing confirmation (design §5.8).</summary>
     public bool TryClose()
     {
         if (_closeApproved)
@@ -604,7 +604,6 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         if (IsDirty && !IsReadOnly)
         {
             IsDirtyClosePromptOpen = true;
-            FocusRequested?.Invoke(this, "DirtyClose");
             return false;
         }
 

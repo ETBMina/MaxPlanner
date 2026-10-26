@@ -26,7 +26,7 @@ public enum ReviewEditorFollowUp
 /// matches an existing CR, never a link), Task number, Services, Developer (add-new on save), Review comments and
 /// Done. It edits a draft and commits it through one use case with a revision check (B-02.8–9). Use on the UI thread.
 /// </summary>
-public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogViewModel, IWindowCloseGuard, IDisposable
+public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
@@ -76,7 +76,7 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
 
     public event EventHandler? CloseRequested;
 
-    /// <summary>Asks the view to focus a field key such as <c>Title</c>, or <c>DirtyClose</c>.</summary>
+    /// <summary>Asks the view to focus a field key such as <c>Title</c>.</summary>
     public event EventHandler<string>? FocusRequested;
 
     public bool IsNew { get; }
@@ -255,7 +255,7 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
         }
     }
 
-    /// <summary>Esc, Cancel, or the close button: a dirty draft shows the inline Save / Discard / Continue prompt (design §5.8).</summary>
+    /// <summary>Esc, Cancel, an outside click or a follow-up: a dirty draft asks for the Save / Discard / Continue editing confirmation (design §5.8).</summary>
     public bool TryClose()
     {
         if (_closeApproved)
@@ -271,7 +271,6 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
         if (IsDirty && !IsDeletedElsewhere)
         {
             IsDirtyClosePromptOpen = true;
-            FocusRequested?.Invoke(this, "DirtyClose");
             return false;
         }
 

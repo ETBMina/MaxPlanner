@@ -137,7 +137,7 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
 - **Dashboard drill-downs** (B-10, B-15.6):
   - Task and Subtask card metrics → Grid.
   - Overdue CRs → Calendar › Records.
-  - Review metrics → Checklists › Reviews.
+  - Review metrics → the Checklists Reviews card.
 - The destination receives a **replacement** filter context. It shows a page InfoBar ("Showing Dashboard results: Active tasks · Squad: Retail Cards") with a **Return to Dashboard** button, and the chips include a non-editable "From Dashboard" chip that can be removed. Removing that chip restores the destination's previous filters.
 - TitleBar Back (Alt+Left) pops the same stack and restores the Dashboard filters and scroll position (AC-20).
 
@@ -197,7 +197,7 @@ Each page section lists its purpose, regions, controls, item content, commands, 
 | Unscheduled tasks | Count | "Subset of active · no CR or CR without planned dates" | Grid |
 | Overdue CRs | Count | "Incomplete CRs whose planned end is before today" | Calendar › Records |
 | Active Subtask cards | Count | "Not completed · parent not archived" | Grid with a non-editable "From Dashboard: active Subtask cards" chip (§2.9) |
-| Reviews | Open count | "{n} done this week · {m} this month" | Checklists › Reviews |
+| Reviews | Open count | "{n} done this week · {m} this month" | Checklists Reviews card |
 
 **Bar chart (custom, native, T-08, B-15.1–3).** The Gallery `Chart` (`Microsoft.UI.Xaml.Controls.Charts`, `[gallery-chart-2]`) is preview-only and is **absent from the WinAppSDK 2.5 stable index**, so it is not used (AGENTS §3.4). The chart is built as follows:
 - **Header:** title (`SubtitleTextBlockStyle`, HeadingLevel 2), a total caption, and a **Table** `ToggleButton` (name "Show as table").
@@ -218,7 +218,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 
 **Proposed notes (Phase 12, pending owner review):**
 - Lists and the chart Table mode use `ItemsRepeater` rows of `Button`s instead of `ListView`: at most ten rows inside the page `ScrollViewer`, where a nested `ListView` would capture the wheel and drop virtualization anyway. Rows are two lines at every width (primary: number + title; secondary: owner · squad · status · priority · planned end · days), and the Priority chip is shown as text.
-- The Reviews card value is the open count; "{n} done this week" and "{m} done this month" are separate links below the card button (never nested in it), each drilling into Checklists › Reviews with its own predicate.
+- The Reviews card value is the open count; "{n} done this week" and "{m} done this month" are separate links below the card button (never nested in it), each drilling into the Checklists Reviews card with its own predicate.
 - The Empty state is the page's own panel (New CR accent + New task), because the shared StateView has one action.
 - A chart category that the Dashboard filter already excludes (for example another squad while Squad is set) stays visible with its zero but is disabled, because no drill-down predicate can show it.
 - Open reviews by developer lists only developers with at least one open review (people with zero are not listed); statuses and squads keep their zero-count rows (B-15.1–2).
@@ -339,7 +339,7 @@ States: Loading, Empty, Filtered-empty (distinct from Empty; when only archived 
 |---|---|
 | Header | Title "Calendar". A mode **`SelectorBar`**: Month · Week · Records `[gallery-selectorbar-1, -2]` (replaces the mock's toggle and its "CR records" button, D13). Period navigation (Month/Week only): **Today**, **‹ ›** (`Button`s with names "Previous month"/"Next month"), and a **period button** "October 2026 ˅" that opens a `Flyout` with `CalendarView` (`DisplayMode=Year` for Month, `Month` for Week) `[gallery-calendarview-1]` (the accessible date selector, B-08.1). Search (CR scope: Number, Title, TaskNumber, Squad, Owner, EmailSubject, Description, B-10). Filters (CR scope: Status, Priority, Squad, Owner, planned range with overlap semantics and "Include unscheduled", custom fields). Accent **New CR**. Toggle **Backlog (n)** (M/S). |
 | Caption | "Workweek Sunday–Thursday · Friday and Saturday hidden", shown in the status bar summary. |
-| Backlog pane | `SplitView` `[gallery-splitview-1]`, pane 280 epx, placed left. The hint reads: "Drag a CR onto a date to schedule it, or select it and choose Schedule." The list is a `ListView` of CR cards (newest first, B-08.3). Each card has the number link, a priority chip, the title, the Owner, and "Squad · n tasks" where "n tasks" opens the linked-task list. Card menu: Open, Schedule on…, Open linked tasks, Delete…. |
+| Backlog pane | `SplitView` `[gallery-splitview-1]`, pane 280 epx, placed left. The hint reads: "Drag a CR onto a date to schedule it, or select it and choose Schedule." The list is a `ListView` of CR cards (newest first, B-08.3). Each card has the number link, a priority chip, the title, the Owner, and "Squad · n tasks" where "n tasks" opens the linked-task list. A click, tap, Enter or Space on the card opens the CR editor; a drag schedules it instead. Card menu: Open, Schedule on…, Open linked tasks, Delete…. |
 | Month surface | A custom `CalendarMonthView`, described after this table. |
 | Week surface | The same control with one week row, a taller row and two-line bars (number + title / owner · status). Week mode uses the same lane cap as Month (4) (see §11 Q6). |
 | Records mode | Described after this table. |
@@ -393,24 +393,23 @@ States: Loading; Empty ("No CRs yet" + New CR); Filtered-empty (the grid still r
 
 | Region | Controls |
 |---|---|
-| Header | Title "Checklists". Subtitle "General to-dos and checklist items of active tasks · 21 open". A section **`SelectorBar`**: **Checklists** · **Reviews (n open)** (the drill-down target "Checklists › Reviews", B-15.6). Search: in Checklists it matches item text, parent title and CR reference; in Reviews it matches every review field (B-09, B-17.5). When search is active, each SelectorBar item shows its match count. Commands: **Add to task…** (task picker → focuses that group's Add-item box, B-09), accent **New to-do** (Checklists) or **New review** (Reviews). |
-| Groups surface (Checklists) | An outer `ScrollViewer` with a virtualizing `ItemsRepeater` of group cards using `UniformGridLayout` (`ItemsStretch=Fill`, `MinItemWidth` 380) `[gallery-itemsrepeater-2]`. Inner items use a nested `ItemsRepeater`, which shares the outer effective viewport so both levels virtualize (T-08). Order: **General to-dos** first, then task groups (newest parent first, then ID). |
+| Header | Title "Checklists". Subtitle "General to-dos, checklist items of active tasks and reviews · 21 open". No section selector: one surface holds every card. Search applies to all cards: item text, parent title and CR reference, and every review field (B-09, B-17.5). Commands: **Add to task…** (task picker → focuses that group's Add-item box, B-09) and accent **New to-do**. |
+| Groups surface | An outer `ScrollViewer` with a virtualizing `ItemsRepeater` of group cards using `UniformGridLayout` (`ItemsStretch=Fill`, `MinItemWidth` 380) `[gallery-itemsrepeater-2]`. Inner items use a nested `ItemsRepeater`, which shares the outer effective viewport so both levels virtualize (T-08). Order: **General to-dos** first, **Reviews** second (both always shown), then task groups (newest parent first, then ID). A task group shows only while it has an open item; one whose last open item is checked here (or which "Add to task…" chose) stays until the user leaves the page (B-09). Completed (n) sections list the most recently completed item first. |
 | General to-dos card | Glyph + "General to-dos" (HeadingLevel 2), "3 of 7 done" + `ProgressBar`, items, an inline **Add an item** `TextBox` (Enter adds; blank input → inline error, no record), and a **Completed (n)** `Expander`, collapsed by default `[gallery-expander-1]`. |
 | Task group card | Effective title (HeadingLevel 2) + Service chip; "CR-1042 · Task 00457 · In Progress"; **Open task** link; progress; incomplete items; Add an item; Completed (n) expander. **Proposed note (Phase 2, pending owner review):** the Add an item box has an icon **Add** button beside it (`Checklists_AddItemButton_{GroupKey}`, name "Add item", tooltip "Add item (Enter)"), so pointer, touch and UI Automation users have an explicit route besides Enter. |
 | Item row | Drag handle (`GripperBarVertical` glyph, decorative). `CheckBox` with the item text as content. Double-click/F2 renames inline (`TextBox`, Enter save, Esc cancel). ⋯ `MenuFlyout`: Rename, **Pop out to card** (task items only, B-16.3), Move up, Move down, Delete…. Completed items show strikethrough **and** sit in the Completed section, so color is never the only cue. |
-| Reviews surface | A single `ListView` card with one line per review (B-17.2): `CheckBox` (Done), Title, and the reference caption "CR-2201 · Task 0091" (text, not a link), plus a ⋯ `MenuFlyout` with **View/Edit** (Enter) and **Delete…**. Below it, a **Completed (n)** `Expander` (collapsed) containing a ListView whose rows show "Done Oct 20". Reorder: drag, or Move up/down. |
+| Reviews card | Styled like General to-dos (B-17.2): glyph + "Reviews" (HeadingLevel 2), "2 of 5 done" + `ProgressBar`, one line per open review: `CheckBox` (Done), Title, and the reference caption "CR-2201 · Task 0091" (text, not a link), plus a ⋯ `MenuFlyout` with **View/Edit** (Enter, or tap the text), Move up/down and **Delete…**. An inline **Add a review** `TextBox` + Add button (Enter adds a title-only review; blank input → inline error, no record), a **New review…** link (the full review dialog), and a **Completed (n)** `Expander` (collapsed) whose rows show "Done Oct 20". |
 | Delete confirmation | A light `Flyout` anchored to the row: "Delete 'Draft API spec'? This can't be undone." with **Delete** / Cancel. This applies to checklist items, General to-dos and reviews (B-05). |
 
 | | L | M | S |
 |---|---|---|---|
 | Groups | `UniformGridLayout`, 2–3 columns (`MinItemWidth` 380) | 1–2 columns | 1 column, full-width inputs (T-08.1) |
-| Reviews | List width capped at 880 epx | Full width | Full width; the reference caption wraps under the title |
 
 States:
 - Loading and Error.
 - Empty is never shown for Checklists, because the General to-dos card always exists.
 - Filtered-empty: "No items match 'abc'" + Clear search.
-- Reviews empty: "No reviews yet" + New review.
+- With no reviews the Reviews card still shows its heading, "0 of 0 done", the Add a review box and New review….
 
 **Pop out** removes the row and shows the save status "Moved to a Subtask card in Backlog — Open card" (one transaction, B-16.3).
 
@@ -420,12 +419,13 @@ States:
 
 **Proposed notes (Phase 8, pending owner review):**
 - **Layout:** the groups surface uses a custom virtualizing `ColumnPackingLayout` (Presentation) instead of `UniformGridLayout`: each card goes to the shortest column in order, so the General to-dos card is always first (top left) and cards keep their own heights. Columns: up to 3 at L, 2 at M, 1 at S (`MinColumnWidth` 380 at L/M). Cards not yet measured use the average measured height, so positions below the viewport can shift as cards are realized.
-- **Reorder** uses Move up / Move down (menu, Alt+Shift+Up/Down) within the item's own section; drag reordering of checklist items and reviews is not built.
+- **Reorder** uses Move up / Move down (menu, Alt+Shift+Up/Down) among open items and open reviews; completed ones are shown by completion, so Move is unavailable there. Drag reordering of checklist items and reviews is not built. Completion recency comes from the audit timestamp for General to-dos and reviews (CompletedOn, then UpdatedAtUtc); task checklist items have no completion timestamp, so the page orders the items it saw completed this session first and the rest in stored order.
 - **Rename** shows an inline `TextBox` (F2, double-click, or menu Rename): Enter saves, Esc cancels; leaving an unchanged box closes it, and a changed box stays open until Enter or Esc.
-- **Search:** a task group shows when its title, service, CR number or task number matches, or when an item matches; when the group itself matches all its items show, otherwise only the matching items. The SelectorBar items show "Checklists (5 matches)" / "Reviews (2 matches)" while searching.
-- **Add to task…** is a flyout with a task search box. Choosing a task shows its group for the rest of the session even when it has no items, clears the search, and focuses the group's Add box.
+- **Search:** a task group shows when its title, service, CR number or task number matches, or when an item matches; when the group itself matches all its items show, otherwise only the matching items. The General to-dos and Reviews cards stay shown and list only their matching rows.
+- **Add to task…** is a flyout with a task search box. Choosing a task shows its group until the user leaves the page, even when it has no open items, clears the search, and focuses the group's Add box.
+- A review drill-down (§2.9) opens the Checklists page, applies its scope to the Reviews card and brings that card into view.
 - **New to-do** (accent, Ctrl+N) focuses the General to-dos Add box; there is no separate dialog.
-- The **Reviews** list is a `ListView` inside the section's `ScrollViewer` (not virtualized); review volumes are expected to be small.
+- The **Reviews** card's rows use nested `ItemsRepeater`s like the other cards; review volumes are expected to be small.
 - The Checklists nav item's `InfoBadge` counts open General to-dos, open checklist items of active tasks, and open reviews; its accessible name is "Checklists, n open".
 
 ### 4.6 Settings (B-04, B-11, T-09)
@@ -502,7 +502,8 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 ### 5.0 Common rules
 - **ContentDialog** `[gallery-contentdialog-1, -2]`:
   - Uses the main window's `XamlRoot` and the current `RequestedTheme`, and dialogs are **serialized** by the `DialogService` (T-08).
-  - Dialogs **never stack**. Every nested decision is an **inline step** inside the same dialog (the content swaps to a step panel with **Back**), or the first dialog closes before the next one opens.
+  - Dialogs **never stack**. Every nested decision is an **inline step** inside the same dialog (the content swaps to a step panel with **Back**), or the first dialog closes before the next one opens. The one exception is the §5.8 dirty-close confirmation: it is a modal layer drawn above the open editor within the same window, not a second `ContentDialog`.
+  - A press (left mouse button, pen or touch) on the smoke outside a dialog closes it **exactly like Cancel** (Esc, the Close button): an editor with unsaved changes shows §5.8, and a confirmation never takes its Primary action. Presses inside the dialog or its own flyouts and drop-downs do not close it.
   - The title row is a `Grid`: the title, a secondary caption (e.g. "Created Oct 6, 2026 · last saved 2 minutes ago"), and a right-aligned **More** `DropDownButton` (⋯) for secondary record commands `[gallery-dropdownbutton-1]`.
   - Footer: Primary = **Save** (or a verb such as "Create task" or "Link permanently"), Close = **Cancel**, Secondary only where it is listed below. `DefaultButton = Primary` for editors and `Close` for destructive confirmations.
 - **Width:**
@@ -518,9 +519,9 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 - **Saving:**
   - The primary and secondary buttons are disabled.
   - A content footer row shows a 16-epx `ProgressRing` and "Saving…".
-  - Repeated clicks are ignored.
+  - Repeated clicks are ignored, and Esc, Cancel and an outside click do nothing until the command finishes.
   - On failure the draft is kept, an InfoBar (Error) shows the typed message, and the buttons are re-enabled.
-- **Dirty close** (Esc, Cancel, window close, navigating away) shows the §5.8 step.
+- **Dirty close** (Esc, Cancel, an outside click, window close, navigating away or a follow-up command that closes the editor) shows the §5.8 confirmation.
 - **Pickers and inputs:**
 
 | Input | Control |
@@ -647,10 +648,13 @@ Route: the task editor and copy dialog (inline), the Grid row ⋯ "Link to CR…
 
 **Proposed notes (Phase 6, pending owner review):** the CR cascade is an inline step of the CR editor, so its buttons are in the step: **Cancel** (focused first; it returns to the form) and **Delete CR and {n} tasks** (a standard button, never the default). The counts are taken from the committed projection when the step opens and stay as confirmed; the CR's current revision is sent, because the confirmation is about the deleted scope, not the CR's content.
 
-### 5.8 Dirty-close step (B-02.8)
-- When the user tries to close, the closing is cancelled and an inline InfoBar (Warning) appears at the top of the dialog content: "You have unsaved changes." with the buttons **Save**, **Discard**, **Continue editing**. Focus moves to Save.
-- Esc chooses Continue editing.
-- When the window close was the trigger, `AppWindow.Closing` is deferred until the user chooses.
+### 5.8 Dirty-close confirmation (B-02.8)
+- When the user tries to close an editor with unsaved changes (any trigger listed in §5.0), the closing is cancelled and a **confirmation dialog** opens above the editor: title "Unsaved changes", body "You have unsaved changes. Do you want to save them?", and the buttons **Save** (accent, default), **Discard**, **Continue editing**. An editor without changes closes without asking.
+- Because WinUI shows one `ContentDialog` per window, the confirmation is a modal layer (`DirtyCloseConfirmation`) drawn with the ContentDialog resources (background, border, corner radius, padding, smoke). Its smoke covers the window, so the editor beneath takes no input while it is open.
+- **Save** runs the editor's normal Save (validation, revision check, operation ID, progress). On success the editor closes; on a validation error or conflict it stays open with the error, the draft is kept, and focus moves to the first invalid field. **Discard** closes the editor without saving. **Continue editing** returns to the editor with focus on the element that had it.
+- Keyboard: focus starts on Save; Enter chooses Save (or the focused button), Esc and a press on the confirmation's smoke choose Continue editing, and Tab cycles within the confirmation only.
+- UI Automation: the layer reports a dialog window named "Unsaved changes" (`DirtyClose_Dialog`), with `DirtyClose_SaveButton`, `DirtyClose_DiscardButton` and `DirtyClose_ContinueButton`.
+- When the window close was the trigger, `AppWindow.Closing` is deferred until the user chooses: Save (when it succeeds) or Discard continues the window close; Continue editing or a failed save cancels it.
 
 ### 5.9 Lookup removal with replacement (B-04, B-11, AC-08/31)
 - **Title:** "Remove status 'Review'?".
@@ -803,6 +807,7 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
 | Event | Focus goes to |
 |---|---|
 | Dialog closed | The invoking element. If that element was deleted, the next item in the same list, otherwise the list itself. |
+| Dirty-close confirmation closed | Continue editing: the editor element that had focus before the confirmation opened. A failed Save: the first invalid field, else that element. Save or Discard that closes the editor: as "Dialog closed". |
 | Board/Checklist move | The moved card or item in its new position. The scroll position is kept (B-07). |
 | Grid commit | The same cell. On Tab, the next editable cell. |
 | Incremental projection update | Focus, the draft and scroll are kept, and updating an item never resets its container (T-07; verified in spike 5). Further rules from spike 5 (ADR 0010):<ul><li>**Selection** is held in ViewModel state and restored after each change set, because the ListView clears it when another row moves above it. The transient null `SelectionChanged` this causes is ignored.</li><li>**A focused or edited item that re-sorts:** while it has an open editor or an unsaved draft, its position is held and the move is applied when editing ends. Otherwise focus follows the item, and if its new position is off-screen, the list scrolls just enough to bring it into view. This is the only case where scroll changes.</li></ul> |
@@ -823,9 +828,9 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
 | Board | `Board_NewTaskButton`, `Board_Column_{StatusId}`, `Board_ColumnAddButton_{StatusId}`, `Board_ColumnMenu_{StatusId}`, `Board_ColumnList_{StatusId}`, `Board_TaskCard_{TaskId}`, `Board_SubtaskCard_{CardId}`, `Board_CardMenuButton_{Id}`, `Board_CardCrLink_{Id}`, `Board_ChecklistCheck_{ItemId}`, `Board_ShowAllLink_{TaskId}`, `Board_ColumnPickerCombo`, `Board_PrevColumnButton`, `Board_NextColumnButton`, `Board_FilteredInfoBar` |
 | Grid | `Grid_Table`, `Grid_ShowArchivedToggle`, `Grid_ColumnsButton`, `Grid_ColumnCheck_{ColumnKey}`, `Grid_ExportButton`, `Grid_NewTaskButton`, `Grid_Header_{ColumnKey}`, `Grid_Row_{Id}`, `Grid_Cell_{Id}_{ColumnKey}`, `Grid_RowMenuButton_{Id}`, `Grid_CellEditor` |
 | Calendar | `Calendar_ModeBar`, `Calendar_ModeMonthItem`, `Calendar_ModeWeekItem`, `Calendar_ModeRecordsItem`, `Calendar_TodayButton`, `Calendar_PrevButton`, `Calendar_NextButton`, `Calendar_PeriodButton`, `Calendar_NewCrButton`, `Calendar_BacklogToggle`, `Calendar_BacklogList`, `Calendar_BacklogCard_{CrId}`, `Calendar_Day_{yyyyMMdd}`, `Calendar_Bar_{CrId}_{yyyyMMdd}` (segment start), `Calendar_BarStartThumb_{CrId}`, `Calendar_BarEndThumb_{CrId}`, `Calendar_MoreLink_{yyyyMMdd}`, `Calendar_OutsideWorkdays_{yyyyMMdd}`, `Calendar_RecordsList`, `Calendar_RecordRow_{CrId}` |
-| Checklists | `Checklists_SectionBar`, `Checklists_AddToTaskButton`, `Checklists_NewTodoButton`, `Checklists_NewReviewButton`, `Checklists_GeneralGroup`, `Checklists_TaskGroup_{TaskId}`, `Checklists_AddItemBox_{GroupKey}`, `Checklists_ItemCheck_{ItemId}`, `Checklists_ItemMenuButton_{ItemId}`, `Checklists_CompletedExpander_{GroupKey}`, `Checklists_ReviewsList`, `Checklists_ReviewCheck_{ReviewId}`, `Checklists_ReviewMenuButton_{ReviewId}`, `Checklists_ReviewsCompletedExpander` (`GroupKey` = `General` or the TaskId) |
+| Checklists | `Checklists_AddToTaskButton`, `Checklists_NewTodoButton`, `Checklists_GeneralGroup`, `Checklists_ReviewsGroup`, `Checklists_NewReviewLink`, `Checklists_TaskGroup_{TaskId}`, `Checklists_AddItemBox_{GroupKey}`, `Checklists_ItemCheck_{ItemId}`, `Checklists_ItemMenuButton_{ItemId}`, `Checklists_CompletedExpander_{GroupKey}`, `Checklists_ReviewCheck_{ReviewId}`, `Checklists_ReviewMenuButton_{ReviewId}` (`GroupKey` = `General`, `Reviews`, or the TaskId) |
 | Settings | `Settings_ThemeCombo`, `Settings_{Lookup}Expander` (TaskStatuses, CrStatuses, Priorities, Squads, People, Tags, TaskFields, CrFields), `Settings_{Lookup}Row_{Id}`, `Settings_{Lookup}AddBox`, `Settings_{Lookup}AddButton`, `Settings_Default{Name}Combo`, `Settings_DefaultCrOwnerPicker`, `Settings_DataLocationCard`, `Settings_OpenDataFolderButton`, `Settings_BackupNowButton`, `Settings_DataPageCard`, `Data_Breadcrumb`, `Data_ModeBar`, `Data_StepList`, `Data_BackButton`, `Data_NextButton`, `Data_CancelButton`, `Data_PreviewList` |
-| Dialogs | `TaskEditor_Dialog`, `TaskEditor_TitleBox`, `TaskEditor_ServiceBox`, `TaskEditor_LinkToCrButton`, `TaskEditor_CrCard`, `TaskEditor_StatusCombo`, `TaskEditor_PriorityCombo`, `TaskEditor_DesignersPicker`, `TaskEditor_DevelopersPicker`, `TaskEditor_TagsPicker`, `TaskEditor_StartDate`, `TaskEditor_EndDate`, `TaskEditor_NotesBox`, `TaskEditor_MoreMenu`, `SubtaskEditor_*`, `CrEditor_NumberBox`, `CrEditor_TaskNumberBox`, `CrEditor_TitleBox`, `CrEditor_OwnerPicker`, `CrEditor_MakeDefaultOwnerCheck`, `CrEditor_SquadCombo`, `CrEditor_LinkedTasksList`, `CrEditor_CreateTaskButton`, `CrEditor_LinkExistingButton`, `ReviewEditor_*`, `CopyTask_*`, `LinkCr_SearchBox`, `LinkCr_ResultsList`, `LinkCr_ConfirmStep`, `LinkCr_LinkButton`, `CascadeDelete_Dialog`, `CascadeDelete_Counts`, `DirtyClose_SaveButton`, `DirtyClose_DiscardButton`, `DirtyClose_ContinueButton`, `Conflict_ReviewButton`, `Conflict_ReloadButton`, `LookupRemove_ReplacementCombo` |
+| Dialogs | `TaskEditor_Dialog`, `TaskEditor_TitleBox`, `TaskEditor_ServiceBox`, `TaskEditor_LinkToCrButton`, `TaskEditor_CrCard`, `TaskEditor_StatusCombo`, `TaskEditor_PriorityCombo`, `TaskEditor_DesignersPicker`, `TaskEditor_DevelopersPicker`, `TaskEditor_TagsPicker`, `TaskEditor_StartDate`, `TaskEditor_EndDate`, `TaskEditor_NotesBox`, `TaskEditor_MoreMenu`, `SubtaskEditor_*`, `CrEditor_NumberBox`, `CrEditor_TaskNumberBox`, `CrEditor_TitleBox`, `CrEditor_OwnerPicker`, `CrEditor_MakeDefaultOwnerCheck`, `CrEditor_SquadCombo`, `CrEditor_LinkedTasksList`, `CrEditor_CreateTaskButton`, `CrEditor_LinkExistingButton`, `ReviewEditor_*`, `CopyTask_*`, `LinkCr_SearchBox`, `LinkCr_ResultsList`, `LinkCr_ConfirmStep`, `LinkCr_LinkButton`, `CascadeDelete_Dialog`, `CascadeDelete_Counts`, `DirtyClose_Dialog`, `DirtyClose_SaveButton`, `DirtyClose_DiscardButton`, `DirtyClose_ContinueButton`, `Conflict_ReviewButton`, `Conflict_ReloadButton`, `LookupRemove_ReplacementCombo` |
 
 ### 8.2 Names, roles and structure
 - **Names:** every interactive control has a name, through visible content or a `Header` (`[gallery-accessibilityscreenreader-1, -2]`) or through `AutomationProperties.Name`/`LabeledBy` `[-5]`. Icon-only buttons name the action and its target: "More actions for CR-1042".
@@ -893,7 +898,7 @@ Use `AutomationPeer.RaiseNotificationEvent` (`AutomationNotificationKind.ActionC
 | CR "Must be unique, including archived CRs" | "Must be unique." | D11 — CRs are not archived |
 | CR footer "Move to backlog, archive, delete" | More: Move to backlog, Delete… (cascade step) | D5, D11 |
 | No Owner anywhere | Owner on the CR editor (required), cards, Grid, Records, Dashboard filter | D14 |
-| No Reviews or Subtask cards | Checklists › Reviews; Subtask cards on Board/Grid; Dashboard cards and chart | D17, D18 |
+| No Reviews or Subtask cards | Checklists Reviews card; Subtask cards on Board/Grid; Dashboard cards and chart | D17, D18 |
 | Import/Export as menu items | Settings › Data page with `BreadcrumbBar` and wizards | D13 |
 | Overdue amber bar | The CR's palette fill + Caution outline + Warning glyph + "Overdue" text | P3, §6.3 |
 | Fixed desktop layout | S/M/L layouts per page | T-08.1 |

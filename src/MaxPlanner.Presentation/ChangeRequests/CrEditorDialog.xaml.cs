@@ -90,7 +90,7 @@ public sealed partial class CrEditorDialog : ContentDialog
 
     private void OnFocusRequested(object? sender, string field)
     {
-        // Design §5.0: focus moves to the first invalid field; §5.8: to Save on the dirty-close prompt.
+        // Design §5.0: focus moves to the first invalid field.
         Control? target = field switch
         {
             "Number" => NumberBox,
@@ -103,7 +103,6 @@ public sealed partial class CrEditorDialog : ContentDialog
             "EmailSubject" => EmailSubjectBox,
             "SolutionDesignUrl" => UrlBox,
             "Description" => DescriptionBox,
-            "DirtyClose" => DirtyCloseSaveButton,
             _ => null,
         };
         if (field == "Owner")
@@ -139,15 +138,8 @@ public sealed partial class CrEditorDialog : ContentDialog
             return;
         }
 
-        // Design §5.8: Esc on the prompt means Continue editing; Esc on an inline step goes back to the form.
-        if (ViewModel.IsDirtyClosePromptOpen)
-        {
-            ViewModel.ContinueEditing();
-            args.Cancel = true;
-            return;
-        }
-
-        args.Cancel = !ViewModel.TryClose();
+        // Design §5.8: while the dirty-close confirmation is open it owns the decision, so the editor stays open.
+        args.Cancel = ViewModel.IsDirtyClosePromptOpen || !ViewModel.TryClose();
     }
 
     private void OnSaveAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -199,12 +191,6 @@ public sealed partial class CrEditorDialog : ContentDialog
     private void OnMoveToBacklogClick(object sender, RoutedEventArgs e) => ViewModel.RequestMoveToBacklog();
 
     private void OnConfirmDeleteClick(object sender, RoutedEventArgs e) => _ = ViewModel.ConfirmDeleteAsync();
-
-    private void OnDirtySaveClick(object sender, RoutedEventArgs e) => _ = ViewModel.SaveFromPromptAsync();
-
-    private void OnDiscardClick(object sender, RoutedEventArgs e) => ViewModel.DiscardChanges();
-
-    private void OnContinueClick(object sender, RoutedEventArgs e) => ViewModel.ContinueEditing();
 
     private void OnReviewConflictClick(object sender, RoutedEventArgs e) => ViewModel.ReviewConflict();
 

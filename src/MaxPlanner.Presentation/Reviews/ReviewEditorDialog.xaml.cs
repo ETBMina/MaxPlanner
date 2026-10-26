@@ -45,7 +45,7 @@ public sealed partial class ReviewEditorDialog : ContentDialog
 
     private void OnFocusRequested(object? sender, string field)
     {
-        // Design §5.0: focus moves to the first invalid field; §5.8: to Save on the dirty-close prompt.
+        // Design §5.0: focus moves to the first invalid field.
         Action? focus = field switch
         {
             "Title" => () => TitleBox.Focus(FocusState.Programmatic),
@@ -54,7 +54,6 @@ public sealed partial class ReviewEditorDialog : ContentDialog
             "Services" => ServicesPicker.FocusBox,
             "Developer" => DeveloperPicker.FocusBox,
             "Comments" => () => CommentsBox.Focus(FocusState.Programmatic),
-            "DirtyClose" => () => DirtyCloseSaveButton.Focus(FocusState.Programmatic),
             _ => null,
         };
         if (focus is not null)
@@ -77,15 +76,8 @@ public sealed partial class ReviewEditorDialog : ContentDialog
             return;
         }
 
-        // Design §5.8: Esc on the prompt means Continue editing.
-        if (ViewModel.IsDirtyClosePromptOpen)
-        {
-            ViewModel.ContinueEditing();
-            args.Cancel = true;
-            return;
-        }
-
-        args.Cancel = !ViewModel.TryClose();
+        // Design §5.8: while the dirty-close confirmation is open it owns the decision, so the editor stays open.
+        args.Cancel = ViewModel.IsDirtyClosePromptOpen || !ViewModel.TryClose();
     }
 
     private void OnSaveAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -97,12 +89,6 @@ public sealed partial class ReviewEditorDialog : ContentDialog
     private void OnDeleteClick(object sender, RoutedEventArgs e) => ViewModel.RequestDelete();
 
     private void OnOpenCrClick(object sender, RoutedEventArgs e) => ViewModel.OpenMatchingCr();
-
-    private void OnDirtySaveClick(object sender, RoutedEventArgs e) => _ = ViewModel.SaveFromPromptAsync();
-
-    private void OnDiscardClick(object sender, RoutedEventArgs e) => ViewModel.DiscardChanges();
-
-    private void OnContinueClick(object sender, RoutedEventArgs e) => ViewModel.ContinueEditing();
 
     private void OnReloadClick(object sender, RoutedEventArgs e) => ViewModel.Reload();
 }

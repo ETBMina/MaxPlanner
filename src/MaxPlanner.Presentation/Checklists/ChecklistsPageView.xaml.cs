@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -23,8 +22,10 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     // The strings of the code-built confirmation flyout.
     private static readonly ResourceStrings Strings = new();
 
+    // The Reviews card's key in IndexOfCard (it has no Add box focus target from the page commands).
+    private const string ReviewsCardKey = "Reviews";
+
     private FrameworkElement? _menuAnchor;
-    private bool _isSyncingSection;
     private readonly Common.Controls.CompactSearch _search;
 
     public ChecklistsPageView(ChecklistsPageViewModel viewModel)
@@ -32,8 +33,6 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
-        SyncSectionBar();
-        viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusAddBoxRequested += OnFocusAddBoxRequested;
         SizeChanged += (_, e) =>
         {
@@ -46,9 +45,6 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     }
 
     public ChecklistsPageViewModel ViewModel { get; }
-
-    /// <summary>The Reviews section, bound directly so no x:Bind path crosses a nested ViewModel.</summary>
-    public ReviewsViewModel Reviews => ViewModel.Reviews;
 
     /// <summary>Completed rows are struck through as well as listed under Completed (P3: never color alone).</summary>
     public static TextDecorations Strike(bool isDone) => isDone ? TextDecorations.Strikethrough : TextDecorations.None;
@@ -73,43 +69,26 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     }
 
     /// <inheritdoc/>
-    public void OnShown() => PageContent.OnPageShown();
+    public void OnShown()
+    {
+        PageContent.OnPageShown();
+        if (ViewModel.TakeRevealReviews())
+        {
+            BringCardIntoView(ReviewsCardKey, focusAutomationId: null);
+        }
+    }
 
     /// <inheritdoc/>
-    public void OnHidden() => PageContent.OnPageHidden();
-
-    // The Completed list gets at most half of the section's height, so it keeps a bounded viewport and virtualizes
-    // when expanded while the open list above stays visible.
-    private void OnReviewsPanelSizeChanged(object sender, SizeChangedEventArgs e) =>
-        CompletedReviewsList.MaxHeight = Math.Max(160, e.NewSize.Height / 2);
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    public void OnHidden()
     {
-        if (e.PropertyName == nameof(ChecklistsPageViewModel.Section))
-        {
-            SyncSectionBar();
-        }
+        PageContent.OnPageHidden();
+        ViewModel.OnPageLeft();
     }
 
-    private void SyncSectionBar()
-    {
-        _isSyncingSection = true;
-        SectionBar.SelectedItem = ViewModel.IsReviewsSection ? ReviewsItem : ChecklistsItem;
-        _isSyncingSection = false;
-    }
-
-    private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
-    {
-        if (!_isSyncingSection)
-        {
-            ViewModel.SetSection(ReferenceEquals(sender.SelectedItem, ReviewsItem) ? ChecklistsSection.Reviews : ChecklistsSection.Checklists);
-        }
-    }
-
-    // Checked/Unchecked rather than Click, because UI Automation's Toggle (Narrator, voice access) changes the state
-    // without a Click. The committed state follows the save; a failed save puts the checkbox back. Changes that only
-    // mirror the committed value (binding updates, container reuse) are not commands.
-    private void OnItemToggled(object sender, RoutedEventArgs e)
+    // Click rather than Checked/Unchecked: Click is raised only by user input, so the IsChecked binding updating a
+    // recycled container never sends a command. The box shows the new value until the commit arrives; a failed save
+    // puts it back (RestoreCommitted).
+    private void OnItemClick(object sender, RoutedEventArgs e)
     {
         if (sender is CheckBox { Tag: ChecklistItemViewModel item } box && box.IsChecked != item.IsChecked)
         {
@@ -117,7 +96,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         }
     }
 
-    private void OnReviewToggled(object sender, RoutedEventArgs e)
+    private void OnReviewClick(object sender, RoutedEventArgs e)
     {
         if (sender is CheckBox { Tag: ReviewRowViewModel row } box && box.IsChecked != row.IsDone)
         {
@@ -279,31 +258,39 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         }
     }
 
-    // Design §7.6: Enter on a review row = View/Edit (ItemClick); Delete asks in the light flyout.
-    private void OnReviewItemClick(object sender, ItemClickEventArgs e)
+    // Tapping a review's text opens View/Edit, as the ⋯ menu does.
+    private void OnReviewTextTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (e.ClickedItem is ReviewRowViewModel row)
+        if (sender is FrameworkElement { Tag: ReviewRowViewModel row })
         {
+            e.Handled = true;
             _ = row.EditAsync();
         }
     }
 
-    private void OnReviewListKeyDown(object sender, KeyRoutedEventArgs e)
+    // Design §7.6 on a focused review checkbox: Enter = View/Edit, Delete asks in the light flyout,
+    // Alt+Shift+Up/Down reorders open reviews.
+    private void OnReviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.OriginalSource is ListViewItem { Content: ReviewRowViewModel row } container)
+        if (sender is not CheckBox { Tag: ReviewRowViewModel row } box)
         {
-            var alt = IsDown(VirtualKey.Menu);
-            var shift = IsDown(VirtualKey.Shift);
-            if (e.Key == VirtualKey.Delete)
-            {
-                e.Handled = true;
-                ShowDeleteFlyout(container, row.DeletePrompt, row.DeleteAsync);
-            }
-            else if (alt && shift && e.Key is VirtualKey.Up or VirtualKey.Down)
-            {
-                e.Handled = true;
-                (e.Key == VirtualKey.Up ? row.MoveUpCommand : row.MoveDownCommand).Execute(null);
-            }
+            return;
+        }
+
+        if (e.Key == VirtualKey.Enter)
+        {
+            e.Handled = true;
+            _ = row.EditAsync();
+        }
+        else if (e.Key == VirtualKey.Delete)
+        {
+            e.Handled = true;
+            ShowDeleteFlyout(box, row.DeletePrompt, row.DeleteAsync);
+        }
+        else if (IsDown(VirtualKey.Menu) && IsDown(VirtualKey.Shift) && e.Key is VirtualKey.Up or VirtualKey.Down)
+        {
+            e.Handled = true;
+            (e.Key == VirtualKey.Up ? row.MoveUpCommand : row.MoveDownCommand).Execute(null);
         }
     }
 
@@ -346,6 +333,15 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         }
     }
 
+    private void OnReviewsAddBoxKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Enter && sender is TextBox { Tag: ReviewsViewModel reviews } && reviews.AddReviewCommand.CanExecute(null))
+        {
+            e.Handled = true;
+            reviews.AddReviewCommand.Execute(null);
+        }
+    }
+
     private void OnGroupAddBoxKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter && sender is TextBox { Tag: ChecklistGroupViewModel group } && group.AddItemCommand.CanExecute(null))
@@ -381,9 +377,11 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     }
 
     /// <summary>"Add to task…" and "New to-do": brings the card into view and focuses its Add box (B-09).</summary>
-    private void OnFocusAddBoxRequested(object? sender, string groupKey)
+    private void OnFocusAddBoxRequested(object? sender, string groupKey) =>
+        BringCardIntoView(groupKey, "Checklists_AddItemBox_" + groupKey);
+
+    private void BringCardIntoView(string groupKey, string? focusAutomationId)
     {
-        var automationId = "Checklists_AddItemBox_" + groupKey;
         var attempts = 0;
         void TryFocus()
         {
@@ -391,7 +389,12 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
             if (index >= 0 && GroupsRepeater.GetOrCreateElement(index) is FrameworkElement card)
             {
                 card.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = Common.Services.MotionSettings.AnimationsEnabled });
-                if (FindByAutomationId(card, automationId) is Control box)
+                if (focusAutomationId is null)
+                {
+                    return;
+                }
+
+                if (FindByAutomationId(card, focusAutomationId) is Control box)
                 {
                     box.Focus(FocusState.Keyboard);
                     return;
@@ -413,6 +416,11 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         if (groupKey == GeneralTodosViewModel.GroupKey)
         {
             return 0;
+        }
+
+        if (groupKey == ReviewsCardKey)
+        {
+            return 1;
         }
 
         for (var i = 0; i < ViewModel.Cards.Count; i++)
@@ -450,9 +458,6 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         var padding = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
         HeaderRoot.Padding = width >= 1008 ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
         GroupsRepeater.Margin = new Thickness(padding, 0, padding, 24);
-        ReviewsPanel.Margin = new Thickness(padding, 0, padding, 24);
-        ReviewsPanel.MaxWidth = width >= 1008 ? 880 : double.PositiveInfinity;
-        ReviewsPanel.HorizontalAlignment = width >= 1008 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
         _search.Apply(width);
         NoMatchesBar.Margin = new Thickness(padding, 0, padding, 8);
         GroupsLayout.MaxColumns = width >= 1008 ? 3 : width >= 640 ? 2 : 1;

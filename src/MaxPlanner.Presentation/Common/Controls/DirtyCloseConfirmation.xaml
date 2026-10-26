@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Design §5.8: the Save / Discard / Continue editing confirmation, drawn as a modal layer above the open editor.
+    WinUI allows one ContentDialog per XamlRoot, so this mirrors the ContentDialog template's resources instead.
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Common.Controls.DirtyCloseConfirmation"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.AutomationId="DirtyClose_Dialog"
+    IsTabStop="False"
+    KeyDown="OnKeyDown">
+    <Grid>
+        <!-- The smoke covers the whole window, so the editor beneath takes no pointer input; a press means Continue editing. -->
+        <Rectangle
+            AutomationProperties.AccessibilityView="Raw"
+            Fill="{ThemeResource ContentDialogSmokeFill}"
+            PointerPressed="OnSmokePressed" />
+        <Border
+            x:Name="Card"
+            MinWidth="{ThemeResource ContentDialogMinWidth}"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="{ThemeResource ContentDialogBackground}"
+            BackgroundSizing="InnerBorderEdge"
+            BorderBrush="{ThemeResource ContentDialogBorderBrush}"
+            BorderThickness="{ThemeResource ContentDialogBorderWidth}"
+            CornerRadius="{ThemeResource OverlayCornerRadius}"
+            TabFocusNavigation="Cycle">
+            <Grid CornerRadius="{ThemeResource OverlayCornerRadius}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel
+                    Padding="{ThemeResource ContentDialogPadding}"
+                    Background="{ThemeResource ContentDialogTopOverlay}"
+                    BorderBrush="{ThemeResource ContentDialogSeparatorBorderBrush}"
+                    BorderThickness="{ThemeResource ContentDialogSeparatorThickness}">
+                    <TextBlock
+                        x:Name="TitleText"
+                        x:Uid="DirtyClose_Title"
+                        Margin="{ThemeResource ContentDialogTitleMargin}"
+                        AutomationProperties.HeadingLevel="Level1"
+                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        x:Name="MessageText"
+                        x:Uid="DirtyClose_Message"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+                <Grid
+                    Grid.Row="1"
+                    Padding="{ThemeResource ContentDialogPadding}"
+                    Background="{ThemeResource ContentDialogBackground}"
+                    ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        x:Name="SaveButton"
+                        x:Uid="DirtyClose_SaveButton"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="DirtyClose_SaveButton"
+                        Click="OnSaveClick"
+                        Style="{StaticResource AccentButtonStyle}" />
+                    <Button
+                        x:Uid="DirtyClose_DiscardButton"
+                        Grid.Column="1"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="DirtyClose_DiscardButton"
+                        Click="OnDiscardClick" />
+                    <Button
+                        x:Uid="DirtyClose_ContinueButton"
+                        Grid.Column="2"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="DirtyClose_ContinueButton"
+                        Click="OnContinueClick" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

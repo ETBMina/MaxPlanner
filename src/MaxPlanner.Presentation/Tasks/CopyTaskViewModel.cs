@@ -25,7 +25,7 @@ public enum CopyStep
 /// The Copy task dialog (B-06, AC-09, design §5.5): options, an optional permanent link, then a read-only
 /// review of the resulting draft before Create copy. Cancel creates nothing. Use on the UI thread.
 /// </summary>
-public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewModel
+public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewModel, IBusyDialog
 {
     private readonly WorkspaceContext _context;
     private readonly TaskReadModel _source;

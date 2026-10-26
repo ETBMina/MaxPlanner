@@ -116,7 +116,7 @@ public sealed class WorkspaceViewModel : IDisposable
     /// <summary>
     /// Design §2.9: the destination gets a replacement filter context (never intersected with its old filters), the
     /// context is pushed for Return and Back, and the shell shows the destination. Task and Subtask card metrics open
-    /// the Grid, Overdue CRs open Calendar › Records, and review metrics open Checklists › Reviews (B-10, AC-20).
+    /// the Grid, Overdue CRs open Calendar › Records, and review metrics open the Checklists Reviews card (B-10, AC-20).
     /// </summary>
     private void OnDrillDownRequested(object? sender, DrillDownRequest request)
     {

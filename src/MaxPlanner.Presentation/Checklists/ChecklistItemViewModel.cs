@@ -21,7 +21,7 @@ public interface IChecklistItemOwner
     /// <returns>Null when saved, otherwise the message to show under the rename box.</returns>
     Task<string?> RenameAsync(ChecklistItemViewModel item, string text);
 
-    /// <summary>Move up/down within the item's own section (open or completed), next to its visible neighbour.</summary>
+    /// <summary>Move up/down among the open items, next to the visible neighbour (completed items are shown by completion).</summary>
     Task MoveAsync(ChecklistItemViewModel item, bool up);
 
     bool CanMove(ChecklistItemViewModel item, bool up);

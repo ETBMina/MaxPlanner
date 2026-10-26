@@ -43,7 +43,7 @@ public sealed partial class FieldOptionRowViewModel : ObservableObject
 /// fixed after the first save), Kind* (fixed after creation: no silent retyping), Required, Default, and the
 /// options of a Lookup field. Saving runs one Settings use case; errors stay in the dialog.
 /// </summary>
-public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, IDialogViewModel
+public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, IDialogViewModel, IBusyDialog
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 

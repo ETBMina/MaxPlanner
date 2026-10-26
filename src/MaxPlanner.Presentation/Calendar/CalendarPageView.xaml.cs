@@ -280,6 +280,16 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
     }
 
+    // A tap, click, Enter or Space on a backlog card opens the CR editor. ListView raises ItemClick only for a
+    // completed press without a drag, and never for presses the card's links and menu button already handled.
+    private void OnBacklogItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is CalendarRecordViewModel record)
+        {
+            _ = ViewModel.OpenAsync(record.Id);
+        }
+    }
+
     private void OnBacklogOpenClick(object sender, RoutedEventArgs e)
     {
         if (Record(sender) is { } record)
@@ -335,6 +345,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     }
 
     // Design §7.5: Ctrl+Shift+S on a backlog card opens Schedule on…; Delete deletes (confirmed in the CR editor step).
+    // Enter and Space open the card through ItemClick.
     private void OnBacklogKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (BacklogList.SelectedItem is not CalendarRecordViewModel record || BacklogList.ContainerFromItem(record) is not FrameworkElement container)
@@ -348,11 +359,6 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         {
             e.Handled = true;
             ShowScheduleFlyout(container, record.Model);
-        }
-        else if (e.Key == VirtualKey.Enter)
-        {
-            e.Handled = true;
-            _ = ViewModel.OpenAsync(record.Id);
         }
         else if (e.Key == VirtualKey.Delete)
         {
