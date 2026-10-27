@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Design §2.3 row 2: the page search as a Search icon button that expands in place into the search box. The control
+    only ever occupies its own layout slot, so expanding never moves a neighbour; when the slot is too narrow the box
+    overlays the neighbouring commands on an opaque surface instead (see ExpandingSearchBox.ArrangeOverride).
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Common.Controls.ExpandingSearchBox"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    HorizontalAlignment="Left"
+    VerticalAlignment="Center"
+    IsTabStop="False">
+    <Grid x:Name="Root">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="PlacementStates">
+                <VisualState x:Name="Inline" />
+                <!-- Over neighbouring commands the box needs an opaque surface; the text control fill is translucent. -->
+                <VisualState x:Name="Overlay">
+                    <VisualState.Setters>
+                        <Setter Target="Surface.Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Button
+            x:Name="SearchButton"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Stretch"
+            Click="OnSearchButtonClick">
+            <FontIcon
+                AutomationProperties.AccessibilityView="Raw"
+                FontSize="14"
+                Glyph="&#xE721;" />
+        </Button>
+
+        <Grid
+            x:Name="Surface"
+            CornerRadius="{ThemeResource ControlCornerRadius}"
+            SizeChanged="OnSurfaceSizeChanged"
+            Visibility="Collapsed">
+            <AutoSuggestBox
+                x:Name="Box"
+                AutomationProperties.LandmarkType="Search"
+                LostFocus="OnPartLostFocus"
+                PlaceholderText="{x:Bind PlaceholderText, Mode=OneWay}"
+                TextChanged="OnBoxTextChanged" />
+            <!--
+                Replaces the text box's own delete button, which shows only while the box has focus: an active search
+                must stay clearable after focus leaves. Not a tab stop, like the native delete button; Esc is the
+                keyboard route.
+            -->
+            <Button
+                x:Name="ClearButton"
+                x:Uid="ExpandingSearch_ClearButton"
+                Width="28"
+                Height="24"
+                Margin="0,0,4,0"
+                Padding="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Click="OnClearButtonClick"
+                IsTabStop="False"
+                LostFocus="OnPartLostFocus"
+                Style="{StaticResource SubtleButtonStyle}">
+                <FontIcon
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="12"
+                    Glyph="&#xE894;" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

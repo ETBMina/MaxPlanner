@@ -32,7 +32,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private BoardCardList? _feedbackList;
     private ScrollViewer? _feedbackScroller;
     private double _feedbackPointerY;
-    private readonly Common.Controls.CompactSearch _search;
 
     // Drag edge auto-scroll: depth into the edge zone, signed by direction (-1..1), per axis.
     private const double AutoScrollZone = 56;
@@ -48,7 +47,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         SizeChanged += (_, e) =>
         {
             // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
@@ -109,7 +107,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public bool FocusSearch()
     {
-        _search.FocusSearch();
+        SearchBox.FocusSearch();
         return true;
     }
 
@@ -170,7 +168,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
         ColumnsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
         _isSmall = width < 640;
-        _search.Apply(width);
         ChipsBar.IsCompact = _isSmall;
         ColumnsScroller.HorizontalSnapPointsType = _isSmall ? SnapPointsType.MandatorySingle : SnapPointsType.None;
         ColumnPickerRow.Visibility = _isSmall ? Visibility.Visible : Visibility.Collapsed;

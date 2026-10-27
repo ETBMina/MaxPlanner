@@ -346,35 +346,30 @@
                         <TextBlock x:Uid="Calendar_NewCrText" />
                     </StackPanel>
                 </Button>
-                <StackPanel
-                    x:Name="SearchBoxHost"
+                <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
+                <Grid
                     Grid.Row="1"
                     Grid.ColumnSpan="3"
-                    Orientation="Horizontal"
-                    Spacing="12">
-                    <AutoSuggestBox
-                        x:Name="SearchBox"
-                        x:Uid="Calendar_SearchBox"
-                        Width="280"
-                        AutomationProperties.AutomationId="Calendar_SearchBox"
-                        AutomationProperties.LandmarkType="Search"
-                        QueryIcon="Find"
-                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <!-- Design §2.3 S: the search box moves to the full-width row below; this button opens it. -->
-                    <ToggleButton
-                        x:Name="SearchToggle"
-                        x:Uid="Calendar_SearchToggle"
-                        AutomationProperties.AutomationId="Calendar_SearchToggle">
-                        <FontIcon FontSize="14" Glyph="&#xE721;" />
-                    </ToggleButton>
+                    ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <filters:FilterButton PageKey="Calendar" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
                     <ToggleButton
+                        Grid.Column="1"
                         AutomationProperties.AutomationId="Calendar_BacklogToggle"
                         Content="{x:Bind ViewModel.BacklogToggleText, Mode=OneWay}"
                         IsChecked="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}" />
-                </StackPanel>
+                    <controls:ExpandingSearchBox
+                        x:Name="SearchBox"
+                        x:Uid="Calendar_Search"
+                        Grid.Column="2"
+                        AutomationIdPrefix="Calendar"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                </Grid>
             </Grid>
-            <Grid x:Name="CompactSearchRow" />
             <filters:FilterChipsBar
                 x:Name="ChipsBar"
                 PageKey="Calendar"

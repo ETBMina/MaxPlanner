@@ -655,12 +655,6 @@
   <data name="Board_MenuDelete" xml:space="preserve">
     <value>Delete…</value>
   </data>
-  <data name="Board_SearchBox.PlaceholderText" xml:space="preserve">
-    <value>Search tasks</value>
-  </data>
-  <data name="Board_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Search tasks</value>
-  </data>
   <data name="Board_NewTaskButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>New task</value>
   </data>
@@ -1471,12 +1465,6 @@
   <data name="Calendar_NewCrText.Text" xml:space="preserve">
     <value>New CR</value>
   </data>
-  <data name="Calendar_SearchBox.PlaceholderText" xml:space="preserve">
-    <value>Search CRs</value>
-  </data>
-  <data name="Calendar_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Search change requests</value>
-  </data>
   <data name="Calendar_ClearSearchButton.Content" xml:space="preserve">
     <value>Clear all filters</value>
   </data>
@@ -1770,12 +1758,6 @@
   </data>
   <data name="Checklists_NewTodoText.Text" xml:space="preserve">
     <value>New to-do</value>
-  </data>
-  <data name="Checklists_SearchBox.PlaceholderText" xml:space="preserve">
-    <value>Search checklists and reviews</value>
-  </data>
-  <data name="Checklists_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Search checklists and reviews</value>
   </data>
   <data name="Checklists_ClearSearchButton.Content" xml:space="preserve">
     <value>Clear search</value>
@@ -2827,12 +2809,6 @@
   <data name="Filters_Kind_CustomField" xml:space="preserve">
     <value>custom field or option</value>
   </data>
-  <data name="Grid_SearchBox.PlaceholderText" xml:space="preserve">
-    <value>Search tasks</value>
-  </data>
-  <data name="Grid_SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Search tasks</value>
-  </data>
   <data name="Grid_OnlyArchivedTitle" xml:space="preserve">
     <value>Only archived tasks exist</value>
   </data>
@@ -3850,28 +3826,46 @@
   <data name="Recovery_RestoreUndoneNotice" xml:space="preserve">
     <value>The interrupted restore was undone; the previous data is back.</value>
   </data>
-  <data name="Board_SearchToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+  <data name="Board_Search.PlaceholderText" xml:space="preserve">
     <value>Search tasks</value>
   </data>
-  <data name="Board_SearchToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Search tasks (Ctrl+F)</value>
-  </data>
-  <data name="Grid_SearchToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+  <data name="Board_Search.SearchName" xml:space="preserve">
     <value>Search tasks</value>
   </data>
-  <data name="Grid_SearchToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+  <data name="Board_Search.ButtonToolTip" xml:space="preserve">
     <value>Search tasks (Ctrl+F)</value>
   </data>
-  <data name="Calendar_SearchToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+  <data name="Grid_Search.PlaceholderText" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="Grid_Search.SearchName" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="Grid_Search.ButtonToolTip" xml:space="preserve">
+    <value>Search tasks (Ctrl+F)</value>
+  </data>
+  <data name="Calendar_Search.PlaceholderText" xml:space="preserve">
     <value>Search CRs</value>
   </data>
-  <data name="Calendar_SearchToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+  <data name="Calendar_Search.SearchName" xml:space="preserve">
+    <value>Search change requests</value>
+  </data>
+  <data name="Calendar_Search.ButtonToolTip" xml:space="preserve">
     <value>Search CRs (Ctrl+F)</value>
   </data>
-  <data name="Checklists_SearchToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+  <data name="Checklists_Search.PlaceholderText" xml:space="preserve">
     <value>Search checklists and reviews</value>
   </data>
-  <data name="Checklists_SearchToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+  <data name="Checklists_Search.SearchName" xml:space="preserve">
+    <value>Search checklists and reviews</value>
+  </data>
+  <data name="Checklists_Search.ButtonToolTip" xml:space="preserve">
     <value>Search checklists and reviews (Ctrl+F)</value>
+  </data>
+  <data name="ExpandingSearch_ClearButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="ExpandingSearch_ClearButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear search (Esc)</value>
   </data>
 </root>

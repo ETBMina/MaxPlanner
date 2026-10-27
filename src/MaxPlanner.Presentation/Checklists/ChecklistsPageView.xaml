@@ -490,7 +490,6 @@
                     Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
             </StackPanel>
             <Grid
-                x:Name="SearchBoxHost"
                 ColumnSpacing="12"
                 RowSpacing="8">
                 <Grid.ColumnDefinitions>
@@ -501,13 +500,6 @@
                     Grid.Column="1"
                     Orientation="Horizontal"
                     Spacing="8">
-                    <!-- Design §2.3 S: the search box moves to the full-width row below; this button opens it. -->
-                    <ToggleButton
-                        x:Name="SearchToggle"
-                        x:Uid="Checklists_SearchToggle"
-                        AutomationProperties.AutomationId="Checklists_SearchToggle">
-                        <FontIcon FontSize="14" Glyph="&#xE721;" />
-                    </ToggleButton>
                     <Button
                         x:Name="AddToTaskButton"
                         x:Uid="Checklists_AddToTaskButton"
@@ -540,18 +532,14 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
-                <AutoSuggestBox
+                <!-- Design §2.3: the search icon is last in its (left) group and expands into the free space after it. -->
+                <controls:ExpandingSearchBox
                     x:Name="SearchBox"
-                    x:Uid="Checklists_SearchBox"
-                    MinWidth="200"
-                    MaxWidth="320"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="Checklists_SearchBox"
-                    AutomationProperties.LandmarkType="Search"
-                    QueryIcon="Find"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    x:Uid="Checklists_Search"
+                    AutomationIdPrefix="Checklists"
+                    ExpandedWidth="320"
+                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
             </Grid>
-            <Grid x:Name="CompactSearchRow" />
             <!-- Design §2.9: a review drill-down shows its context and a removable "From Dashboard" chip. -->
             <InfoBar
                 AutomationProperties.AutomationId="Checklists_DashboardInfoBar"

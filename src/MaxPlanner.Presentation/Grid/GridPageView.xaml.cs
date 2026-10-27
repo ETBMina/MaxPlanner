@@ -62,13 +62,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     private bool _isShown;
     private ScrollViewer? _rowScroller;
     private bool _isRowThumbDragging;
-    private readonly CompactSearch _search;
 
     public GridPageView(GridPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         Table.Host = this;
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();
@@ -142,7 +140,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     /// <inheritdoc/>
     public bool FocusSearch()
     {
-        _search.FocusSearch();
+        SearchBox.FocusSearch();
         return true;
     }
 
@@ -1315,7 +1313,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         // Design §4.3 S: only New task keeps its label inline; the CommandBar overflows the rest by itself.
         NewTaskText.Visibility = width >= 500 ? Visibility.Visible : Visibility.Collapsed;
         var small = width < 640;
-        _search.Apply(width);
         ChipsBar.IsCompact = small;
         if (small != _isSmall)
         {

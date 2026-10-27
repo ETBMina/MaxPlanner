@@ -368,27 +368,20 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel
-                    x:Name="SearchBoxHost"
-                    Orientation="Horizontal"
-                    Spacing="8">
-                    <AutoSuggestBox
-                        x:Name="SearchBox"
-                        x:Uid="Board_SearchBox"
-                        Width="280"
-                        AutomationProperties.AutomationId="Board_SearchBox"
-                        AutomationProperties.LandmarkType="Search"
-                        QueryIcon="Find"
-                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <!-- Design §2.3 S: the search box moves to the full-width row below; this button opens it. -->
-                    <ToggleButton
-                        x:Name="SearchToggle"
-                        x:Uid="Board_SearchToggle"
-                        AutomationProperties.AutomationId="Board_SearchToggle">
-                        <FontIcon FontSize="14" Glyph="&#xE721;" />
-                    </ToggleButton>
+                <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <filters:FilterButton PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-                </StackPanel>
+                    <controls:ExpandingSearchBox
+                        x:Name="SearchBox"
+                        x:Uid="Board_Search"
+                        Grid.Column="1"
+                        AutomationIdPrefix="Board"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                </Grid>
                 <Button
                     x:Uid="Board_NewTaskButton"
                     Grid.Column="1"
@@ -404,7 +397,6 @@
                     </StackPanel>
                 </Button>
             </Grid>
-            <Grid x:Name="CompactSearchRow" />
             <!-- Design §4.2 S: one column per viewport, chosen here or with the previous/next buttons. -->
             <Grid
                 x:Name="ColumnPickerRow"

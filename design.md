@@ -53,8 +53,15 @@ Each page starts with a header `Grid` that has these rows:
 | Row | Content | L | M | S |
 |---|---|---|---|---|
 | 1 Title | `TextBlock` `TitleTextBlockStyle`, `AutomationProperties.HeadingLevel=Level1`, plus a secondary subtitle (`CaptionTextBlockStyle`, `TextFillColorSecondaryBrush`), e.g. "Wednesday, October 21, 2026 · non-archived records only" | Same line | Same line | Subtitle wraps below |
-| 2 Commands | Left: search `AutoSuggestBox` (`QueryIcon` Search, 240–320 epx) `[gallery-autosuggestbox-1]` and a **Filters** button (Filter glyph, "Filters" label, `InfoBadge` with the active-field count). Right: the page `CommandBar` (§2.4) and one **accent** primary `Button` (`AccentButtonStyle`) placed outside the CommandBar | One row | One row; the search box shrinks to 200 | Search becomes a Search `AppBarButton` that expands a full-width search row under the header; the primary button keeps its icon and shows its label when space allows |
+| 2 Commands | Left: a **Filters** button (Filter glyph, "Filters" label, `InfoBadge` with the active-field count) and, last in that group, the **expanding search** (§2.3.1). Right: the page `CommandBar` (§2.4) and one **accent** primary `Button` (`AccentButtonStyle`) placed outside the CommandBar | One row; search expands to 280 epx | One row; search expands to what the free space allows | One row; search overlays the Filters group (§2.3.1); the primary button keeps its icon and shows its label when space allows |
 | 3 Context | Active-filter chips (§2.6) and Calendar/Grid view selectors | Wrap | Wrap | Wrap; the chips row scrolls horizontally when there are more than 2 rows |
+
+#### 2.3.1 Expanding search (`Common/Controls/ExpandingSearchBox`, Board, Grid, Calendar, Checklists)
+- **Collapsed:** a default-style icon `Button` (Find glyph E721, 14 px) named and tooltipped with the page scope ("Search tasks", tooltip "Search tasks (Ctrl+F)"). It is the last control of its left command group (Checklists: the only one), so it grows only into the free space after it.
+- **Expanded:** the `AutoSuggestBox` (`LandmarkType=Search`, up to 280 epx, Checklists 320) bound to the page's persisted search, with an inline subtle **Clear search** button (Clear glyph E894; replaces the text box's own delete button, not a tab stop). Its layout footprint never exceeds its own slot, so no neighbour moves or reflows. When the slot is narrower than 200 epx the box overlays the neighbouring commands of its row on `SolidBackgroundFillColorBaseBrush`. The reveal is a 167 ms fade, skipped when `UISettings.AnimationsEnabled` is off.
+- **Expands** on click/Enter/Space (focus moves into the box), on Ctrl+F, and by itself whenever the search text is non-empty (a restored B-10 search or a Dashboard drill-down), without taking focus.
+- **Collapses** on Esc or Clear (text cleared exactly like an emptied box, focus returns to the Search button), when focus leaves with empty text (Tab out), or when the text is cleared elsewhere while focus is outside. With non-empty text it never collapses: an active search stays visible.
+- AutomationIds: `{Page}_SearchButton`, `{Page}_SearchBox`, `{Page}_SearchClearButton`.
 
 Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to the right edge only when it scrolls horizontally (Board, Grid).
 
@@ -97,7 +104,7 @@ Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to 
 
 **Proposed notes (Phase 11, pending owner review):**
 - The Filters button and flyout are one shared `FilterButton` control and the context row is one `FilterChipsBar` control, used by Board, Grid and Calendar. Lookup chips wrap with a small native `WrapPanel` (ADR 0021: no Toolkit), not the Gallery `WrapPanel`.
-- **Apply** is the accent button; Enter activates it when it has focus and **Ctrl+Enter** applies from any field, because plain Enter belongs to the CR picker and the text boxes. Ctrl+Shift+F opens the flyout and Ctrl+Shift+L clears all filters on the visible page; Ctrl+F (focus search) is not wired yet.
+- **Apply** is the accent button; Enter activates it when it has focus and **Ctrl+Enter** applies from any field, because plain Enter belongs to the CR picker and the text boxes. Ctrl+Shift+F opens the flyout and Ctrl+Shift+L clears all filters on the visible page; Ctrl+F expands and focuses the page search (§2.3.1).
 - The flyout lists CR Owner chips only for people who own a CR (plus any already selected), so the chip group stays short. Designers, Developers and Tags use the TokenPicker with existing names only (no add-new in a filter).
 - The search box applies immediately and is part of the scope (persisted with it, shown as a "Search: …" chip); it is outside the draft.
 - Custom fields: Text, Multiline and URL use "contains"; Number uses Min/Max; Date uses From/To with "Include records without a {field}"; Lookup uses chips. People/Tags custom fields are not filterable in release 1 (B-10 lists them under "need not be filterable").
@@ -230,7 +237,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 
 | Region | Controls |
 |---|---|
-| Header | Title "Board". Search (task scope). Filters (shared Board/Grid scope, B-10). Accent **New task** (opens the editor with the default status). CommandBar: New Subtask card… (task picker), Clear all filters; overflow: Board help. |
+| Header | Title "Board". Filters, then the expanding Search icon (task scope, §2.3.1). Filters share the Board/Grid scope (B-10). Accent **New task** (opens the editor with the default status). CommandBar: New Subtask card… (task picker), Clear all filters; overflow: Board help. |
 | Surface | A horizontal `ScrollViewer` (`HorizontalScrollMode=Enabled`, vertical disabled) hosting a non-virtualized `ItemsRepeater` of **columns**, because there are ≤ ~20 statuses. Each column is a fixed-width card (`CardBackgroundFillColorSecondaryBrush`) with a header and a **virtualized `ListView`** in a bounded height (the column fills the viewport height) `[gallery-listview-3]`. The scroll axes do not conflict: the page scrolls horizontally and each column scrolls vertically. |
 | Column header | Status name (`BodyStrongTextBlockStyle`, HeadingLevel 2), a count chip ("6", or "4 of 6" when filtered: visible / total active, B-07), status flag glyph (§6.2), **+** button ("New task in In Progress"), and **⋯** `MenuFlyout` (Collapse column, Workflow settings…). |
 | Task card | Anatomy listed after this table. |
@@ -263,7 +270,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 |---|---|---|---|
 | Columns | Width 300, as many as fit, horizontal scroll | Width 280, about 2 visible, scroll | **One column per viewport** (width = viewport − 32), `HorizontalSnapPointsType=MandatorySingle`. A column `ComboBox` "Column: In Progress (6)" plus ‹ › buttons navigate between columns, so no column shrinks below readable width (T-08.1). |
 | Card | Full anatomy | Full anatomy | Checklist preview limited to 2 items |
-| Header | Search inline | Search narrower | Search collapses (§2.3) |
+| Header | Search icon expands inline | Search expands into the free space | Search overlays the Filters button when expanded (§2.3.1) |
 
 States: Loading; Empty (statuses exist but no tasks: "No tasks yet" + New task, and the empty columns still render); Filtered-empty (columns render with "0 of n"); Error. **Filtered mode:**
 - A page InfoBar (Informational) says "Reordering within a column is off while search or filters are active. Dropping a card on another status adds it to the end of that column." The InfoBar has a Clear filters action.
@@ -287,7 +294,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 
 | Region | Controls |
 |---|---|
-| Header | Title "Grid". Search. Filters (shared with Board). Tasks and Subtask cards always appear together; the Kind column identifies each row, and there is no Kind filter (B-07, owner decision). Accent **New task**. CommandBar: **Show archived** (`AppBarToggleButton`, persisted, B-05), **Columns** (flyout), **Export…** (current view → Data page export with the scope preset), Clear all filters, overflow: Reset column layout. |
+| Header | Title "Grid". Filters (shared with Board), then the expanding Search icon (§2.3.1). Tasks and Subtask cards always appear together; the Kind column identifies each row, and there is no Kind filter (B-07, owner decision). Accent **New task**. CommandBar: **Show archived** (`AppBarToggleButton`, persisted, B-05), **Columns** (flyout), **Export…** (current view → Data page export with the scope preset), Clear all filters, overflow: Reset column layout. |
 | Chips row | Active filters plus "From Dashboard" (§2.9) |
 | Table | Virtualized rows with sticky column headers. Header buttons sort (Ascending → Descending → default), and their names are "Sort by Title, currently ascending". Columns can be resized (pointer, or Alt+Left/Right on a focused header) and reordered (drag or header menu "Move left/right"). The column chooser is a `Flyout` with a `CheckBox` per column plus Reset. Widths are clamped to 48–800 on restore. |
 | Row | **No bulk-selection checkbox column**, since there are no bulk commands in release 1. Row header ⋯ `MenuFlyout`: Open, Copy…, Link to CR… (unlinked tasks only), Add Subtask card, Archive/Restore, Delete…. Archived rows use secondary text, an "Archived" chip in the Archived column, and are read-only except Link to CR… (B-05). |
@@ -337,7 +344,7 @@ States: Loading, Empty, Filtered-empty (distinct from Empty; when only archived 
 
 | Region | Controls |
 |---|---|
-| Header | Title "Calendar". A mode **`SelectorBar`**: Month · Week · Records `[gallery-selectorbar-1, -2]` (replaces the mock's toggle and its "CR records" button, D13). Period navigation (Month/Week only): **Today**, **‹ ›** (`Button`s with names "Previous month"/"Next month"), and a **period button** "October 2026 ˅" that opens a `Flyout` with `CalendarView` (`DisplayMode=Year` for Month, `Month` for Week) `[gallery-calendarview-1]` (the accessible date selector, B-08.1). Search (CR scope: Number, Title, TaskNumber, Squad, Owner, EmailSubject, Description, B-10). Filters (CR scope: Status, Priority, Squad, Owner, planned range with overlap semantics and "Include unscheduled", custom fields). Accent **New CR**. Toggle **Backlog (n)** (M/S). |
+| Header | Title "Calendar". A mode **`SelectorBar`**: Month · Week · Records `[gallery-selectorbar-1, -2]` (replaces the mock's toggle and its "CR records" button, D13). Period navigation (Month/Week only): **Today**, **‹ ›** (`Button`s with names "Previous month"/"Next month"), and a **period button** "October 2026 ˅" that opens a `Flyout` with `CalendarView` (`DisplayMode=Year` for Month, `Month` for Week) `[gallery-calendarview-1]` (the accessible date selector, B-08.1). Expanding Search icon, last after Filters and Backlog (§2.3.1; CR scope: Number, Title, TaskNumber, Squad, Owner, EmailSubject, Description, B-10). Filters (CR scope: Status, Priority, Squad, Owner, planned range with overlap semantics and "Include unscheduled", custom fields). Accent **New CR**. Toggle **Backlog (n)** (M/S). |
 | Caption | "Workweek Sunday–Thursday · Friday and Saturday hidden", shown in the status bar summary. |
 | Backlog pane | `SplitView` `[gallery-splitview-1]`, pane 280 epx, placed left. The hint reads: "Drag a CR onto a date to schedule it, or select it and choose Schedule." The list is a `ListView` of CR cards (newest first, B-08.3). Each card has the number link, a priority chip, the title, the Owner, and "Squad · n tasks" where "n tasks" opens the linked-task list. A click, tap, Enter or Space on the card opens the CR editor; a drag schedules it instead. Card menu: Open, Schedule on…, Open linked tasks, Delete…. |
 | Month surface | A custom `CalendarMonthView`, described after this table. |
@@ -393,7 +400,7 @@ States: Loading; Empty ("No CRs yet" + New CR); Filtered-empty (the grid still r
 
 | Region | Controls |
 |---|---|
-| Header | Title "Checklists". Subtitle "General to-dos, checklist items of active tasks and reviews · 21 open". No section selector: one surface holds every card. Search applies to all cards: item text, parent title and CR reference, and every review field (B-09, B-17.5). Commands: **Add to task…** (task picker → focuses that group's Add-item box, B-09) and accent **New to-do**. |
+| Header | Title "Checklists". Subtitle "General to-dos, checklist items of active tasks and reviews · 21 open". No section selector: one surface holds every card. The expanding Search icon (§2.3.1) sits left in the commands row; search applies to all cards: item text, parent title and CR reference, and every review field (B-09, B-17.5). Commands: **Add to task…** (task picker → focuses that group's Add-item box, B-09) and accent **New to-do**. |
 | Groups surface | An outer `ScrollViewer` with a virtualizing `ItemsRepeater` of group cards using `UniformGridLayout` (`ItemsStretch=Fill`, `MinItemWidth` 380) `[gallery-itemsrepeater-2]`. Inner items use a nested `ItemsRepeater`, which shares the outer effective viewport so both levels virtualize (T-08). Order: **General to-dos** first, **Reviews** second (both always shown), then task groups (newest parent first, then ID). A task group shows only while it has an open item; one whose last open item is checked here (or which "Add to task…" chose) stays until the user leaves the page (B-09). Completed (n) sections list the most recently completed item first. |
 | General to-dos card | Glyph + "General to-dos" (HeadingLevel 2), "3 of 7 done" + `ProgressBar`, items, an inline **Add an item** `TextBox` (Enter adds; blank input → inline error, no record), and a **Completed (n)** `Expander`, collapsed by default `[gallery-expander-1]`. |
 | Task group card | Effective title (HeadingLevel 2) + Service chip; "CR-1042 · Task 00457 · In Progress"; **Open task** link; progress; incomplete items; Add an item; Completed (n) expander. **Proposed note (Phase 2, pending owner review):** the Add an item box has an icon **Add** button beside it (`Checklists_AddItemButton_{GroupKey}`, name "Add item", tooltip "Add item (Enter)"), so pointer, touch and UI Automation users have an explicit route besides Enter. |
@@ -748,7 +755,7 @@ The Dashboard "Needs attention" badge uses Warning glyph + text in `SystemFillCo
 |---|---|
 | Ctrl+1 … Ctrl+5 | Dashboard, Board, Grid, Calendar, Checklists |
 | Ctrl+, | Settings |
-| Ctrl+F | Focus the page search |
+| Ctrl+F | Expand and focus the page search (§2.3.1); Esc in it clears and collapses it |
 | Ctrl+Shift+F | Open the Filters flyout |
 | Ctrl+Shift+L | Clear all filters |
 | Ctrl+N | The page's primary New (task / CR / to-do / review) |
@@ -812,6 +819,7 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
 | Grid commit | The same cell. On Tab, the next editable cell. |
 | Incremental projection update | Focus, the draft and scroll are kept, and updating an item never resets its container (T-07; verified in spike 5). Further rules from spike 5 (ADR 0010):<ul><li>**Selection** is held in ViewModel state and restored after each change set, because the ListView clears it when another row moves above it. The transient null `SelectionChanged` this causes is ignored.</li><li>**A focused or edited item that re-sorts:** while it has an open editor or an unsaved draft, its position is held and the move is applied when editing ends. Otherwise focus follows the item, and if its new position is off-screen, the list scrolls just enough to bring it into view. This is the only case where scroll changes.</li></ul> |
 | Flyout Apply/Cancel | The Filters button |
+| Search collapsed (Esc / Clear) | The Search button. Tab out of an empty box collapses it and focus continues in tab order. |
 | Breakpoint change / Snap / DPI | The same element when it is still visible. If it was collapsed into overflow or a pane, its route button. |
 | Page navigation | The page title (programmatic focus with a heading), then the user moves on with Tab. Return via drill-down restores the prior focused element. |
 
@@ -823,7 +831,7 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
 | Area | Key ids |
 |---|---|
 | Shell | `Shell_TitleBar`, `Shell_Nav`, `Shell_NavDashboardItem`, `Shell_NavBoardItem`, `Shell_NavGridItem`, `Shell_NavCalendarItem`, `Shell_NavChecklistsItem`, `Shell_NavSettingsItem`, `Shell_BackButton`, `Shell_AppInfoBar`, `Shell_SaveStatus`, `Shell_StatusSummary` |
-| Common | `{Page}_SearchBox`, `{Page}_FiltersButton`, `{Page}_FiltersApplyButton`, `{Page}_FiltersCancelButton`, `{Page}_FiltersClearButton`, `{Page}_ClearAllFiltersLink`, `{Page}_FilterChip_{Field}`, `{Page}_StateView`, `{Page}_RetryButton`, `{Page}_ReturnToDashboardButton` |
+| Common | `{Page}_SearchButton`, `{Page}_SearchBox`, `{Page}_SearchClearButton`, `{Page}_FiltersButton`, `{Page}_FiltersApplyButton`, `{Page}_FiltersCancelButton`, `{Page}_FiltersClearButton`, `{Page}_ClearAllFiltersLink`, `{Page}_FilterChip_{Field}`, `{Page}_StateView`, `{Page}_RetryButton`, `{Page}_ReturnToDashboardButton` |
 | Dashboard | `Dashboard_SquadCombo`, `Dashboard_PriorityCombo`, `Dashboard_OwnerCombo`, `Dashboard_ClearFiltersLink`, `Dashboard_ActiveTasksCard`, `Dashboard_CompletedTasksCard`, `Dashboard_UnscheduledTasksCard`, `Dashboard_OverdueCrsCard`, `Dashboard_ActiveSubtaskCardsCard`, `Dashboard_ReviewsCard`, `Dashboard_StatusChart`, `Dashboard_StatusChartTableToggle`, `Dashboard_StatusBar_{StatusId}`, `Dashboard_SquadBar_{SquadId|General}`, `Dashboard_ReviewDevBar_{PersonId|Unassigned}`, `Dashboard_OverdueList`, `Dashboard_OverdueRow_{CrId}`, `Dashboard_OverdueViewAllLink`, `Dashboard_UnlinkedList`, `Dashboard_UnlinkedRow_{TaskId}`, `Dashboard_UnlinkedViewAllLink` |
 | Board | `Board_NewTaskButton`, `Board_Column_{StatusId}`, `Board_ColumnAddButton_{StatusId}`, `Board_ColumnMenu_{StatusId}`, `Board_ColumnList_{StatusId}`, `Board_TaskCard_{TaskId}`, `Board_SubtaskCard_{CardId}`, `Board_CardMenuButton_{Id}`, `Board_CardCrLink_{Id}`, `Board_ChecklistCheck_{ItemId}`, `Board_ShowAllLink_{TaskId}`, `Board_ColumnPickerCombo`, `Board_PrevColumnButton`, `Board_NextColumnButton`, `Board_FilteredInfoBar` |
 | Grid | `Grid_Table`, `Grid_ShowArchivedToggle`, `Grid_ColumnsButton`, `Grid_ColumnCheck_{ColumnKey}`, `Grid_ExportButton`, `Grid_NewTaskButton`, `Grid_Header_{ColumnKey}`, `Grid_Row_{Id}`, `Grid_Cell_{Id}_{ColumnKey}`, `Grid_RowMenuButton_{Id}`, `Grid_CellEditor` |

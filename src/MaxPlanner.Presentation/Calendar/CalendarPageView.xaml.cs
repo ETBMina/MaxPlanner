@@ -37,13 +37,11 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     private bool _isSurfaceStale;
     private bool? _wasWide;
     private double _gutter = 32;
-    private readonly Common.Controls.CompactSearch _search;
 
     public CalendarPageView(CalendarPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _search = new Common.Controls.CompactSearch(SearchBox, SearchToggle, CompactSearchRow, SearchBoxHost);
         MonthView.ViewModel = viewModel;
         BuildSortHeaders();
         SyncModeBar();
@@ -75,7 +73,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public bool FocusSearch()
     {
-        _search.FocusSearch();
+        SearchBox.FocusSearch();
         return true;
     }
 
@@ -190,7 +188,6 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         HeaderRoot.Padding = wide ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
         _gutter = padding;
         ViewModel.SetCompact(width < 640);
-        _search.Apply(width);
         ChipsBar.IsCompact = width < 640;
         Split.DisplayMode = wide ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
 
