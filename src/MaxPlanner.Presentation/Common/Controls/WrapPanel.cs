@@ -19,6 +19,10 @@ public sealed partial class WrapPanel : Panel
     public static readonly DependencyProperty WrapWidthProperty = DependencyProperty.Register(
         nameof(WrapWidth), typeof(double), typeof(WrapPanel), new PropertyMetadata(0d, (d, _) => ((WrapPanel)d).InvalidateMeasure()));
 
+    // Layout rounding can hand a content-sized panel a width a fraction below its desired width; without this
+    // tolerance the last child of an exactly-fitting line would wrap onto a new line.
+    private const double WrapTolerance = 0.5;
+
     private bool _isSingleLine;
 
     public double Spacing
@@ -59,7 +63,7 @@ public sealed partial class WrapPanel : Panel
             var size = child.DesiredSize;
             singleLineWidth += (singleLineWidth > 0 ? Spacing : 0) + size.Width;
             singleLineHeight = Math.Max(singleLineHeight, size.Height);
-            if (lineWidth > 0 && lineWidth + Spacing + size.Width > width)
+            if (lineWidth > 0 && lineWidth + Spacing + size.Width > width + WrapTolerance)
             {
                 totalWidth = Math.Max(totalWidth, lineWidth);
                 totalHeight += lineHeight + Spacing;
@@ -90,7 +94,7 @@ public sealed partial class WrapPanel : Panel
         foreach (var child in Children)
         {
             var size = child.DesiredSize;
-            if (x > 0 && x + size.Width > wrapWidth)
+            if (x > 0 && x + size.Width > wrapWidth + WrapTolerance)
             {
                 x = 0;
                 y += lineHeight + Spacing;

@@ -87,7 +87,12 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
             BacklogPredicate(Filters.Predicate(Today)));
         _records.Initialized += (_, _) => Refresh();
         _backlog.Initialized += (_, _) => Refresh();
-        ((INotifyCollectionChanged)_backlog.Items).CollectionChanged += (_, _) => OnPropertyChanged(nameof(BacklogToggleText));
+        ((INotifyCollectionChanged)_backlog.Items).CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(BacklogToggleText));
+            OnPropertyChanged(nameof(BacklogCountText));
+            OnPropertyChanged(nameof(BacklogCountName));
+        };
         ((INotifyCollectionChanged)_records.Items).CollectionChanged += (_, _) => UpdateSummary();
         Agenda = new ReadOnlyObservableCollection<CalendarAgendaRow>(_agenda);
 
@@ -207,11 +212,40 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     /// <summary>"Backlog (4)" (design §4.4 toggle).</summary>
     public string BacklogToggleText => _context.Strings.Format("Calendar_BacklogToggle", Backlog.Count);
 
-    /// <summary>"October 2026" or "Oct 11 – Oct 15, 2026" (design §4.4 period button).</summary>
-    public string PeriodText => Mode == CalendarMode.Week
-        ? _context.Strings.Format("Calendar_WeekPeriod", Workweek.WeekStart(Anchor).ToString("MMM d", CultureInfo.CurrentCulture),
-            Workweek.WeekStart(Anchor).AddDays(4).ToString("MMM d", CultureInfo.CurrentCulture), Workweek.WeekStart(Anchor).AddDays(4).Year)
-        : Anchor.ToString("Y", CultureInfo.CurrentCulture);
+    /// <summary>The backlog size alone, for the count badge in the backlog heading (design §4.4).</summary>
+    public string BacklogCountText => Backlog.Count.ToString(CultureInfo.CurrentCulture);
+
+    /// <summary>"4 CRs in the backlog": the accessible name of the count badge.</summary>
+    public string BacklogCountName => _context.Strings.Format("Calendar_BacklogCountName", Backlog.Count);
+
+    /// <summary>"Oct 2026" or "Oct 11 – Oct 15, 2026" (design §4.4 period button).</summary>
+    public string PeriodText => PeriodTextFor(Mode, Anchor);
+
+    /// <summary>
+    /// The period button text of every period in the current year for a mode, so the view can give the button the width
+    /// of the longest one and keep it from resizing as the user navigates.
+    /// </summary>
+    public IReadOnlyList<string> PeriodTextCandidates(CalendarMode mode)
+    {
+        var year = Today.Year;
+        if (mode == CalendarMode.Week)
+        {
+            var weeks = new List<string>();
+            for (var week = Workweek.WeekStart(new DateOnly(year, 1, 1)); week.Year <= year; week = week.AddDays(7))
+            {
+                weeks.Add(PeriodTextFor(CalendarMode.Week, week));
+            }
+
+            return weeks;
+        }
+
+        return Enumerable.Range(1, 12).Select(month => PeriodTextFor(CalendarMode.Month, new DateOnly(year, month, 1))).ToList();
+    }
+
+    private string PeriodTextFor(CalendarMode mode, DateOnly anchor) => mode == CalendarMode.Week
+        ? _context.Strings.Format("Calendar_WeekPeriod", Workweek.WeekStart(anchor).ToString("MMM d", CultureInfo.CurrentCulture),
+            Workweek.WeekStart(anchor).AddDays(4).ToString("MMM d", CultureInfo.CurrentCulture), Workweek.WeekStart(anchor).AddDays(4).Year)
+        : anchor.ToString("MMM yyyy", CultureInfo.CurrentCulture);
 
     public string PreviousName => _context.Strings.GetString(Mode == CalendarMode.Week ? "Calendar_PreviousWeek" : "Calendar_PreviousMonth");
 

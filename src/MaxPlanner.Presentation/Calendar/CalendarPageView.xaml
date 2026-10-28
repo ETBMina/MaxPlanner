@@ -249,6 +249,11 @@
                 AutomationProperties.AutomationId="Calendar_PageTitle"
                 AutomationProperties.HeadingLevel="Level1"
                 Style="{StaticResource PageTitleTextStyle}" />
+            <!--
+                Design §2.3 / §4.4: mode selector then the search icon on the left; period navigation, Filters and the accent
+                New CR on the right. The search column is the star column, so the icon expands into the free space after it.
+                Below the L breakpoint the right group moves to its own row (ApplyBreakpoint) and wraps.
+            -->
             <Grid x:Name="CommandRow" ColumnSpacing="12" RowSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -279,107 +284,156 @@
                         AutomationProperties.AutomationId="Calendar_ModeRecordsItem"
                         Tag="Records" />
                 </SelectorBar>
-                <!-- Period navigation (Month/Week only): Today, ‹, the period button with the date selector, ›. -->
-                <StackPanel
-                    x:Name="PeriodPanel"
+                <controls:ExpandingSearchBox
+                    x:Name="SearchBox"
+                    x:Uid="Calendar_Search"
                     Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Orientation="Horizontal"
-                    Spacing="4"
-                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSurfaceMode), Mode=OneWay}">
-                    <Button
-                        x:Uid="Calendar_TodayButton"
-                        AutomationProperties.AutomationId="Calendar_TodayButton"
-                        Command="{x:Bind ViewModel.GoToTodayCommand}">
-                        <Button.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="T" Modifiers="Control" />
-                        </Button.KeyboardAccelerators>
-                    </Button>
-                    <Button
-                        AutomationProperties.AutomationId="Calendar_PrevButton"
-                        AutomationProperties.Name="{x:Bind ViewModel.PreviousName, Mode=OneWay}"
-                        Command="{x:Bind ViewModel.PreviousCommand}"
-                        ToolTipService.ToolTip="{x:Bind ViewModel.PreviousName, Mode=OneWay}">
-                        <FontIcon FontSize="12" Glyph="&#xE76B;" />
-                    </Button>
-                    <Button
-                        x:Name="PeriodButton"
-                        AutomationProperties.AutomationId="Calendar_PeriodButton"
-                        AutomationProperties.HelpText="{x:Bind ViewModel.Text('Calendar_PeriodHelp'), Mode=OneTime}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="{x:Bind ViewModel.PeriodText, Mode=OneWay}" />
-                            <FontIcon
-                                AutomationProperties.AccessibilityView="Raw"
-                                FontSize="10"
-                                Glyph="&#xE70D;" />
-                        </StackPanel>
-                        <Button.Flyout>
-                            <Flyout x:Name="PeriodFlyout" Opening="OnPeriodFlyoutOpening">
-                                <CalendarView
-                                    x:Name="PeriodCalendar"
-                                    AutomationProperties.AutomationId="Calendar_PeriodCalendar"
-                                    FirstDayOfWeek="Sunday"
-                                    SelectedDatesChanged="OnPeriodDateSelected"
-                                    SelectionMode="Single" />
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button
-                        AutomationProperties.AutomationId="Calendar_NextButton"
-                        AutomationProperties.Name="{x:Bind ViewModel.NextName, Mode=OneWay}"
-                        Command="{x:Bind ViewModel.NextCommand}"
-                        ToolTipService.ToolTip="{x:Bind ViewModel.NextName, Mode=OneWay}">
-                        <FontIcon FontSize="12" Glyph="&#xE76C;" />
-                    </Button>
-                </StackPanel>
-                <Button
-                    x:Uid="Calendar_NewCrButton"
-                    Grid.Column="2"
-                    AutomationProperties.AutomationId="Calendar_NewCrButton"
-                    Command="{x:Bind ViewModel.NewChangeRequestCommand}"
-                    Style="{StaticResource AccentButtonStyle}">
-                    <Button.KeyboardAccelerators>
-                        <KeyboardAccelerator Key="N" Modifiers="Control" />
-                    </Button.KeyboardAccelerators>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="14" Glyph="&#xE710;" />
-                        <TextBlock x:Uid="Calendar_NewCrText" />
-                    </StackPanel>
-                </Button>
-                <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
+                    AutomationIdPrefix="Calendar"
+                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                <!--
+                    A Grid with content-sized columns, not a wrapping panel: a wrapping panel in this Auto column wrapped New CR
+                    onto a second line in Records and the row did not grow. ApplyBreakpoint re-places the children at S.
+                -->
                 <Grid
-                    Grid.Row="1"
-                    Grid.ColumnSpan="3"
-                    ColumnSpacing="12">
+                    x:Name="CommandGroup"
+                    Grid.Column="2"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    ColumnSpacing="8"
+                    RowSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <filters:FilterButton PageKey="Calendar" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-                    <ToggleButton
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <!-- Period navigation (Month/Week only): Today, the joined ‹ › pair, then the period button with the date selector. -->
+                    <StackPanel
+                        x:Name="PeriodPanel"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSurfaceMode), Mode=OneWay}">
+                        <Button
+                            x:Uid="Calendar_TodayButton"
+                            AutomationProperties.AutomationId="Calendar_TodayButton"
+                            Command="{x:Bind ViewModel.GoToTodayCommand}">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="T" Modifiers="Control" />
+                            </Button.KeyboardAccelerators>
+                        </Button>
+                        <!--
+                            The arrows are one pill the height of the neighbouring buttons: a 32-epx border around two 30-epx
+                            subtle buttons and a hairline divider. Each button rounds only its outer corners.
+                        -->
+                        <Border
+                            Background="{ThemeResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}">
+                            <StackPanel Orientation="Horizontal">
+                                <Button
+                                    Width="30"
+                                    Height="30"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    AutomationProperties.AutomationId="Calendar_PrevButton"
+                                    AutomationProperties.Name="{x:Bind ViewModel.PreviousName, Mode=OneWay}"
+                                    CornerRadius="3,0,0,3"
+                                    Command="{x:Bind ViewModel.PreviousCommand}"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.PreviousName, Mode=OneWay}">
+                                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                                </Button>
+                                <Rectangle
+                                    Width="1"
+                                    Fill="{ThemeResource ControlStrokeColorDefaultBrush}" />
+                                <Button
+                                    Width="30"
+                                    Height="30"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    AutomationProperties.AutomationId="Calendar_NextButton"
+                                    AutomationProperties.Name="{x:Bind ViewModel.NextName, Mode=OneWay}"
+                                    CornerRadius="0,3,3,0"
+                                    Command="{x:Bind ViewModel.NextCommand}"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.NextName, Mode=OneWay}">
+                                    <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                        <Button
+                            x:Name="PeriodButton"
+                            AutomationProperties.AutomationId="Calendar_PeriodButton"
+                            AutomationProperties.HelpText="{x:Bind ViewModel.Text('Calendar_PeriodHelp'), Mode=OneTime}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <!-- MinWidth is set from the widest period text of the mode (ApplyPeriodWidth), so navigating never resizes the button. -->
+                                <TextBlock
+                                    x:Name="PeriodLabel"
+                                    Text="{x:Bind ViewModel.PeriodText, Mode=OneWay}"
+                                    TextAlignment="Center" />
+                                <FontIcon
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    FontSize="10"
+                                    Glyph="&#xE70D;" />
+                            </StackPanel>
+                            <Button.Flyout>
+                                <Flyout x:Name="PeriodFlyout" Opening="OnPeriodFlyoutOpening">
+                                    <CalendarView
+                                        x:Name="PeriodCalendar"
+                                        AutomationProperties.AutomationId="Calendar_PeriodCalendar"
+                                        FirstDayOfWeek="Sunday"
+                                        SelectedDatesChanged="OnPeriodDateSelected"
+                                        SelectionMode="Single" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
+                    <filters:FilterButton
+                        x:Name="CommandFilterButton"
                         Grid.Column="1"
-                        AutomationProperties.AutomationId="Calendar_BacklogToggle"
-                        Content="{x:Bind ViewModel.BacklogToggleText, Mode=OneWay}"
-                        IsChecked="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}" />
-                    <controls:ExpandingSearchBox
-                        x:Name="SearchBox"
-                        x:Uid="Calendar_Search"
+                        PageKey="Calendar"
+                        Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                    <Button
+                        x:Name="NewCrButton"
+                        x:Uid="Calendar_NewCrButton"
                         Grid.Column="2"
-                        AutomationIdPrefix="Calendar"
-                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                        AutomationProperties.AutomationId="Calendar_NewCrButton"
+                        Command="{x:Bind ViewModel.NewChangeRequestCommand}"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="N" Modifiers="Control" />
+                        </Button.KeyboardAccelerators>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xE710;" />
+                            <TextBlock x:Uid="Calendar_NewCrText" />
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Grid>
+            <!--
+                The context rows take no height or stack spacing while they have nothing to show: a closed InfoBar or an
+                empty chips bar would otherwise still add its 8-epx spacing to the header.
+            -->
             <filters:FilterChipsBar
                 x:Name="ChipsBar"
                 PageKey="Calendar"
-                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
+                Visibility="{x:Bind common:BindFunctions.VisibleAny(ViewModel.Filters.HasChips, ViewModel.Filters.IsFromDashboard, ViewModel.Filters.IsInvalidNoticeOpen), Mode=OneWay}" />
             <!-- B-08.12: a saved CR hidden by the current filters stays discoverable. -->
             <InfoBar
                 AutomationProperties.AutomationId="Calendar_SavedHiddenInfoBar"
                 IsOpen="{x:Bind ViewModel.IsSavedHiddenOpen, Mode=TwoWay}"
                 Message="{x:Bind ViewModel.SavedHiddenMessage, Mode=OneWay}"
-                Severity="Informational">
+                Severity="Informational"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSavedHiddenOpen), Mode=OneWay}">
                 <InfoBar.ActionButton>
                     <Button
                         x:Uid="Calendar_SavedHiddenClearButton"
@@ -397,7 +451,8 @@
             IsClosable="False"
             IsOpen="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}"
             Message="{x:Bind ViewModel.NoMatchesText, Mode=OneTime}"
-            Severity="Informational">
+            Severity="Informational"
+            Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasNoMatches), Mode=OneWay}">
             <InfoBar.ActionButton>
                 <Button
                     x:Uid="Calendar_ClearSearchButton"
@@ -416,30 +471,120 @@
             State="{x:Bind ViewModel.State, Mode=OneWay}">
             <SplitView
                 x:Name="Split"
-                DisplayMode="Inline"
+                CompactPaneLength="68"
+                DisplayMode="CompactInline"
                 IsPaneOpen="{x:Bind ViewModel.IsBacklogOpen, Mode=TwoWay}"
                 OpenPaneLength="312"
                 PaneBackground="Transparent"
                 PanePlacement="Left">
                 <!--
-                    The pane is a nested card inset by the page gutter (design §3); the pane length is the 280-epx card
-                    plus that gutter, and ApplyBreakpoint keeps both in step with the content padding.
+                    Closed, the pane is the compact strip: a rail button (the Backlog toggle) on the grid edge. Open, it is a
+                    nested card inset by the page gutter (design §3); the pane length is the 280-epx card plus that gutter,
+                    and ApplyBreakpoint keeps the rail, the card and the content padding in step.
                 -->
                 <SplitView.Pane>
+                    <Grid>
+                    <Button
+                        x:Name="BacklogRail"
+                        Width="36"
+                        Margin="32,0,0,16"
+                        Padding="0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Top"
+                        AutomationProperties.AutomationId="Calendar_BacklogToggle"
+                        AutomationProperties.Name="{x:Bind ViewModel.BacklogToggleText, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.ToggleBacklogCommand}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.BacklogToggleText, Mode=OneWay}"
+                        Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsBacklogOpen), Mode=OneWay}">
+                        <StackPanel
+                            Margin="0,19,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top"
+                            Spacing="12">
+                            <FontIcon
+                                AutomationProperties.AccessibilityView="Raw"
+                                FontSize="12"
+                                Glyph="&#xE76C;" />
+                            <!--
+                                Layout ignores a rotation: the TextBlock keeps its horizontal 104 x 20 box and turns a quarter
+                                around its centre inside a 20 x 104 slot, so the text reads top to bottom. A Canvas does not
+                                clip the wider box to the slot, which a Grid cell would.
+                            -->
+                            <Canvas Width="20" Height="104">
+                                <TextBlock
+                                    Canvas.Left="-42"
+                                    Canvas.Top="42"
+                                    Width="104"
+                                    Height="20"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    TextAlignment="Center"
+                                    RenderTransformOrigin="0.5,0.5"
+                                    Text="{x:Bind ViewModel.BacklogToggleText, Mode=OneWay}"
+                                    TextWrapping="NoWrap">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform Angle="90" />
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Canvas>
+                        </StackPanel>
+                    </Button>
                     <Border
                         x:Name="BacklogCard"
                         Margin="32,0,0,16"
-                        Style="{StaticResource SecondaryCardBorderStyle}">
+                        Style="{StaticResource SecondaryCardBorderStyle}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsBacklogOpen), Mode=OneWay}">
                         <Grid Padding="12" RowSpacing="8">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <TextBlock
-                                x:Uid="Calendar_BacklogHeading"
-                                AutomationProperties.HeadingLevel="Level2"
-                                Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <!--
+                                The collapse arrow is the first item of the heading, level with the rail's expand arrow, so
+                                one pointer position toggles the pane both ways. The negative margin centres it over the
+                                rail glyph (the card padding is 12 epx; the rail glyph sits 18 epx from the pane edge).
+                            -->
+                            <Grid Margin="-8,0,0,0" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button
+                                    x:Uid="Calendar_BacklogCollapseButton"
+                                    Width="28"
+                                    Height="28"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    AutomationProperties.AutomationId="Calendar_BacklogCollapseButton"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{x:Bind ViewModel.ToggleBacklogCommand}">
+                                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                                </Button>
+                                <TextBlock
+                                    x:Uid="Calendar_BacklogHeading"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.HeadingLevel="Level2"
+                                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                                <Border
+                                    Grid.Column="2"
+                                    Padding="8,2"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="Calendar_BacklogCount"
+                                    AutomationProperties.Name="{x:Bind ViewModel.BacklogCountName, Mode=OneWay}"
+                                    Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                    CornerRadius="{ThemeResource ControlCornerRadius}">
+                                    <TextBlock
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.BacklogCountText, Mode=OneWay}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
                                 x:Uid="Calendar_BacklogHint"
                                 Grid.Row="1"
@@ -468,6 +613,7 @@
                             </ListView>
                         </Grid>
                     </Border>
+                    </Grid>
                 </SplitView.Pane>
 
                 <Grid x:Name="ContentRoot" Padding="32,0,32,16">

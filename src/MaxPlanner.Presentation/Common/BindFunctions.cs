@@ -12,6 +12,9 @@ public static class BindFunctions
 
     public static Visibility VisibleAll(bool first, bool second) => first && second ? Visibility.Visible : Visibility.Collapsed;
 
+    /// <summary>Visible when any of three conditions holds, e.g. a header row that is empty unless something is open.</summary>
+    public static Visibility VisibleAny(bool first, bool second, bool third) => first || second || third ? Visibility.Visible : Visibility.Collapsed;
+
     public static bool All(bool first, bool second) => first && second;
 
     public static bool Not(bool value) => !value;

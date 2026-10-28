@@ -58,6 +58,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
             }
         };
         SurfaceScroller.SizeChanged += (_, _) => FitSurface();
+        Loaded += (_, _) => ApplyPeriodWidth();
     }
 
     public CalendarPageViewModel ViewModel { get; }
@@ -135,6 +136,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
             case nameof(CalendarPageViewModel.Mode):
                 SyncModeBar();
                 ApplyModeVisibility();
+                ApplyPeriodWidth();
                 break;
             case nameof(CalendarPageViewModel.IsCompact):
                 ApplyModeVisibility();
@@ -148,6 +150,27 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
             default:
                 break;
         }
+    }
+
+    // The period button keeps one width per mode: the widest text any period of the year produces (design §4.4), so
+    // a short month does not resize the neighbouring buttons while the user steps through the calendar.
+    private void ApplyPeriodWidth()
+    {
+        var probe = new TextBlock
+        {
+            FontFamily = PeriodLabel.FontFamily,
+            FontSize = PeriodLabel.FontSize,
+            FontWeight = PeriodLabel.FontWeight,
+        };
+        var widest = 0d;
+        foreach (var text in ViewModel.PeriodTextCandidates(ViewModel.Mode))
+        {
+            probe.Text = text;
+            probe.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            widest = Math.Max(widest, probe.DesiredSize.Width);
+        }
+
+        PeriodLabel.MinWidth = Math.Ceiling(widest);
     }
 
     private void SyncModeBar()
@@ -180,7 +203,8 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         CompactRecordsList.Visibility = !surface && compact ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    // Design §4.4 responsive table: backlog Inline and open at L; Overlay (closed) at M; full-width overlay at S.
+    // Design §4.4 responsive table: backlog rail plus an inline card (open) at L; the rail plus an overlay card (closed)
+    // at M; a full-width overlay card at S. Below L the command group moves to its own row so it can wrap.
     private void ApplyBreakpoint(double width)
     {
         var wide = width >= 1008;
@@ -189,10 +213,27 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         _gutter = padding;
         ViewModel.SetCompact(width < 640);
         ChipsBar.IsCompact = width < 640;
-        Split.DisplayMode = wide ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
+        Split.DisplayMode = wide ? SplitViewDisplayMode.CompactInline : SplitViewDisplayMode.CompactOverlay;
 
-        // The backlog card sits inside the page gutter; at S the full-width pane keeps the gutter on both sides.
+        Microsoft.UI.Xaml.Controls.Grid.SetRow(CommandGroup, wide ? 0 : 1);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumn(CommandGroup, wide ? 2 : 0);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(CommandGroup, wide ? 1 : 3);
+        CommandGroup.HorizontalAlignment = wide ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+
+        // At S the period navigation takes a line of its own and Filters and New CR sit under it.
+        var stacked = width < 640;
+        Microsoft.UI.Xaml.Controls.Grid.SetRow(PeriodPanel, 0);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumn(PeriodPanel, 0);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(PeriodPanel, stacked ? 3 : 1);
+        Microsoft.UI.Xaml.Controls.Grid.SetRow(CommandFilterButton, stacked ? 1 : 0);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumn(CommandFilterButton, stacked ? 0 : 1);
+        Microsoft.UI.Xaml.Controls.Grid.SetRow(NewCrButton, stacked ? 1 : 0);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumn(NewCrButton, stacked ? 1 : 2);
+
+        // The rail and the backlog card sit inside the page gutter; at S the full-width pane keeps the gutter on both sides.
+        BacklogRail.Margin = new Thickness(padding, 0, 0, 16);
         BacklogCard.Margin = new Thickness(padding, 0, width < 640 ? padding : 0, 16);
+        Split.CompactPaneLength = padding + BacklogRail.Width;
         Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280 + padding;
         ApplyContentPadding();
         if (_wasWide != wide)
@@ -202,10 +243,10 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
     }
 
-    // An open inline backlog already supplies the left gutter, so the content keeps only a 16-epx gap beside it.
+    // The pane strip (rail or open inline card) already supplies the left gutter, so the content keeps only a small gap.
     private void ApplyContentPadding()
     {
-        var left = Split.DisplayMode == SplitViewDisplayMode.Inline && ViewModel.IsBacklogOpen ? 16 : _gutter;
+        var left = Split.DisplayMode == SplitViewDisplayMode.CompactInline && ViewModel.IsBacklogOpen ? 16 : 12;
         ContentRoot.Padding = new Thickness(left, 0, _gutter, 16);
     }
 

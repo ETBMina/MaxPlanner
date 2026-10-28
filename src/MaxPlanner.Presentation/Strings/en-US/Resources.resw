@@ -1483,6 +1483,12 @@
   <data name="Calendar_BacklogHint.Text" xml:space="preserve">
     <value>Drag a CR onto a date to schedule it, or select it and choose Schedule.</value>
   </data>
+  <data name="Calendar_BacklogCollapseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hide backlog</value>
+  </data>
+  <data name="Calendar_BacklogCollapseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Hide backlog</value>
+  </data>
   <data name="Calendar_BacklogList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Backlog CRs</value>
   </data>
@@ -1518,6 +1524,9 @@
   </data>
   <data name="Calendar_BacklogToggle" xml:space="preserve">
     <value>Backlog ({0})</value>
+  </data>
+  <data name="Calendar_BacklogCountName" xml:space="preserve">
+    <value>{0} CRs in the backlog</value>
   </data>
   <data name="Calendar_WeekPeriod" xml:space="preserve">
     <value>{0} – {1}, {2}</value>
