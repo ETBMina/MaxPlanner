@@ -1,9 +1,11 @@
+using System.Numerics;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 using Windows.Foundation;
 using Windows.System;
 using Windows.UI.ViewManagement;
@@ -24,6 +26,10 @@ public sealed partial class ExpandingSearchBox : UserControl
 
     // Space reserved at the end of the text for the Clear button so long text never runs under it.
     private const double ClearButtonReserve = 30;
+
+    // Fluent motion: entrances decelerate over 250 ms, exits accelerate over 167 ms.
+    private static readonly TimeSpan ExpandDuration = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan CollapseDuration = TimeSpan.FromMilliseconds(167);
 
     public static readonly DependencyProperty TextProperty = DependencyProperty.Register(
         nameof(Text), typeof(string), typeof(ExpandingSearchBox), new PropertyMetadata(string.Empty, OnTextPropertyChanged));
@@ -46,11 +52,20 @@ public sealed partial class ExpandingSearchBox : UserControl
     private static UISettings? s_uiSettings;
 
     private bool _isExpanded;
+    private bool _isCollapsing;
+    private bool _collapseFocusesButton;
+    private bool _revealPending;
+    private bool _isReversing;
     private bool _isOverlay;
     private bool _templatePartsAdjusted;
     private double _arrangedOffset = double.NaN;
     private double _arrangedParentWidth = double.NaN;
-    private Storyboard? _revealStoryboard;
+    private double _collapsedWidth;
+    private double _boxLeft;
+    private double _boxWidth;
+    private int _transitionVersion;
+    private Visual? _surfaceVisual;
+    private InsetClip? _surfaceClip;
 
     public ExpandingSearchBox()
     {
@@ -145,6 +160,14 @@ public sealed partial class ExpandingSearchBox : UserControl
 
         Root.Arrange(new Rect(-left, 0, boxWidth, finalSize.Height));
         SetOverlay(overlay);
+        _boxLeft = left;
+        _boxWidth = boxWidth;
+        if (_revealPending && _isExpanded)
+        {
+            // The reveal starts here because the box geometry it grows from is known only after this arrange.
+            _revealPending = false;
+            StartReveal();
+        }
 
         // The first pass (or a parent resize) may have used a stale offset; arrange once more with the settled one.
         if (_isExpanded && (offset != _arrangedOffset || parentWidth != _arrangedParentWidth))
@@ -193,14 +216,32 @@ public sealed partial class ExpandingSearchBox : UserControl
 
     private void Expand(bool focusBox)
     {
-        if (!_isExpanded)
+        if (!_isExpanded || _isCollapsing)
         {
+            var wasCollapsing = _isCollapsing;
+            _isCollapsing = false;
             _isExpanded = true;
-            Canvas.SetZIndex(this, 1);
-            SearchButton.Visibility = Visibility.Collapsed;
-            Surface.Visibility = Visibility.Visible;
-            InvalidateMeasure();
-            PlayReveal();
+            _transitionVersion++;
+            if (!wasCollapsing)
+            {
+                _collapsedWidth = SearchButton.ActualWidth;
+                Canvas.SetZIndex(this, 1);
+                SearchButton.Visibility = Visibility.Collapsed;
+                Surface.Visibility = Visibility.Visible;
+                InvalidateMeasure();
+            }
+
+            // A search restored before the page loads shows without motion.
+            _revealPending = IsLoaded && AnimationsEnabled();
+            _isReversing = wasCollapsing && _revealPending;
+            if (!_revealPending)
+            {
+                ResetSurfaceComposition();
+            }
+            else if (wasCollapsing)
+            {
+                InvalidateArrange();
+            }
         }
 
         if (focusBox)
@@ -210,6 +251,10 @@ public sealed partial class ExpandingSearchBox : UserControl
         }
     }
 
+    /// <summary>
+    /// Collapses with the reveal played backwards. The expanded footprint stays until the animation completes, so the
+    /// shrinking box never squeezes; <see cref="Expand"/> during the animation reverses it from where it is.
+    /// </summary>
     private void Collapse(bool focusButton)
     {
         if (!_isExpanded)
@@ -217,10 +262,51 @@ public sealed partial class ExpandingSearchBox : UserControl
             return;
         }
 
+        _collapseFocusesButton |= focusButton;
+        if (_isCollapsing)
+        {
+            return;
+        }
+
+        _revealPending = false;
+        if (!IsLoaded || !AnimationsEnabled() || _boxWidth <= 0)
+        {
+            CompleteCollapse();
+            return;
+        }
+
+        _isCollapsing = true;
+        var version = ++_transitionVersion;
+        var (visual, clip) = EnsureSurfaceComposition();
+        var compositor = visual.Compositor;
+        var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.7f, 0f), new Vector2(1f, 0.5f));
+        var (leftInset, rightInset) = CollapsedInsets();
+        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        clip.StartAnimation(nameof(InsetClip.LeftInset), ScalarTo(compositor, leftInset, CollapseDuration, easing));
+        clip.StartAnimation(nameof(InsetClip.RightInset), ScalarTo(compositor, rightInset, CollapseDuration, easing));
+        visual.StartAnimation(nameof(Visual.Opacity), ScalarTo(compositor, 0f, CollapseDuration, easing));
+        batch.End();
+
+        // A later Expand or Collapse bumps the version, so a superseded animation's completion does nothing.
+        batch.Completed += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_isCollapsing && version == _transitionVersion)
+            {
+                CompleteCollapse();
+            }
+        });
+    }
+
+    private void CompleteCollapse()
+    {
+        var focusButton = _collapseFocusesButton;
+        _collapseFocusesButton = false;
+        _isCollapsing = false;
         _isExpanded = false;
+        _transitionVersion++;
         _arrangedOffset = double.NaN;
         _arrangedParentWidth = double.NaN;
-        _revealStoryboard?.Stop();
+        ResetSurfaceComposition();
         SearchButton.Visibility = Visibility.Visible;
         Surface.Visibility = Visibility.Collapsed;
         Canvas.SetZIndex(this, 0);
@@ -230,6 +316,76 @@ public sealed partial class ExpandingSearchBox : UserControl
         {
             DispatcherQueue.TryEnqueue(() => SearchButton.Focus(FocusState.Keyboard));
         }
+    }
+
+    // The box grows out of the Search button's footprint: an inset clip opens from the button's slot to the full box
+    // while the box fades in. Composition runs it off the UI thread and leaves the layout untouched.
+    private void StartReveal()
+    {
+        var (visual, clip) = EnsureSurfaceComposition();
+        var compositor = visual.Compositor;
+        var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0f, 0f), new Vector2(0f, 1f));
+
+        // A reversed collapse continues from where its animation is; a fresh reveal starts at the button.
+        if (!_isReversing)
+        {
+            (clip.LeftInset, clip.RightInset) = CollapsedInsets();
+            visual.Opacity = 0f;
+        }
+
+        _isReversing = false;
+        clip.StartAnimation(nameof(InsetClip.LeftInset), ScalarTo(compositor, 0f, ExpandDuration, easing));
+        clip.StartAnimation(nameof(InsetClip.RightInset), ScalarTo(compositor, 0f, ExpandDuration, easing));
+        visual.StartAnimation(nameof(Visual.Opacity), ScalarTo(compositor, 1f, ExpandDuration, easing));
+    }
+
+    // In overlay placement the box extends left of the control's slot by _boxLeft, where the button sat.
+    private (float Left, float Right) CollapsedInsets()
+    {
+        var buttonWidth = _collapsedWidth > 0 ? _collapsedWidth : 32;
+        return ((float)_boxLeft, (float)Math.Max(0, _boxWidth - _boxLeft - buttonWidth));
+    }
+
+    private (Visual Visual, InsetClip Clip) EnsureSurfaceComposition()
+    {
+        if (_surfaceVisual is null || _surfaceClip is null)
+        {
+            _surfaceVisual = ElementCompositionPreview.GetElementVisual(Surface);
+            _surfaceClip = _surfaceVisual.Compositor.CreateInsetClip();
+            _surfaceVisual.Clip = _surfaceClip;
+        }
+
+        return (_surfaceVisual, _surfaceClip);
+    }
+
+    private void ResetSurfaceComposition()
+    {
+        if (_surfaceVisual is null || _surfaceClip is null)
+        {
+            return;
+        }
+
+        _surfaceClip.StopAnimation(nameof(InsetClip.LeftInset));
+        _surfaceClip.StopAnimation(nameof(InsetClip.RightInset));
+        _surfaceVisual.StopAnimation(nameof(Visual.Opacity));
+        _surfaceClip.LeftInset = 0f;
+        _surfaceClip.RightInset = 0f;
+        _surfaceVisual.Opacity = 1f;
+    }
+
+    private static ScalarKeyFrameAnimation ScalarTo(Compositor compositor, float value, TimeSpan duration, CompositionEasingFunction easing)
+    {
+        var animation = compositor.CreateScalarKeyFrameAnimation();
+        animation.InsertKeyFrame(1f, value, easing);
+        animation.Duration = duration;
+        return animation;
+    }
+
+    // Read on each transition so a change to the Windows "Animation effects" setting applies without a restart.
+    private static bool AnimationsEnabled()
+    {
+        s_uiSettings ??= new UISettings();
+        return s_uiSettings.AnimationsEnabled;
     }
 
     // Clearing goes through Text so the page's search (and its filters) resets exactly like an emptied box. It
@@ -247,33 +403,6 @@ public sealed partial class ExpandingSearchBox : UserControl
             _isOverlay = overlay;
             VisualStateManager.GoToState(this, overlay ? "Overlay" : "Inline", false);
         }
-    }
-
-    private void PlayReveal()
-    {
-        s_uiSettings ??= new UISettings();
-        if (!s_uiSettings.AnimationsEnabled)
-        {
-            Surface.Opacity = 1;
-            return;
-        }
-
-        if (_revealStoryboard is null)
-        {
-            var fade = new DoubleAnimation
-            {
-                From = 0,
-                To = 1,
-                Duration = new Duration(TimeSpan.FromMilliseconds(167)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
-            Storyboard.SetTarget(fade, Surface);
-            Storyboard.SetTargetProperty(fade, nameof(Opacity));
-            _revealStoryboard = new Storyboard();
-            _revealStoryboard.Children.Add(fade);
-        }
-
-        _revealStoryboard.Begin();
     }
 
     private bool ContainsFocus()
@@ -319,7 +448,7 @@ public sealed partial class ExpandingSearchBox : UserControl
     private void OnPartLostFocus(object sender, RoutedEventArgs e) =>
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (_isExpanded && string.IsNullOrEmpty(Text) && !ContainsFocus())
+            if (_isExpanded && !_isCollapsing && string.IsNullOrEmpty(Text) && !ContainsFocus())
             {
                 Collapse(focusButton: false);
             }

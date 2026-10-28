@@ -45,13 +45,14 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.Caption, Mode=OneWay}" />
-                <DropDownButton
+                <Button
                     x:Uid="CrEditor_MoreMenu"
                     Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="CrEditor_MoreMenu"
                     IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
-                    <DropDownButton.Flyout>
+                    <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
                             <MenuFlyoutItem
                                 x:Uid="CrEditor_MoreMoveToBacklog"
@@ -68,8 +69,8 @@
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                         </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                    </Button.Flyout>
+                </Button>
             </Grid>
 
             <InfoBar
@@ -78,14 +79,16 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
                 Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error" />
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
 
             <InfoBar
                 AutomationProperties.AutomationId="CrEditor_ErrorInfoBar"
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
                 Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error">
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
                 <InfoBar.Content>
                     <StackPanel
                         Margin="0,0,0,12"
@@ -104,11 +107,11 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.IsOverdue, Mode=OneWay}"
                 Message="{x:Bind ViewModel.OverdueMessage, Mode=OneWay}"
-                Severity="Warning" />
+                Severity="Warning"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsOverdue), Mode=OneWay}" />
 
             <!-- ===== Form step ===== -->
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
-                <TextBlock x:Uid="TaskEditor_RequiredLegend" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
 
                 <!-- Group 1: CR number · Task number. -->
                 <Grid x:Name="NumberPair" ColumnSpacing="24" RowSpacing="12">
@@ -480,13 +483,15 @@
                     IsClosable="False"
                     IsOpen="{x:Bind ViewModel.HasDeleteScopeMessage, Mode=OneWay}"
                     Message="{x:Bind ViewModel.DeleteScopeMessage, Mode=OneWay}"
-                    Severity="Warning" />
+                    Severity="Warning"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDeleteScopeMessage), Mode=OneWay}" />
                 <InfoBar
                     AutomationProperties.AutomationId="CascadeDelete_ErrorInfoBar"
                     IsClosable="False"
                     IsOpen="{x:Bind ViewModel.HasDeleteError, Mode=OneWay}"
                     Message="{x:Bind ViewModel.DeleteError, Mode=OneWay}"
-                    Severity="Error" />
+                    Severity="Error"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDeleteError), Mode=OneWay}" />
                 <StackPanel AutomationProperties.AutomationId="CascadeDelete_Counts" Spacing="4">
                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteTasksLine, Mode=OneWay}" TextWrapping="Wrap" />
                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteChecklistLine, Mode=OneWay}" TextWrapping="Wrap" />

@@ -186,9 +186,21 @@
                 Opening="OnFlyoutOpening"
                 Placement="BottomEdgeAlignedLeft"
                 ShouldConstrainToRootBounds="True">
+                <!--
+                    The presenter's own ScrollViewer would otherwise give the Grid unbounded height, so the whole panel
+                    scrolled and the footer could scroll away. With it disabled, only FieldsScroller scrolls.
+                -->
+                <Flyout.FlyoutPresenterStyle>
+                    <Style BasedOn="{StaticResource DefaultFlyoutPresenterStyle}" TargetType="FlyoutPresenter">
+                        <Setter Property="ScrollViewer.VerticalScrollMode" Value="Disabled" />
+                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+                    </Style>
+                </Flyout.FlyoutPresenterStyle>
                 <Grid
+                    x:Name="FlyoutRoot"
                     Width="400"
                     MaxWidth="400"
+                    MaxHeight="640"
                     RowSpacing="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />

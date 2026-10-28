@@ -15,41 +15,73 @@
     <UserControl.Resources>
         <DataTemplate x:Key="CardTemplate" x:DataType="local:DashboardCardViewModel">
             <Border Padding="0" Style="{StaticResource CardBorderStyle}">
-                <StackPanel>
+                <!--
+                    Cards share the tallest card's height (see FitCardHeight). The button fills the star row so its
+                    hover, pressed and focus visuals cover the card down to the links row, not just its text, and its
+                    content spreads over that height (see the spacer rows below).
+                -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <!-- Design §4.1: the card is a Button; invoking it drills down with exactly its predicate. -->
                     <Button
                         Padding="16,12"
                         HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
                         AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
                         Background="Transparent"
                         BorderThickness="0"
-                        Command="{x:Bind DrillDownCommand, Mode=OneTime}">
-                        <StackPanel Spacing="4">
+                        Command="{x:Bind DrillDownCommand, Mode=OneTime}"
+                        CornerRadius="7">
+                        <!--
+                            Label, value and caption share the card's extra height in equal star gaps (4 epx minimum, the
+                            old stack spacing), so a card at its natural height looks as before. With review links below
+                            the button a trailing gap of the same size separates the caption from them; without links
+                            the caption ends at the bottom padding.
+                        -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" MinHeight="4" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" MinHeight="4" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="{x:Bind local:DashboardPageView.TrailingGap(HasLinks), Mode=OneTime}" />
+                            </Grid.RowDefinitions>
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Label, Mode=OneTime}" />
-                            <TextBlock Style="{StaticResource TitleLargeTextBlockStyle}" Text="{x:Bind Value, Mode=OneWay}" />
                             <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind Caption, Mode=OneWay}"
-                                TextWrapping="Wrap" />
-                            <!-- Design §6.3: "Needs attention" is a Warning glyph plus text, never color alone. -->
-                            <StackPanel
-                                Orientation="Horizontal"
-                                Spacing="6"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasBadge), Mode=OneWay}">
-                                <FontIcon
-                                    AutomationProperties.AccessibilityView="Raw"
-                                    FontSize="14"
-                                    Foreground="{ThemeResource SystemFillColorCautionBrush}"
-                                    Glyph="&#xE7BA;" />
-                                <TextBlock x:Uid="Dashboard_NeedsAttention" Style="{StaticResource CaptionTextBlockStyle}" />
+                                Grid.Row="2"
+                                Style="{StaticResource TitleLargeTextBlockStyle}"
+                                Text="{x:Bind Value, Mode=OneWay}" />
+                            <StackPanel Grid.Row="4" Spacing="4">
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind Caption, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
+                                <!-- Design §6.3: "Needs attention" is a Warning glyph plus text, never color alone. -->
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(HasBadge), Mode=OneWay}">
+                                    <FontIcon
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        FontSize="14"
+                                        Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                        Glyph="&#xE7BA;" />
+                                    <TextBlock x:Uid="Dashboard_NeedsAttention" Style="{StaticResource CaptionTextBlockStyle}" />
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
+                        </Grid>
                     </Button>
                     <!-- Secondary metrics (reviews done this week/month) are links of their own, never nested in the card button. -->
                     <ItemsControl
+                        Grid.Row="1"
                         Margin="12,0,12,8"
                         IsTabStop="False"
                         ItemsSource="{x:Bind Links, Mode=OneTime}"
@@ -69,7 +101,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
-                </StackPanel>
+                </Grid>
             </Border>
         </DataTemplate>
 

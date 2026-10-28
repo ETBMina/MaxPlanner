@@ -1084,9 +1084,6 @@
   <data name="TaskEditor_PriorityCombo.Header" xml:space="preserve">
     <value>Priority *</value>
   </data>
-  <data name="TaskEditor_RequiredLegend.Text" xml:space="preserve">
-    <value>* Required</value>
-  </data>
   <data name="TaskEditor_RestoreButton.Content" xml:space="preserve">
     <value>Restore</value>
   </data>

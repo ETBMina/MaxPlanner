@@ -13,7 +13,9 @@
             <StaticResource x:Key="ChipSecondaryForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="ServiceChipBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
             <StaticResource x:Key="SquadChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
-            <StaticResource x:Key="CountChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="AccentChipBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="AccentChipForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="AccentChipStrokeBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="PriorityLevel1ChipBackgroundBrush" ResourceKey="SystemFillColorCriticalBackgroundBrush" />
             <StaticResource x:Key="PriorityLevel2ChipBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
             <StaticResource x:Key="PriorityMidChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
@@ -66,7 +68,9 @@
             <StaticResource x:Key="ChipSecondaryForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="ServiceChipBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
             <StaticResource x:Key="SquadChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
-            <StaticResource x:Key="CountChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="AccentChipBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="AccentChipForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="AccentChipStrokeBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="PriorityLevel1ChipBackgroundBrush" ResourceKey="SystemFillColorCriticalBackgroundBrush" />
             <StaticResource x:Key="PriorityLevel2ChipBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
             <StaticResource x:Key="PriorityMidChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
@@ -120,7 +124,10 @@
             <StaticResource x:Key="ChipSecondaryForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="ServiceChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="SquadChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
-            <StaticResource x:Key="CountChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <!-- Accent chips (Board count and service) use the system selection pair, like other accent fills in HC. -->
+            <StaticResource x:Key="AccentChipBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="AccentChipForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="AccentChipStrokeBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
             <StaticResource x:Key="PriorityLevel1ChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="PriorityLevel2ChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="PriorityMidChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
@@ -184,8 +191,10 @@
     <Style x:Key="SquadChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource SquadChipBackgroundBrush}" />
     </Style>
-    <Style x:Key="CountChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource CountChipBackgroundBrush}" />
+    <!-- Board column counts and card service chips (design §4.2): accent fill with on-accent text and glyph. -->
+    <Style x:Key="AccentChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource AccentChipBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource AccentChipStrokeBrush}" />
     </Style>
     <Style x:Key="PriorityLevel1ChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource PriorityLevel1ChipBackgroundBrush}" />
@@ -213,6 +222,12 @@
     <Style x:Key="ChipGlyphStyle" TargetType="FontIcon">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{ThemeResource ChipForegroundBrush}" />
+    </Style>
+    <Style x:Key="AccentChipTextStyle" BasedOn="{StaticResource ChipTextStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource AccentChipForegroundBrush}" />
+    </Style>
+    <Style x:Key="AccentChipGlyphStyle" BasedOn="{StaticResource ChipGlyphStyle}" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource AccentChipForegroundBrush}" />
     </Style>
 
     <!-- Card surfaces (design §3): card fill with a 1-px stroke; nested surfaces use the secondary fill. -->

@@ -58,7 +58,7 @@ Each page starts with a header `Grid` that has these rows:
 
 #### 2.3.1 Expanding search (`Common/Controls/ExpandingSearchBox`, Board, Grid, Calendar, Checklists)
 - **Collapsed:** a default-style icon `Button` (Find glyph E721, 14 px) named and tooltipped with the page scope ("Search tasks", tooltip "Search tasks (Ctrl+F)"). It is the last control of its left command group (Checklists: the only one), so it grows only into the free space after it.
-- **Expanded:** the `AutoSuggestBox` (`LandmarkType=Search`, up to 280 epx, Checklists 320) bound to the page's persisted search, with an inline subtle **Clear search** button (Clear glyph E894; replaces the text box's own delete button, not a tab stop). Its layout footprint never exceeds its own slot, so no neighbour moves or reflows. When the slot is narrower than 200 epx the box overlays the neighbouring commands of its row on `SolidBackgroundFillColorBaseBrush`. The reveal is a 167 ms fade, skipped when `UISettings.AnimationsEnabled` is off.
+- **Expanded:** the `AutoSuggestBox` (`LandmarkType=Search`, up to 280 epx, Checklists 320) bound to the page's persisted search, with an inline subtle **Clear search** button (Clear glyph E894; replaces the text box's own delete button, not a tab stop). Its layout footprint never exceeds its own slot, so no neighbour moves or reflows. When the slot is narrower than 200 epx the box overlays the neighbouring commands of its row on `SolidBackgroundFillColorBaseBrush`. Expanding grows the box out of the Search button (a Composition inset clip opening from the button with a fade, 250 ms decelerate); collapsing (Esc, Clear, or focus leaving an empty box) plays it back (167 ms accelerate) before the button returns. Both snap when `UISettings.AnimationsEnabled` is off.
 - **Expands** on click/Enter/Space (focus moves into the box), on Ctrl+F, and by itself whenever the search text is non-empty (a restored B-10 search or a Dashboard drill-down), without taking focus.
 - **Collapses** on Esc or Clear (text cleared exactly like an emptied box, focus returns to the Search button), when focus leaves with empty text (Tab out), or when the text is cleared elsewhere while focus is outside. With non-empty text it never collapses: an active search stays visible.
 - AutomationIds: `{Page}_SearchButton`, `{Page}_SearchBox`, `{Page}_SearchClearButton`.
@@ -518,7 +518,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
   - M: max 640, one column.
   - S, or a window height under 600: `FullSizeDesired = true`, one column.
   - In every case the content is a `ScrollViewer` and the footer buttons stay visible (T-08.1).
-- **Required** fields show the header text followed by " *" and `AutomationProperties.IsRequiredForForm=True`. A legend reads "* Required".
+- **Required** fields show the header text followed by " *" and `AutomationProperties.IsRequiredForForm=True`. The record editors (Task, CR, Review, Subtask card) show no separate legend because each required field is already marked.
 - **Validation** (B-02.9):
   - The error text sits directly under the field (`CaptionTextBlockStyle`, `SystemFillColorCriticalBrush`, Error glyph), and the field gets the error stroke.
   - On Save, a summary InfoBar (Error) says "Fix 2 fields to save". Focus moves to the first invalid field and its error is announced.
@@ -693,9 +693,9 @@ Anatomy: a `Border` with `CornerRadius` 4, padding 6×2, the `CaptionTextBlockSt
 | `PriorityLevelMid` | Middle ranks ("Medium") | `SystemFillColorNeutralBackgroundBrush` | Text primary | Remove (dash) | Same |
 | `PriorityLevelLowest` | Lowest, when ≥3 priorities ("Low") | `SubtleFillColorSecondaryBrush` | Text secondary | ChevronDown | Same |
 | `SquadChip` | Squad / "General" | `ControlFillColorSecondaryBrush` + `ControlStrokeColorDefaultBrush` | Text primary | People | Same |
-| `ServiceChip` | Service | `SystemFillColorAttentionBackgroundBrush` | Text primary | Repair | Same |
+| `ServiceChip` | Service (Board cards use `AccentChip`) | `SystemFillColorAttentionBackgroundBrush` | Text primary | Repair | Same |
 | `ArchivedChip` | Archived | `SystemFillColorNeutralBackgroundBrush` | Text secondary | Archive† | Same |
-| `CountChip` | Column/group counts | `ControlFillColorSecondaryBrush` | Text secondary | — | Same |
+| `AccentChip` | Board column counts and Board card service | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Repair (service only) | Highlight/HighlightText |
 | `FlagChip` | Settings flags | `SubtleFillColorSecondaryBrush` + stroke | Text secondary | per flag | Same |
 
 Priority tokens are assigned by **configured rank**, never by name, because priorities are editable lookups (B-04). A chip's name is "Priority: Urgent".

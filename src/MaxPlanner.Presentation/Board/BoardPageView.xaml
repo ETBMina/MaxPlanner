@@ -50,11 +50,11 @@
                         Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
                     <Border
                         HorizontalAlignment="Left"
-                        Style="{StaticResource ServiceChipStyle}"
+                        Style="{StaticResource AccentChipStyle}"
                         Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <FontIcon Glyph="&#xE90F;" Style="{StaticResource ChipGlyphStyle}" />
-                            <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
+                            <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
+                            <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                         </StackPanel>
                     </Border>
                     <!-- Design §4.2 anatomy 3: the CR reference link opens the CR. -->
@@ -181,11 +181,11 @@
                         </HyperlinkButton>
                         <Border
                             HorizontalAlignment="Left"
-                            Style="{StaticResource ServiceChipStyle}"
+                            Style="{StaticResource AccentChipStyle}"
                             Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="&#xE90F;" Style="{StaticResource ChipGlyphStyle}" />
-                                <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
+                                <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
+                                <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                             </StackPanel>
                         </Border>
                         <HyperlinkButton
@@ -262,10 +262,10 @@
                             AutomationProperties.HeadingLevel="Level2"
                             Style="{StaticResource BodyStrongTextBlockStyle}"
                             Text="{x:Bind Name, Mode=OneWay}" />
-                        <Border Style="{StaticResource CountChipStyle}">
+                        <Border Style="{StaticResource AccentChipStyle}">
                             <TextBlock
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnCount_', StatusId.Value), Mode=OneTime}"
-                                Style="{StaticResource ChipTextStyle}"
+                                Style="{StaticResource AccentChipTextStyle}"
                                 Text="{x:Bind CountText, Mode=OneWay}" />
                         </Border>
                     </StackPanel>

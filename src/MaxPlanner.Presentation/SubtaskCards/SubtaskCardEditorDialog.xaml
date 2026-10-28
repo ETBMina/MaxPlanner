@@ -43,13 +43,14 @@
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.Caption, Mode=OneWay}"
                     TextWrapping="Wrap" />
-                <DropDownButton
+                <Button
                     x:Uid="SubtaskEditor_MoreMenu"
                     Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="SubtaskEditor_MoreMenu"
                     IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
-                    <DropDownButton.Flyout>
+                    <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
                             <MenuFlyoutItem x:Uid="SubtaskEditor_MoreDelete" AutomationProperties.AutomationId="SubtaskEditor_MoreDeleteItem" Click="OnDeleteClick">
                                 <MenuFlyoutItem.Icon>
@@ -57,8 +58,8 @@
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                         </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                    </Button.Flyout>
+                </Button>
             </Grid>
 
             <InfoBar
@@ -67,14 +68,16 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
                 Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error" />
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
 
             <InfoBar
                 AutomationProperties.AutomationId="SubtaskEditor_ErrorInfoBar"
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
                 Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error">
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
                 <InfoBar.Content>
                     <StackPanel
                         Margin="0,0,0,12"
@@ -93,7 +96,8 @@
                 AutomationProperties.AutomationId="SubtaskEditor_ParentArchivedInfoBar"
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.IsParentArchived, Mode=OneWay}"
-                Severity="Informational" />
+                Severity="Informational"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsParentArchived), Mode=OneWay}" />
 
             <!-- ===== Form step ===== -->
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
@@ -146,7 +150,6 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock x:Uid="TaskEditor_RequiredLegend" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
                 <TextBox
                     x:Name="SubtitleBox"
                     x:Uid="SubtaskEditor_SubtitleBox"

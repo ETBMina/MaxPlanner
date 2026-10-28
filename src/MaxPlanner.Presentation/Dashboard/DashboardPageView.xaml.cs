@@ -72,6 +72,9 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public void OnHidden() => PageContent.OnPageHidden();
 
+    /// <summary>The card's last gap: a share of the spare height above the review links, or nothing without links.</summary>
+    public static GridLength TrailingGap(bool hasLinks) => hasLinks ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+
     private void OnCardPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args) => ScheduleCardHeightFit();
 
     private void OnCardsSizeChanged(object sender, SizeChangedEventArgs e)

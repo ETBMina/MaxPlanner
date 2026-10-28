@@ -66,8 +66,9 @@ public sealed partial class FilterButton : UserControl
         Draft = Scope?.CreateDraft();
         if (XamlRoot is { } root)
         {
-            // Design §2.6: at most 80% of the window; the header and footer stay pinned around the scrolling fields.
-            FieldsScroller.MaxHeight = Math.Max(160, (root.Size.Height * 0.8) - 160);
+            // Design §2.6: at most 80% of the window (less the presenter padding). The star row gives the fields what
+            // the pinned header and footer leave; the 240 floor keeps the footer usable in very short windows.
+            FlyoutRoot.MaxHeight = Math.Clamp((root.Size.Height * 0.8) - 32, 240, 640);
         }
     }
 

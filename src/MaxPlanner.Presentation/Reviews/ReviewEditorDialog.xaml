@@ -41,13 +41,14 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.Caption, Mode=OneWay}" />
-                <DropDownButton
+                <Button
                     x:Uid="ReviewEditor_MoreMenu"
                     Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="ReviewEditor_MoreMenu"
                     IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
-                    <DropDownButton.Flyout>
+                    <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
                             <MenuFlyoutItem x:Uid="ReviewEditor_MoreDelete" AutomationProperties.AutomationId="ReviewEditor_MoreDeleteItem" Click="OnDeleteClick">
                                 <MenuFlyoutItem.Icon>
@@ -55,8 +56,8 @@
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                         </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                    </Button.Flyout>
+                </Button>
             </Grid>
 
             <InfoBar
@@ -65,7 +66,8 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
                 Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error" />
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
 
             <!-- A conflict keeps the draft; Reload replaces it with the saved review (design §5.10, simplified). -->
             <InfoBar
@@ -73,7 +75,8 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
                 Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error">
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
                 <InfoBar.ActionButton>
                     <Button
                         x:Uid="Conflict_ReloadButton"
@@ -83,7 +86,6 @@
                 </InfoBar.ActionButton>
             </InfoBar>
 
-            <TextBlock x:Uid="TaskEditor_RequiredLegend" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
 
             <StackPanel Spacing="4">
                 <TextBox

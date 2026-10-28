@@ -45,13 +45,14 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.Caption, Mode=OneWay}" />
-                <DropDownButton
+                <Button
                     x:Uid="TaskEditor_MoreMenu"
                     Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="TaskEditor_MoreMenu"
                     IsEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsNew), Mode=OneWay}">
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
-                    <DropDownButton.Flyout>
+                    <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
                             <MenuFlyoutItem x:Uid="TaskEditor_MoreCopy" AutomationProperties.AutomationId="TaskEditor_MoreCopyItem" Click="OnCopyClick">
                                 <MenuFlyoutItem.Icon>
@@ -84,17 +85,22 @@
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                         </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                    </Button.Flyout>
+                </Button>
             </Grid>
 
+            <!--
+                A closed InfoBar stays Visible with zero height, so the Root StackPanel would still add 12 epx of spacing
+                for each one. Visibility follows IsOpen so closed bars reserve no space.
+            -->
             <InfoBar
                 x:Uid="TaskEditor_ValidationInfoBar"
                 AutomationProperties.AutomationId="TaskEditor_ValidationInfoBar"
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
                 Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error" />
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
 
             <!-- Save failures and the conflict of design §5.10; the draft stays. -->
             <InfoBar
@@ -102,7 +108,8 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
                 Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error">
+                Severity="Error"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
                 <InfoBar.Content>
                     <StackPanel
                         Margin="0,0,0,12"
@@ -120,14 +127,16 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasCrChangedMessage, Mode=OneWay}"
                 Message="{x:Bind ViewModel.CrChangedMessage, Mode=OneWay}"
-                Severity="Warning" />
+                Severity="Warning"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasCrChangedMessage), Mode=OneWay}" />
 
             <InfoBar
                 x:Uid="TaskEditor_ArchivedInfoBar"
                 AutomationProperties.AutomationId="TaskEditor_ArchivedInfoBar"
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.IsArchived, Mode=OneWay}"
-                Severity="Informational">
+                Severity="Informational"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsArchived), Mode=OneWay}">
                 <InfoBar.ActionButton>
                     <Button
                         x:Uid="TaskEditor_RestoreButton"
@@ -139,7 +148,6 @@
 
             <!-- ===== Form step ===== -->
             <StackPanel Spacing="16" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
-                <TextBlock x:Uid="TaskEditor_RequiredLegend" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
                 <Grid x:Name="FieldColumns" ColumnSpacing="24" RowSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="LeftColumn" Width="*" />

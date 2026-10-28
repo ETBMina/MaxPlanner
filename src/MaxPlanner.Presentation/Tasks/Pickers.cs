@@ -126,7 +126,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         var id = suggestion.ExistingId ?? _registry.IdFor(suggestion.Name);
         if (_tokens.Any(t => t.Id == id))
         {
-            Query = string.Empty;
+            ResetQuery();
             return false;
         }
 
@@ -136,7 +136,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         }
 
         _tokens.Add(Token(id, suggestion.Name.Trim(), suggestion.ExistingId is null));
-        Query = string.Empty;
+        ResetQuery();
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
     }
@@ -152,14 +152,43 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         }
     }
 
-    partial void OnQueryChanged(string value)
+    /// <summary>
+    /// Fills <see cref="Suggestions"/> for the current query when the user focuses or clicks the box. An empty query
+    /// lists every existing name that is not already a chip, so the user can pick without typing; a non-empty query
+    /// filters exactly as typing does.
+    /// </summary>
+    public void ShowSuggestions()
+    {
+        if (!IsReadOnly)
+        {
+            Fill(Query.Trim().Length == 0 ? Available() : Suggest(Query));
+        }
+    }
+
+    // An emptied query (after Choose, or a programmatic reset) clears the list so it does not reopen by itself; only
+    // ShowSuggestions lists the available names.
+    partial void OnQueryChanged(string value) => Fill(Suggest(value));
+
+    // The query may already be empty when a name was picked from the unfiltered list, so the list is cleared too.
+    private void ResetQuery()
+    {
+        Query = string.Empty;
+        Suggestions.Clear();
+    }
+
+    private void Fill(IEnumerable<TokenSuggestion> suggestions)
     {
         Suggestions.Clear();
-        foreach (var suggestion in Suggest(value))
+        foreach (var suggestion in suggestions)
         {
             Suggestions.Add(suggestion);
         }
     }
+
+    private IEnumerable<TokenSuggestion> Available() => _existing()
+        .Where(e => _tokens.All(t => t.Id != e.Id))
+        .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
+        .Select(e => new TokenSuggestion(e.Id, e.Name, e.Name));
 
     private IEnumerable<TokenSuggestion> Suggest(string query)
     {

@@ -9,11 +9,14 @@
     <StackPanel Spacing="6">
         <AutoSuggestBox
             x:Name="Box"
+            GotFocus="OnBoxGotFocus"
             Header="{x:Bind Header, Mode=OneWay}"
             IsEnabled="{x:Bind IsEditable, Mode=OneWay}"
             ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}"
+            LostFocus="OnBoxLostFocus"
             QuerySubmitted="OnQuerySubmitted"
             Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            TextChanged="OnBoxTextChanged"
             UpdateTextOnSelect="False" />
         <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. -->
         <ItemsRepeater ElementPrepared="OnChipPrepared" ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}">
