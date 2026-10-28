@@ -137,7 +137,8 @@ public sealed partial class CalendarMonthView : UserControl
 
     /// <summary>
     /// Design §9: fits the surface to <paramref name="viewportHeight"/>. The week rows share the height, and the
-    /// lane cap is the number of bar lanes one row can hold (at most four); "+N more" absorbs the rest (B-08.9).
+    /// lane cap is the number of bar lanes one row can hold; "+N more" absorbs the rest (B-08.9). The Month-mode
+    /// cap of <see cref="CalendarLayoutPolicy.DefaultMaxLanes"/> is applied by <see cref="CalendarPageViewModel.SetLaneCapacity"/>.
     /// </summary>
     /// <remarks>
     /// Only the viewport height is read, never this control's desired size, so fitting cannot start a layout
@@ -156,8 +157,7 @@ public sealed partial class CalendarMonthView : UserControl
         }
 
         Height = Math.Floor(viewportHeight);
-        var lanes = (int)Math.Floor((rowHeight - reserved) / LaneHeight(isWeekMode, scale));
-        return Math.Clamp(lanes, 0, CalendarLayoutPolicy.DefaultMaxLanes);
+        return Math.Max(0, (int)Math.Floor((rowHeight - reserved) / LaneHeight(isWeekMode, scale)));
     }
 
     /// <summary>Focuses a day cell, for example after keyboard navigation moved the period.</summary>

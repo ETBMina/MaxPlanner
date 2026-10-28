@@ -529,11 +529,24 @@
                             </Canvas>
                         </StackPanel>
                     </Button>
-                    <Border
-                        x:Name="BacklogCard"
+                    <!--
+                        Below L the open pane floats over the calendar. BacklogOpaqueBase then repaints the layers that
+                        sit behind the pane at L: the window's Mica (a native MicaBackdrop hosted by BacklogMica, so it
+                        samples the same wallpaper and follows the same fallback rules as the window), over the solid
+                        base that stands in when Mica is unsupported, and the NavigationView content layer on top. The
+                        unchanged card then looks the same at every width without the calendar showing through. It is
+                        collapsed at L; see ApplyBreakpoint.
+                    -->
+                    <Grid
+                        x:Name="BacklogCardHost"
                         Margin="32,0,0,16"
-                        Style="{StaticResource SecondaryCardBorderStyle}"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsBacklogOpen), Mode=OneWay}">
+                    <Grid x:Name="BacklogOpaqueBase" Visibility="Collapsed">
+                        <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" CornerRadius="8" />
+                        <SystemBackdropElement x:Name="BacklogMica" CornerRadius="8" />
+                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="8" />
+                    </Grid>
+                    <Border Style="{StaticResource SecondaryCardBorderStyle}">
                         <Grid Padding="12" RowSpacing="8">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -597,6 +610,7 @@
                                 Grid.Row="2"
                                 AutomationProperties.AutomationId="Calendar_BacklogList"
                                 CanDragItems="True"
+                                DragItemsCompleted="OnBacklogDragCompleted"
                                 DragItemsStarting="OnBacklogDragStarting"
                                 IsItemClickEnabled="True"
                                 ItemClick="OnBacklogItemClick"
@@ -613,6 +627,7 @@
                             </ListView>
                         </Grid>
                     </Border>
+                    </Grid>
                     </Grid>
                 </SplitView.Pane>
 

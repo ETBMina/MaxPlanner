@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Globalization;
 using MaxPlanner.Application.ReadModels;
+using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -9,6 +11,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
+using Windows.UI.Core;
 
 namespace MaxPlanner.Presentation.Calendar;
 
@@ -32,15 +35,21 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         (RecordSortColumn.Overdue, "Calendar_ColumnOverdue"),
     ];
 
+    private readonly PointerEventHandler _reopenBacklogWhenReleased;
     private bool _isSyncingMode;
     private bool _isShown;
     private bool _isSurfaceStale;
+    private bool _reopenBacklogAfterDrag;
     private bool? _wasWide;
     private double _gutter = 32;
+    private static readonly bool IsMicaSupported = MicaController.IsSupported();
+
+    private MicaBackdrop? _backlogMica;
 
     public CalendarPageView(CalendarPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        _reopenBacklogWhenReleased = ReopenBacklogWhenReleased;
         InitializeComponent();
         MonthView.ViewModel = viewModel;
         BuildSortHeaders();
@@ -232,7 +241,12 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
 
         // The rail and the backlog card sit inside the page gutter; at S the full-width pane keeps the gutter on both sides.
         BacklogRail.Margin = new Thickness(padding, 0, 0, 16);
-        BacklogCard.Margin = new Thickness(padding, 0, width < 640 ? padding : 0, 16);
+        BacklogCardHost.Margin = new Thickness(padding, 0, width < 640 ? padding : 0, 16);
+        BacklogOpaqueBase.Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
+        // ADR 0008: the overlay base uses the window's material, Mica Base, only where the window does; otherwise the
+        // solid base beneath it shows, as on the window. At L the inline pane sees the window's own Mica, so the
+        // hosted backdrop is detached rather than kept running while collapsed.
+        BacklogMica.SystemBackdrop = wide || !IsMicaSupported ? null : _backlogMica ??= new MicaBackdrop { Kind = MicaKind.Base };
         Split.CompactPaneLength = padding + BacklogRail.Width;
         Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280 + padding;
         ApplyContentPadding();
@@ -417,6 +431,52 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         e.Data.Properties.Add(CalendarMonthView.DragCrIdProperty, record.Id.ToString());
         e.Data.SetText(record.Number);
         e.Data.RequestedOperation = DataPackageOperation.Copy;
+
+        // Below L the open backlog covers the surface, so it gets out of the way for the drop. It is closed after
+        // the drag has started (closing collapses the source list) and reopens when the CR was not dropped.
+        if (Split.DisplayMode == SplitViewDisplayMode.CompactOverlay && ViewModel.IsBacklogOpen)
+        {
+            _reopenBacklogAfterDrag = true;
+            DispatcherQueue.TryEnqueue(() => ViewModel.IsBacklogOpen = false);
+        }
+    }
+
+    private void OnBacklogDragCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        if (_reopenBacklogAfterDrag)
+        {
+            _reopenBacklogAfterDrag = false;
+            if (args.DropResult != DataPackageOperation.None)
+            {
+                return;
+            }
+
+            // Esc cancels the drag while the button is still down; the release that follows would land on the
+            // overlay's light-dismiss layer and close the reopened pane, so reopen only once the button is up.
+            if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.LeftButton).HasFlag(CoreVirtualKeyStates.Down))
+            {
+                AddHandler(PointerReleasedEvent, _reopenBacklogWhenReleased, true);
+                AddHandler(PointerMovedEvent, _reopenBacklogWhenReleased, true);
+            }
+            else
+            {
+                ViewModel.IsBacklogOpen = true;
+            }
+        }
+    }
+
+    // Also listens to moves, so a release outside the window reopens the pane when the pointer comes back.
+    private void ReopenBacklogWhenReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        RemoveHandler(PointerReleasedEvent, _reopenBacklogWhenReleased);
+        RemoveHandler(PointerMovedEvent, _reopenBacklogWhenReleased);
+        // Queued so it runs after the light-dismiss layer has handled this release.
+        DispatcherQueue.TryEnqueue(() => ViewModel.IsBacklogOpen = true);
     }
 
     /// <summary>

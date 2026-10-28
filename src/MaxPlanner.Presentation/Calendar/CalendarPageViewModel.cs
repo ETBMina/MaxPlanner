@@ -59,7 +59,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     private readonly IDisposable _commits;
     private Dictionary<PriorityId, PriorityLevel> _priorityLevels = [];
     private bool _hasChosenMode;
-    private int _laneCapacity = CalendarLayoutPolicy.DefaultMaxLanes;
+    private int _fittedLanes = CalendarLayoutPolicy.DefaultMaxLanes;
 
     public CalendarPageViewModel(WorkspaceContext context)
     {
@@ -129,19 +129,16 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
 
     /// <summary>
     /// Sets how many bar lanes fit one week row of the visible surface (design §9); the rest goes to "+N more"
-    /// (B-08.9). The surface is rebuilt only when the capacity changes, so window resizing causes no churn.
+    /// (B-08.9). Month mode caps the lanes at <see cref="CalendarLayoutPolicy.DefaultMaxLanes"/>; Week mode shows
+    /// every lane that fits. The surface is rebuilt only when the lanes of the current mode change, so window
+    /// resizing causes no churn.
     /// </summary>
     /// <returns>True when the surface was rebuilt and <see cref="SurfaceChanged"/> raised.</returns>
     public bool SetLaneCapacity(int lanes)
     {
-        lanes = Math.Clamp(lanes, 0, CalendarLayoutPolicy.DefaultMaxLanes);
-        if (lanes == _laneCapacity)
-        {
-            return false;
-        }
-
-        _laneCapacity = lanes;
-        if (!IsSurfaceMode)
+        var before = LaneCapacity;
+        _fittedLanes = Math.Max(0, lanes);
+        if (LaneCapacity == before || !IsSurfaceMode)
         {
             return false;
         }
@@ -149,6 +146,10 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
         Refresh();
         return true;
     }
+
+    // The fitted lanes come from the mode on screen when they were measured; after a mode switch the view refits
+    // the rebuilt surface, and the Month cap keeps a Week fit from ever widening the Month rows meanwhile.
+    private int LaneCapacity => Mode == CalendarMode.Week ? _fittedLanes : Math.Min(_fittedLanes, CalendarLayoutPolicy.DefaultMaxLanes);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsRecordsMode), nameof(IsSurfaceMode), nameof(PeriodText), nameof(PreviousName), nameof(NextName))]
@@ -537,7 +538,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
         {
             var rows = Mode == CalendarMode.Week ? CalendarGrid.Week(Anchor) : CalendarGrid.Month(Anchor.Year, Anchor.Month);
             var month = Mode == CalendarMode.Week ? (DateOnly?)null : new DateOnly(Anchor.Year, Anchor.Month, 1);
-            Surface = CalendarSurfaceBuilder.Build(matching, rows, month, Today, _laneCapacity);
+            Surface = CalendarSurfaceBuilder.Build(matching, rows, month, Today, LaneCapacity);
             if (IsCompact)
             {
                 RebuildAgenda();

@@ -37,7 +37,7 @@ This is a reminder of high-risk requirements, not a substitute for reading the s
 
 ## 3. Orchestrating plugin agents and skills
 
-Use the installed plugin **agents** and **skills** to extend what a single session can do: specialist agents bring focused WinUI/Windows expertise and run independent work in parallel, and skills bring tested working procedures and tools (WinApp CLI `find-ui`, `find-api`, `ui`, sandbox). Prefer them over improvising from memory whenever one covers the work. Skills and agents are complementary working procedures, not additional product requirements. Names below are discovery names; do not embed one developer's absolute installation path in scripts or documentation.
+Use the installed plugin **agents** and **skills** to extend what a single session can do: specialist agents bring focused WinUI/Windows expertise and run independent work in parallel, and skills bring tested working procedures and tools (WinApp CLI `find-ui`, `find-api`, `ui`, sandbox). Use them by default whenever one covers the work (§3.4 maps areas and change types to the required agent and skills); improvising from memory is the exception and must be justified. Skills and agents are complementary working procedures, not additional product requirements. Names below are discovery names; do not embed one developer's absolute installation path in scripts or documentation.
 
 At the beginning of the relevant phase, inspect the session's available agents and skills, read the actual `SKILL.md`, and load only the references needed for the work. **Announce every agent or skill you use, briefly, before using it**, and report what it contributed. Check the installed tool version and help before relying on sample commands (WinApp CLI 0.7.1 is the current baseline; see `docs/dev-prerequisites.md`). Availability, prefixes, templates, and CLI options may differ between machines.
 
@@ -45,7 +45,7 @@ At the beginning of the relevant phase, inspect the session's available agents a
 
 | Agent | When to delegate | Brief it with |
 |---|---|---|
-| `winui:winui-dev` | WinUI 3 / Windows App SDK / XAML work that benefits from a dedicated specialist: planning a phase, implementing a self-contained page or control, diagnosing a XAML/build/startup failure, or reviewing a UI change against Fluent guidance | The relevant requirement IDs, `design.md` section, decisions/ADRs, target files, the "done" definition, and whether it may edit files or must stay read-only. Remind it that this guide and the requirements override generic skill defaults (unpackaged, no MSIX, pinned versions). |
+| `winui:winui-dev` | **Default for WinUI-dependent code**, which is the Presentation and Desktop projects and any XAML, ViewModel, binding, dispatcher, windowing, or Windows App SDK bootstrap work: planning a phase, implementing a page, control, or ViewModel, diagnosing a XAML/build/startup failure, or reviewing a UI change against Fluent guidance. Not for Domain, Application, or Infrastructure, which have no WinUI dependency and stay in the coordinating session. | The relevant requirement IDs, `design.md` section, decisions/ADRs, target files, the "done" definition, and whether it may edit files or must stay read-only. Remind it that this guide and the requirements override generic skill defaults (unpackaged, no MSIX, pinned versions). |
 | `winappcli:winapp` | Driving or inspecting the running app through UI Automation, Windows Sandbox runs, screenshots, Windows SDK/API lookups, and troubleshooting WinApp CLI behavior | The published or built EXE path, the isolated test dataset folder, the scenario steps and expected UIA states, and where to save evidence |
 | `Explore` / `Plan` (built-in) | Read-only codebase sweeps and design alternatives when the answer is a conclusion, not a file dump | A specific question and breadth |
 
@@ -86,7 +86,33 @@ At the beginning of the relevant phase, inspect the session's available agents a
 6. Use applicable analyzers where supported and record how they were loaded. Do not claim plain builds ran plugin-injected analyzers. Adapt development tooling to the unpackaged project; keep reproducible project build/publish scripts independent of a personal plugin cache.
 7. If skills disagree, resolve the difference against the user's request, requirements, actual API/tool behavior, and official documentation. Document a material departure with evidence. Ask only when the unresolved choice would change product scope or behavior.
 8. If a skill, agent, or tool is unavailable, state that limitation and continue with project scripts and current official Microsoft documentation, WinUI Gallery, and Windows App SDK samples where possible. Do not invent skill/agent use or successful checks, and do not automatically install optional plugins.
-9. Use agents where they add capability—specialist WinUI depth, parallel independent work, or UI automation—not for work the coordinating session can do quickly itself. Never let two agents write the same files at once.
+9. Use agents where they add capability—specialist WinUI depth, parallel independent work, or UI automation. §3.4 lists where delegation is required; outside it the coordinating session may work directly. Never let two agents write the same files at once.
+
+### 3.4 Default routing and code-quality gate
+
+Unless the user says otherwise, route work as follows. These are defaults for applying §3.1 and §3.2, and the requirements, `design.md`, and ADRs still override any agent or skill output.
+
+| Area or change | Agent | Skills |
+|---|---|---|
+| Domain, Application (pure C#) | Coordinating session; `Explore` for sweeps | `code-review` and `simplify` at the quality gate; `security-review` where input parsing is involved |
+| Infrastructure (SQLite, migrations, imports/exports, ZIP) | Coordinating session; `Explore` for sweeps | `code-review`, `security-review` (SQL, import parsing, ZIP handling), `simplify` |
+| Presentation (ViewModels, projection store, converters, services) | `winui:winui-dev` | `winui-design`, `winapp-find-api` before using unfamiliar WinUI/WinRT types, `winui-code-review`, `code-review`, `simplify` |
+| XAML pages, controls, templates, themes, responsive layout | `winui:winui-dev` | `winapp-find-ui` and `winui-design` before authoring, `winui-code-review` after |
+| Desktop (composition, startup, windowing, build) | `winui:winui-dev` | `winui-dev-workflow`, `winapp-find-api`, `winapp-troubleshoot` on tool errors |
+| Verifying a UI change | `winappcli:winapp` | `winui-ui-testing`, `winapp-ui-automation` |
+| Cross-layer feature | Coordinating session splits it: `winui:winui-dev` takes the WinUI layers, the session keeps the rest | The union of the rows above |
+
+**WinUI delegation rule (mandatory).** Before the first edit to any file under `src/MaxPlanner.Presentation/` or `src/MaxPlanner.Desktop/`, or to any `.xaml` file, stop and delegate the change to `winui:winui-dev`, announcing it first. This applies to every code change in those areas, regardless of its size, urgency, or how obvious the fix looks; "small", "quick", or "to save time" are not exceptions. The only exception is a pure text change with no behavior—a `.resw` string, a comment, or a resource value—and the coordinating session must state that exception in its reply before making the edit. If the agent is unavailable, say so and ask the user before editing these files directly. The coordinating session still writes the brief, reviews the agent's diff, and owns docs, Domain, Application, and Infrastructure.
+
+**Code-quality gate.** Before reporting a code change as ready, and before any requested commit, run the review skills that match the change and fix the relevant findings. Skipping a skill requires a stated reason in the handoff.
+
+1. `simplify` on every non-trivial code change, to remove duplication, dead code, and over-abstraction.
+2. `code-review` on every code change that alters behavior.
+3. `winui-code-review` on any change touching Presentation, XAML, or Desktop.
+4. `security-review` on changes that touch import parsing, ZIP handling, URL launching, file paths, or SQL.
+5. Re-run the build and affected tests after applying review fixes. Report findings fixed, findings declined (with the reason), and checks not run.
+
+Treat skill output as evidence to verify. Do not apply a suggestion that conflicts with a requirement, an ADR, or §4, and do not add abstraction a review proposes beyond a real boundary.
 
 ## 4. Code structure and conventions
 
@@ -158,6 +184,8 @@ Follow T-12 rather than building all screens over mocked persistence first:
 During implementation, create reproducible build, test, and portable publish scripts and document their actual commands in the repository. Discover current scripts before running commands; do not assume sample filenames exist. Keep development prerequisites separate from end-user requirements. Avoid single-file publishing, trimming, and AOT initially, as required by T-03.
 
 Choose checks proportionate to the change, but complete all affected acceptance criteria. Domain tests verify policy boundaries; Application tests verify use cases; Infrastructure tests verify real durability/transactions; Presentation tests verify ordered reactive behavior; UI tests verify interaction and visual/accessibility behavior. Avoid tests that merely mirror implementation details.
+
+Apply the §3.4 code-quality gate to every behavior-changing code change before calling it ready.
 
 For UI changes, build and launch on a supported Windows machine, verify a responsive real window, exercise the changed flow, and inspect its visual states. Test with disposable datasets and dedicated output folders; never use real user data for destructive automation. UI Automation alone does not prove visual quality or Narrator usability. Screenshots alone do not prove persistence. Restart/reopen checks must actually relaunch the app and reopen the SQLite database; do not substitute direct file reads for app behavior.
 
