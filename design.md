@@ -206,7 +206,7 @@ Each page section lists its purpose, regions, controls, item content, commands, 
 | Active Subtask cards | Count | "Not completed · parent not archived" | Grid with a non-editable "From Dashboard: active Subtask cards" chip (§2.9) |
 | Reviews | Open count | "{n} done this week · {m} this month" | Checklists Reviews card |
 
-**Bar chart (custom, native, T-08, B-15.1–3).** The Gallery `Chart` (`Microsoft.UI.Xaml.Controls.Charts`, `[gallery-chart-2]`) is preview-only and is **absent from the WinAppSDK 2.5 stable index**, so it is not used (AGENTS §3.4). The chart is built as follows:
+**Bar chart (custom, native, T-08, B-15.1–3).** The Gallery `Chart` (`Microsoft.UI.Xaml.Controls.Charts`, `[gallery-chart-2]`) is preview-only and is **absent from the WinAppSDK 2.5 stable index**, so it is not used. The chart is built as follows:
 - **Header:** title (`SubtitleTextBlockStyle`, HeadingLevel 2), a total caption, and a **Table** `ToggleButton` (name "Show as table").
 - **Rows:** an `ItemsRepeater` (`StackLayout`) of `Button` rows. Each row contains a category label (a fixed 35% column, wraps), a bar, and the count (always visible). The bar is a `Rectangle`/`Border` whose width is the star-proportion of the max, filled with `AccentFillColorDefaultBrush`, at least 2 epx when the count is above 0, and absent at 0 while the "0" stays visible.
 - **Row accessible name:** "In Progress, 6 tasks, 19 percent of 32. Opens matching tasks in Grid."

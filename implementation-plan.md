@@ -48,7 +48,7 @@ Status values: `Done` (verified), `In progress`, `Pending`, `Blocked` (with a re
 Build **Max Planner**, a native, offline, portable Windows 11 planner similar to Microsoft Planner. It covers Change Requests (CRs), tasks, Subtask cards, checklists, reviews, a Dashboard, a Calendar and data transfer.
 
 - **Product authority:** `Business Requirements.md`, revised by your decisions below. Phase 0 rewrites the spec before any code, so the spec stays the authority.
-- **Working rules:** `AGENTS.md` (Clean Architecture with MVVM, the T-12 order, the WinUI skills).
+- **Working rules:** `AGENTS.md` (delegation to `winui:winui-dev`, decision precedence, hard constraints, commands, definition of done).
 - **Visual reference:** `Designs/Max Planner.html`, adapted to native Fluent 2.
 - **Current repo:** a net8 Visual Studio template with an MSIX `.wapproj`, x86/x64/ARM64 and trimming. All of it conflicts with the spec and will be replaced. `design.md` is missing and the folder is not a git repo.
 - **Toolchain on this machine:** .NET SDK 10.0.401 (runtime 10.0.12), WinApp CLI 0.7.1 (upgraded from 0.5.0 in Phase 0), Windows 11 build 26200.
