@@ -94,7 +94,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         PriorityOptions = [.. _workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display))];
         Designers = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsPeople = true };
         Developers = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsPeople = true };
-        Tags = new TokenPickerViewModel(context.Strings, () => _workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), _newTags);
+        Tags = new TokenPickerViewModel(context.Strings, () => _workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), _newTags) { IsTags = true };
         Designers.Changed += OnDraftChanged;
         Developers.Changed += OnDraftChanged;
         Tags.Changed += OnDraftChanged;

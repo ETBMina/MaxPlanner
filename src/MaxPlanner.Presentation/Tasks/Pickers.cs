@@ -9,7 +9,7 @@ using MaxPlanner.Presentation.Common.Store;
 namespace MaxPlanner.Presentation.Tasks;
 
 /// <summary>A chip in a token picker (design §5.0); <see cref="IsNew"/> names one that is created only on Save (B-02.6).</summary>
-public sealed class TokenViewModel(Guid id, string name, bool isNew, string removeName, bool isPerson = false)
+public sealed class TokenViewModel(Guid id, string name, bool isNew, string removeName, bool isPerson = false, bool isTag = false)
 {
     public Guid Id { get; } = id;
 
@@ -22,6 +22,9 @@ public sealed class TokenViewModel(Guid id, string name, bool isNew, string remo
 
     /// <summary>A person chip shows the person's avatar before the name.</summary>
     public bool IsPerson { get; } = isPerson;
+
+    /// <summary>A tag chip is a pill in the tag's palette color (design §6.1).</summary>
+    public bool IsTag { get; } = isTag;
 }
 
 /// <summary>A suggestion row: an existing name, or "Add 'name'" for a new one. A person row shows the avatar.</summary>
@@ -113,6 +116,9 @@ public sealed partial class TokenPickerViewModel : ObservableObject
 
     /// <summary>A people picker: chips and suggestions show avatars. False for tags and services.</summary>
     public bool IsPeople { get; init; }
+
+    /// <summary>A tags picker: chips are tag pills (design §6.1). False for people and services.</summary>
+    public bool IsTags { get; init; }
 
     public IReadOnlyList<Guid> Ids => [.. _tokens.Select(t => t.Id)];
 
@@ -229,7 +235,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         }
     }
 
-    private TokenViewModel Token(Guid id, string name, bool isNew) => new(id, name, isNew, _strings.Format("TokenPicker_Remove", name), IsPeople);
+    private TokenViewModel Token(Guid id, string name, bool isNew) => new(id, name, isNew, _strings.Format("TokenPicker_Remove", name), IsPeople, IsTags);
 }
 
 /// <summary>A CR row in the link picker (design §5.6): number, title, owner, and linked-task count. Never "occupied".</summary>

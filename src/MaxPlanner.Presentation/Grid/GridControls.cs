@@ -445,6 +445,7 @@ internal static class GridCellContent
             GridColumns.Archived when row.IsArchived => ArchivedChip(row.DisplayValue(column.Key)),
             _ when row.CanEdit(column.Key) && PickerGlyph(column) is { } glyph => PickerCell(text, glyph),
             _ when row.PeopleNames(column.Key) is { Count: > 0 } people => PeopleCell(text, people),
+            _ when row.TagRefs(column.Key) is { Count: > 0 } tags => TagsCell(tags, full),
             _ => text,
         };
 
@@ -509,6 +510,17 @@ internal static class GridCellContent
         grid.Children.Add(avatars);
         grid.Children.Add(text);
         return grid;
+    }
+
+    /// <summary>
+    /// Tags and custom Tags fields: one row of tag pills with "+n" for those that do not fit (design §4.3, §6.1). The
+    /// cell's accessible name and the tooltip keep the comma-joined names.
+    /// </summary>
+    private static TagPillStrip TagsCell(IReadOnlyList<(Guid Id, string Name)> tags, string names)
+    {
+        var strip = new TagPillStrip(tags);
+        ToolTipService.SetToolTip(strip, names);
+        return strip;
     }
 
     public static FrameworkElement CreateEditor(GridRowViewModel row, GridColumnViewModel column, IGridCellHost host)

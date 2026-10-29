@@ -54,6 +54,31 @@
             <SolidColorBrush x:Key="CalendarBarStripe8" Color="#FF1C7FA3" />
             <SolidColorBrush x:Key="CalendarBarFill9" Color="#FFF8DCDC" />
             <SolidColorBrush x:Key="CalendarBarStripe9" Color="#FFB83A3A" />
+            <!-- Tag pills (design §6.1): the hue at about 14 % alpha under a darker shade of it. Text stays at 6:1 or more on page and card surfaces, and above 4.5:1 under the hover and pressed overlays. Same hue order as the bar palette. -->
+            <SolidColorBrush x:Key="TagPillFill0" Color="#242F6FB5" />
+            <SolidColorBrush x:Key="TagPillForeground0" Color="#FF214D7E" />
+            <SolidColorBrush x:Key="TagPillFill1" Color="#241A8577" />
+            <SolidColorBrush x:Key="TagPillForeground1" Color="#FF11554C" />
+            <SolidColorBrush x:Key="TagPillFill2" Color="#247B4FB8" />
+            <SolidColorBrush x:Key="TagPillForeground2" Color="#FF5A388A" />
+            <SolidColorBrush x:Key="TagPillFill3" Color="#24C25A12" />
+            <SolidColorBrush x:Key="TagPillForeground3" Color="#FF79380B" />
+            <SolidColorBrush x:Key="TagPillFill4" Color="#24B03A7A" />
+            <SolidColorBrush x:Key="TagPillForeground4" Color="#FF7F2A58" />
+            <SolidColorBrush x:Key="TagPillFill5" Color="#244C8A2E" />
+            <SolidColorBrush x:Key="TagPillForeground5" Color="#FF2E541C" />
+            <SolidColorBrush x:Key="TagPillFill6" Color="#244B53B0" />
+            <SolidColorBrush x:Key="TagPillForeground6" Color="#FF3D438F" />
+            <SolidColorBrush x:Key="TagPillFill7" Color="#248A6236" />
+            <SolidColorBrush x:Key="TagPillForeground7" Color="#FF634627" />
+            <SolidColorBrush x:Key="TagPillFill8" Color="#241C7FA3" />
+            <SolidColorBrush x:Key="TagPillForeground8" Color="#FF125168" />
+            <SolidColorBrush x:Key="TagPillFill9" Color="#24B83A3A" />
+            <SolidColorBrush x:Key="TagPillForeground9" Color="#FF842A2A" />
+            <SolidColorBrush x:Key="TagPillStrokeBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="TagPillHoverStrokeBrush" Color="Transparent" />
+            <x:Double x:Key="TagPillHoverOverlayOpacity">0.07</x:Double>
+            <x:Double x:Key="TagPillPressedOverlayOpacity">0.12</x:Double>
             <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
@@ -116,6 +141,31 @@
             <SolidColorBrush x:Key="CalendarBarStripe8" Color="#FF5EC4E6" />
             <SolidColorBrush x:Key="CalendarBarFill9" Color="#FF4A2323" />
             <SolidColorBrush x:Key="CalendarBarStripe9" Color="#FFEE8585" />
+            <!-- Tag pills, same hue order as Light: the lighter hue at about 24 % alpha under a pale shade of it (6:1 or more). -->
+            <SolidColorBrush x:Key="TagPillFill0" Color="#3D6AA6EA" />
+            <SolidColorBrush x:Key="TagPillForeground0" Color="#FFC5DCF7" />
+            <SolidColorBrush x:Key="TagPillFill1" Color="#3D4FC7B5" />
+            <SolidColorBrush x:Key="TagPillForeground1" Color="#FFB9E9E2" />
+            <SolidColorBrush x:Key="TagPillFill2" Color="#3DB392E6" />
+            <SolidColorBrush x:Key="TagPillForeground2" Color="#FFE2D6F5" />
+            <SolidColorBrush x:Key="TagPillFill3" Color="#3DF0995A" />
+            <SolidColorBrush x:Key="TagPillForeground3" Color="#FFF9D7BE" />
+            <SolidColorBrush x:Key="TagPillFill4" Color="#3DE87BB6" />
+            <SolidColorBrush x:Key="TagPillForeground4" Color="#FFF6CBE2" />
+            <SolidColorBrush x:Key="TagPillFill5" Color="#3D8CC66A" />
+            <SolidColorBrush x:Key="TagPillForeground5" Color="#FFD1E8C4" />
+            <SolidColorBrush x:Key="TagPillFill6" Color="#3D8E96EC" />
+            <SolidColorBrush x:Key="TagPillForeground6" Color="#FFD3D6F8" />
+            <SolidColorBrush x:Key="TagPillFill7" Color="#3DC9A076" />
+            <SolidColorBrush x:Key="TagPillForeground7" Color="#FFE9D9C8" />
+            <SolidColorBrush x:Key="TagPillFill8" Color="#3D5EC4E6" />
+            <SolidColorBrush x:Key="TagPillForeground8" Color="#FFC1E8F5" />
+            <SolidColorBrush x:Key="TagPillFill9" Color="#3DEE8585" />
+            <SolidColorBrush x:Key="TagPillForeground9" Color="#FFF8CECE" />
+            <SolidColorBrush x:Key="TagPillStrokeBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="TagPillHoverStrokeBrush" Color="Transparent" />
+            <x:Double x:Key="TagPillHoverOverlayOpacity">0.07</x:Double>
+            <x:Double x:Key="TagPillPressedOverlayOpacity">0.12</x:Double>
             <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
@@ -181,6 +231,31 @@
             <StaticResource x:Key="CalendarBarStripe8" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="CalendarBarFill9" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="CalendarBarStripe9" ResourceKey="SystemColorButtonTextColorBrush" />
+            <!-- Design §3 rule 3: no tag palette in High Contrast; pills are ButtonFace with a ButtonText border and text, and Highlight marks hover. -->
+            <StaticResource x:Key="TagPillFill0" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground0" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill1" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground1" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill2" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground2" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill3" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground3" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill4" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground4" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill5" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground5" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill6" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground6" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill7" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground7" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill8" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground8" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillFill9" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="TagPillForeground9" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TagPillHoverStrokeBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <x:Double x:Key="TagPillHoverOverlayOpacity">0</x:Double>
+            <x:Double x:Key="TagPillPressedOverlayOpacity">0</x:Double>
             <StaticResource x:Key="CalendarAdjacentDayForegroundBrush" ResourceKey="SystemColorGrayTextColorBrush" />
             <StaticResource x:Key="CalendarTodayBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <StaticResource x:Key="CalendarTodayForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
@@ -273,6 +348,177 @@
     </Style>
     <Style x:Key="AccentChipGlyphStyle" BasedOn="{StaticResource ChipGlyphStyle}" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource AccentChipForegroundBrush}" />
+    </Style>
+
+    <!--
+        Tag pills (design §6.1): fully rounded, with no border, glyph, or dot; a translucent hue fill with text in a
+        darker shade of the same hue. TagPill picks TagPillStyle{i} / TagPillButtonStyle{i} from the tag's Id. Corner
+        radius 11 is half the 22-epx height (caption line 16 + padding 2x2 + the 1-epx stroke High Contrast shows).
+    -->
+    <Style x:Key="TagPillStyle" TargetType="ContentPresenter">
+        <Setter Property="CornerRadius" Value="11" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{ThemeResource TagPillStrokeBrush}" />
+        <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style x:Key="TagPillTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <!-- Display only: the Grid cell's accessible name already lists every tag. -->
+        <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="MaxLines" Value="1" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="TagPillOverflowTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <!-- A removable tag chip in the TokenPicker: the pill, plus an overlay in the pill's own text color on hover and press. -->
+    <Style x:Key="TagPillButtonStyle" TargetType="Button">
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="CornerRadius" Value="11" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{ThemeResource TagPillStrokeBrush}" />
+        <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="UseSystemFocusVisuals" Value="{StaticResource UseSystemFocusVisuals}" />
+        <Setter Property="FocusVisualMargin" Value="-3" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid
+                        x:Name="Root"
+                        Background="{TemplateBinding Background}"
+                        BackgroundSizing="{TemplateBinding BackgroundSizing}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Overlay.Opacity" Value="{ThemeResource TagPillHoverOverlayOpacity}" />
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource TagPillHoverStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Overlay.Opacity" Value="{ThemeResource TagPillPressedOverlayOpacity}" />
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource TagPillHoverStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Border
+                            x:Name="Overlay"
+                            Background="{TemplateBinding Foreground}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0" />
+                        <ContentPresenter
+                            x:Name="ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            ContentTransitions="{TemplateBinding ContentTransitions}"
+                            Foreground="{TemplateBinding Foreground}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="TagPillStyle0" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill0}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground0}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle0" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill0}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground0}" />
+    </Style>
+    <Style x:Key="TagPillStyle1" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill1}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground1}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle1" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill1}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground1}" />
+    </Style>
+    <Style x:Key="TagPillStyle2" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill2}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground2}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle2" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill2}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground2}" />
+    </Style>
+    <Style x:Key="TagPillStyle3" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill3}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground3}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle3" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill3}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground3}" />
+    </Style>
+    <Style x:Key="TagPillStyle4" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill4}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground4}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle4" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill4}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground4}" />
+    </Style>
+    <Style x:Key="TagPillStyle5" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill5}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground5}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle5" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill5}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground5}" />
+    </Style>
+    <Style x:Key="TagPillStyle6" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill6}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground6}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle6" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill6}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground6}" />
+    </Style>
+    <Style x:Key="TagPillStyle7" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill7}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground7}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle7" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill7}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground7}" />
+    </Style>
+    <Style x:Key="TagPillStyle8" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill8}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground8}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle8" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill8}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground8}" />
+    </Style>
+    <Style x:Key="TagPillStyle9" BasedOn="{StaticResource TagPillStyle}" TargetType="ContentPresenter">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill9}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground9}" />
+    </Style>
+    <Style x:Key="TagPillButtonStyle9" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource TagPillFill9}" />
+        <Setter Property="Foreground" Value="{ThemeResource TagPillForeground9}" />
     </Style>
 
     <!-- Card surfaces (design §3): card fill with a 1-px stroke; nested surfaces use the secondary fill. -->

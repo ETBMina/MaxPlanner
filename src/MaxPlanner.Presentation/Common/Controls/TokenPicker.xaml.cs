@@ -2,6 +2,7 @@ using MaxPlanner.Presentation.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.System;
@@ -74,10 +75,15 @@ public sealed partial class TokenPicker : UserControl
     /// <summary>A person chip starts with its avatar, so it keeps less padding on that side.</summary>
     public static Thickness ChipPadding(bool isPerson) => isPerson ? new Thickness(2, 2, 8, 2) : new Thickness(8, 2, 8, 2);
 
+    /// <summary>A tag chip is a pill in the tag's palette color (design §6.1); people and service chips keep the default button.</summary>
+    public static Style ChipStyle(bool isTag, Guid id) => isTag ? TagPill.ButtonStyle(id) : TagPill.Resource("DefaultButtonStyle");
+
     // Design §5.0: the list opens when focus enters the picker, before typing. Only an entry counts: opening the list
     // makes the AutoSuggestBox focus itself, and Esc closes it and then focuses its text box with FocusState.Keyboard.
     // Treating those internal moves as an entry reopened the list, so the first Esc seemed to do nothing.
-    // Programmatic entry (after a chip is removed, or a field focused for a validation error) does not open it.
+    // Programmatic entry (a field focused for a validation error) is meant not to open it, but WinUI reports a
+    // programmatic focus with the last input device's state (Pointer after a click). Removing a chip therefore moves no
+    // focus at all, so the list stays closed.
     private void OnBoxGotFocus(object sender, RoutedEventArgs e)
     {
         var entered = !_hasFocusWithin;
@@ -152,14 +158,38 @@ public sealed partial class TokenPicker : UserControl
         _pressRoot = null;
     }
 
-    // The suggestion list lives in its own popup, whose elements have a different root; a press there is a pick, not
-    // an outside click, so only presses rooted where the picker is close the list.
+    // A press in the suggestion list is a pick, not an outside click. In a dialog or flyout the list's popup shares
+    // the picker's popup root, so the root alone cannot tell them apart: the list itself is checked. Closing it here,
+    // on press, would remove the item before its click chose it.
     private void OnPressWhileListOpen(object sender, PointerRoutedEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject source && !IsWithin(source, Box) && ReferenceEquals(RootOf(source), _pressRoot))
+        if (e.OriginalSource is DependencyObject source && !IsWithin(source, Box) && ReferenceEquals(RootOf(source), _pressRoot)
+            && !IsWithin(source, SuggestionsContent()))
         {
             Box.IsSuggestionListOpen = false;
         }
+    }
+
+    // The AutoSuggestBox template's SuggestionsPopup part. Its child is not a visual descendant of the box.
+    private UIElement? SuggestionsContent() => FindPopup(Box)?.Child;
+
+    private static Popup? FindPopup(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is Popup { Name: "SuggestionsPopup" } popup)
+            {
+                return popup;
+            }
+
+            if (FindPopup(child) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private static DependencyObject RootOf(DependencyObject element)
@@ -182,9 +212,9 @@ public sealed partial class TokenPicker : UserControl
         return IsWithin(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject, Box);
     }
 
-    private static bool IsWithin(DependencyObject? element, DependencyObject ancestor)
+    private static bool IsWithin(DependencyObject? element, DependencyObject? ancestor)
     {
-        for (; element is not null; element = VisualTreeHelper.GetParent(element))
+        for (; element is not null && ancestor is not null; element = VisualTreeHelper.GetParent(element))
         {
             if (ReferenceEquals(element, ancestor))
             {
@@ -211,19 +241,20 @@ public sealed partial class TokenPicker : UserControl
 
     private void OnRemoveClick(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: TokenViewModel token })
+        // ItemsRepeater runs x:Bind templates without setting DataContext, so the chip carries its token in Tag.
+        if (sender is FrameworkElement { Tag: TokenViewModel token })
         {
             ViewModel?.Remove(token);
-            Box.Focus(FocusState.Programmatic);
         }
     }
 
     // Design §8.1: repeated items carry a record key, {picker}_Chip_{Guid:N}; recycled elements get the new item's ID.
     private void OnChipPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
-        if (args.Element is FrameworkElement { DataContext: TokenViewModel token } chip && !string.IsNullOrEmpty(BoxAutomationId))
+        // The item comes from the source: ItemsRepeater does not set DataContext on x:Bind templates.
+        if (sender.ItemsSourceView?.GetAt(args.Index) is TokenViewModel token && !string.IsNullOrEmpty(BoxAutomationId))
         {
-            AutomationProperties.SetAutomationId(chip, BoxAutomationId + "_Chip_" + token.Id.ToString("N"));
+            AutomationProperties.SetAutomationId(args.Element, BoxAutomationId + "_Chip_" + token.Id.ToString("N"));
         }
     }
 

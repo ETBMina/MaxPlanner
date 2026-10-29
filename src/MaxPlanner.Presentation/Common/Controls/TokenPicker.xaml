@@ -47,7 +47,7 @@
                 </DataTemplate>
             </AutoSuggestBox.ItemTemplate>
         </AutoSuggestBox>
-        <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. -->
+        <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. Tag chips are pills in the tag's color. -->
         <ItemsRepeater ElementPrepared="OnChipPrepared" ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}">
             <ItemsRepeater.Layout>
                 <LinedFlowLayout LineSpacing="6" MinItemSpacing="6" />
@@ -56,6 +56,8 @@
                 <DataTemplate x:DataType="tasks:TokenViewModel">
                     <Button
                         Padding="{x:Bind local:TokenPicker.ChipPadding(IsPerson), Mode=OneTime}"
+                        Style="{x:Bind local:TokenPicker.ChipStyle(IsTag, Id), Mode=OneTime}"
+                        Tag="{x:Bind}"
                         AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
                         Click="OnRemoveClick"
                         KeyDown="OnChipKeyDown"

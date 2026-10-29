@@ -365,7 +365,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
     private FilterPickerFieldViewModel Picker(
         string key, string header, Func<IEnumerable<(Guid Id, string Name)>> existing, IEnumerable<Guid> selected, WorkflowSnapshot workflow, bool isTags, bool matchAll)
     {
-        var picker = new TokenPickerViewModel(Context.Strings, existing, new NewNameRegistry()) { AllowNew = false, IsPeople = !isTags };
+        var picker = new TokenPickerViewModel(Context.Strings, existing, new NewNameRegistry()) { AllowNew = false, IsPeople = !isTags, IsTags = isTags };
         picker.Load(selected.Select(id => (id, (isTags ? workflow.FindTag(new TagId(id))?.Name.Display : workflow.FindPerson(new PersonId(id))?.Name.Display) ?? string.Empty, false)));
         return new FilterPickerFieldViewModel(key, Context.Strings.GetString(header), "Filters_" + key + "Picker", picker, isTags, matchAll);
     }

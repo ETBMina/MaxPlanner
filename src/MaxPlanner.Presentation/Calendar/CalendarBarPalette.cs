@@ -1,3 +1,4 @@
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
@@ -51,22 +52,8 @@ internal sealed class CalendarBarPalette
             ? new CalendarBarPalette(theme)
             : null;
 
-    /// <summary>
-    /// The palette entry of a CR. A fixed FNV-1a hash over the Guid bytes keeps the color stable across runs;
-    /// <see cref="string.GetHashCode()"/> is randomized per process and would recolor every CR on each start.
-    /// </summary>
-    public static int IndexOf(Guid id)
-    {
-        Span<byte> bytes = stackalloc byte[16];
-        id.TryWriteBytes(bytes);
-        var hash = 2166136261u;
-        foreach (var value in bytes)
-        {
-            hash = (hash ^ value) * 16777619u;
-        }
-
-        return (int)(hash % Count);
-    }
+    /// <summary>The palette entry of a CR (<see cref="PaletteHash"/>), so its bars match everywhere.</summary>
+    public static int IndexOf(Guid id) => PaletteHash.IndexOf(id, Count);
 
     public CalendarBarColors ColorsFor(Guid id, CalendarBarState state)
     {

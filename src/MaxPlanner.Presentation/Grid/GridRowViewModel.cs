@@ -222,6 +222,19 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         _ => [],
     };
 
+    /// <summary>
+    /// The tags a cell shows as pills: the task's Tags or a custom Tags field. Empty for other columns. The order
+    /// matches <see cref="DisplayValue"/>, which stays the cell's text for its tooltip and accessible name.
+    /// </summary>
+    public IReadOnlyList<(Guid Id, string Name)> TagRefs(string column) => column switch
+    {
+        GridColumns.Tags => [.. (Model.Task?.Tags ?? []).Select(t => (t.Id.Value, t.Name))],
+        _ when GridColumns.IsCustom(column) && Model.Task is { } task && FieldOf(column) is { Kind: FieldKind.Tags } field
+            && task.CustomValues.GetValueOrDefault(field.Id) is TagsCustomValue tags
+            => [.. tags.TagIds.Select(id => _workflow()?.FindTag(id)).Where(t => t is not null).Select(t => (t!.Id.Value, t.Name.Display))],
+        _ => [],
+    };
+
     /// <summary>The full text of a cell for its tooltip (notes are shown by first line).</summary>
     public string FullValue(string column) => column == GridColumns.Notes
         ? (Model.Task is { } task ? task.Notes : Model.Card!.Notes) ?? string.Empty
@@ -259,7 +272,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         {
             DraftNewNames = new NewNameRegistry();
             DraftTokens = column == GridColumns.Tags
-                ? new TokenPickerViewModel(_strings, () => workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), DraftNewNames)
+                ? new TokenPickerViewModel(_strings, () => workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), DraftNewNames) { IsTags = true }
                 : new TokenPickerViewModel(_strings, () => workflow.People.Select(p => (p.Id.Value, p.Name.Display)), DraftNewNames) { IsPeople = true };
             var refs = column switch
             {

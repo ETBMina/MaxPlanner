@@ -902,6 +902,10 @@
     <value>+{0}</value>
     <comment>The circle after a stack of person avatars that counts the people not shown, e.g. "+2".</comment>
   </data>
+  <data name="TagPill_Overflow" xml:space="preserve">
+    <value>+{0}</value>
+    <comment>After the tag pills that fit in a Grid cell, the number of tags not shown, e.g. "+3".</comment>
+  </data>
   <data name="TaskEditor_ChecklistSummary" xml:space="preserve">
     <value>{0} items, {1} done</value>
   </data>

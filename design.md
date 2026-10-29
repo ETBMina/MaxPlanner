@@ -319,7 +319,8 @@ A card that is created, copied or restored, or whose status changes outside a po
 | Service | `TextBox` | task (required if linked) | Subtask card: parent service, read-only |
 | Status | `ComboBox` | task, Subtask card | Status text + flag glyph |
 | Priority | `ComboBox` | task | Priority chip |
-| Designers / Developers / Tags | People/tag picker in a `Flyout` | task | Comma-joined names, "+n" |
+| Designers / Developers | People picker in a `Flyout` | task | Comma-joined names, "+n" |
+| Tags (and custom Tags fields) | Tag picker in a `Flyout` | task | One row of tag pills (§6.1) that fits the cell, then "+n"; tooltip and accessible name keep the comma-joined names |
 | Start Date / End Date | `CalendarDatePicker` | task, Subtask card | Short date |
 | Notes | Multiline `TextBox` in a `Flyout` with **Save** (Ctrl+Enter) / Cancel | task, Subtask card | First line, ellipsis |
 | Archived | — | never | "Archived" chip or blank |
@@ -707,6 +708,19 @@ Anatomy: a `Border` with `CornerRadius` 4, padding 6×2, the `CaptionTextBlockSt
 
 Priority tokens are assigned by **configured rank**, never by name, because priorities are editable lookups (B-04). A chip's name is "Priority: Urgent".
 
+**Tag pills (owner decision 2026-10-29).** Tags, both the built-in task Tags and custom Tags fields, have their own anatomy. All other chips keep the table above.
+- **Where:** TokenPicker tag chips (task editor, Grid flyout, Filters, custom-field editors) and the Grid Tags cells.
+- **Shape:** a fully rounded pill, `CornerRadius` 11, padding 8×2, height 22 epx. Text is `CaptionTextBlockStyle` on one line, trimmed with an ellipsis. The pill has no border, dot or leading glyph. A removable chip ends with a 10-epx Cancel glyph (E711).
+- **Color:** a semi-transparent tint of the tag's hue (`TagPillFill{i}`, about 14 % alpha in Light and 24 % in Dark) with text in a stronger shade of the same hue (`TagPillForeground{i}`).
+  - The entry comes from the tag Id, using the same FNV-1a hash as the calendar palette (`PaletteHash`, 10 entries, same hue order). A tag therefore has the same color everywhere.
+  - Text stays at or above 4.5:1 on every surface where tags appear, at rest, on hover and when pressed.
+  - Tags have no stored color. Hue never carries meaning and only helps tell tags apart.
+- **Hover and pressed:** an overlay in the pill's own text color at 7 % and 12 %.
+- **High Contrast:** ButtonFace fill, ButtonText text and a 1-epx ButtonText stroke. The stroke turns Highlight on hover.
+- **Grid cells:** show as many pills as fit at 4-epx spacing, then a secondary "+n". If not even one pill fits, the first is trimmed.
+
+Like the calendar palette, these tag colors are custom color literals, an exception to §3 rule 2.
+
 ### 6.2 Status presentation
 Statuses are configurable, so status text is always shown. The glyph comes from the flags:
 
@@ -730,7 +744,7 @@ There is no per-status color in release 1 (§11 Q8).
 | Drop target day | `SubtleFillColorSecondaryBrush` | Dashed accent | "Drop to schedule on Oct 13" caption | Highlight |
 | Continuation | — | — | ChevronLeft/ChevronRight glyph at the clipped edge | Same |
 
-**Per-CR palette (owner decision 2026-10-26).** Bars are colored per CR so neighbouring CRs are easy to tell apart. `CalendarBarPalette` picks one of 10 entries from the CR Id (FNV-1a over the Guid bytes, mod 10; never `string.GetHashCode`, which changes per process), so a CR has the same color on every week row and in Month and Week. The entries are `CalendarBarFill0…9` (tinted, low-saturation fill) and `CalendarBarStripe0…9` (stronger accent) in `Themes/AppResources.xaml`, defined for Light and Dark in the same hue order: blue, teal, purple, orange, magenta, green, indigo, brown, cyan, rose. Primary text stays at or above 4.5:1 on every fill, including the hover, pressed and faded completed states. No entry reuses the Caution yellow, and hue never carries meaning: state is still glyph + text (P3), and the palette is only an identity aid. These are the only custom color literals in the app (a deliberate exception to §3 rule 2). In High Contrast every entry maps to ButtonFace/ButtonText and the bars use their styles' system brushes (§3 rule 3). The palette is resolved for the surface's current theme and applied as local brushes plus lightweight `Button*` overrides, so the surface re-renders on a Light/Dark change, on a High Contrast change, and when it is loaded after a theme change made while the page was cached. The agenda list (S) has no bar visual and stays uncolored.
+**Per-CR palette (owner decision 2026-10-26).** Bars are colored per CR so neighbouring CRs are easy to tell apart. `CalendarBarPalette` picks one of 10 entries from the CR Id (FNV-1a over the Guid bytes, mod 10; never `string.GetHashCode`, which changes per process), so a CR has the same color on every week row and in Month and Week. The entries are `CalendarBarFill0…9` (tinted, low-saturation fill) and `CalendarBarStripe0…9` (stronger accent) in `Themes/AppResources.xaml`, defined for Light and Dark in the same hue order: blue, teal, purple, orange, magenta, green, indigo, brown, cyan, rose. Primary text stays at or above 4.5:1 on every fill, including the hover, pressed and faded completed states. No entry reuses the Caution yellow, and hue never carries meaning: state is still glyph + text (P3), and the palette is only an identity aid. These and the tag-pill tokens (§6.1) are the only custom color literals in the app (a deliberate exception to §3 rule 2). In High Contrast every entry maps to ButtonFace/ButtonText and the bars use their styles' system brushes (§3 rule 3). The palette is resolved for the surface's current theme and applied as local brushes plus lightweight `Button*` overrides, so the surface re-renders on a Light/Dark change, on a High Contrast change, and when it is loaded after a theme change made while the page was cached. The agenda list (S) has no bar visual and stays uncolored.
 
 The Dashboard "Needs attention" badge uses Warning glyph + text in `SystemFillColorCautionBrush`, and the Overdue list "Days overdue" column shows a number + "days".
 
