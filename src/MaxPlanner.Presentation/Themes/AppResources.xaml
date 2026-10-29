@@ -61,6 +61,13 @@
             <StaticResource x:Key="BoardInsertionLineBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
+            <!-- Person avatars: the per-person fill is set in code (PersonAvatarIdentity.Palette); these are the parts around it. -->
+            <SolidColorBrush x:Key="PersonAvatarForegroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="PersonAvatarBackgroundBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="PersonAvatarStrokeBrush" Color="Transparent" />
+            <StaticResource x:Key="PersonAvatarRingBrush" ResourceKey="SolidBackgroundFillColorBaseBrush" />
+            <SolidColorBrush x:Key="PersonAvatarOverflowBackgroundBrush" Color="#FFE0E0E0" />
+            <StaticResource x:Key="PersonAvatarOverflowForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <StaticResource x:Key="ChipStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
@@ -116,6 +123,13 @@
             <StaticResource x:Key="BoardInsertionLineBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
+            <!-- Person avatars: the per-person fill is set in code (PersonAvatarIdentity.Palette); these are the parts around it. -->
+            <SolidColorBrush x:Key="PersonAvatarForegroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="PersonAvatarBackgroundBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="PersonAvatarStrokeBrush" Color="Transparent" />
+            <StaticResource x:Key="PersonAvatarRingBrush" ResourceKey="SolidBackgroundFillColorBaseBrush" />
+            <SolidColorBrush x:Key="PersonAvatarOverflowBackgroundBrush" Color="#FF454545" />
+            <StaticResource x:Key="PersonAvatarOverflowForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <!-- Design §3 rule 3: chips render as ButtonFace with ButtonText border and text; glyphs carry meaning. -->
@@ -174,8 +188,39 @@
             <StaticResource x:Key="BoardInsertionLineBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <!-- Design §3 rule 3: no avatar palette in High Contrast; ButtonFace circles with ButtonText border and initials. -->
+            <StaticResource x:Key="PersonAvatarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="PersonAvatarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PersonAvatarStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="PersonAvatarRingBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="PersonAvatarOverflowBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="PersonAvatarOverflowForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Person avatars (PersonAvatar, PersonAvatarGroup): size, corner radius, and fill are set in code. -->
+    <Style x:Key="PersonAvatarStyle" TargetType="Grid">
+        <Setter Property="Background" Value="{ThemeResource PersonAvatarBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource PersonAvatarStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <!-- In a stack, a ring in the surface color separates each circle from the one it overlaps. -->
+    <Style x:Key="PersonAvatarStackedStyle" BasedOn="{StaticResource PersonAvatarStyle}" TargetType="Grid">
+        <Setter Property="BorderBrush" Value="{ThemeResource PersonAvatarRingBrush}" />
+        <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+    <Style x:Key="PersonAvatarOverflowStyle" TargetType="Grid">
+        <Setter Property="Background" Value="{ThemeResource PersonAvatarOverflowBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource PersonAvatarRingBrush}" />
+        <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+    <Style x:Key="PersonAvatarTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource PersonAvatarForegroundBrush}" />
+    </Style>
+    <Style x:Key="PersonAvatarOverflowTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource PersonAvatarOverflowForegroundBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
 
     <!-- Chip anatomy (design §6.1): corner radius 4, padding 6x2, caption text, optional 12-epx glyph. -->
     <Style x:Key="ChipBorderStyle" TargetType="Border">

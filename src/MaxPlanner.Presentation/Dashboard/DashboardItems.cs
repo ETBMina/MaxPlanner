@@ -14,6 +14,9 @@ public sealed record DashboardOption(Guid? Id, string Label, bool IsGeneral = fa
 {
     public bool IsAll => Id is null && !IsGeneral;
 
+    /// <summary>A person in the CR Owner filter (not "All owners"); its item shows the avatar.</summary>
+    public bool IsPerson => Id is not null;
+
     public override string ToString() => Label;
 }
 
@@ -255,7 +258,12 @@ public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings s
 
     public string Priority { get; } = task.Priority.Name;
 
-    public string People { get; } = string.Join(", ", task.Designers.Concat(task.Developers).Select(p => p.Name).Distinct(StringComparer.CurrentCulture));
+    /// <summary>Designers then Developers, each person once, for the row's avatar stack.</summary>
+    public IReadOnlyList<string> PeopleNames { get; } = [.. task.Designers.Concat(task.Developers).Select(p => p.Name).Distinct(StringComparer.CurrentCulture)];
+
+    public bool HasPeople => PeopleNames.Count > 0;
+
+    public string People => string.Join(", ", PeopleNames);
 
     public string Secondary => string.Join(" · ", new[] { Service, Status, Priority, People }.Where(p => p.Length > 0));
 

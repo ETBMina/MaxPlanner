@@ -51,7 +51,7 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
         _id = reviewId ?? new ReviewItemId(Guid.NewGuid());
 
         // Design §5.0: Developer is a single-person picker; Services are free-text chips.
-        Developer = new TokenPickerViewModel(context.Strings, () => (context.Store.CurrentWorkflow ?? workflow).People.Select(p => (p.Id.Value, p.Name.Display)), _newPeople) { IsSingleSelection = true };
+        Developer = new TokenPickerViewModel(context.Strings, () => (context.Store.CurrentWorkflow ?? workflow).People.Select(p => (p.Id.Value, p.Name.Display)), _newPeople) { IsSingleSelection = true, IsPeople = true };
         Services = new TokenPickerViewModel(context.Strings, () => [], _services);
         Developer.Changed += OnPickerChanged;
         Services.Changed += OnPickerChanged;

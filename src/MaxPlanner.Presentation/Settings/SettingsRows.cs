@@ -24,6 +24,9 @@ public sealed partial class LookupRowViewModel : ObservableObject
 
     public LookupKind Kind { get; }
 
+    /// <summary>A People row shows the person's avatar before the name.</summary>
+    public bool IsPerson => Kind == LookupKind.Person;
+
     public Guid Id { get; }
 
     public string AutomationId { get; }
@@ -234,5 +237,8 @@ public sealed partial class FieldSectionViewModel : ObservableObject
 /// <summary>A ComboBox choice in Settings › Defaults; a null <see cref="Id"/> is "None".</summary>
 public sealed record SettingsChoice(Guid? Id, string Name)
 {
+    /// <summary>A person choice (not "None"); the owner picker shows its avatar.</summary>
+    public bool IsPerson => Id is not null;
+
     public override string ToString() => Name;
 }

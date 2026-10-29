@@ -71,6 +71,9 @@ public sealed partial class TokenPicker : UserControl
 
     public void FocusBox() => Box.Focus(FocusState.Programmatic);
 
+    /// <summary>A person chip starts with its avatar, so it keeps less padding on that side.</summary>
+    public static Thickness ChipPadding(bool isPerson) => isPerson ? new Thickness(2, 2, 8, 2) : new Thickness(8, 2, 8, 2);
+
     // Design §5.0: the list opens when focus enters the picker, before typing. Only an entry counts: opening the list
     // makes the AutoSuggestBox focus itself, and Esc closes it and then focuses its text box with FocusState.Keyboard.
     // Treating those internal moves as an entry reopened the list, so the first Esc seemed to do nothing.

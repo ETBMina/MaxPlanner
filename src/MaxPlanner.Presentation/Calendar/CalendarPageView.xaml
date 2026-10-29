@@ -68,12 +68,19 @@
                         Style="{StaticResource BodyStrongTextBlockStyle}"
                         Text="{x:Bind Title, Mode=OneWay}"
                         TextWrapping="Wrap" />
-                    <TextBlock
+                    <StackPanel
                         Grid.Row="2"
                         Grid.ColumnSpan="2"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind OwnerName, Mode=OneWay}" />
+                        Orientation="Horizontal"
+                        Spacing="6">
+                        <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerName, Mode=OneWay}" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind OwnerName, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
                     <StackPanel
                         Grid.Row="3"
                         Grid.ColumnSpan="2"
@@ -126,7 +133,14 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
-                <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{x:Bind OwnerName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <Grid Grid.Column="2" VerticalAlignment="Center" ColumnSpacing="6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerName, Mode=OneWay}" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind OwnerName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                </Grid>
                 <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="{x:Bind SquadName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="{x:Bind StatusName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Column="5" VerticalAlignment="Center" Text="{x:Bind PriorityName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
@@ -177,11 +191,23 @@
                         <Run Text="{x:Bind Number, Mode=OneWay}" />
                         <Run Text="{x:Bind Title, Mode=OneWay}" />
                     </TextBlock>
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind CompactLine, Mode=OneWay}"
-                        TextWrapping="Wrap" />
+                    <Grid ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:PersonAvatar
+                            VerticalAlignment="Top"
+                            Diameter="20"
+                            DisplayName="{x:Bind OwnerName, Mode=OneWay}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind CompactLine, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </Grid>
                 </StackPanel>
                 <Button
                     Grid.Column="1"

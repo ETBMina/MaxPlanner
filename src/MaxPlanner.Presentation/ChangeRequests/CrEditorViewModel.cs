@@ -132,7 +132,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         ];
 
         // B-11/design §5.0: the Owner is a single-person picker with the same add-new rule (created only on Save).
-        Owner = new TokenPickerViewModel(context.Strings, () => _workflow.People.Select(p => (p.Id.Value, p.Name.Display)), _newPeople) { IsSingleSelection = true };
+        Owner = new TokenPickerViewModel(context.Strings, () => _workflow.People.Select(p => (p.Id.Value, p.Name.Display)), _newPeople) { IsSingleSelection = true, IsPeople = true };
         Owner.Changed += OnOwnerChanged;
         CustomFields = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, context.Strings);
         CustomFields.Changed += OnCustomFieldsChanged;

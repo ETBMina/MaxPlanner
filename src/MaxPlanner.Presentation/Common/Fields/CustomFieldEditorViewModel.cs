@@ -39,7 +39,7 @@ public sealed partial class CustomFieldEditorViewModel : ObservableObject
             IEnumerable<(Guid, string)> Existing() => field.Kind == FieldKind.People
                 ? workflow.People.Select(p => (p.Id.Value, p.Name.Display))
                 : workflow.Tags.Select(t => (t.Id.Value, t.Name.Display));
-            Tokens = new TokenPickerViewModel(strings, Existing, new NewNameRegistry()) { AllowNew = false };
+            Tokens = new TokenPickerViewModel(strings, Existing, new NewNameRegistry()) { AllowNew = false, IsPeople = field.Kind == FieldKind.People };
             Tokens.Changed += (_, _) => RaiseChanged();
         }
     }

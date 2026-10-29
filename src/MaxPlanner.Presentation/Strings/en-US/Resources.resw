@@ -898,6 +898,10 @@
   <data name="TokenPicker_Remove" xml:space="preserve">
     <value>Remove {0}</value>
   </data>
+  <data name="PersonAvatar_Overflow" xml:space="preserve">
+    <value>+{0}</value>
+    <comment>The circle after a stack of person avatars that counts the people not shown, e.g. "+2".</comment>
+  </data>
   <data name="TaskEditor_ChecklistSummary" xml:space="preserve">
     <value>{0} items, {1} done</value>
   </data>

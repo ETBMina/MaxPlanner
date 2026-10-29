@@ -105,6 +105,17 @@
             </Border>
         </DataTemplate>
 
+        <!-- CR Owner filter items: the person's avatar and name; "All owners" is text only. -->
+        <DataTemplate x:Key="OwnerOptionTemplate" x:DataType="local:DashboardOption">
+            <StackPanel AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" Orientation="Horizontal" Spacing="8">
+                <controls:PersonAvatar
+                    Diameter="20"
+                    DisplayName="{x:Bind Label, Mode=OneTime}"
+                    Visibility="{x:Bind IsPerson, Mode=OneTime}" />
+                <TextBlock VerticalAlignment="Center" Text="{x:Bind Label, Mode=OneTime}" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="OverdueRowTemplate" x:DataType="local:OverdueRowViewModel">
             <Button
                 Padding="8,6"
@@ -128,11 +139,20 @@
                             TextTrimming="CharacterEllipsis"
                             ToolTipService.ToolTip="{x:Bind Title, Mode=OneTime}" />
                     </StackPanel>
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind Secondary, Mode=OneTime}"
-                        TextWrapping="Wrap" />
+                    <Grid ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:PersonAvatar VerticalAlignment="Top" Diameter="20" DisplayName="{x:Bind Owner, Mode=OneTime}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind Secondary, Mode=OneTime}"
+                            TextWrapping="Wrap" />
+                    </Grid>
                 </StackPanel>
             </Button>
         </DataTemplate>
@@ -153,11 +173,24 @@
                         Text="{x:Bind Title, Mode=OneTime}"
                         TextTrimming="CharacterEllipsis"
                         ToolTipService.ToolTip="{x:Bind Title, Mode=OneTime}" />
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind Secondary, Mode=OneTime}"
-                        TextWrapping="Wrap" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:PersonAvatarGroup
+                            Margin="0,0,6,0"
+                            VerticalAlignment="Top"
+                            Names="{x:Bind PeopleNames, Mode=OneTime}"
+                            Visibility="{x:Bind HasPeople, Mode=OneTime}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind Secondary, Mode=OneTime}"
+                            TextWrapping="Wrap" />
+                    </Grid>
                 </StackPanel>
             </Button>
         </DataTemplate>
@@ -204,6 +237,7 @@
                     x:Uid="Dashboard_OwnerCombo"
                     MinWidth="180"
                     AutomationProperties.AutomationId="Dashboard_OwnerCombo"
+                    ItemTemplate="{StaticResource OwnerOptionTemplate}"
                     ItemsSource="{x:Bind ViewModel.OwnerOptions, Mode=OneTime}"
                     SelectedItem="{x:Bind ViewModel.SelectedOwner, Mode=TwoWay}" />
                 <HyperlinkButton

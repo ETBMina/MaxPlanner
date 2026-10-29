@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Presentation.Calendar;
+using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -443,6 +444,7 @@ internal static class GridCellContent
             GridColumns.Title when row.IsTitleLocked => LockedTitle(row, text),
             GridColumns.Archived when row.IsArchived => ArchivedChip(row.DisplayValue(column.Key)),
             _ when row.CanEdit(column.Key) && PickerGlyph(column) is { } glyph => PickerCell(text, glyph),
+            _ when row.PeopleNames(column.Key) is { Count: > 0 } people => PeopleCell(text, people),
             _ => text,
         };
 
@@ -488,6 +490,24 @@ internal static class GridCellContent
         WinGrid.SetColumn(icon, 1);
         grid.Children.Add(text);
         grid.Children.Add(icon);
+        return grid;
+    }
+
+    /// <summary>
+    /// Owner, Designers, Developers, and People fields: one avatar, or an overlapping stack for several people, before
+    /// the names. The names stay as text (trimmed, full list in the tooltip), so the avatars only add a visual cue.
+    /// </summary>
+    private static WinGrid PeopleCell(TextBlock text, IReadOnlyList<string> people)
+    {
+        var grid = new WinGrid { ColumnSpacing = 6 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        FrameworkElement avatars = people.Count == 1
+            ? new PersonAvatar { DisplayName = people[0], Diameter = PersonAvatar.SmallDiameter }
+            : new PersonAvatarGroup { Names = people, Diameter = PersonAvatar.SmallDiameter };
+        WinGrid.SetColumn(text, 1);
+        grid.Children.Add(avatars);
+        grid.Children.Add(text);
         return grid;
     }
 

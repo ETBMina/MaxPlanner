@@ -9,7 +9,7 @@ using MaxPlanner.Presentation.Common.Store;
 namespace MaxPlanner.Presentation.Tasks;
 
 /// <summary>A chip in a token picker (design §5.0); <see cref="IsNew"/> names one that is created only on Save (B-02.6).</summary>
-public sealed class TokenViewModel(Guid id, string name, bool isNew, string removeName)
+public sealed class TokenViewModel(Guid id, string name, bool isNew, string removeName, bool isPerson = false)
 {
     public Guid Id { get; } = id;
 
@@ -19,11 +19,19 @@ public sealed class TokenViewModel(Guid id, string name, bool isNew, string remo
 
     /// <summary>"Remove Alice": the chip button's accessible name.</summary>
     public string RemoveName { get; } = removeName;
+
+    /// <summary>A person chip shows the person's avatar before the name.</summary>
+    public bool IsPerson { get; } = isPerson;
 }
 
-/// <summary>A suggestion row: an existing name, or "Add 'name'" for a new one.</summary>
-public sealed record TokenSuggestion(Guid? ExistingId, string Name, string Display)
+/// <summary>A suggestion row: an existing name, or "Add 'name'" for a new one. A person row shows the avatar.</summary>
+public sealed record TokenSuggestion(Guid? ExistingId, string Name, string Display, bool IsPerson = false)
 {
+    /// <summary>An existing person: the row shows their avatar ("Add 'name'" rows show the Add glyph instead).</summary>
+    public bool ShowsAvatar => IsPerson && ExistingId is not null;
+
+    public bool IsAddNew => ExistingId is null;
+
     public override string ToString() => Display;
 }
 
@@ -102,6 +110,9 @@ public sealed partial class TokenPickerViewModel : ObservableObject
     /// add-new route of B-02.6 belongs to the built-in Designers, Developers, and Tags fields).
     /// </summary>
     public bool AllowNew { get; init; } = true;
+
+    /// <summary>A people picker: chips and suggestions show avatars. False for tags and services.</summary>
+    public bool IsPeople { get; init; }
 
     public IReadOnlyList<Guid> Ids => [.. _tokens.Select(t => t.Id)];
 
@@ -188,7 +199,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
     private IEnumerable<TokenSuggestion> Available() => _existing()
         .Where(e => _tokens.All(t => t.Id != e.Id))
         .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
-        .Select(e => new TokenSuggestion(e.Id, e.Name, e.Name));
+        .Select(e => new TokenSuggestion(e.Id, e.Name, e.Name, IsPeople));
 
     private IEnumerable<TokenSuggestion> Suggest(string query)
     {
@@ -202,11 +213,11 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         var existing = _existing().ToList();
         if (existing.FirstOrDefault(e => NewNameRegistry.Normalize(e.Name) == key) is { Name: not null } exact)
         {
-            yield return new TokenSuggestion(exact.Id, exact.Name, exact.Name);
+            yield return new TokenSuggestion(exact.Id, exact.Name, exact.Name, IsPeople);
         }
         else if (AllowNew && trimmed.Length <= DomainLimits.LookupName)
         {
-            yield return new TokenSuggestion(null, trimmed, _strings.Format("TokenPicker_AddNew", trimmed));
+            yield return new TokenSuggestion(null, trimmed, _strings.Format("TokenPicker_AddNew", trimmed), IsPeople);
         }
 
         foreach (var match in existing
@@ -214,11 +225,11 @@ public sealed partial class TokenPickerViewModel : ObservableObject
             .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
             .Take(MaxSuggestions))
         {
-            yield return new TokenSuggestion(match.Id, match.Name, match.Name);
+            yield return new TokenSuggestion(match.Id, match.Name, match.Name, IsPeople);
         }
     }
 
-    private TokenViewModel Token(Guid id, string name, bool isNew) => new(id, name, isNew, _strings.Format("TokenPicker_Remove", name));
+    private TokenViewModel Token(Guid id, string name, bool isNew) => new(id, name, isNew, _strings.Format("TokenPicker_Remove", name), IsPeople);
 }
 
 /// <summary>A CR row in the link picker (design §5.6): number, title, owner, and linked-task count. Never "occupied".</summary>

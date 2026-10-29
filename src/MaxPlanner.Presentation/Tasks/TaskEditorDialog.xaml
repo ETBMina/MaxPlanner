@@ -257,7 +257,19 @@
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
                                         <TextBlock x:Uid="TaskEditor_OwnerLabel" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
-                                        <TextBlock Text="{x:Bind ViewModel.OwnerText, Mode=OneWay}" TextWrapping="Wrap" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <controls:PersonAvatar
+                                                Margin="0,0,6,0"
+                                                VerticalAlignment="Top"
+                                                Diameter="20"
+                                                DisplayName="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
+                                                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasOwner), Mode=OneWay}" />
+                                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind ViewModel.OwnerText, Mode=OneWay}" TextWrapping="Wrap" />
+                                        </Grid>
                                     </StackPanel>
                                 </Grid>
                                 <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.CrHelperText, Mode=OneWay}" />

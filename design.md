@@ -155,6 +155,13 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
 - Review drill-downs replace the Checklists search (Checklists has no Filters flyout) and show the same InfoBar and a removable "From Dashboard" chip.
 - A second drill-down into a page that still shows Dashboard results replaces the results but keeps the filters from before the first drill-down; the stack holds one entry per destination page.
 
+### 2.10 Person avatars (owner request, Oct 2026)
+- Wherever a person is named, a filled circle with their initials (`PersonAvatar`) comes before the name. It is 20 epx in dense rows, cards and chips, 24 epx by default, and 32 epx in Settings › People. Initials are the first letter or digit of the first and last word ("Wingtip Toys" → "WT"); a single word gives one letter.
+- The color comes from a fixed hash of the display name into an 11-color palette. White initials meet WCAG AA on every color, which is the same in Light and Dark. Nothing is stored, so renaming a person changes their initials and color. High Contrast uses system colors.
+- Several people in one compact field (Grid Designers, Developers, People fields; Dashboard unlinked rows) use an overlapping group (`PersonAvatarGroup`) of at most 3 circles, the last becoming "+N". The names stay as text.
+- The avatar is decorative and hidden from UI Automation when the name is visible next to it; shown alone, it is an image named after the person, with the name as its tooltip.
+- Not shown: Calendar Month/Week bars (owner is in the tooltip only), joined text lines such as linked-CR secondary text, the import fallback-owner and lookup-replacement combos, and chart labels.
+
 ## 3. Theme and materials
 
 | Surface | Material / brush | Fallback (transparency off, RDP, power saver, unsupported) |

@@ -53,7 +53,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         nameof(IsLinked), nameof(LinkedCr), nameof(IsTitleEditable), nameof(ShowInheritedTitle), nameof(InheritedTitle),
         nameof(InheritedTitleHelper), nameof(IsServiceRequired), nameof(ServiceHeader), nameof(ServiceHelper), nameof(HasServiceHelper),
         nameof(IsUnlinkedWithoutPending), nameof(HasPendingLink), nameof(PendingLinkWarning), nameof(CanLinkToCr), nameof(TaskNumberText),
-        nameof(SquadText), nameof(OwnerText), nameof(CrHelperText), nameof(LinkedCrTitle), nameof(LinkedCrSecondary), nameof(LinkedCrNumber), nameof(OpenCrName),
+        nameof(SquadText), nameof(OwnerText), nameof(HasOwner), nameof(CrHelperText), nameof(LinkedCrTitle), nameof(LinkedCrSecondary), nameof(LinkedCrNumber), nameof(OpenCrName),
         nameof(CanEditFields), nameof(CanSave), nameof(CanArchive), nameof(CanRestore), nameof(CanAddSubtaskCard), nameof(CanPopOut),
         nameof(IsFormStep), nameof(IsLinkPickStep), nameof(IsLinkConfirmStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
         nameof(Caption), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
@@ -92,8 +92,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         _taskId = taskId ?? new TaskId(Guid.NewGuid());
         StatusOptions = [.. _workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
         PriorityOptions = [.. _workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display))];
-        Designers = new TokenPickerViewModel(context.Strings, People, _newPeople);
-        Developers = new TokenPickerViewModel(context.Strings, People, _newPeople);
+        Designers = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsPeople = true };
+        Developers = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsPeople = true };
         Tags = new TokenPickerViewModel(context.Strings, () => _workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), _newTags);
         Designers.Changed += OnDraftChanged;
         Developers.Changed += OnDraftChanged;
@@ -351,6 +351,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public string SquadText => (LinkedCr ?? PendingLink)?.SquadName ?? (Latest ?? _base)?.Cr.SquadName ?? _context.Strings.GetString("Squad_General");
 
     public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? _context.Strings.GetString("TaskEditor_NoOwner");
+
+    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
+    public bool HasOwner => !string.IsNullOrEmpty((LinkedCr ?? PendingLink)?.OwnerName);
 
     public string CrHelperText => (LinkedCr ?? PendingLink) is { } cr ? _context.Strings.Format("TaskEditor_FromCrHelper", cr.Number) : string.Empty;
 

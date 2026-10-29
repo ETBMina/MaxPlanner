@@ -57,7 +57,7 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
     private static readonly string[] StateProperties =
     [
         nameof(Caption), nameof(ParentTitle), nameof(ParentService), nameof(CrNumberText), nameof(TaskNumberText), nameof(SquadText),
-        nameof(OwnerText), nameof(IsReadOnly), nameof(IsParentArchived), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete),
+        nameof(OwnerText), nameof(HasOwner), nameof(IsReadOnly), nameof(IsParentArchived), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete),
         nameof(IsFormStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep), nameof(HasValidationSummary), nameof(HasSaveError),
         nameof(CanOpenParent),
     ];
@@ -166,6 +166,9 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
     public string SquadText => Parent?.Cr.SquadName ?? _context.Strings.GetString("Squad_General");
 
     public string OwnerText => Parent?.Cr.OwnerName ?? _context.Strings.GetString("TaskEditor_NoOwner");
+
+    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
+    public bool HasOwner => !string.IsNullOrEmpty(Parent?.Cr.OwnerName);
 
     /// <summary>B-04 helpers come from the status flags, never from labels.</summary>
     public string StartHelper => Helper("TaskEditor_StartHelper", _workflow.TaskStatuses.Where(s => s.SetsStartDate));

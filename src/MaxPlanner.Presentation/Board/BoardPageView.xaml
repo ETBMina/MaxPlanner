@@ -104,8 +104,8 @@
                             Orientation="Horizontal"
                             Spacing="6"
                             Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
-                            <FontIcon FontSize="12" Glyph="&#xE77B;" />
-                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
+                            <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
                     <StackPanel Spacing="4">
@@ -209,8 +209,8 @@
                             Orientation="Horizontal"
                             Spacing="6"
                             Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
-                            <FontIcon FontSize="12" Glyph="&#xE77B;" />
-                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
+                            <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
                         </StackPanel>
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"

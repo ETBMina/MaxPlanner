@@ -207,6 +207,21 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         _ => string.Empty,
     };
 
+    /// <summary>
+    /// The people a cell names, for its avatars: the CR Owner, Designers, Developers, or a custom People field. Empty
+    /// for other columns. The order matches <see cref="DisplayValue"/>.
+    /// </summary>
+    public IReadOnlyList<string> PeopleNames(string column) => column switch
+    {
+        GridColumns.Owner => Model.Cr.OwnerName is { Length: > 0 } owner ? [owner] : [],
+        GridColumns.Designers => [.. (Model.Task?.Designers ?? []).Select(p => p.Name)],
+        GridColumns.Developers => [.. (Model.Task?.Developers ?? []).Select(p => p.Name)],
+        _ when GridColumns.IsCustom(column) && Model.Task is { } task && FieldOf(column) is { Kind: FieldKind.People } field
+            && task.CustomValues.GetValueOrDefault(field.Id) is PeopleCustomValue people
+            => [.. people.PersonIds.Select(id => _workflow()?.FindPerson(id)?.Name.Display ?? string.Empty).Where(n => n.Length > 0)],
+        _ => [],
+    };
+
     /// <summary>The full text of a cell for its tooltip (notes are shown by first line).</summary>
     public string FullValue(string column) => column == GridColumns.Notes
         ? (Model.Task is { } task ? task.Notes : Model.Card!.Notes) ?? string.Empty
@@ -245,7 +260,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
             DraftNewNames = new NewNameRegistry();
             DraftTokens = column == GridColumns.Tags
                 ? new TokenPickerViewModel(_strings, () => workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), DraftNewNames)
-                : new TokenPickerViewModel(_strings, () => workflow.People.Select(p => (p.Id.Value, p.Name.Display)), DraftNewNames);
+                : new TokenPickerViewModel(_strings, () => workflow.People.Select(p => (p.Id.Value, p.Name.Display)), DraftNewNames) { IsPeople = true };
             var refs = column switch
             {
                 GridColumns.Designers => edited.Designers.Select(p => (p.Id.Value, p.Name, false)),
