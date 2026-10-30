@@ -51,8 +51,8 @@ public sealed partial class ReviewEditorDialog : ContentDialog
             "Title" => () => TitleBox.Focus(FocusState.Programmatic),
             "CrNumber" => () => CrNumberBox.Focus(FocusState.Programmatic),
             "TaskNumber" => () => TaskNumberBox.Focus(FocusState.Programmatic),
-            "Services" => ServicesPicker.FocusBox,
-            "Developer" => DeveloperPicker.FocusBox,
+            "Services" => () => ServicesPicker.FocusBox(),
+            "Developer" => () => DeveloperPicker.FocusBox(),
             "Comments" => () => CommentsBox.Focus(FocusState.Programmatic),
             _ => null,
         };

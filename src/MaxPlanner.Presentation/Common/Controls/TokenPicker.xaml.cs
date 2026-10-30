@@ -31,6 +31,7 @@ public sealed partial class TokenPicker : UserControl
     private readonly PointerEventHandler _outsidePressHandler;
     private UIElement? _pressRoot;
     private bool _hasFocusWithin;
+    private bool _isFocusingProgrammatically;
     private bool _ignoreNextEmptyText;
 
     public TokenPicker()
@@ -70,7 +71,24 @@ public sealed partial class TokenPicker : UserControl
         set => SetValue(IsEditableProperty, value);
     }
 
-    public void FocusBox() => Box.Focus(FocusState.Programmatic);
+    /// <summary>
+    /// Moves focus to the search box without opening the suggestion list (a flyout editor opening, a field focused
+    /// for a validation error). Use this rather than <c>Focus</c> on the picker itself.
+    /// </summary>
+    public bool FocusBox()
+    {
+        // Focus moves at once but GotFocus is raised later, so the entry is judged by GotFocus's own bookkeeping. A
+        // second call before that GotFocus (a flyout's Opened, then the picker's Loaded) keeps the mark.
+        var wasMarked = _isFocusingProgrammatically;
+        _isFocusingProgrammatically = wasMarked || !_hasFocusWithin;
+        var focused = Box.Focus(FocusState.Programmatic);
+        if (!focused)
+        {
+            _isFocusingProgrammatically = wasMarked;
+        }
+
+        return focused;
+    }
 
     /// <summary>A person chip starts with its avatar, so it keeps less padding on that side.</summary>
     public static Thickness ChipPadding(bool isPerson) => isPerson ? new Thickness(2, 2, 8, 2) : new Thickness(8, 2, 8, 2);
@@ -81,14 +99,21 @@ public sealed partial class TokenPicker : UserControl
     // Design §5.0: the list opens when focus enters the picker, before typing. Only an entry counts: opening the list
     // makes the AutoSuggestBox focus itself, and Esc closes it and then focuses its text box with FocusState.Keyboard.
     // Treating those internal moves as an entry reopened the list, so the first Esc seemed to do nothing.
-    // Programmatic entry (a field focused for a validation error) is meant not to open it, but WinUI reports a
-    // programmatic focus with the last input device's state (Pointer after a click). Removing a chip therefore moves no
-    // focus at all, so the list stays closed.
+    // An entry through FocusBox is not the user's and leaves the list closed. WinUI reports a programmatic focus with
+    // the last input device's state (Pointer after a click), so FocusBox marks it instead of relying on FocusState.
+    // Removing a chip moves no focus at all, so the list stays closed.
     private void OnBoxGotFocus(object sender, RoutedEventArgs e)
     {
         var entered = !_hasFocusWithin;
         _hasFocusWithin = true;
-        if (entered && e.OriginalSource is Control { FocusState: FocusState.Keyboard or FocusState.Pointer })
+        if (!entered)
+        {
+            return;
+        }
+
+        var isProgrammatic = _isFocusingProgrammatically;
+        _isFocusingProgrammatically = false;
+        if (!isProgrammatic && e.OriginalSource is Control { FocusState: FocusState.Keyboard or FocusState.Pointer })
         {
             OpenSuggestions(refreshOpenList: false);
         }
@@ -101,6 +126,7 @@ public sealed partial class TokenPicker : UserControl
             if (!BoxHasFocus())
             {
                 _hasFocusWithin = false;
+                _isFocusingProgrammatically = false;
                 _ignoreNextEmptyText = false;
                 Box.IsSuggestionListOpen = false;
             }

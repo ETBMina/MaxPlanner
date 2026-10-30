@@ -24,6 +24,7 @@ Max Planner is a native Windows planning app (CRs, tasks, Board, Grid, Calendar,
 - An agent's report is a claim. Check the diff and run the checks before telling the user the work is done.
 - Parallel code-writing agents work in separate worktrees and never touch the same files.
 - If `winui:winui-dev` is unavailable, say so and ask the user before writing code in the main session.
+- The user tests UI changes themselves. Do not launch the app, drive its UI (UI automation, simulated mouse or keyboard input), or take screenshots of the desktop unless the user asks for it in that request. The user is usually working on the same PC. Briefs to `winui:winui-dev` repeat this.
 
 ## Decisions
 
@@ -48,7 +49,7 @@ Max Planner is a native Windows planning app (CRs, tasks, Board, Grid, Calendar,
 ```powershell
 ./scripts/build.ps1                     # restore + build (Debug, x64); warnings are errors
 ./scripts/test.ps1                      # all test projects
-winapp run src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj -p Platform=x64 --detach --json   # build and launch
+winapp run src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj -p Platform=x64 --detach --json   # build and launch (only when the user asks)
 ./scripts/publish-portable.ps1 -Version 0.1.0   # portable ZIP in artifacts/
 ./scripts/verify-portable.ps1 -Zip artifacts/MaxPlanner-0.1.0-win-x64.zip   # release gates
 ```
@@ -56,7 +57,7 @@ winapp run src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj -p Platform=x64 --de
 ## Done means
 
 - `./scripts/build.ps1` succeeds and `./scripts/test.ps1` passes. New behavior has tests in the layer that owns the rule.
-- A UI change has been launched and exercised in the real app, including light and dark themes and a narrow window.
+- A UI change ends with short manual test steps for the user: what to open, what to do, and what to expect, including light and dark themes and a narrow window where they matter.
 - The diff has been reviewed for correctness and simplicity, and the findings are fixed or explained.
 - The report says what changed, what was checked, and what was not checked.
 - Commit only when the user asks.

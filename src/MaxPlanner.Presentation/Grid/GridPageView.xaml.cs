@@ -1022,7 +1022,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
             cell.Focus(FocusState.Programmatic);
         };
-        flyout.Opened += (_, _) => focus.Focus(FocusState.Programmatic);
+        flyout.Opened += (_, _) => CustomFieldEditors.Focus(focus);
         flyout.ShowAt(cell);
     }
 

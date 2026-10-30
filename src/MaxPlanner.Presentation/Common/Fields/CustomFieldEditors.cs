@@ -62,6 +62,13 @@ internal static class CustomFieldEditors
         return (panel, focus);
     }
 
+    /// <summary>Focuses the control <see cref="Create"/> returned; a picker gets focus without opening its list.</summary>
+    public static bool Focus(Control focus)
+    {
+        ArgumentNullException.ThrowIfNull(focus);
+        return focus is TokenPicker picker ? picker.FocusBox() : focus.Focus(FocusState.Programmatic);
+    }
+
     private static (FrameworkElement, Control) Text(CustomFieldEditorViewModel field, string? header)
     {
         var box = new TextBox
@@ -255,7 +262,7 @@ public sealed partial class CustomFieldsPanel : UserControl
     }
 
     /// <summary>Moves focus to a field's editor (first invalid field after Save, design §5.0).</summary>
-    public bool FocusField(string key) => _focusTargets.TryGetValue(key, out var target) && target.Focus(FocusState.Programmatic);
+    public bool FocusField(string key) => _focusTargets.TryGetValue(key, out var target) && CustomFieldEditors.Focus(target);
 
     private void Rebuild()
     {
