@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using MaxPlanner.Presentation.Tasks;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -6,20 +8,24 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.System;
+using Windows.UI.Core;
 
 namespace MaxPlanner.Presentation.Common.Controls;
 
 /// <summary>
 /// People and tags picker (design §5.0, ADR 0021). The ViewModel holds the chips and suggestions; this view
-/// only forwards the box's submit and the chips' remove actions.
+/// only forwards the box's submit and the chips' remove actions. A single-selection ViewModel turns it into the person
+/// dropdown of design §5.0: the box shows the chosen person, the query button is a chevron that opens the full list,
+/// F4 and Alt+Down open it, Esc restores the chosen person, and leaving the box commits or restores the text.
 /// </summary>
 public sealed partial class TokenPicker : UserControl
 {
     public static readonly DependencyProperty ViewModelProperty = DependencyProperty.Register(
-        nameof(ViewModel), typeof(TokenPickerViewModel), typeof(TokenPicker), new PropertyMetadata(null, (d, _) => ((TokenPicker)d).Bindings.Update()));
+        nameof(ViewModel), typeof(TokenPickerViewModel), typeof(TokenPicker), new PropertyMetadata(null, (d, e) =>
+            ((TokenPicker)d).OnViewModelChanged((TokenPickerViewModel?)e.OldValue, (TokenPickerViewModel?)e.NewValue)));
 
     public static readonly DependencyProperty HeaderProperty = DependencyProperty.Register(
-        nameof(Header), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty));
+        nameof(Header), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty, (d, _) => ((TokenPicker)d).UpdateAccessibleName()));
 
     public static readonly DependencyProperty BoxAutomationIdProperty = DependencyProperty.Register(
         nameof(BoxAutomationId), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty, (d, e) =>
@@ -33,6 +39,10 @@ public sealed partial class TokenPicker : UserControl
     private bool _hasFocusWithin;
     private bool _isFocusingProgrammatically;
     private bool _ignoreNextEmptyText;
+    private bool? _chevronPressFoundListOpen;
+    private TokenPickerViewModel? _observed;
+    private TextBox? _textBox;
+    private string _lastQuery = string.Empty;
 
     public TokenPicker()
     {
@@ -43,7 +53,22 @@ public sealed partial class TokenPicker : UserControl
         // the list after Esc closed it.
         Box.AddHandler(PointerPressedEvent, new PointerEventHandler(OnBoxPointerPressed), true);
         Box.RegisterPropertyChangedCallback(AutoSuggestBox.IsSuggestionListOpenProperty, OnSuggestionListOpenChanged);
-        Unloaded += (_, _) => DetachPressRoot();
+
+        // The chevron raises its click on release, so a release after it (or one that ended the press elsewhere)
+        // forgets the press.
+        Box.AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => _chevronPressFoundListOpen = null), true);
+
+        // The ViewModel outlives a picker in a flyout, so the picker listens to it only while loaded. A picker moved in
+        // the tree can be loaded again before its Unloaded arrives, which then leaves the subscription alone.
+        Loaded += (_, _) => Observe(ViewModel);
+        Unloaded += (_, _) =>
+        {
+            DetachPressRoot();
+            if (!IsLoaded)
+            {
+                Observe(null);
+            }
+        };
     }
 
     public TokenPickerViewModel? ViewModel
@@ -58,7 +83,7 @@ public sealed partial class TokenPicker : UserControl
         set => SetValue(HeaderProperty, value);
     }
 
-    /// <summary>The AutomationId of the search box, for example <c>TaskEditor_DesignersPicker</c> (design §8.1).</summary>
+    /// <summary>The AutomationId of the search box, for example <c>TaskEditor_DesignerPicker</c> (design §8.1).</summary>
     public string BoxAutomationId
     {
         get => (string)GetValue(BoxAutomationIdProperty);
@@ -90,6 +115,20 @@ public sealed partial class TokenPicker : UserControl
         return focused;
     }
 
+    /// <summary>The person dropdown shows the chosen person's avatar in the box.</summary>
+    public static Visibility AvatarVisibility(TokenPickerViewModel? viewModel) => viewModel?.IsSingleSelection == true ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The box's avatar fades with the disabled box (a read-only editor).</summary>
+    public static double AvatarOpacity(bool isEditable) => isEditable ? 1 : 0.4;
+
+    /// <summary>The person dropdown has no chips under the box (design §5.0).</summary>
+    public static Visibility HasChips(TokenPickerViewModel? viewModel) => viewModel?.IsSingleSelection == true ? Visibility.Collapsed : Visibility.Visible;
+
+    // Space for the avatar beside the chosen name: its 20 epx plus a gap, added to the text box's own left padding.
+    private const double AvatarInset = 26;
+
+    private bool IsPersonDropdown => ViewModel?.IsSingleSelection == true;
+
     /// <summary>A person chip starts with its avatar, so it keeps less padding on that side.</summary>
     public static Thickness ChipPadding(bool isPerson) => isPerson ? new Thickness(2, 2, 8, 2) : new Thickness(8, 2, 8, 2);
 
@@ -117,6 +156,13 @@ public sealed partial class TokenPicker : UserControl
         {
             OpenSuggestions(refreshOpenList: false);
         }
+
+        // As in an editable ComboBox, the chosen name is selected so typing replaces it; queued so the press that
+        // focused the box has placed its caret first.
+        if (IsPersonDropdown && ViewModel!.IsShowingSelection)
+        {
+            DispatcherQueue.TryEnqueue(() => _textBox?.SelectAll());
+        }
     }
 
     // Focus moving between the box's own parts raises LostFocus too, so whether it left is checked once it settles.
@@ -129,12 +175,32 @@ public sealed partial class TokenPicker : UserControl
                 _isFocusingProgrammatically = false;
                 _ignoreNextEmptyText = false;
                 Box.IsSuggestionListOpen = false;
+
+                // Design §5.0: leaving the person dropdown commits an emptied box or an exact name and restores the
+                // chosen person over any other text.
+                if (IsPersonDropdown)
+                {
+                    ViewModel!.CommitText();
+                }
             }
         });
 
     // A press in a box that is already focused (GotFocus handles the first one) reopens the list after Esc. An open
     // list is left alone: refilling it under the pointer would replace the item being clicked.
-    private void OnBoxPointerPressed(object sender, PointerRoutedEventArgs e) => OpenSuggestions(refreshOpenList: false);
+    // A press on the dropdown's chevron is left to the QuerySubmitted its click raises, which toggles the list. The
+    // chevron takes no keyboard focus and is hidden from UI Automation, so only a press reaches it.
+    private void OnBoxPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (IsPersonDropdown && e.OriginalSource is DependencyObject source && IsInQueryButton(source))
+        {
+            _chevronPressFoundListOpen = Box.IsSuggestionListOpen;
+            return;
+        }
+
+        _chevronPressFoundListOpen = null;
+
+        OpenSuggestions(refreshOpenList: false);
+    }
 
     // Deleting the typed text back to empty lists every available name again. The AutoSuggestBox reports text set
     // through the Query binding as UserInput too, so the reset after a pick is skipped explicitly. The binding may
@@ -164,6 +230,182 @@ public sealed partial class TokenPicker : UserControl
 
         viewModel.ShowSuggestions();
         Box.IsSuggestionListOpen = viewModel.Suggestions.Count > 0;
+    }
+
+    // The dropdown's chevron, F4, and Alt+Down list every person, whatever the box holds.
+    private void OpenFullList()
+    {
+        if (ViewModel is not { } viewModel || !IsEditable)
+        {
+            return;
+        }
+
+        if (!BoxHasFocus())
+        {
+            FocusBox();
+        }
+
+        viewModel.ShowSuggestions(all: true);
+        Box.IsSuggestionListOpen = viewModel.Suggestions.Count > 0;
+    }
+
+    // Design §5.0 keyboard for the person dropdown: F4 toggles the list, Alt+Down opens it, and Esc restores the chosen
+    // person and closes the list. An Esc with nothing to undo is left to the dialog or flyout, which closes. A key
+    // forgets a chevron press that ended without a click, so Enter is never taken for one.
+    private void OnBoxPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        _chevronPressFoundListOpen = null;
+        if (!IsPersonDropdown || ViewModel is not { } viewModel || !IsEditable)
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case VirtualKey.F4 when Box.IsSuggestionListOpen:
+                Box.IsSuggestionListOpen = false;
+                e.Handled = true;
+                break;
+            case VirtualKey.F4:
+            case VirtualKey.Down when IsAltDown():
+                OpenFullList();
+                e.Handled = true;
+                break;
+            case VirtualKey.Escape when Box.IsSuggestionListOpen || !viewModel.IsShowingSelection:
+                viewModel.Revert();
+                Box.IsSuggestionListOpen = false;
+                _textBox?.SelectAll();
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private static bool IsAltDown() =>
+        InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down);
+
+    private bool IsInQueryButton(DependencyObject source)
+    {
+        for (var element = source; element is not null && !ReferenceEquals(element, Box); element = VisualTreeHelper.GetParent(element))
+        {
+            if (element is FrameworkElement { Name: "QueryButton" })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void OnViewModelChanged(TokenPickerViewModel? oldValue, TokenPickerViewModel? newValue)
+    {
+        if (IsLoaded)
+        {
+            Observe(newValue);
+        }
+
+        Bindings.Update();
+        ApplyMode();
+    }
+
+    private void Observe(TokenPickerViewModel? viewModel)
+    {
+        if (_observed is not null)
+        {
+            _observed.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
+        _observed = viewModel;
+        _lastQuery = viewModel?.Query ?? string.Empty;
+        if (viewModel is not null)
+        {
+            viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            UpdateAccessibleName();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not TokenPickerViewModel viewModel)
+        {
+            return;
+        }
+
+        switch (e.PropertyName)
+        {
+            case nameof(TokenPickerViewModel.SelectedName):
+                UpdateAccessibleName();
+                break;
+
+            // Text the ViewModel empties (a pick in a chip picker, Esc, a rebase that removed the chosen person) is not
+            // the user deleting it, so it must not open the full list. TextChanged arrives later, so it is marked here.
+            case nameof(TokenPickerViewModel.Query):
+                if (viewModel.IsSyncingQuery && _lastQuery.Length > 0 && viewModel.Query.Length == 0)
+                {
+                    _ignoreNextEmptyText = true;
+                }
+
+                _lastQuery = viewModel.Query;
+                break;
+        }
+    }
+
+    // The inner text box exists once the AutoSuggestBox template is applied.
+    private void OnBoxLoaded(object sender, RoutedEventArgs e)
+    {
+        _textBox ??= FindTextBox(Box);
+        ApplyMode();
+    }
+
+    // The person dropdown: a chevron for the query button, room for the avatar before the name, and the choice in the
+    // accessible name. A chip picker keeps the plain box.
+    private void ApplyMode()
+    {
+        var isDropdown = IsPersonDropdown;
+        Box.QueryIcon = isDropdown ? new FontIcon { Glyph = "\uE70D", FontSize = 12 } : null;
+        if (_textBox is not null)
+        {
+            _textBox.ClearValue(Control.PaddingProperty);
+            if (isDropdown)
+            {
+                var padding = _textBox.Padding;
+                _textBox.Padding = new Thickness(padding.Left + AvatarInset, padding.Top, padding.Right, padding.Bottom);
+            }
+        }
+
+        UpdateAccessibleName();
+    }
+
+    // Design §8.1: the box (the element with the AutomationId) is named with the choice, "Owner: Alice", and its help
+    // text names the keys that open the list. The inner text box keeps its own header label and reads the name as its
+    // value, so the person is not announced twice on focus.
+    private void UpdateAccessibleName()
+    {
+        if (!IsPersonDropdown)
+        {
+            return;
+        }
+
+        AutomationProperties.SetName(Box, ViewModel!.AccessibleName(Header));
+        AutomationProperties.SetHelpText(Box, ViewModel.HelpText);
+    }
+
+    private static TextBox? FindTextBox(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is TextBox textBox)
+            {
+                return textBox;
+            }
+
+            if (FindTextBox(child) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     // A click on a part of the dialog or flyout that takes no focus leaves the box focused, so the AutoSuggestBox
@@ -255,6 +497,23 @@ public sealed partial class TokenPicker : UserControl
     {
         if (ViewModel is not { } viewModel)
         {
+            return;
+        }
+
+        // The dropdown's chevron is the query button: its click toggles the list. A click that found the list open closes
+        // it, even when the arrow keys had highlighted a suggestion that the submit would otherwise pick.
+        if (IsPersonDropdown && _chevronPressFoundListOpen is { } wasOpen && (wasOpen || args.ChosenSuggestion is null))
+        {
+            _chevronPressFoundListOpen = null;
+            if (wasOpen)
+            {
+                Box.IsSuggestionListOpen = false;
+            }
+            else
+            {
+                OpenFullList();
+            }
+
             return;
         }
 

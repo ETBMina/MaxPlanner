@@ -50,8 +50,8 @@ public sealed class ReadModelComposer
             new LookupRef<PriorityId>(task.PriorityId, priority?.Name.Display ?? string.Empty),
             priority?.Order ?? 0,
             Inherit(linkedCr, workflow),
-            People(task.DesignerIds, workflow),
-            People(task.DeveloperIds, workflow),
+            Person(task.DesignerId, workflow),
+            Person(task.DeveloperId, workflow),
             [.. task.TagIds.Select(id => new LookupRef<TagId>(id, workflow.FindTag(id)?.Name.Display ?? string.Empty))],
             task.Notes?.Value,
             task.Dates.Start,
@@ -151,8 +151,8 @@ public sealed class ReadModelComposer
         }
     }
 
-    private static List<LookupRef<PersonId>> People(IReadOnlyList<PersonId> ids, WorkflowSnapshot workflow) =>
-        [.. ids.Select(id => new LookupRef<PersonId>(id, workflow.FindPerson(id)?.Name.Display ?? string.Empty))];
+    private static LookupRef<PersonId>? Person(PersonId? id, WorkflowSnapshot workflow) =>
+        id is { } person ? new LookupRef<PersonId>(person, workflow.FindPerson(person)?.Name.Display ?? string.Empty) : null;
 
     private InheritedCrValues Inherit(ChangeRequest? cr, WorkflowSnapshot workflow) =>
         cr is null

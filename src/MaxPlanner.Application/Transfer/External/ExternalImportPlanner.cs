@@ -502,6 +502,32 @@ public static class ExternalImportPlanner
 
         private static string Norm(string name) => name.Trim().ToUpperInvariant();
 
+        /// <summary>
+        /// ADR 0024: a task has at most one Designer and one Developer. The first name that resolves is kept; a name before
+        /// it that does not resolve keeps its own error. Names after it are not resolved (so no person is created for a
+        /// dropped one) and are reported in a warning.
+        /// </summary>
+        private List<Guid> FirstPerson(ExternalValue? value, string field, string entity, string key)
+        {
+            var names = List(value);
+            for (var i = 0; i < names.Count; i++)
+            {
+                if (Value(LookupKind.Person, names[i], entity, key) is not { } id)
+                {
+                    continue;
+                }
+
+                if (i + 1 < names.Count)
+                {
+                    _findings.Add(new ImportFinding(ImportSeverity.Warning, entity, key, ImportFindingCodes.PeopleDropped, field, string.Join(", ", names.Skip(i + 1))));
+                }
+
+                return [id];
+            }
+
+            return [];
+        }
+
         private List<Guid> Values(LookupKind kind, ExternalValue? value, string entity, string key) =>
             [.. List(value).Select(v => Value(kind, v, entity, key)).OfType<Guid>().Distinct()];
 
@@ -820,8 +846,8 @@ public static class ExternalImportPlanner
                 Service = Text(row, columns, ExternalField.Service),
                 StatusId = Value(LookupKind.TaskStatus, Text(row, columns, ExternalField.Status), Entity, displayKey),
                 PriorityId = Value(LookupKind.Priority, Text(row, columns, ExternalField.Priority), Entity, displayKey),
-                DesignerIds = Values(LookupKind.Person, Cell(row, columns, ExternalField.Designers), Entity, displayKey),
-                DeveloperIds = Values(LookupKind.Person, Cell(row, columns, ExternalField.Developers), Entity, displayKey),
+                DesignerIds = FirstPerson(Cell(row, columns, ExternalField.Designers), "DesignerIds", Entity, displayKey),
+                DeveloperIds = FirstPerson(Cell(row, columns, ExternalField.Developers), "DeveloperIds", Entity, displayKey),
                 TagIds = Values(LookupKind.Tag, Cell(row, columns, ExternalField.Tags), Entity, displayKey),
                 Notes = notes,
                 StartDate = Date(row, columns, ExternalField.StartDate, Entity, displayKey, supplied),

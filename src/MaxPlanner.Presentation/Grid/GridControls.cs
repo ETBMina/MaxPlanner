@@ -495,7 +495,7 @@ internal static class GridCellContent
     }
 
     /// <summary>
-    /// Owner, Designers, Developers, and People fields: one avatar, or an overlapping stack for several people, before
+    /// Owner, Designer, Developer, and People fields: one avatar, or an overlapping stack for several people, before
     /// the names. The names stay as text (trimmed, full list in the tooltip), so the avatars only add a visual cue.
     /// </summary>
     private static WinGrid PeopleCell(TextBlock text, IReadOnlyList<string> people)

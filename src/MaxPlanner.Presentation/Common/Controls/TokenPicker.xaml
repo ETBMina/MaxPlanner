@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The TokenPicker of design §5.0 (ADR 0021): AutoSuggestBox [gallery-autosuggestbox-1] plus removable chip buttons. -->
+<!--
+    The TokenPicker of design §5.0 (ADR 0021): AutoSuggestBox [gallery-autosuggestbox-1] plus removable chip buttons.
+    A single-person ViewModel makes it the person dropdown of design §5.0: the box shows the chosen person's avatar and
+    name, a chevron (the box's query button) opens the full list, and there are no chips.
+-->
 <UserControl
     x:Class="MaxPlanner.Presentation.Common.Controls.TokenPicker"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -9,46 +13,69 @@
     xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     IsTabStop="False">
     <StackPanel Spacing="6">
-        <AutoSuggestBox
-            x:Name="Box"
-            GotFocus="OnBoxGotFocus"
-            Header="{x:Bind Header, Mode=OneWay}"
-            IsEnabled="{x:Bind IsEditable, Mode=OneWay}"
-            ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}"
-            LostFocus="OnBoxLostFocus"
-            QuerySubmitted="OnQuerySubmitted"
-            Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-            TextChanged="OnBoxTextChanged"
-            UpdateTextOnSelect="False">
-            <!-- A people picker shows each existing person's avatar, and the Add glyph on "Add 'name'"; tags show text only. -->
-            <AutoSuggestBox.ItemTemplate>
-                <DataTemplate x:DataType="tasks:TokenSuggestion">
-                    <Grid AutomationProperties.Name="{x:Bind Display, Mode=OneTime}" ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <local:PersonAvatar
-                            Diameter="24"
-                            DisplayName="{x:Bind Name, Mode=OneTime}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(ShowsAvatar), Mode=OneTime}" />
-                        <FontIcon
-                            Width="24"
-                            AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
-                            Glyph="&#xE710;"
-                            Visibility="{x:Bind common:BindFunctions.VisibleAll(IsPerson, IsAddNew), Mode=OneTime}" />
-                        <TextBlock
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Text="{x:Bind Display, Mode=OneTime}"
-                            TextTrimming="CharacterEllipsis" />
-                    </Grid>
-                </DataTemplate>
-            </AutoSuggestBox.ItemTemplate>
-        </AutoSuggestBox>
+        <Grid>
+            <AutoSuggestBox
+                x:Name="Box"
+                GotFocus="OnBoxGotFocus"
+                Header="{x:Bind Header, Mode=OneWay}"
+                IsEnabled="{x:Bind IsEditable, Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}"
+                Loaded="OnBoxLoaded"
+                LostFocus="OnBoxLostFocus"
+                PlaceholderText="{x:Bind ViewModel.PlaceholderText, Mode=OneWay}"
+                PreviewKeyDown="OnBoxPreviewKeyDown"
+                QuerySubmitted="OnQuerySubmitted"
+                Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                TextChanged="OnBoxTextChanged"
+                UpdateTextOnSelect="False">
+                <!-- A people picker shows each existing person's avatar, and the Add glyph on "Add 'name'"; tags show text only. -->
+                <AutoSuggestBox.ItemTemplate>
+                    <DataTemplate x:DataType="tasks:TokenSuggestion">
+                        <Grid AutomationProperties.Name="{x:Bind Display, Mode=OneTime}" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <local:PersonAvatar
+                                Diameter="24"
+                                DisplayName="{x:Bind Name, Mode=OneTime}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(ShowsAvatar), Mode=OneTime}" />
+                            <FontIcon
+                                Width="24"
+                                AutomationProperties.AccessibilityView="Raw"
+                                FontSize="14"
+                                Glyph="&#xE710;"
+                                Visibility="{x:Bind common:BindFunctions.VisibleAll(IsPerson, IsAddNew), Mode=OneTime}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Text="{x:Bind Display, Mode=OneTime}"
+                                TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                    </DataTemplate>
+                </AutoSuggestBox.ItemTemplate>
+            </AutoSuggestBox>
+            <!--
+                The chosen person's avatar inside the box's left padding, which OnBoxLoaded widens; the generic person
+                glyph while the user types or nobody is chosen. Bottom-aligned so it centers on the text box below any
+                header. Decorative: the box's accessible name carries the person.
+            -->
+            <local:PersonAvatar
+                Margin="10,0,0,6"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Diameter="20"
+                DisplayName="{x:Bind ViewModel.ShownPersonName, Mode=OneWay}"
+                IsDecorative="True"
+                IsHitTestVisible="False"
+                Opacity="{x:Bind local:TokenPicker.AvatarOpacity(IsEditable), Mode=OneWay}"
+                Visibility="{x:Bind local:TokenPicker.AvatarVisibility(ViewModel), Mode=OneWay}" />
+        </Grid>
         <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. Tag chips are pills in the tag's color. -->
-        <ItemsRepeater ElementPrepared="OnChipPrepared" ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}">
+        <ItemsRepeater
+            ElementPrepared="OnChipPrepared"
+            ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}"
+            Visibility="{x:Bind local:TokenPicker.HasChips(ViewModel), Mode=OneWay}">
             <ItemsRepeater.Layout>
                 <LinedFlowLayout LineSpacing="6" MinItemSpacing="6" />
             </ItemsRepeater.Layout>

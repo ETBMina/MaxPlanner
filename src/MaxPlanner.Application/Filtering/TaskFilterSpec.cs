@@ -197,12 +197,13 @@ public static class TaskFilterMatcher
             return false;
         }
 
-        if (spec.Designers.Count > 0 && (owner is null || !owner.Designers.Any(p => spec.Designers.Contains(p.Id))))
+        // ADR 0024: several selected people match a task whose single Designer (or Developer) is any of them.
+        if (spec.Designers.Count > 0 && (owner?.Designer is not { } designer || !spec.Designers.Contains(designer.Id)))
         {
             return false;
         }
 
-        if (spec.Developers.Count > 0 && (owner is null || !owner.Developers.Any(p => spec.Developers.Contains(p.Id))))
+        if (spec.Developers.Count > 0 && (owner?.Developer is not { } developer || !spec.Developers.Contains(developer.Id)))
         {
             return false;
         }
@@ -280,7 +281,7 @@ public static class TaskSearch
 
     private static bool MatchesOwn(TaskReadModel task, string q) =>
         Has(task.EffectiveTitle, q) || Has(task.Service, q) || Has(task.Notes, q)
-        || task.Designers.Any(p => Has(p.Name, q)) || task.Developers.Any(p => Has(p.Name, q)) || task.Tags.Any(t => Has(t.Name, q))
+        || Has(task.Designer?.Name, q) || Has(task.Developer?.Name, q) || task.Tags.Any(t => Has(t.Name, q))
         || task.CustomValues.Values.Any(v => v switch
         {
             Domain.Fields.TextCustomValue t => Has(t.Value, q),

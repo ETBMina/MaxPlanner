@@ -80,8 +80,8 @@ public sealed class TaskEditorUseCaseTests
         var hotfixTwice = new NewTag(new TagId(Guid.NewGuid()), "HOTFIX");
         var draft = Draft() with
         {
-            DesignerIds = [carol.Id, aliceAgain.Id],
-            DeveloperIds = [carol.Id],
+            DesignerId = aliceAgain.Id,
+            DeveloperId = carol.Id,
             TagIds = [urgentTag.Id, hotfixTwice.Id],
         };
 
@@ -91,8 +91,8 @@ public sealed class TaskEditorUseCaseTests
         var workflow = _workspace.Data.Workflow;
         workflow.People.Select(p => p.Name.Display).Should().BeEquivalentTo(["Alice", "Bob", "Carol"]);
         workflow.Tags.Select(t => t.Name.Display).Should().BeEquivalentTo(["Mobile", "Hotfix"]);
-        task.DesignerIds.Should().Equal(carol.Id, Alice.Id);
-        task.DeveloperIds.Should().Equal(carol.Id);
+        task.DesignerId.Should().Be(Alice.Id, "a new name equal to an existing person reuses that person");
+        task.DeveloperId.Should().Be(carol.Id);
         task.TagIds.Should().Equal(urgentTag.Id);
         _workspace.Coordinator.Published[^1].Workflow.Should().NotBeNull("the new names are published with the save");
     }
@@ -104,9 +104,27 @@ public sealed class TaskEditorUseCaseTests
         var id = await _workspace.AddTaskAsync();
         var carol = new NewPerson(new PersonId(Guid.NewGuid()), "Carol");
 
-        var result = await Save(id, 7, Draft() with { DesignerIds = [carol.Id] }, lookups: new NewLookups([carol], []));
+        var result = await Save(id, 7, Draft() with { DesignerId = carol.Id }, lookups: new NewLookups([carol], []));
 
         Failed<long, ConcurrencyConflictError>(result);
+        _workspace.Data.Workflow.People.Should().HaveCount(2);
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.6")]
+    public async Task An_invalid_new_person_name_is_reported_under_each_role_that_holds_it()
+    {
+        var id = await _workspace.AddTaskAsync();
+        var tooLong = new string('x', DomainLimits.LookupName + 1);
+        var designer = new NewPerson(new PersonId(Guid.NewGuid()), tooLong);
+        var both = new NewPerson(new PersonId(Guid.NewGuid()), tooLong);
+        var tag = new NewTag(new TagId(Guid.NewGuid()), tooLong);
+
+        var designerOnly = await Save(id, 1, Draft() with { DesignerId = designer.Id, TagIds = [tag.Id] }, lookups: new NewLookups([designer], [tag]));
+        var inBoth = await Save(id, 1, Draft() with { DesignerId = both.Id, DeveloperId = both.Id }, lookups: new NewLookups([both], []));
+
+        Failed<long, ValidationFailedError>(designerOnly).Errors.Select(e => e.Field).Should().BeEquivalentTo(["Designer", "Tags"]);
+        Failed<long, ValidationFailedError>(inBoth).Errors.Select(e => e.Field).Should().BeEquivalentTo(["Designer", "Developer"]);
         _workspace.Data.Workflow.People.Should().HaveCount(2);
     }
 

@@ -7,12 +7,15 @@ using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Domain.Tasks;
 
-/// <summary>User-editable task fields that are not workflow, dates, or ordering.</summary>
+/// <summary>
+/// User-editable task fields that are not workflow, dates, or ordering. A task has at most one Designer and at most
+/// one Developer (ADR 0024).
+/// </summary>
 public sealed record TaskContent(
     TitleText? OwnTitle,
     ServiceText? Service,
-    IReadOnlyList<PersonId> DesignerIds,
-    IReadOnlyList<PersonId> DeveloperIds,
+    PersonId? DesignerId,
+    PersonId? DeveloperId,
     IReadOnlyList<TagId> TagIds,
     LongText? Notes,
     IReadOnlyDictionary<FieldId, CustomValue> CustomValues);
@@ -54,9 +57,11 @@ public sealed record TaskItem
 
     public PriorityId PriorityId { get; private init; }
 
-    public IReadOnlyList<PersonId> DesignerIds { get; private init; } = [];
+    /// <summary>The task's single Designer, or null (ADR 0024).</summary>
+    public PersonId? DesignerId { get; private init; }
 
-    public IReadOnlyList<PersonId> DeveloperIds { get; private init; } = [];
+    /// <summary>The task's single Developer, or null (ADR 0024).</summary>
+    public PersonId? DeveloperId { get; private init; }
 
     public IReadOnlyList<TagId> TagIds { get; private init; } = [];
 
@@ -184,8 +189,8 @@ public sealed record TaskItem
             Id = id,
             OwnTitle = content.OwnTitle,
             Service = content.Service,
-            DesignerIds = [.. content.DesignerIds],
-            DeveloperIds = [.. content.DeveloperIds],
+            DesignerId = content.DesignerId,
+            DeveloperId = content.DeveloperId,
             TagIds = [.. content.TagIds],
             Notes = content.Notes,
             CustomValues = content.CustomValues.ToDictionary().AsReadOnly(),
@@ -456,7 +461,7 @@ public sealed record TaskItem
 
     /// <summary>
     /// B-04/B-11 lookup removal: points this task's references to the removed value (status, priority,
-    /// Designers, Developers, Tags, and People/Tags custom values) at the replacement, or clears them where
+    /// Designer, Developer, Tags, and People/Tags custom values) at the replacement, or clears them where
     /// allowed. Not a status transition: dates are kept, and archived tasks are remapped too (AC-08).
     /// </summary>
     /// <param name="rankInReplacementColumn">
@@ -481,15 +486,15 @@ public sealed record TaskItem
             changed = true;
         }
 
-        if (remap.MapList(LookupKind.Person, DesignerIds, p => p.Value, g => new PersonId(g)) is { } designers)
+        if (DesignerId is { } designer && remap.Targets(LookupKind.Person, designer.Value))
         {
-            result = result with { DesignerIds = designers };
+            result = result with { DesignerId = Replacement(remap) };
             changed = true;
         }
 
-        if (remap.MapList(LookupKind.Person, DeveloperIds, p => p.Value, g => new PersonId(g)) is { } developers)
+        if (DeveloperId is { } developer && remap.Targets(LookupKind.Person, developer.Value))
         {
-            result = result with { DeveloperIds = developers };
+            result = result with { DeveloperId = Replacement(remap) };
             changed = true;
         }
 
@@ -508,12 +513,15 @@ public sealed record TaskItem
         return changed ? result.Touch(nowUtc) : null;
     }
 
+    // B-04: a removed Designer or Developer is replaced, or cleared when the removal clears references.
+    private static PersonId? Replacement(LookupRemap remap) => remap.ReplacementId is { } replacement ? new PersonId(replacement) : null;
+
     private TaskItem WithContent(TaskContent content) => this with
     {
         OwnTitle = content.OwnTitle,
         Service = content.Service,
-        DesignerIds = [.. content.DesignerIds.Distinct()],
-        DeveloperIds = [.. content.DeveloperIds.Distinct()],
+        DesignerId = content.DesignerId,
+        DeveloperId = content.DeveloperId,
         TagIds = [.. content.TagIds.Distinct()],
         Notes = content.Notes,
         CustomValues = content.CustomValues.ToDictionary().AsReadOnly(),

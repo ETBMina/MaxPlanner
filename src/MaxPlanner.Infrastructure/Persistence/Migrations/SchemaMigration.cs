@@ -12,7 +12,7 @@ internal sealed record SchemaMigration(int Version, string Name, Action<SqliteCo
 internal static class SchemaMigrations
 {
     /// <summary>Every migration of this app version, in order. The last one's version is the supported schema.</summary>
-    public static IReadOnlyList<SchemaMigration> All { get; } = [M0001InitialSchema.Migration];
+    public static IReadOnlyList<SchemaMigration> All { get; } = [M0001InitialSchema.Migration, M0002SingleDesignerDeveloper.Migration];
 
     public static string ReadEmbeddedSql(string fileName)
     {

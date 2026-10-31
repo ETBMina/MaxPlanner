@@ -29,7 +29,7 @@ internal static class Fixtures
     public static ServiceText Service(string text = "Mobile Banking") => ServiceText.CreateOptional(text).Value!;
 
     public static TaskContent Content(TitleText? ownTitle = null, ServiceText? service = null, bool unlinkedDefaults = true) =>
-        new(ownTitle ?? (unlinkedDefaults ? Title() : null), service, [], [], [], null, CustomValue.NoValues);
+        new(ownTitle ?? (unlinkedDefaults ? Title() : null), service, null, null, [], null, CustomValue.NoValues);
 
     public static TaskItem UnlinkedTask(TaskStatusDefinition? status = null, ServiceText? service = null) =>
         TaskItem.Create(new TaskId(Guid.NewGuid()), Content(service: service), status ?? Backlog, Medium,

@@ -60,7 +60,7 @@ public enum RestoreRecoveryOutcome
 /// transaction, so the marker records enough to tell which side of the swap a crash left behind.
 /// </summary>
 /// <remarks>
-/// Interim choice (implementation-plan Phase 15): a restore replaces the business database only. The running app's
+/// Interim choice: a restore replaces the business database only. The running app's
 /// <c>configuration.json</c> (UI preferences, T-09) is kept; the backup's copy stays in the backup folder.
 /// </remarks>
 public static class RestoreService

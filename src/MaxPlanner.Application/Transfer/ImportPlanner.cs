@@ -394,7 +394,7 @@ public static class ImportPlanner
                 return;
             }
 
-            // Interim choice (implementation-plan Phase 13): imported business defaults replace the defaults of an
+            // Interim choice: imported business defaults replace the defaults of an
             // empty target only; a dataset in use keeps its own.
             var taskStatus = MapLookup(source.DefaultTaskStatusId);
             var crStatus = MapLookup(source.DefaultCrStatusId);
@@ -445,6 +445,22 @@ public static class ImportPlanner
             }
 
             return definition;
+        }
+
+        /// <summary>
+        /// ADR 0024: a task has at most one Designer and one Developer. The first resolved person is kept; any others
+        /// are dropped with a warning that names them (the file format still allows an array).
+        /// </summary>
+        private PersonId? SinglePerson(IReadOnlyList<Guid>? ids, string field, string entity, string key, List<DomainError> errors)
+        {
+            var people = ResolveList(ids, id => _people.Any(p => p.Id.Value == id), id => new PersonId(id), field, errors);
+            if (people.Count > 1)
+            {
+                var dropped = people.Skip(1).Select(p => _people.First(d => d.Id == p).Name.Display);
+                Add(ImportSeverity.Warning, entity, key, ImportFindingCodes.PeopleDropped, field, string.Join(", ", dropped));
+            }
+
+            return people.Count > 0 ? people[0] : null;
         }
 
         private List<TId> ResolveList<TId>(IReadOnlyList<Guid>? ids, Func<Guid, bool> exists, Func<Guid, TId> wrap, string field, List<DomainError> errors)
@@ -911,12 +927,12 @@ public static class ImportPlanner
             var priority = Supplied(s, nameof(source.PriorityId)) || existing is null
                 ? Resolve(source.PriorityId ?? _defaults.DefaultPriorityId.Value, _priorities, p => p.Id.Value, "PriorityId", errors)
                 : _priorities.FirstOrDefault(p => p.Id == existing.PriorityId);
-            var designers = Supplied(s, nameof(source.DesignerIds))
-                ? ResolveList(source.DesignerIds, id => _people.Any(p => p.Id.Value == id), id => new PersonId(id), "DesignerIds", errors)
-                : existing?.DesignerIds.ToList() ?? [];
-            var developers = Supplied(s, nameof(source.DeveloperIds))
-                ? ResolveList(source.DeveloperIds, id => _people.Any(p => p.Id.Value == id), id => new PersonId(id), "DeveloperIds", errors)
-                : existing?.DeveloperIds.ToList() ?? [];
+            var designer = Supplied(s, nameof(source.DesignerIds))
+                ? SinglePerson(source.DesignerIds, "DesignerIds", Entity, key, errors)
+                : existing?.DesignerId;
+            var developer = Supplied(s, nameof(source.DeveloperIds))
+                ? SinglePerson(source.DeveloperIds, "DeveloperIds", Entity, key, errors)
+                : existing?.DeveloperId;
             var tags = Supplied(s, nameof(source.TagIds))
                 ? ResolveList(source.TagIds, id => _tags.Any(t => t.Id.Value == id), id => new TagId(id), "TagIds", errors)
                 : existing?.TagIds.ToList() ?? [];
@@ -953,7 +969,7 @@ public static class ImportPlanner
                 rank = Append(status.Id.Value);
             }
 
-            var content = new TaskContent(ownTitle, service, designers, developers, tags, notes, custom);
+            var content = new TaskContent(ownTitle, service, designer, developer, tags, notes, custom);
             DomainResult<TaskItem> built;
             if (existing is null)
             {
@@ -1009,8 +1025,8 @@ public static class ImportPlanner
 
         private static bool SameTask(TaskItem existing, TaskItem merged) =>
             existing.OwnTitle == merged.OwnTitle && existing.Service == merged.Service && existing.StatusId == merged.StatusId
-            && existing.PriorityId == merged.PriorityId && existing.DesignerIds.SequenceEqual(merged.DesignerIds)
-            && existing.DeveloperIds.SequenceEqual(merged.DeveloperIds) && existing.TagIds.SequenceEqual(merged.TagIds)
+            && existing.PriorityId == merged.PriorityId && existing.DesignerId == merged.DesignerId
+            && existing.DeveloperId == merged.DeveloperId && existing.TagIds.SequenceEqual(merged.TagIds)
             && existing.Notes == merged.Notes && existing.Dates == merged.Dates && existing.IsArchived == merged.IsArchived
             && existing.Rank == merged.Rank && existing.ChecklistItems.SequenceEqual(merged.ChecklistItems)
             && TransferValues.SameCustomValues(existing.CustomValues, merged.CustomValues) && SamePreserved(existing.Preserved, merged.Preserved);

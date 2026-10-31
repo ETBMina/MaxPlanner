@@ -75,13 +75,13 @@ public sealed partial class AppLoggingTests : IDisposable
         var dataset = created.Dataset!;
         try
         {
-            var draft = new TaskContentDraft(title, null, [], [], [], notes, CustomValue.NoValues);
+            var draft = new TaskContentDraft(title, null, null, null, [], notes, CustomValue.NoValues);
             var create = await new CreateTask(dataset.Coordinator).ExecuteAsync(
                 new CreateTaskCommand(OperationId.New(), new TaskId(Guid.NewGuid()), draft), Ct);
             create.IsSuccess.Should().BeTrue();
 
             // A rejected command is logged as a failure category only.
-            var invalid = new TaskContentDraft(new string('x', 10_000), null, [], [], [], notes, CustomValue.NoValues);
+            var invalid = new TaskContentDraft(new string('x', 10_000), null, null, null, [], notes, CustomValue.NoValues);
             (await new CreateTask(dataset.Coordinator).ExecuteAsync(
                 new CreateTaskCommand(OperationId.New(), new TaskId(Guid.NewGuid()), invalid), Ct)).IsSuccess.Should().BeFalse();
 

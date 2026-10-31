@@ -92,11 +92,12 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         _taskId = taskId ?? new TaskId(Guid.NewGuid());
         StatusOptions = [.. _workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
         PriorityOptions = [.. _workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display))];
-        Designers = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsPeople = true };
-        Developers = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsPeople = true };
+        // ADR 0024, design §5.0: Designer and Developer are single-person pickers with suggestions and add-new on Save.
+        Designer = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsSingleSelection = true, IsPeople = true };
+        Developer = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsSingleSelection = true, IsPeople = true };
         Tags = new TokenPickerViewModel(context.Strings, () => _workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), _newTags) { IsTags = true };
-        Designers.Changed += OnDraftChanged;
-        Developers.Changed += OnDraftChanged;
+        Designer.Changed += OnDraftChanged;
+        Developer.Changed += OnDraftChanged;
         Tags.Changed += OnDraftChanged;
         CustomFields = new CustomFieldsEditorViewModel(FieldTarget.Task, _workflow, context.Strings);
         CustomFields.Changed += OnDraftChanged;
@@ -164,9 +165,11 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     public IReadOnlyList<PriorityOption> PriorityOptions { get; }
 
-    public TokenPickerViewModel Designers { get; }
+    /// <summary>The single Designer (ADR 0024).</summary>
+    public TokenPickerViewModel Designer { get; }
 
-    public TokenPickerViewModel Developers { get; }
+    /// <summary>The single Developer (ADR 0024).</summary>
+    public TokenPickerViewModel Developer { get; }
 
     public TokenPickerViewModel Tags { get; }
 
@@ -234,7 +237,13 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public partial string? PriorityError { get; private set; }
 
     [ObservableProperty]
-    public partial string? PeopleError { get; private set; }
+    public partial string? DesignerError { get; private set; }
+
+    [ObservableProperty]
+    public partial string? DeveloperError { get; private set; }
+
+    [ObservableProperty]
+    public partial string? TagsError { get; private set; }
 
     [ObservableProperty]
     public partial string? DateError { get; private set; }
@@ -400,6 +409,10 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         {
             return false;
         }
+
+        // Text typed in a person box counts even when Save comes from Ctrl+Enter, before the box loses focus.
+        Designer.CommitText();
+        Developer.CommitText();
 
         if (!IsNew && !IsDirty && PendingLink is null)
         {
@@ -640,7 +653,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
         var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
-        var mineTokens = (Designers.Tokens.ToList(), Developers.Tokens.ToList(), Tags.Tokens.ToList());
+        var mineTokens = (Designer.Tokens.ToList(), Developer.Tokens.ToList(), Tags.Tokens.ToList());
         var mineChecklist = _checklist.Select(i => (i.Id, i.Text, i.IsCompleted, i.IsNew)).ToList();
         _ = CustomFields.TryBuild(latest.CustomValues, out var mineCustom);
         Load(latest);
@@ -665,14 +678,14 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == mine.Priority);
         }
 
-        if (keep.Contains("Designers"))
+        if (keep.Contains("Designer"))
         {
-            Designers.Load(mineTokens.Item1.Select(t => (t.Id, t.Name, t.IsNew)));
+            Designer.Load(mineTokens.Item1.Select(t => (t.Id, t.Name, t.IsNew)));
         }
 
-        if (keep.Contains("Developers"))
+        if (keep.Contains("Developer"))
         {
-            Developers.Load(mineTokens.Item2.Select(t => (t.Id, t.Name, t.IsNew)));
+            Developer.Load(mineTokens.Item2.Select(t => (t.Id, t.Name, t.IsNew)));
         }
 
         if (keep.Contains("Tags"))
@@ -841,8 +854,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public void Dispose()
     {
         _commits.Dispose();
-        Designers.Changed -= OnDraftChanged;
-        Developers.Changed -= OnDraftChanged;
+        Designer.Changed -= OnDraftChanged;
+        Developer.Changed -= OnDraftChanged;
         Tags.Changed -= OnDraftChanged;
         CustomFields.Changed -= OnDraftChanged;
         _checklist.CollectionChanged -= OnChecklistChanged;
@@ -874,8 +887,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     partial void OnIsSavingChanged(bool value)
     {
-        Designers.IsReadOnly = value || IsReadOnly;
-        Developers.IsReadOnly = value || IsReadOnly;
+        Designer.IsReadOnly = value || IsReadOnly;
+        Developer.IsReadOnly = value || IsReadOnly;
         Tags.IsReadOnly = value || IsReadOnly;
         CustomFields.IsReadOnly = value || IsReadOnly;
     }
@@ -896,8 +909,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation, IReadOnlyDictionary<FieldId, CustomValue> customValues)
     {
         var useCases = _context.UseCases;
-        var designerIds = Designers.Ids;
-        var developerIds = Developers.Ids;
+        var designerIds = Designer.Ids;
+        var developerIds = Developer.Ids;
         var tagIds = Tags.Ids;
         var lookups = new NewLookups(
             [.. _newPeople.Used(designerIds.Concat(developerIds)).Select(p => new NewPerson(new PersonId(p.Id), p.Name))],
@@ -910,8 +923,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         var content = new TaskContentDraft(
             title,
             Service,
-            [.. designerIds.Select(id => new PersonId(id))],
-            [.. developerIds.Select(id => new PersonId(id))],
+            designerIds.Count > 0 ? new PersonId(designerIds[0]) : null,
+            developerIds.Count > 0 ? new PersonId(developerIds[0]) : null,
             [.. tagIds.Select(id => new TagId(id))],
             Notes,
             customValues);
@@ -986,7 +999,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
                 "Service" => SetError(() => ServiceError = text, "Service"),
                 "Status" => SetError(() => StatusError = text, "Status"),
                 "Priority" => SetError(() => PriorityError = text, "Priority"),
-                "Designers" or "Developers" or "People" or "Tags" => SetError(() => PeopleError = text, "Designers"),
+                "Designer" => SetError(() => DesignerError = text, "Designer"),
+                "Developer" => SetError(() => DeveloperError = text, "Developer"),
+                "Tags" => SetError(() => TagsError = text, "Tags"),
                 "StartDate" or "EndDate" => SetError(() => DateError = text, "EndDate"),
                 "Notes" => SetError(() => NotesError = text, "Notes"),
                 "ChecklistItems" => SetError(() => ChecklistError = text, "ChecklistItems"),
@@ -1018,7 +1033,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     private void ClearErrors()
     {
-        TitleError = ServiceError = StatusError = PriorityError = PeopleError = DateError = NotesError = ChecklistError = null;
+        TitleError = ServiceError = StatusError = PriorityError = DesignerError = DeveloperError = TagsError = DateError = NotesError = ChecklistError = null;
         CustomFields.ClearErrors();
         ValidationSummary = null;
         SaveError = null;
@@ -1051,8 +1066,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         Service = model.Service ?? string.Empty;
         SelectedStatus = StatusOptions.FirstOrDefault(o => o.Id == model.Status.Id);
         SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == model.Priority.Id);
-        Designers.Load(model.Designers.Select(p => (p.Id.Value, p.Name, false)));
-        Developers.Load(model.Developers.Select(p => (p.Id.Value, p.Name, false)));
+        Designer.Load(Tokens(model.Designer));
+        Developer.Load(Tokens(model.Developer));
         Tags.Load(model.Tags.Select(t => (t.Id.Value, t.Name, false)));
         StartDate = ToPicker(model.StartDate);
         EndDate = ToPicker(model.EndDate);
@@ -1076,6 +1091,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         RaiseState();
     }
 
+    private static IEnumerable<(Guid Id, string Name, bool IsNew)> Tokens(LookupRef<PersonId>? person) =>
+        person is { } p ? [(p.Id.Value, p.Name, false)] : [];
+
     private void AddChecklistRow(EditorChecklistItemViewModel item)
     {
         item.PropertyChanged += OnChecklistItemChanged;
@@ -1087,8 +1105,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         Service.Trim(),
         SelectedStatus?.Id,
         SelectedPriority?.Id,
-        Designers.Ids,
-        Developers.Ids,
+        Designer.Ids.Count > 0 ? Designer.Ids[0] : null,
+        Developer.Ids.Count > 0 ? Developer.Ids[0] : null,
         Tags.Ids,
         FromPicker(StartDate),
         FromPicker(EndDate),
@@ -1101,8 +1119,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         model.Service ?? string.Empty,
         model.Status.Id,
         model.Priority.Id,
-        [.. model.Designers.Select(p => p.Id.Value)],
-        [.. model.Developers.Select(p => p.Id.Value)],
+        model.Designer?.Id.Value,
+        model.Developer?.Id.Value,
         [.. model.Tags.Select(t => t.Id.Value)],
         model.StartDate,
         model.EndDate,
@@ -1124,8 +1142,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             "Service" => Text(values.Service),
             "Status" => values.Status is { } s ? _workflow.FindTaskStatus(s)?.Name.Display ?? none : none,
             "Priority" => values.Priority is { } p ? _workflow.FindPriority(p)?.Name.Display ?? none : none,
-            "Designers" => Join(values.Designers.Select(Person)),
-            "Developers" => Join(values.Developers.Select(Person)),
+            "Designer" => values.Designer is { } designer ? Person(designer) : none,
+            "Developer" => values.Developer is { } developer ? Person(developer) : none,
             "Tags" => Join(values.Tags.Select(Tag)),
             "StartDate" => Date(values.Start),
             "EndDate" => Date(values.End),

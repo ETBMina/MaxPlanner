@@ -45,12 +45,12 @@ public sealed class ChangeSetBuilderTests
     }
 
     private static TaskItem NewTask() =>
-        TaskItem.Create(new TaskId(Guid.NewGuid()), new TaskContent(TitleText.Create("Task").Value, null, [], [], [], null, CustomValue.NoValues),
+        TaskItem.Create(new TaskId(Guid.NewGuid()), new TaskContent(TitleText.Create("Task").Value, null, null, null, [], null, CustomValue.NoValues),
             Backlog, Medium.Id, DateIntent.Unchanged, DateIntent.Unchanged, null, 1, Today, Now).Value;
 }
 
 internal static class TaskItemTestExtensions
 {
     public static TaskContent Content(this TaskItem task) =>
-        new(task.OwnTitle, task.Service, task.DesignerIds, task.DeveloperIds, task.TagIds, task.Notes, task.CustomValues);
+        new(task.OwnTitle, task.Service, task.DesignerId, task.DeveloperId, task.TagIds, task.Notes, task.CustomValues);
 }

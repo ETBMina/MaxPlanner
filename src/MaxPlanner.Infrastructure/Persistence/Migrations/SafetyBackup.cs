@@ -9,7 +9,7 @@ namespace MaxPlanner.Infrastructure.Persistence.Migrations;
 /// </summary>
 /// <remarks>
 /// Only the database is copied here. The full backup format with <c>configuration.json</c> and a
-/// checksummed manifest belongs to the backup service (implementation-plan slice 1f).
+/// checksummed manifest belongs to the backup service.
 /// </remarks>
 internal static class SafetyBackup
 {

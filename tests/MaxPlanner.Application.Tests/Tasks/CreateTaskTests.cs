@@ -64,13 +64,13 @@ public sealed class CreateTaskTests
         var ticket = FieldDefinition.Create(new FieldId(Guid.NewGuid()), FieldKey.Create("ticket").Value, FieldTarget.Task,
             LookupName.Create("Ticket").Value, FieldKind.Text, isRequired: true, null, 0, []).Value;
         _workspace.Data.Workflow = SeedWorkflow with { Fields = [ticket] };
-        var draft = Draft() with { DesignerIds = [new PersonId(Guid.NewGuid())], TagIds = [new TagId(Guid.NewGuid())] };
+        var draft = Draft() with { DesignerId = new PersonId(Guid.NewGuid()), TagIds = [new TagId(Guid.NewGuid())] };
 
         var result = await new CreateTask(_workspace.Coordinator).ExecuteAsync(
             new CreateTaskCommand(OperationId.New(), new TaskId(Guid.NewGuid()), draft), CancellationToken.None);
 
         Failed<TaskId, ValidationFailedError>(result).Errors.Should().BeEquivalentTo([
-            new DomainError(DomainErrorCodes.UnknownReference, "Designers"),
+            new DomainError(DomainErrorCodes.UnknownReference, "Designer"),
             new DomainError(DomainErrorCodes.UnknownReference, "Tags"),
             new DomainError(DomainErrorCodes.Required, "Custom:ticket"),
         ]);

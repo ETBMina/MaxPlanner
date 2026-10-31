@@ -31,8 +31,8 @@ internal sealed record TaskSpec(
     ChangeRequestId? Cr,
     PriorityId? Priority,
     TaskStatusId? Status = null,
-    IReadOnlyList<PersonId>? Designers = null,
-    IReadOnlyList<PersonId>? Developers = null,
+    PersonId? Designer = null,
+    PersonId? Developer = null,
     IReadOnlyList<TagId>? Tags = null,
     string? Notes = null,
     IReadOnlyList<(string Text, bool Done)>? Checklist = null);
@@ -83,7 +83,7 @@ internal sealed class FixtureBuilder(IMutationCoordinator coordinator)
     public async Task<TaskId> TaskAsync(TaskSpec spec)
     {
         var id = new TaskId(Guid.NewGuid());
-        var draft = new TaskContentDraft(spec.Title, spec.Service, spec.Designers ?? [], spec.Developers ?? [], spec.Tags ?? [], spec.Notes, CustomValue.NoValues);
+        var draft = new TaskContentDraft(spec.Title, spec.Service, spec.Designer, spec.Developer, spec.Tags ?? [], spec.Notes, CustomValue.NoValues);
         var link = spec.Cr is { } crId ? new CrLinkTarget(crId, _crRevisions[crId]) : null;
         var checklist = spec.Checklist?.Select(i => new ChecklistItemDraft(new ChecklistItemId(Guid.NewGuid()), i.Text, i.Done)).ToList();
         Ok(await new CreateTask(coordinator).ExecuteAsync(

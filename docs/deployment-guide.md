@@ -2,7 +2,7 @@
 
 This guide covers the portable release: what the artifact contains, how it is built and checked, how users install, move, upgrade and remove it, and how the release gates of T-11 are run on a clean machine. Developer tooling is in [dev-prerequisites.md](dev-prerequisites.md); end-user instructions also ship inside the ZIP as `README.txt` (source: `eng/portable/README.txt`).
 
-Status: the scripts below are written; the release gates have **not been run yet**. They are part of Phase 19 (see `implementation-plan.md`), and their evidence goes to `docs/evidence/phase-18/` and `docs/evidence/phase-17/`.
+Status: the scripts below are written; the release gates have **not been run yet**. Their evidence goes to `docs/evidence/phase-18/` and `docs/evidence/phase-17/`.
 
 ## 1. End-user prerequisites (T-02, T-03)
 | Item | Requirement |
@@ -40,6 +40,7 @@ Trimming, Native AOT, single-file and ReadyToRun stay off (T-03, `Directory.Buil
 ## 3. Building a release
 ```powershell
 ./scripts/build.ps1 -Locked                  # restore from lock files; 0 warnings required
+./scripts/test.ps1 -IncludeSmoke             # all tests, including the Desktop smoke tests that launch the app
 ./scripts/publish-portable.ps1 -Version 1.0.0
 ```
 After a dependency change (a new package or version), the first publish fails the notices check. Regenerate and publish again:

@@ -83,7 +83,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
     public bool ShowReplacement => Usage is { IsUnused: false } && ReplacementChoices.Count > 0;
 
     /// <summary>
-    /// B-04/design §11 Q4: Designers, Developers, review Developers, tags, and squads may be cleared; CR Owner
+    /// B-04/design §11 Q4: Designer, Developer, review Developer, tags, and squads may be cleared; CR Owner
     /// usage, the default CR Owner, statuses, and priorities can only be replaced.
     /// </summary>
     public bool ShowClearOption => Usage is { IsUnused: false } usage

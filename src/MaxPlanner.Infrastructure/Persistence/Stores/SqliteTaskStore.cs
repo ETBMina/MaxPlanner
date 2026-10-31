@@ -157,9 +157,12 @@ internal sealed class SqliteTaskStore(SqliteWriteTransaction tx) : ITaskStore
     }
 
     private static IEnumerable<(string Table, string Role, Guid Id)> Assignments(TaskItem task) =>
-        task.DesignerIds.Select(p => ("task_people", StorageNames.Designer, p.Value))
-            .Concat(task.DeveloperIds.Select(p => ("task_people", StorageNames.Developer, p.Value)))
+        Person(task.DesignerId, StorageNames.Designer)
+            .Concat(Person(task.DeveloperId, StorageNames.Developer))
             .Concat(task.TagIds.Select(t => ("task_tags", string.Empty, t.Value)));
+
+    private static IEnumerable<(string Table, string Role, Guid Id)> Person(PersonId? id, string role) =>
+        id is { } person ? [("task_people", role, person.Value)] : [];
 
     private List<(string Table, string Role, Guid Id)> ReadAssignments(TaskId taskId)
     {

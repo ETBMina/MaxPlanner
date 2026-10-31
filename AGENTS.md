@@ -9,22 +9,23 @@ Max Planner is a native Windows planning app (CRs, tasks, Board, Grid, Calendar,
 | `docs/adr/` | Accepted decisions. Read the ADRs for the area you change. |
 | `design.md` | UI and interaction reference. |
 | `Business Requirements.md` | Original product specification, kept as a reference. |
-| `implementation-plan.md` | Work order and current status. |
 | `docs/dev-prerequisites.md` | Toolchain, scripts, and WinApp CLI usage. |
 | `src/` | `Domain`, `Application`, `Infrastructure`, `Presentation`, `Desktop` |
 | `tests/` | One test project per layer, plus architecture, smoke, and benchmark tests |
 
-`design.md`, the requirements, and the plan are large. Search for the relevant section instead of reading them whole.
+`design.md` and the requirements are large. Search for the relevant section instead of reading them whole.
 
 ## How work is done
 
 - Delegate all code work, in any layer, to the `winui:winui-dev` agent. The main session clarifies the request, writes the brief, reviews the agent's diff, runs the checks, and reports to the user.
-- A brief states the goal, the relevant context (files, ADRs, design sections, the user's own words), constraints, and what "done" means, and tells the agent to follow this file. It does not say which skills to use: the agent chooses and combines its own skills for the task.
-- The main session edits documentation, ADRs, the plan, and plain text (`.resw` strings, comments) directly, and says so.
+- A brief states the goal, the relevant context (files, ADRs, design sections, the user's own words), constraints, and what "done" means, and tells the agent to follow this file. It does not say which skills to use: the agent chooses and combines its own skills for the task. The one exception is review, below.
+- The main session edits documentation, ADRs, and plain text (`.resw` strings, comments) directly, and says so.
+- **Self-review:** every code brief tells `winui:winui-dev` to review its own diff with the `winui:winui-code-review` skill before handing back, fix what it finds, and list the fixes in its report.
+- **Independent review:** for non-trivial changes (data model, storage or migrations, imports and exports, concurrency, or changes across several layers), the main session then starts a separate `winui:winui-dev` agent with fresh context to review the diff. Its brief names the diff and tells it to use the `winui:winui-code-review` skill only, and not to edit files. Small UI or text changes skip this. The main session decides which findings to fix and sends them back to the developing agent.
 - An agent's report is a claim. Check the diff and run the checks before telling the user the work is done.
 - Parallel code-writing agents work in separate worktrees and never touch the same files.
 - If `winui:winui-dev` is unavailable, say so and ask the user before writing code in the main session.
-- The user tests UI changes themselves. Do not launch the app, drive its UI (UI automation, simulated mouse or keyboard input), or take screenshots of the desktop unless the user asks for it in that request. The user is usually working on the same PC. Briefs to `winui:winui-dev` repeat this.
+- The user tests UI changes themselves. Do not launch the app, drive its UI (UI automation, simulated mouse or keyboard input), or take screenshots of the desktop unless the user asks for it in that request. The user is usually working on the same PC. This includes `MaxPlanner.Desktop.SmokeTests`, which start the app: `./scripts/test.ps1` skips them by default, and `-IncludeSmoke` is used only when the user asks. Briefs to `winui:winui-dev` repeat this.
 
 ## Decisions
 
@@ -48,7 +49,8 @@ Max Planner is a native Windows planning app (CRs, tasks, Board, Grid, Calendar,
 
 ```powershell
 ./scripts/build.ps1                     # restore + build (Debug, x64); warnings are errors
-./scripts/test.ps1                      # all test projects
+./scripts/test.ps1                      # all tests except the Desktop smoke tests
+./scripts/test.ps1 -IncludeSmoke        # also the smoke tests, which launch the app (only when the user asks)
 winapp run src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj -p Platform=x64 --detach --json   # build and launch (only when the user asks)
 ./scripts/publish-portable.ps1 -Version 0.1.0   # portable ZIP in artifacts/
 ./scripts/verify-portable.ps1 -Zip artifacts/MaxPlanner-0.1.0-win-x64.zip   # release gates
@@ -56,7 +58,7 @@ winapp run src/MaxPlanner.Desktop/MaxPlanner.Desktop.csproj -p Platform=x64 --de
 
 ## Done means
 
-- `./scripts/build.ps1` succeeds and `./scripts/test.ps1` passes. New behavior has tests in the layer that owns the rule.
+- `./scripts/build.ps1` succeeds and `./scripts/test.ps1` (without `-IncludeSmoke`) passes. New behavior has tests in the layer that owns the rule.
 - A UI change ends with short manual test steps for the user: what to open, what to do, and what to expect, including light and dark themes and a narrow window where they matter.
 - The diff has been reviewed for correctness and simplicity, and the findings are fixed or explained.
 - The report says what changed, what was checked, and what was not checked.

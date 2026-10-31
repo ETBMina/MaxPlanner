@@ -86,7 +86,7 @@ internal sealed class TestWorkspace
     public InMemoryDataset Data => Coordinator.Committed;
 
     public static TaskContentDraft Draft(string? title = "Card freeze", string? service = null, string? notes = null) =>
-        new(title, service, [], [], [], notes, CustomValue.NoValues);
+        new(title, service, null, null, [], notes, CustomValue.NoValues);
 
     public static ChangeRequestDraft CrDraft(string number = "CR-1042", string title = "Instant card freeze", PersonDefinition? owner = null, SquadId? squad = null) =>
         new(number, title, (owner ?? Alice).Id, squad, null, null, null, null, null, null, "0042", CustomValue.NoValues);

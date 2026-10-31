@@ -21,7 +21,7 @@ Test layers: **D** Domain tests, **A** Application tests (in-memory fake and rea
 | T-09 Settings, backup, recovery | `Infrastructure/Backup/*`, `Preferences/*`, `StartupCoordinator`, `RecoveryView` | I restore tests; Desktop integration; UI recovery page | Built |
 | T-10 Transfer validation | `Infrastructure/Transfer/*`, `Application/Transfer/*` | I transfer fixtures; security review | Built |
 | T-11 Performance gates | `tools/MaxPlanner.FixtureGenerator` (benchmark), `tests/MaxPlanner.Benchmarks`, log events 5003/5016/5605/5010, `scripts/run-performance.ps1` | G run-performance on the documented machine | Built (not run) |
-| T-12 Sequence, deliverables | `implementation-plan.md`, `docs/deployment-guide.md`, `docs/user-guide.md`, this file | Review | Built |
+| T-12 Sequence, deliverables | `docs/deployment-guide.md`, `docs/user-guide.md`, this file | Review | Built |
 | T-13 Inherited data | `Application/ReadModels/ReadModelComposer.cs`, store recomposition | A, P (AC-04, AC-22) | Verified (store); Built (editors) |
 
 ## Business requirements

@@ -293,7 +293,7 @@ public sealed class SliceBehaviourTests
     private static List<string> Titles(GridPageViewModel grid) => [.. grid.Rows.Select(r => r.TitleText)];
 
     private static UpdateTaskContentCommand Rename(TaskId id, string title) =>
-        new(OperationId.New(), id, 1, new TaskContentDraft(title, "Mobile Banking", [], [], [], null, CustomValue.NoValues));
+        new(OperationId.New(), id, 1, new TaskContentDraft(title, "Mobile Banking", null, null, [], null, CustomValue.NoValues));
 
     private static WorkspaceUseCases UseCasesOver(IMutationCoordinator coordinator) => WorkspaceUseCases.Create(coordinator);
 

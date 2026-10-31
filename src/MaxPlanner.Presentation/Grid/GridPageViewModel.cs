@@ -173,6 +173,9 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             return false;
         }
 
+        // A person cell's typed text counts even when the flyout commits by Ctrl+Enter or light dismiss, before the
+        // box loses focus (design §5.0).
+        row.DraftTokens?.CommitText();
         if (!row.IsDraftChanged())
         {
             EndEdit(row);
@@ -426,7 +429,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
 
         var id = new TaskId(Guid.NewGuid());
         var operation = OperationId.New();
-        var draft = new TaskContentDraft(_context.Strings.GetString("Grid_NewTaskTitle"), null, [], [], [], null, CustomValue.NoValues);
+        var draft = new TaskContentDraft(_context.Strings.GetString("Grid_NewTaskTitle"), null, null, null, [], null, CustomValue.NoValues);
         _context.SaveStatus.Begin();
         var result = await _context.UseCases.CreateTask.ExecuteAsync(new CreateTaskCommand(operation, id, draft), CancellationToken.None);
         if (!result.IsSuccess)
@@ -518,8 +521,8 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
 
     private static UpdateTaskCommand TaskEdit(GridRowViewModel row, TaskReadModel task, string column, OperationId operation, IReadOnlyDictionary<FieldId, CustomValue>? customValues)
     {
-        IReadOnlyList<PersonId> designers = [.. task.Designers.Select(p => p.Id)];
-        IReadOnlyList<PersonId> developers = [.. task.Developers.Select(p => p.Id)];
+        var designer = task.Designer?.Id;
+        var developer = task.Developer?.Id;
         IReadOnlyList<TagId> tags = [.. task.Tags.Select(t => t.Id)];
         var newLookups = NewLookups.None;
         if (row.DraftTokens is { } tokens && row.DraftNewNames is { } names)
@@ -527,12 +530,12 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             var ids = tokens.Ids;
             switch (column)
             {
-                case GridColumns.Designers:
-                    designers = [.. ids.Select(id => new PersonId(id))];
+                case GridColumns.Designer:
+                    designer = ids.Count > 0 ? new PersonId(ids[0]) : null;
                     newLookups = new NewLookups([.. names.Used(ids).Select(n => new NewPerson(new PersonId(n.Id), n.Name))], []);
                     break;
-                case GridColumns.Developers:
-                    developers = [.. ids.Select(id => new PersonId(id))];
+                case GridColumns.Developer:
+                    developer = ids.Count > 0 ? new PersonId(ids[0]) : null;
                     newLookups = new NewLookups([.. names.Used(ids).Select(n => new NewPerson(new PersonId(n.Id), n.Name))], []);
                     break;
                 case GridColumns.Tags:
@@ -547,8 +550,8 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         var content = new TaskContentDraft(
             task.IsTitleInherited ? null : task.EffectiveTitle,
             task.Service,
-            designers,
-            developers,
+            designer,
+            developer,
             tags,
             column == GridColumns.Notes ? row.DraftText : task.Notes,
             customValues ?? task.CustomValues);
@@ -575,8 +578,8 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     private static TaskContentDraft ContentWith(TaskReadModel task, string column, string draft) => new(
         column == GridColumns.Title ? draft : task.IsTitleInherited ? null : task.EffectiveTitle,
         column == GridColumns.Service ? draft : task.Service,
-        [.. task.Designers.Select(p => p.Id)],
-        [.. task.Developers.Select(p => p.Id)],
+        task.Designer?.Id,
+        task.Developer?.Id,
         [.. task.Tags.Select(t => t.Id)],
         task.Notes,
         task.CustomValues);
@@ -686,6 +689,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     /// <summary>
     /// Builds the column list from a saved layout (T-09): saved keys first in their saved order, then any column the
     /// layout does not know in default order. Unknown saved keys are dropped and widths are clamped to 48–800.
+    /// Legacy keys are read under their current names; the next save writes the current names.
     /// </summary>
     private void ApplySavedLayout(GridLayoutPreference? layout, WorkflowSnapshot? workflow)
     {
@@ -697,7 +701,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         var ordered = new List<GridColumnViewModel>();
         foreach (var saved in layout?.Columns ?? [])
         {
-            if (all.Remove(saved.Key, out var column))
+            if (all.Remove(CurrentKey(saved.Key), out var column))
             {
                 column.Width = GridColumns.Clamp(saved.Width);
                 column.IsVisible = saved.IsVisible;
@@ -719,13 +723,21 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             _columns.Add(column);
         }
 
-        if (layout is { SortColumnKey: { } sortKey } && _columns.Any(c => c.Key == sortKey))
+        if (layout is { SortColumnKey: { } savedSort } && CurrentKey(savedSort) is var sortKey && _columns.Any(c => c.Key == sortKey))
         {
             _sortColumn = sortKey;
             _sortDescending = layout.SortDescending;
             ApplySort();
         }
     }
+
+    /// <summary>ADR 0024 renamed the Designers and Developers columns; layouts saved before then still use the plural keys.</summary>
+    private static string CurrentKey(string savedKey) => savedKey switch
+    {
+        "Designers" => GridColumns.Designer,
+        "Developers" => GridColumns.Developer,
+        _ => savedKey,
+    };
 
     private void ApplySort()
     {

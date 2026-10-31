@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Tasks;
+using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Board;
@@ -41,17 +42,104 @@ public sealed class TaskEditorTests
         h.Store.Tasks.Count.Should().Be(1, "nothing is created by a refused draft");
 
         editor.Title = "Brand new";
-        editor.Designers.Query = "Dana";
-        editor.Designers.SubmitQuery().Should().BeTrue();
-        editor.Designers.Tokens.Single().IsNew.Should().BeTrue();
+        editor.Designer.Query = "Dana";
+        editor.Designer.SubmitQuery().Should().BeTrue();
+        editor.Designer.Tokens.Single().IsNew.Should().BeTrue();
         h.Await(editor.SaveAsync()).Should().BeTrue();
         h.Await(flow);
         h.Settle();
 
         var created = h.Task(editor.CreatedTaskId!.Value);
         created.Status.Id.Should().Be(review.StatusId);
-        created.Designers.Single().Name.Should().Be("Dana", "B-02.6: the new person is created by the save");
+        created.Designer!.Name.Should().Be("Dana", "B-02.6: the new person is created by the save");
         board.Columns[3].Cards.Select(c => c.Title).Should().Contain("Brand new");
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.6")]
+    public void Designer_and_developer_hold_one_person_each_and_only_the_chosen_new_name_is_created()
+    {
+        using var h = BoardMoveTests.Board(out var board, "Task");
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        var card = board.Columns[0].Cards.Single();
+        var people = h.Store.CurrentWorkflow!.People.Count;
+
+        var flow = board.OpenAsync(card);
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        editor.Designer.IsSingleSelection.Should().BeTrue("ADR 0024: one Designer per task");
+        editor.Developer.IsSingleSelection.Should().BeTrue("ADR 0024: one Developer per task");
+        editor.Designer.Query = "Dana";
+        editor.Designer.SubmitQuery().Should().BeTrue();
+        editor.Designer.Query = "Erin";
+        editor.Designer.SubmitQuery().Should().BeTrue();
+        editor.Designer.Tokens.Select(t => t.Name).Should().Equal(["Erin"], "choosing a name replaces the previous one");
+        editor.Developer.Query = "erin";
+        editor.Developer.Suggestions.First().IsAddNew.Should().BeTrue("Erin does not exist until the save");
+        editor.Developer.SubmitQuery().Should().BeTrue();
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+        h.Await(flow);
+        h.Settle();
+
+        var saved = h.Task(new TaskId(card.Key));
+        saved.Designer!.Name.Should().Be("Erin");
+        saved.Developer!.Id.Should().Be(saved.Designer.Id, "one new name typed in both pickers is one person");
+        h.Store.CurrentWorkflow!.People.Should().HaveCount(people + 1, "Dana was replaced before Save, so only Erin is created");
+    }
+
+    [Theory]
+    [Trait("Req", "B-02.6")]
+    [InlineData("Designer")]
+    [InlineData("Developer")]
+    public void An_invalid_new_person_name_is_shown_and_focused_on_the_picker_that_holds_it(string role)
+    {
+        using var h = BoardMoveTests.Board(out var board, "Task");
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        var card = board.Columns[0].Cards.Single();
+        var people = h.Store.CurrentWorkflow!.People.Count;
+
+        var flow = board.OpenAsync(card);
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        string? focused = null;
+        editor.FocusRequested += (_, key) => focused = key;
+        var picker = role == "Designer" ? editor.Designer : editor.Developer;
+        var tooLong = new string('x', DomainLimits.LookupName + 1);
+        picker.Choose(new TokenSuggestion(null, tooLong, tooLong, IsPerson: true)).Should().BeTrue();
+
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+
+        (role == "Designer" ? editor.DesignerError : editor.DeveloperError).Should().NotBeNullOrEmpty();
+        (role == "Designer" ? editor.DeveloperError : editor.DesignerError).Should().BeNull();
+        editor.TagsError.Should().BeNull("a new person's name error belongs to its own picker");
+        focused.Should().Be(role);
+        editor.DiscardChanges();
+        h.Await(flow);
+        h.Store.CurrentWorkflow!.People.Count.Should().Be(people);
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.6")]
+    public void An_invalid_new_name_in_both_pickers_is_shown_on_both_and_focuses_the_designer()
+    {
+        using var h = BoardMoveTests.Board(out var board, "Task");
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        var card = board.Columns[0].Cards.Single();
+
+        var flow = board.OpenAsync(card);
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        string? focused = null;
+        editor.FocusRequested += (_, key) => focused = key;
+        var tooLong = new string('x', DomainLimits.LookupName + 1);
+        editor.Designer.Choose(new TokenSuggestion(null, tooLong, tooLong, IsPerson: true)).Should().BeTrue();
+        editor.Developer.Choose(new TokenSuggestion(null, tooLong, tooLong, IsPerson: true)).Should().BeTrue();
+
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+
+        editor.DesignerError.Should().NotBeNullOrEmpty();
+        editor.DeveloperError.Should().NotBeNullOrEmpty();
+        editor.TagsError.Should().BeNull();
+        focused.Should().Be("Designer");
+        editor.DiscardChanges();
+        h.Await(flow);
     }
 
     [Fact]
@@ -107,7 +195,7 @@ public sealed class TaskEditorTests
 
         // Another route saves first.
         h.External(u => u.UpdateTaskContent.ExecuteAsync(
-            new UpdateTaskContentCommand(OperationId.New(), id, 1, new TaskContentDraft("Theirs", "Cards API", [], [], [], null, CustomValue.NoValues)),
+            new UpdateTaskContentCommand(OperationId.New(), id, 1, new TaskContentDraft("Theirs", "Cards API", null, null, [], null, CustomValue.NoValues)),
             TestContext.Current.CancellationToken));
         editor.Title.Should().Be("Mine", "a dirty draft is never replaced silently");
 
@@ -144,7 +232,7 @@ public sealed class TaskEditorTests
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Title = "Mine";
         h.External(u => u.UpdateTaskContent.ExecuteAsync(
-            new UpdateTaskContentCommand(OperationId.New(), id, 1, new TaskContentDraft("Theirs", "Mobile Banking", [], [], [], null, CustomValue.NoValues)),
+            new UpdateTaskContentCommand(OperationId.New(), id, 1, new TaskContentDraft("Theirs", "Mobile Banking", null, null, [], null, CustomValue.NoValues)),
             TestContext.Current.CancellationToken));
         h.Await(editor.SaveAsync());
 
@@ -364,6 +452,39 @@ public sealed class TaskEditorTests
         h.Await(flow);
         h.Settle();
         h.Task(id).ChecklistItems.Select(i => i.Text).Should().Equal("Third", "First, renamed");
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.6")]
+    public void Save_commits_text_still_in_a_person_box_as_ctrl_enter_does_before_focus_leaves()
+    {
+        using var h = BoardMoveTests.Board(out var board, "Task");
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        var taskId = new TaskId(board.Columns[0].Cards.Single().Key);
+
+        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        editor.Designer.Query = "Dana";
+        editor.Designer.SubmitQuery().Should().BeTrue();
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+        h.Await(flow);
+        h.Settle();
+        h.Task(taskId).Designer!.Name.Should().Be("Dana");
+
+        flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        editor = dialogs.Next<TaskEditorViewModel>(h);
+        editor.Designer.Query.Should().Be("Dana", "the box shows the saved Designer");
+        editor.Designer.Query = string.Empty;
+        editor.Developer.Query = "dana";
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+        h.Await(flow);
+        h.Settle();
+
+        var saved = h.Task(taskId);
+        saved.Designer.Should().BeNull("an emptied box clears the Designer on Save");
+        saved.Developer!.Name.Should().Be("Dana", "an exact existing name typed in the box is chosen on Save");
+        editor.Designer.CommitText().Should().BeFalse("the late LostFocus after the save changes nothing");
+        editor.Developer.CommitText().Should().BeFalse();
     }
 
     /// <summary>Answers dialog requests in place of the shell's host; each dialog's close request completes it.</summary>

@@ -428,6 +428,9 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             return false;
         }
 
+        // Text typed in the Owner box counts even when Save comes from Ctrl+Enter, before the box loses focus.
+        Owner.CommitText();
+
         var offersDefault = ShowMakeDefaultOwner && MakeDefaultOwner;
         if (!IsNew && !IsDirty && !offersDefault)
         {
@@ -455,6 +458,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             return;
         }
 
+        Owner.CommitText();
         if (IsNew || IsDirty)
         {
             CurrentStep = CrEditorStep.SaveAndCreateTask;
@@ -469,6 +473,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     /// <summary>"Save and create": saves the CR, then the task editor opens over the saved CR (never unsaved values, T-13).</summary>
     public async Task<bool> SaveAndCreateTaskAsync()
     {
+        Owner.CommitText();
         CurrentStep = CrEditorStep.Form;
         RaiseState();
         if (!await SaveDraftAsync(ShowMakeDefaultOwner && MakeDefaultOwner).ConfigureAwait(true))

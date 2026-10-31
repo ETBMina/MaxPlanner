@@ -358,11 +358,8 @@
   <data name="Field_SubtaskCards" xml:space="preserve">
     <value>Subtask cards</value>
   </data>
-  <data name="Field_Designers" xml:space="preserve">
-    <value>Designers</value>
-  </data>
-  <data name="Field_Developers" xml:space="preserve">
-    <value>Developers</value>
+  <data name="Field_Designer" xml:space="preserve">
+    <value>Designer</value>
   </data>
   <data name="Field_Tags" xml:space="preserve">
     <value>Tags</value>
@@ -898,6 +895,18 @@
   <data name="TokenPicker_Remove" xml:space="preserve">
     <value>Remove {0}</value>
   </data>
+  <data name="PersonPicker_Placeholder" xml:space="preserve">
+    <value>Choose a person</value>
+    <comment>Placeholder of a single-person dropdown (CR Owner, Designer, Developer) when nobody is chosen.</comment>
+  </data>
+  <data name="PersonPicker_HelpText" xml:space="preserve">
+    <value>Type to search, or press F4 or Alt+Down to open the list of people.</value>
+    <comment>Accessible help text of a single-person dropdown (CR Owner, Designer, Developer).</comment>
+  </data>
+  <data name="PersonPicker_Name" xml:space="preserve">
+    <value>{0}: {1}</value>
+    <comment>Accessible name of a single-person dropdown: {0} is the field label ("Owner"), {1} the chosen person.</comment>
+  </data>
   <data name="PersonAvatar_Overflow" xml:space="preserve">
     <value>+{0}</value>
     <comment>The circle after a stack of person avatars that counts the people not shown, e.g. "+2".</comment>
@@ -1020,11 +1029,11 @@
   <data name="TaskEditor_CrGroupHeader.Text" xml:space="preserve">
     <value>Change request</value>
   </data>
-  <data name="TaskEditor_DesignersPicker.Header" xml:space="preserve">
-    <value>Designers</value>
+  <data name="TaskEditor_DesignerPicker.Header" xml:space="preserve">
+    <value>Designer</value>
   </data>
-  <data name="TaskEditor_DevelopersPicker.Header" xml:space="preserve">
-    <value>Developers</value>
+  <data name="TaskEditor_DeveloperPicker.Header" xml:space="preserve">
+    <value>Developer</value>
   </data>
   <data name="TaskEditor_TagsPicker.Header" xml:space="preserve">
     <value>Tags</value>
@@ -2037,11 +2046,11 @@
   <data name="Grid_Column_Priority" xml:space="preserve">
     <value>Priority</value>
   </data>
-  <data name="Grid_Column_Designers" xml:space="preserve">
-    <value>Designers</value>
+  <data name="Grid_Column_Designer" xml:space="preserve">
+    <value>Designer</value>
   </data>
-  <data name="Grid_Column_Developers" xml:space="preserve">
-    <value>Developers</value>
+  <data name="Grid_Column_Developer" xml:space="preserve">
+    <value>Developer</value>
   </data>
   <data name="Grid_Column_StartDate" xml:space="preserve">
     <value>Start Date</value>
@@ -2671,10 +2680,10 @@
     <value>CR Owner</value>
   </data>
   <data name="Filters_Designers" xml:space="preserve">
-    <value>Designers</value>
+    <value>Designer</value>
   </data>
   <data name="Filters_Developers" xml:space="preserve">
-    <value>Developers</value>
+    <value>Developer</value>
   </data>
   <data name="Filters_Tags" xml:space="preserve">
     <value>Tags</value>
@@ -3364,10 +3373,10 @@
     <value>Priority</value>
   </data>
   <data name="Import_Field_Designers" xml:space="preserve">
-    <value>Designers</value>
+    <value>Designer</value>
   </data>
   <data name="Import_Field_Developers" xml:space="preserve">
-    <value>Developers</value>
+    <value>Developer</value>
   </data>
   <data name="Import_Field_Tags" xml:space="preserve">
     <value>Tags</value>
@@ -3680,6 +3689,9 @@
   </data>
   <data name="Import_Finding_notitle" xml:space="preserve">
     <value>The record has no title.</value>
+  </data>
+  <data name="Import_Finding_peopledropped" xml:space="preserve">
+    <value>A task has only one {0}. The first is kept; not imported: {1}.</value>
   </data>
   <data name="Restore_Step_Choose" xml:space="preserve">
     <value>Choose backup</value>

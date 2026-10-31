@@ -27,8 +27,8 @@ public sealed class CopyTaskPolicyTests
 
         draft.Content.OwnTitle!.Value.Should().Be("CR title");
         draft.Content.Service.Should().BeNull();
-        draft.Content.DesignerIds.Should().BeEmpty();
-        draft.Content.DeveloperIds.Should().BeEmpty();
+        draft.Content.DesignerId.Should().BeNull();
+        draft.Content.DeveloperId.Should().BeNull();
         draft.Content.TagIds.Should().BeEmpty();
         draft.Content.Notes.Should().BeNull();
         draft.Content.CustomValues.Should().BeEmpty();
@@ -54,8 +54,8 @@ public sealed class CopyTaskPolicyTests
 
         var draft = CopyTaskPolicy.Draft(source, Title(), options, Backlog.Id, AllStatuses, [High], Medium, Guid.NewGuid);
 
-        draft.Content.DesignerIds.Should().Equal(source.DesignerIds);
-        draft.Content.DeveloperIds.Should().Equal(source.DeveloperIds);
+        draft.Content.DesignerId.Should().Be(source.DesignerId).And.NotBeNull();
+        draft.Content.DeveloperId.Should().Be(source.DeveloperId).And.NotBeNull();
         draft.Content.TagIds.Should().Equal(source.TagIds);
         draft.Content.Notes.Should().Be(source.Notes);
         draft.Content.CustomValues.Should().ContainKey(Points);
@@ -129,7 +129,7 @@ public sealed class CopyTaskPolicyTests
 
     private static TaskItem ArchivedLinkedSource()
     {
-        var content = new TaskContent(Title("Own title before link"), Service(), [new PersonId(Guid.NewGuid())], [new PersonId(Guid.NewGuid())],
+        var content = new TaskContent(Title("Own title before link"), Service(), new PersonId(Guid.NewGuid()), new PersonId(Guid.NewGuid()),
             [new TagId(Guid.NewGuid())], LongText.CreateOptional("Line 1\nLine 2", "Notes").Value,
             new Dictionary<FieldId, CustomValue> { [Points] = new NumberCustomValue(3) });
         var task = TaskItem.Create(new TaskId(Guid.NewGuid()), content, Completed, High, DateIntent.Set(Today.AddDays(-5)), DateIntent.Unchanged,

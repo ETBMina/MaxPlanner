@@ -9,12 +9,14 @@ using MaxPlanner.Domain.Values;
 namespace MaxPlanner.Application.Tasks;
 
 /// <summary>Raw editor values of the user-editable task fields (B-02.2). Blank text means "no value".</summary>
+/// <param name="DesignerId">The single Designer, or null (ADR 0024).</param>
+/// <param name="DeveloperId">The single Developer, or null (ADR 0024).</param>
 /// <param name="Title">The task's own title; must be blank for a linked task, whose title comes from its CR.</param>
 public sealed record TaskContentDraft(
     string? Title,
     string? Service,
-    IReadOnlyList<PersonId> DesignerIds,
-    IReadOnlyList<PersonId> DeveloperIds,
+    PersonId? DesignerId,
+    PersonId? DeveloperId,
     IReadOnlyList<TagId> TagIds,
     string? Notes,
     IReadOnlyDictionary<FieldId, CustomValue> CustomValues);
@@ -39,7 +41,7 @@ internal static class TaskContentParser
         }
 
         return title.IsSuccess && service.IsSuccess && notes.IsSuccess
-            ? new TaskContent(title.Value, service.Value, draft.DesignerIds, draft.DeveloperIds, draft.TagIds, notes.Value, draft.CustomValues)
+            ? new TaskContent(title.Value, service.Value, draft.DesignerId, draft.DeveloperId, draft.TagIds, notes.Value, draft.CustomValues)
             : null;
     }
 }

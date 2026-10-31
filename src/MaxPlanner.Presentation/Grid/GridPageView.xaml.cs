@@ -745,7 +745,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
                 }
 
                 break;
-            case GridColumns.Designers or GridColumns.Developers or GridColumns.Tags:
+            case GridColumns.Designer or GridColumns.Developer or GridColumns.Tags:
                 Refuse<object>(row, "Use the picker to change people or tags.");
                 break;
             case GridColumns.Notes:

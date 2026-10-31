@@ -18,7 +18,8 @@ Package versions are pinned in `Directory.Packages.props` (ADR 0002). Lock files
 ```powershell
 ./scripts/build.ps1                     # restore + build (Debug, x64); warnings are errors
 ./scripts/build.ps1 -Configuration Release -Locked
-./scripts/test.ps1                      # all test projects via Microsoft Testing Platform; TRX in artifacts/test-results
+./scripts/test.ps1                      # all test projects except the smoke tests, via Microsoft Testing Platform; TRX in artifacts/test-results
+./scripts/test.ps1 -IncludeSmoke        # also the Desktop smoke tests, which launch the app
 ./scripts/publish-portable.ps1 -Version 0.1.0   # self-contained win-x64 ZIP + SHA-256 in artifacts/
 ./scripts/verify-portable.ps1 -Zip artifacts/MaxPlanner-0.1.0-win-x64.zip   # T-03/T-11.6 release gates (-Gates to select)
 ./scripts/run-performance.ps1                   # T-11 fixture + BenchmarkDotNet suite + app runs on the published ZIP

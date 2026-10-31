@@ -46,11 +46,11 @@ public sealed class DatasetLifecycleTests
         snapshot.Tasks.Should().BeEmpty();
         snapshot.ChangeRequests.Should().BeEmpty();
         db.Dataset.Id.Value.Should().NotBeEmpty();
-        db.Dataset.SchemaVersion.Should().Be(1);
-        db.Scalar("PRAGMA user_version;").Should().Be(1);
-        db.Scalar("SELECT schema_version FROM app_metadata;").Should().Be(1);
+        db.Dataset.SchemaVersion.Should().Be(2);
+        db.Scalar("PRAGMA user_version;").Should().Be(2);
+        db.Scalar("SELECT schema_version FROM app_metadata;").Should().Be(2);
         StorageJson.ReadHistory(Text(db, "SELECT migration_history_json FROM app_metadata;"))
-            .Select(h => (h.Version, h.Name)).Should().Equal((1, "M0001_initial"));
+            .Select(h => (h.Version, h.Name)).Should().Equal((1, "M0001_initial"), (2, "M0002_single_designer_developer"));
         Text(db, "PRAGMA journal_mode;").Should().Be("wal");
     }
 
@@ -203,21 +203,23 @@ public sealed class DatasetLifecycleTests
         await using var db = await TestDataset.CreateAsync();
         var task = await db.AddTaskAsync("Kept through the upgrade");
         await db.CloseAsync();
-        db.Options = db.Options with { Migrations = [M0001InitialSchema.Migration, new SchemaMigration(2, "M0002_test", (c, t, _) => Run(c, t, "CREATE TABLE upgrade_probe (x INTEGER);"))] };
+        var current = SqliteDataset.SupportedSchemaVersion;
+        var next = current + 1;
+        db.Options = db.Options with { Migrations = [.. SchemaMigrations.All, new SchemaMigration(next, "M_test", (c, t, _) => Run(c, t, "CREATE TABLE upgrade_probe (x INTEGER);"))] };
 
         var result = await SqliteDataset.OpenExistingAsync(db.Paths, db.Options);
 
         result.Status.Should().Be(DatasetOpenStatus.Opened);
         await result.Dataset!.DisposeAsync();
-        result.Dataset.SchemaVersion.Should().Be(2);
-        db.Scalar("PRAGMA user_version;").Should().Be(2);
-        StorageJson.ReadHistory(Text(db, "SELECT migration_history_json FROM app_metadata;")).Select(h => h.Version).Should().Equal(1, 2);
+        result.Dataset.SchemaVersion.Should().Be(next);
+        db.Scalar("PRAGMA user_version;").Should().Be(next);
+        StorageJson.ReadHistory(Text(db, "SELECT migration_history_json FROM app_metadata;")).Select(h => h.Version).Should().Equal(Enumerable.Range(1, next));
 
         var backup = Path.Combine(result.SafetyBackupDirectory!, "data.db");
         Path.GetFileName(result.SafetyBackupDirectory).Should().EndWith("-migration-safety");
         using var copy = new SqliteConnection($"Data Source={backup};Mode=ReadOnly;Pooling=False");
         copy.Open();
-        Scalar(copy, "PRAGMA user_version;").Should().Be(1);
+        Scalar(copy, "PRAGMA user_version;").Should().Be(current);
         Scalar(copy, "SELECT COUNT(*) FROM tasks;").Should().Be(1);
         Text(copy, "PRAGMA integrity_check;").Should().Be("ok");
         task.Value.Should().NotBeEmpty();
@@ -231,12 +233,13 @@ public sealed class DatasetLifecycleTests
         await db.AddTaskAsync("Must survive");
         await db.CloseAsync();
         var original = db.Options;
+        var current = SqliteDataset.SupportedSchemaVersion;
         db.Options = original with
         {
             Migrations =
             [
-                M0001InitialSchema.Migration,
-                new SchemaMigration(2, "M0002_broken", (c, t, _) =>
+                .. SchemaMigrations.All,
+                new SchemaMigration(current + 1, "M_broken", (c, t, _) =>
                 {
                     Run(c, t, "CREATE TABLE half_done (x INTEGER); DELETE FROM tasks;");
                     throw new InvalidOperationException("Simulated migration bug.");
@@ -247,12 +250,12 @@ public sealed class DatasetLifecycleTests
         var result = await SqliteDataset.OpenExistingAsync(db.Paths, db.Options);
 
         result.Status.Should().Be(DatasetOpenStatus.Failed);
-        result.Error.Should().Be(new MigrationFailedError(1, 2));
+        result.Error.Should().Be(new MigrationFailedError(current, current + 1));
         File.Exists(Path.Combine(result.SafetyBackupDirectory!, "data.db")).Should().BeTrue();
 
         db.Options = original;
         await db.ReopenAsync();
-        db.Dataset.SchemaVersion.Should().Be(1);
+        db.Dataset.SchemaVersion.Should().Be(current);
         (await db.SnapshotAsync()).Tasks.Should().ContainSingle("the failed step rolled back");
         db.Scalar("SELECT COUNT(*) FROM sqlite_master WHERE name = 'half_done';").Should().Be(0);
     }

@@ -46,7 +46,7 @@ public sealed class CreateTask
         var validation = new ValidationCollector();
         var content = TaskContentParser.Parse(command.Content, isLinked: command.LinkTo is not null, validation);
         var checklist = ChecklistDrafts.Parse(command.ChecklistItems, validation);
-        LookupAdditions.Validate(command.NewLookups, validation);
+        LookupAdditions.Validate(command.NewLookups, command.Content.DesignerId, command.Content.DeveloperId, validation);
         if (validation.HasErrors || content is null || checklist is null)
         {
             return UseCaseResults.Failed<TaskId>(validation.ToError());

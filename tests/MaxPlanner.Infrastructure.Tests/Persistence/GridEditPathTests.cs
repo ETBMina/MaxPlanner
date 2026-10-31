@@ -30,7 +30,7 @@ public sealed class GridEditPathTests
 
         // A long title-and-notes draft needs new pages; the page limit makes the write fail with SQLITE_FULL.
         var command = new UpdateTaskContentCommand(OperationId.New(), task, before.Revision,
-            new TaskContentDraft("Renamed in the Grid", null, [], [], [], new string('n', 60_000), CustomValue.NoValues));
+            new TaskContentDraft("Renamed in the Grid", null, null, null, [], new string('n', 60_000), CustomValue.NoValues));
         var result = await new UpdateTaskContent(db.Coordinator).ExecuteAsync(command, Ct);
 
         Failed<long, StorageFailureError>(result).Kind.Should().Be(StorageFailureKind.DiskFull);

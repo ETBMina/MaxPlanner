@@ -121,7 +121,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
     [ObservableProperty]
     public partial DateTimeOffset? DraftDate { get; set; }
 
-    /// <summary>The Designers, Developers, or Tags picker of the open edit; null otherwise.</summary>
+    /// <summary>The Designer, Developer (single-person, ADR 0024), or Tags picker of the open edit; null otherwise.</summary>
     public TokenPickerViewModel? DraftTokens { get; private set; }
 
     /// <summary>New names typed into <see cref="DraftTokens"/>; created only by a successful commit (B-02.6).</summary>
@@ -178,7 +178,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
     {
         GridColumns.Title => Model.Task is { IsTitleInherited: false },
         GridColumns.Subtitle => IsSubtaskCard,
-        GridColumns.Service or GridColumns.Priority or GridColumns.Designers or GridColumns.Developers or GridColumns.Tags => IsTask,
+        GridColumns.Service or GridColumns.Priority or GridColumns.Designer or GridColumns.Developer or GridColumns.Tags => IsTask,
         GridColumns.Status or GridColumns.StartDate or GridColumns.EndDate or GridColumns.Notes => true,
         _ when GridColumns.IsCustom(column) => IsTask && FieldOf(column) is { IsActive: true },
         _ => false,
@@ -196,8 +196,8 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         GridColumns.Service => ServiceText,
         GridColumns.Status => StatusText,
         GridColumns.Priority => PriorityText,
-        GridColumns.Designers => Names(Model.Task?.Designers),
-        GridColumns.Developers => Names(Model.Task?.Developers),
+        GridColumns.Designer => Model.Task?.Designer?.Name ?? string.Empty,
+        GridColumns.Developer => Model.Task?.Developer?.Name ?? string.Empty,
         GridColumns.Tags => Names(Model.Task?.Tags),
         GridColumns.StartDate => StartDateText,
         GridColumns.EndDate => EndDateText,
@@ -208,14 +208,14 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
     };
 
     /// <summary>
-    /// The people a cell names, for its avatars: the CR Owner, Designers, Developers, or a custom People field. Empty
+    /// The people a cell names, for its avatars: the CR Owner, Designer, Developer, or a custom People field. Empty
     /// for other columns. The order matches <see cref="DisplayValue"/>.
     /// </summary>
     public IReadOnlyList<string> PeopleNames(string column) => column switch
     {
         GridColumns.Owner => Model.Cr.OwnerName is { Length: > 0 } owner ? [owner] : [],
-        GridColumns.Designers => [.. (Model.Task?.Designers ?? []).Select(p => p.Name)],
-        GridColumns.Developers => [.. (Model.Task?.Developers ?? []).Select(p => p.Name)],
+        GridColumns.Designer => Model.Task?.Designer is { } designer ? [designer.Name] : [],
+        GridColumns.Developer => Model.Task?.Developer is { } developer ? [developer.Name] : [],
         _ when GridColumns.IsCustom(column) && Model.Task is { } task && FieldOf(column) is { Kind: FieldKind.People } field
             && task.CustomValues.GetValueOrDefault(field.Id) is PeopleCustomValue people
             => [.. people.PersonIds.Select(id => _workflow()?.FindPerson(id)?.Name.Display ?? string.Empty).Where(n => n.Length > 0)],
@@ -246,7 +246,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         GridColumns.Status => DraftStatus?.Name ?? string.Empty,
         GridColumns.Priority => DraftPriority?.Name ?? string.Empty,
         GridColumns.StartDate or GridColumns.EndDate => FormatDate(DraftDates.FromPicker(DraftDate)),
-        GridColumns.Designers or GridColumns.Developers or GridColumns.Tags => string.Join(", ", DraftTokens?.Tokens.Select(t => t.Name) ?? []),
+        GridColumns.Designer or GridColumns.Developer or GridColumns.Tags => string.Join(", ", DraftTokens?.Tokens.Select(t => t.Name) ?? []),
         { } column when GridColumns.IsCustom(column) => DraftCustom?.DisplayText ?? string.Empty,
         _ => DraftText,
     };
@@ -268,16 +268,16 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         DraftNewNames = null;
         DraftCustom = null;
         var workflow = _workflow();
-        if (column is GridColumns.Designers or GridColumns.Developers or GridColumns.Tags && workflow is not null && Model.Task is { } edited)
+        if (column is GridColumns.Designer or GridColumns.Developer or GridColumns.Tags && workflow is not null && Model.Task is { } edited)
         {
             DraftNewNames = new NewNameRegistry();
             DraftTokens = column == GridColumns.Tags
                 ? new TokenPickerViewModel(_strings, () => workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), DraftNewNames) { IsTags = true }
-                : new TokenPickerViewModel(_strings, () => workflow.People.Select(p => (p.Id.Value, p.Name.Display)), DraftNewNames) { IsPeople = true };
+                : new TokenPickerViewModel(_strings, () => workflow.People.Select(p => (p.Id.Value, p.Name.Display)), DraftNewNames) { IsSingleSelection = true, IsPeople = true };
             var refs = column switch
             {
-                GridColumns.Designers => edited.Designers.Select(p => (p.Id.Value, p.Name, false)),
-                GridColumns.Developers => edited.Developers.Select(p => (p.Id.Value, p.Name, false)),
+                GridColumns.Designer => PersonToken(edited.Designer),
+                GridColumns.Developer => PersonToken(edited.Developer),
                 _ => edited.Tags.Select(t => (t.Id.Value, t.Name, false)),
             };
             DraftTokens.Load(refs);
@@ -312,8 +312,8 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
             GridColumns.Status => DraftStatus is { } status && status.Id != baseModel.Status.Id,
             GridColumns.Priority => DraftPriority is { } priority && baseModel.Task is { } task && priority.Id != task.Priority.Id,
             GridColumns.StartDate or GridColumns.EndDate => DraftDates.FromPicker(DraftDate) != DateOf(baseModel, EditingColumn) || (DraftDateCleared && DraftDate is null),
-            GridColumns.Designers => !TokensEqual(baseModel.Task?.Designers.Select(p => p.Id.Value)),
-            GridColumns.Developers => !TokensEqual(baseModel.Task?.Developers.Select(p => p.Id.Value)),
+            GridColumns.Designer => !TokensEqual(PersonToken(baseModel.Task?.Designer).Select(t => t.Id)),
+            GridColumns.Developer => !TokensEqual(PersonToken(baseModel.Task?.Developer).Select(t => t.Id)),
             GridColumns.Tags => !TokensEqual(baseModel.Task?.Tags.Select(t => t.Id.Value)),
             GridColumns.Notes => !string.Equals(DraftText, (baseModel.Task is { } t ? t.Notes : baseModel.Card!.Notes) ?? string.Empty, StringComparison.Ordinal),
             { } column when GridColumns.IsCustom(column) => DraftCustom is { } custom && baseModel.Task is { } owner
@@ -460,6 +460,9 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
 
     private static string Names<TId>(IReadOnlyList<LookupRef<TId>>? refs)
         where TId : struct => refs is { Count: > 0 } ? string.Join(", ", refs.Select(r => r.Name)) : string.Empty;
+
+    private static IEnumerable<(Guid Id, string Name, bool IsNew)> PersonToken(LookupRef<PersonId>? person) =>
+        person is { } p ? [(p.Id.Value, p.Name, false)] : [];
 
     private bool TokensEqual(IEnumerable<Guid>? committed) => DraftTokens is null || DraftTokens.Ids.SequenceEqual(committed ?? []);
 

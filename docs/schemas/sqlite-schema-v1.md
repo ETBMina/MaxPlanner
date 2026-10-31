@@ -1,7 +1,7 @@
-# SQLite schema v1 (migration M0001)
+# SQLite schema (migrations M0001–M0002)
 
-- **Source of truth:** `src/MaxPlanner.Infrastructure/Persistence/Schema/M0001_initial.sql` (DDL, embedded in the assembly) and `Persistence/Migrations/M0001InitialSchema.cs` (seed). This page explains them; if they disagree, the code wins and this page is the defect.
-- **Requirements:** T-05, T-06, T-09, B-03, B-04, B-05, B-07, B-16, B-17. **Decisions:** ADR 0006, 0007, 0009, 0010, 0015.
+- **Source of truth:** `src/MaxPlanner.Infrastructure/Persistence/Schema/M0001_initial.sql` and `M0002_single_designer_developer.sql` (DDL, embedded in the assembly) and `Persistence/Migrations/M0001InitialSchema.cs` (seed). This page explains them; if they disagree, the code wins and this page is the defect.
+- **Requirements:** T-05, T-06, T-09, B-03, B-04, B-05, B-07, B-16, B-17. **Decisions:** ADR 0006, 0007, 0009, 0010, 0015, 0024.
 - **File:** `data/data.db` beside the executable (T-03). Connection settings: `journal_mode=WAL`, `synchronous=FULL`, `foreign_keys=ON`, `busy_timeout=5000` (`SqliteConnectionFactory`).
 
 ## Encodings
@@ -57,7 +57,7 @@ Field definitions load through `FieldDefinition.Rehydrate`. It restores every st
 |---|---|---|
 | `tasks` | `id`, `own_title`, `service`, `status_id`, `priority_id`, `start_date`, `end_date`, `notes`, `is_archived`, `rank`, `custom_values_json`, `preserved_json`, `created_at_utc`, `updated_at_utc`, `revision` | FKs to `task_statuses`, `priorities`; `start_date <= end_date` when both are set; index `ix_tasks_status_archived (status_id, is_archived)` |
 | `checklist_items` | `id`, `task_id`, `text`, `is_completed`, `rank` | FK `task_id` **ON DELETE CASCADE**; index on `task_id` |
-| `task_people` | `task_id`, `person_id`, `role` (`Designer`/`Developer`), `position` | PK (`task_id`, `role`, `person_id`); FK `task_id` ON DELETE CASCADE; FK `person_id`; index on `person_id` |
+| `task_people` | `task_id`, `person_id`, `role` (`Designer`/`Developer`), `position` | PK (`task_id`, `role`, `person_id`); unique (`task_id`, `role`) since M0002, so a task has at most one Designer and one Developer (ADR 0024); FK `task_id` ON DELETE CASCADE; FK `person_id`; index on `person_id` |
 | `task_tags` | `task_id`, `tag_id`, `position` | PK (`task_id`, `tag_id`); FK `task_id` ON DELETE CASCADE; FK `tag_id`; index on `tag_id` |
 | `subtask_cards` | `id`, `parent_task_id`, `subtitle`, `status_id`, `start_date`, `end_date`, `notes`, `rank`, `created_at_utc`, `updated_at_utc`, `revision` | FK `parent_task_id` (**not** cascaded); FK `status_id` → `task_statuses`; date order CHECK; indexes `ix_subtask_cards_parent`, `ix_subtask_cards_status` |
 | `change_requests` | `id`, `number`, `number_norm`, `title`, `owner_id`, `squad_id`, `status_id`, `priority_id`, `planned_start`, `planned_end`, `email_subject`, `solution_design_url`, `description`, `task_number`, `custom_values_json`, `preserved_json`, `created_at_utc`, `updated_at_utc`, `revision` | `number_norm` UNIQUE (`CrNumber.Normalized`: trimmed, ordinal upper-case); `owner_id` NOT NULL FK `people`; `squad_id` nullable FK (NULL displays "General"); planned dates both-or-none and `planned_start <= planned_end` (inclusive, B-04); index `ix_change_requests_planned (planned_start, planned_end)`. `preserved_json` holds `ChangeRequest.Preserved` (T-05 legacy content; NULL when empty). It is kept unchanged by edits, and a stored `PreLinkTitle` is rejected as Corrupt because only tasks are linked. |
@@ -90,7 +90,7 @@ Owned child rows (checklist items, task people/tags, review services) cascade wi
 
 ## Versioning and migrations
 
-- The schema version is kept in both `PRAGMA user_version` and `app_metadata.schema_version`, written in the same transaction as each migration step, with a history entry. Supported version: **1**.
+- The schema version is kept in both `PRAGMA user_version` and `app_metadata.schema_version`, written in the same transaction as each migration step, with a history entry. Supported version: **2**.
 - Migrations are numbered consecutively (`SchemaMigrations.All`). Each runs in its own `BEGIN IMMEDIATE` transaction: embedded SQL and/or C# step, then history, `schema_version`, and `user_version`.
 - **Opening** (`SqliteDataset.OpenExistingAsync`):
   1. A missing `data.db` returns `Missing`. Nothing is created (T-09, AC-15).
@@ -98,7 +98,11 @@ Owned child rows (checklist items, task people/tags, review services) cascade wi
   3. `PRAGMA quick_check` must return `ok`; otherwise Corrupt.
   4. An older dataset is first copied with the online backup API to `data/backups/<yyyyMMddTHHmmssZ>-migration-safety/data.db`, then migrated. A failed step rolls back and returns `MigrationFailedError(currentVersion, failedVersion)` with the safety backup path. The dataset stays at its previous version.
   5. `app_metadata.schema_version` must equal `user_version`.
-- **Creating** (`SqliteDataset.CreateNewAsync`) is a separate explicit call. It refuses when `data.db` or `data.db-wal` exists, runs M0001, and removes its own partial file if creation fails.
+- **Creating** (`SqliteDataset.CreateNewAsync`) is a separate explicit call. It refuses when `data.db` or `data.db-wal` exists, runs every migration, and removes its own partial file if creation fails.
+
+## M0002 single Designer and Developer (ADR 0024)
+
+For each task and role, `task_people` keeps the row with the lowest `position` (ties by `person_id`) and deletes the others; then the unique index `ux_task_people_task_role` on (`task_id`, `role`) allows at most one person per task and role. The dropped people stay in the migration-safety backup taken before the step.
 
 ## M0001 seed (B-04 design defaults)
 

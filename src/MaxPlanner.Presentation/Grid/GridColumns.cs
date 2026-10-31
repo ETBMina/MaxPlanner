@@ -20,8 +20,8 @@ public static class GridColumns
     public const string Service = "Service";
     public const string Status = "Status";
     public const string Priority = "Priority";
-    public const string Designers = "Designers";
-    public const string Developers = "Developers";
+    public const string Designer = "Designer";
+    public const string Developer = "Developer";
     public const string StartDate = "StartDate";
     public const string EndDate = "EndDate";
     public const string Notes = "Notes";
@@ -36,7 +36,7 @@ public static class GridColumns
 
     /// <summary>B-07 initial columns in default order; active custom fields follow in display order.</summary>
     public static IReadOnlyList<string> Default { get; } =
-        [Kind, CrNumber, TaskNumber, Squad, Owner, Title, Subtitle, Service, Status, Priority, Designers, Developers, StartDate, EndDate, Notes, Tags, Archived];
+        [Kind, CrNumber, TaskNumber, Squad, Owner, Title, Subtitle, Service, Status, Priority, Designer, Developer, StartDate, EndDate, Notes, Tags, Archived];
 
     /// <summary>The built-in columns in default order (kept for callers that enumerate every built-in column).</summary>
     public static IReadOnlyList<string> All => Default;
@@ -61,7 +61,7 @@ public static class GridColumns
         Service => 180,
         Status => 170,
         Priority => 120,
-        Designers or Developers or Tags => 180,
+        Designer or Developer or Tags => 180,
         StartDate or EndDate => 132,
         Notes => 240,
         Archived => 112,
@@ -121,7 +121,7 @@ public sealed partial class GridColumnViewModel : ObservableObject
         GridColumns.Priority => GridEditorKind.Priority,
         GridColumns.StartDate or GridColumns.EndDate => GridEditorKind.Date,
         GridColumns.Notes => GridEditorKind.Notes,
-        GridColumns.Designers or GridColumns.Developers => GridEditorKind.People,
+        GridColumns.Designer or GridColumns.Developer => GridEditorKind.People,
         GridColumns.Tags => GridEditorKind.Tags,
         _ when Field is not null => GridEditorKind.Custom,
         _ => GridEditorKind.None,
@@ -234,8 +234,8 @@ internal sealed class GridRowComparer : IComparer<GridRowViewModel>
             GridColumns.Service => task?.Service ?? card!.ParentService,
             GridColumns.Status => task?.StatusOrder ?? card!.StatusOrder,
             GridColumns.Priority => task?.PriorityOrder,
-            GridColumns.Designers => Names(task?.Designers),
-            GridColumns.Developers => Names(task?.Developers),
+            GridColumns.Designer => task?.Designer?.Name,
+            GridColumns.Developer => task?.Developer?.Name,
             GridColumns.Tags => Names(task?.Tags),
             GridColumns.StartDate => task?.StartDate ?? card!.StartDate,
             GridColumns.EndDate => task?.EndDate ?? card!.EndDate,

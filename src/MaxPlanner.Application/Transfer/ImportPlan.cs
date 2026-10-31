@@ -81,6 +81,9 @@ public static class ImportFindingCodes
     public const string InvalidBoolean = "invalid-boolean";
     public const string PreservedText = "preserved-text";
     public const string NoTitle = "no-title";
+
+    /// <summary>ADR 0024: a task keeps one Designer and one Developer; the detail names the people that were dropped.</summary>
+    public const string PeopleDropped = "people-dropped";
 }
 
 /// <param name="RecordKey">The record ID, or the source key of an external record; never record content.</param>

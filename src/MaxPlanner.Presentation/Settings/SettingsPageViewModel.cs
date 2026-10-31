@@ -772,7 +772,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
         {
             var id = new PersonId(row.Id);
             row.UsageText = Text(
-                tasks.Count(t => t.Designers.Any(p => p.Id == id) || t.Developers.Any(p => p.Id == id)),
+                tasks.Count(t => t.Designer?.Id == id || t.Developer?.Id == id),
                 0,
                 0,
                 crs.Count(c => c.Owner.Id == id),

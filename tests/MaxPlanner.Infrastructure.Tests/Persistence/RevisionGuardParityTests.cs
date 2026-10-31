@@ -85,7 +85,7 @@ public sealed class RevisionGuardParityTests
     }
 
     private static TaskItem Edited(TaskItem task, IWriteTransaction tx) =>
-        task.UpdateContent(new TaskContent(TitleText.Create("Edited").Value, null, [], [], [], null, CustomValue.NoValues), tx.UtcNow).Value;
+        task.UpdateContent(new TaskContent(TitleText.Create("Edited").Value, null, null, null, [], null, CustomValue.NoValues), tx.UtcNow).Value;
 
     private static async Task RefusedAsync(TestDataset db, Func<IWriteTransaction, TxResult<long>> work, string message, TaskId id)
     {

@@ -38,7 +38,7 @@ public sealed class TaskEditorPersistenceTests
 
         var revision = Succeeded(await new UpdateTask(db.Coordinator).ExecuteAsync(
             new UpdateTaskCommand(OperationId.New(), task, 1,
-                Draft("Own title", "Cards API") with { DesignerIds = [designer.Id], TagIds = [sameTag.Id] },
+                Draft("Own title", "Cards API") with { DesignerId = designer.Id, TagIds = [sameTag.Id] },
                 inProgress.Id, priority, DateIntent.Unchanged, DateIntent.Unchanged,
                 [new ChecklistItemDraft(item, "Write tests", false)],
                 new NewLookups([designer], [sameTag]),
@@ -54,7 +54,7 @@ public sealed class TaskEditorPersistenceTests
         saved.Preserved.PreLinkTitle.Should().Be("Own title");
         saved.StatusId.Should().Be(inProgress.Id);
         saved.Dates.Start.Should().Be(DateOnly.FromDateTime(db.Clock.UtcNow.UtcDateTime));
-        saved.DesignerIds.Should().Equal(designer.Id);
+        saved.DesignerId.Should().Be(designer.Id);
         saved.TagIds.Should().ContainSingle().Which.Should().NotBe(sameTag.Id, "'mobile' reuses the existing Mobile tag");
         saved.ChecklistItems.Single().Id.Should().Be(item);
         reopened.Workflow.People.Select(p => p.Name.Display).Should().BeEquivalentTo(["Owner", "Dana"]);

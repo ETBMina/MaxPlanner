@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Dashboard;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 
@@ -258,8 +259,8 @@ public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings s
 
     public string Priority { get; } = task.Priority.Name;
 
-    /// <summary>Designers then Developers, each person once, for the row's avatar stack.</summary>
-    public IReadOnlyList<string> PeopleNames { get; } = [.. task.Designers.Concat(task.Developers).Select(p => p.Name).Distinct(StringComparer.CurrentCulture)];
+    /// <summary>The Designer then the Developer, each person once, for the row's avatar stack.</summary>
+    public IReadOnlyList<string> PeopleNames { get; } = [.. new[] { task.Designer, task.Developer }.OfType<LookupRef<PersonId>>().Select(p => p.Name).Distinct(StringComparer.CurrentCulture)];
 
     public bool HasPeople => PeopleNames.Count > 0;
 

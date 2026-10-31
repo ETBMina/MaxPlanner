@@ -54,8 +54,9 @@ internal sealed class RecordLoader(SqliteConnection connection, SqliteTransactio
             }
         }
 
-        var designers = new Dictionary<Guid, List<PersonId>>();
-        var developers = new Dictionary<Guid, List<PersonId>>();
+        // ADR 0024: at most one person per task and role (unique index since M0002).
+        var designers = new Dictionary<Guid, PersonId>();
+        var developers = new Dictionary<Guid, PersonId>();
         using (var command = Filtered("SELECT task_id, role, person_id FROM task_people", "task_id", taskId, " ORDER BY position"))
         using (var reader = command.ExecuteReader())
         {
@@ -68,7 +69,10 @@ internal sealed class RecordLoader(SqliteConnection connection, SqliteTransactio
                     StorageNames.Developer => developers,
                     _ => throw new CorruptStoredDataException("task_people", "role", "unknown role"),
                 };
-                GetList(target, reader.GetGuid(0, "task_people", "task_id")).Add(new PersonId(reader.GetGuid(2, "task_people", "person_id")));
+                if (!target.TryAdd(reader.GetGuid(0, "task_people", "task_id"), new PersonId(reader.GetGuid(2, "task_people", "person_id"))))
+                {
+                    throw new CorruptStoredDataException("task_people", "role", "more than one person in a role");
+                }
             }
         }
 
@@ -105,8 +109,8 @@ internal sealed class RecordLoader(SqliteConnection connection, SqliteTransactio
                 var content = new TaskContent(
                     ownTitle,
                     service,
-                    designers.GetValueOrDefault(id) ?? [],
-                    developers.GetValueOrDefault(id) ?? [],
+                    designers.TryGetValue(id, out var designer) ? designer : null,
+                    developers.TryGetValue(id, out var developer) ? developer : null,
                     tags.GetValueOrDefault(id) ?? [],
                     notes,
                     StorageJson.ReadCustomValues(reader.GetNullableString(10), Table));

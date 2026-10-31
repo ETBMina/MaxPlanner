@@ -84,8 +84,8 @@ internal sealed record DraftValues(
     string Service,
     TaskStatusId? Status,
     PriorityId? Priority,
-    IReadOnlyList<Guid> Designers,
-    IReadOnlyList<Guid> Developers,
+    Guid? Designer,
+    Guid? Developer,
     IReadOnlyList<Guid> Tags,
     DateOnly? Start,
     DateOnly? End,
@@ -94,7 +94,7 @@ internal sealed record DraftValues(
     string CustomFields)
 {
     public static IReadOnlyList<string> Keys { get; } =
-        ["Title", "Service", "Status", "Priority", "Designers", "Developers", "Tags", "StartDate", "EndDate", "Notes", "ChecklistItems", "CustomFields"];
+        ["Title", "Service", "Status", "Priority", "Designer", "Developer", "Tags", "StartDate", "EndDate", "Notes", "ChecklistItems", "CustomFields"];
 
     public bool SameAs(DraftValues other, string key) => key switch
     {
@@ -102,8 +102,8 @@ internal sealed record DraftValues(
         "Service" => Service == other.Service,
         "Status" => Status == other.Status,
         "Priority" => Priority == other.Priority,
-        "Designers" => Designers.SequenceEqual(other.Designers),
-        "Developers" => Developers.SequenceEqual(other.Developers),
+        "Designer" => Designer == other.Designer,
+        "Developer" => Developer == other.Developer,
         "Tags" => Tags.SequenceEqual(other.Tags),
         "StartDate" => Start == other.Start,
         "EndDate" => End == other.End,

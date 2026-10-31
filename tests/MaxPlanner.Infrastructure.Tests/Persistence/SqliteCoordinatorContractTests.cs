@@ -68,7 +68,7 @@ public sealed class SqliteCoordinatorContractTests
         var act = () => db.Coordinator.ExecuteAsync<long>(OperationId.New(), "test.defect", tx =>
         {
             var backlog = tx.Workflow.Read().TaskStatuses[0];
-            var content = new TaskContent(TitleText.Create("Never stored").Value, null, [], [], [], null, CustomValue.NoValues);
+            var content = new TaskContent(TitleText.Create("Never stored").Value, null, null, null, [], null, CustomValue.NoValues);
             tx.Tasks.Insert(TaskItem.Create(taskId, content, backlog, tx.Workflow.Read().Defaults.DefaultPriorityId, default, default, null, 1, tx.LocalToday, tx.UtcNow).Value);
             throw new InvalidOperationException("Defect inside the transaction.");
         }, Ct);

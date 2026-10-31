@@ -82,7 +82,7 @@ public sealed class RevisionGuardContractTests
     }
 
     private static TaskItem Edited(TaskItem task, IWriteTransaction tx) =>
-        task.UpdateContent(new TaskContent(TitleText.Create("Edited").Value, null, [], [], [], null, CustomValue.NoValues), tx.UtcNow).Value;
+        task.UpdateContent(new TaskContent(TitleText.Create("Edited").Value, null, null, null, [], null, CustomValue.NoValues), tx.UtcNow).Value;
 
     private async Task RefusedAsync(Func<IWriteTransaction, TxResult<long>> work, string message, TaskId id)
     {

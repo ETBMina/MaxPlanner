@@ -156,7 +156,7 @@ internal sealed class TestDataset : IAsyncDisposable
     }
 
     public static TaskContentDraft Draft(string? title = "Card freeze", string? service = null, string? notes = null) =>
-        new(title, service, [], [], [], notes, CustomValue.NoValues);
+        new(title, service, null, null, [], notes, CustomValue.NoValues);
 
     public async Task<TaskId> AddTaskAsync(string title = "Card freeze", TaskStatusId? status = null, Guid? id = null, string? service = null)
     {

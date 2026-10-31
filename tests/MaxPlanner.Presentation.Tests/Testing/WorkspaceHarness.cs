@@ -3,6 +3,7 @@ using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
@@ -30,7 +31,7 @@ internal sealed class WorkspaceHarness : IDisposable
     private readonly SynchronizationContext? _previousContext;
     private readonly UiSynchronizationContext _uiContext;
 
-    private WorkspaceHarness(SqliteDataset dataset, DataPaths paths)
+    private WorkspaceHarness(SqliteDataset dataset, DataPaths paths, UiPreferences? preferences)
     {
         Dataset = dataset;
         Paths = paths;
@@ -40,7 +41,8 @@ internal sealed class WorkspaceHarness : IDisposable
         _uiContext = new UiSynchronizationContext(Ui);
         _previousContext = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(_uiContext);
-        Workspace = new WorkspaceViewModel(Store, UseCases, new DispatcherQueueScheduler(Ui), Ui, Strings, Clock);
+        Preferences = new FakePreferencesStore(preferences);
+        Workspace = new WorkspaceViewModel(Store, UseCases, new DispatcherQueueScheduler(Ui), Ui, Strings, Clock, preferences: Preferences);
         Store.Start();
         PumpUntil(() => Store.CurrentState.Status == ProjectionStatus.Ready && !Workspace.Context.IsEditingBlocked);
     }
@@ -57,6 +59,8 @@ internal sealed class WorkspaceHarness : IDisposable
 
     public WorkspaceViewModel Workspace { get; }
 
+    public FakePreferencesStore Preferences { get; }
+
     public ManualScheduler StoreScheduler { get; } = new();
 
     public ManualUiDispatcher Ui { get; } = new();
@@ -72,8 +76,11 @@ internal sealed class WorkspaceHarness : IDisposable
         .With("Error_Required", "{0} is required.")
         .With("SaveStatus_OperationDetails", "Operation {0}");
 
-    /// <summary>Creates a dataset, lets <paramref name="arrange"/> add records through the real use cases, then starts the pages.</summary>
-    public static WorkspaceHarness Create(Func<Seeder, Task>? arrange = null)
+    /// <summary>
+    /// Creates a dataset, lets <paramref name="arrange"/> add records through the real use cases, then starts the pages
+    /// with <paramref name="preferences"/> as the saved UI preferences.
+    /// </summary>
+    public static WorkspaceHarness Create(Func<Seeder, Task>? arrange = null, UiPreferences? preferences = null)
     {
         // Arranged before the UI context is installed, on the thread pool, so no await here needs pumping.
         var (dataset, paths) = System.Threading.Tasks.Task.Run(async () =>
@@ -89,7 +96,7 @@ internal sealed class WorkspaceHarness : IDisposable
 
             return (created.Dataset!, paths);
         }).GetAwaiter().GetResult();
-        return new WorkspaceHarness(dataset, paths);
+        return new WorkspaceHarness(dataset, paths, preferences);
     }
 
     /// <summary>Runs store and UI work until <paramref name="condition"/> holds (the database writer runs on its own thread).</summary>
@@ -180,7 +187,7 @@ internal sealed class WorkspaceHarness : IDisposable
             var id = new TaskId(Guid.NewGuid());
             var link = cr is { } crId ? new CrLinkTarget(crId, 1) : null;
             Ok(await new CreateTask(dataset.Coordinator).ExecuteAsync(
-                new CreateTaskCommand(OperationId.New(), id, new TaskContentDraft(title, service, [], [], [], null, CustomValue.NoValues), LinkTo: link), default));
+                new CreateTaskCommand(OperationId.New(), id, new TaskContentDraft(title, service, null, null, [], null, CustomValue.NoValues), LinkTo: link), default));
             var revision = 1L;
             foreach (var text in checklist)
             {

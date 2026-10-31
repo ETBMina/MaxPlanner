@@ -334,7 +334,7 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             f.Severity switch { ImportSeverity.Error => "", ImportSeverity.Conflict => "", ImportSeverity.Warning => "", _ => "" },
             Strings.GetString("Transfer_Entity_" + f.Entity),
             f.RecordKey,
-            Strings.Format("Import_Finding_" + f.Code.Replace("-", string.Empty, StringComparison.Ordinal), f.Field ?? string.Empty, f.Detail ?? string.Empty)))];
+            Strings.Format("Import_Finding_" + f.Code.Replace("-", string.Empty, StringComparison.Ordinal), FindingField(f), f.Detail ?? string.Empty)))];
         var errors = plan.Findings.Count(f => f.Severity == ImportSeverity.Error);
         PreviewSummary = errors > 0
             ? Strings.Format("Import_PreviewBlocked", Number(errors))
@@ -406,6 +406,11 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         GoTo(SourceStep);
         RefreshCommands();
     }
+
+    // ADR 0024: "people-dropped" names the role with its label ("Designer"), not the transfer member ("DesignerIds").
+    private string FindingField(ImportFinding finding) => finding.Code == ImportFindingCodes.PeopleDropped
+        ? Strings.GetString(finding.Field == "DeveloperIds" ? "Field_Developer" : "Field_Designer")
+        : finding.Field ?? string.Empty;
 }
 
 /// <summary>One source table in the Map step: its entity type and the field of each column (B-13.1).</summary>

@@ -27,3 +27,4 @@ Each ADR records context, options considered, the decision, consequences, depend
 | [0021](0021-native-settings-cards-no-toolkit.md) | Native settings cards; no Community Toolkit WinUI packages | Accepted |
 | [0022](0022-workflow-settings-concurrency-stamps.md) | Concurrency stamps for workflow settings | Proposed |
 | [0023](0023-filter-scopes-and-drill-down-context.md) | Filter scopes, shared predicates, and the drill-down context stack | Proposed |
+| [0024](0024-single-designer-and-developer.md) | One Designer and one Developer per task | Accepted |

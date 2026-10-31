@@ -100,7 +100,7 @@ public sealed class ReadModelComposerTests
 
     private static TaskItem Unlinked() =>
         TaskItem.Create(new TaskId(Guid.NewGuid()),
-            new TaskContent(TitleText.Create("Card freeze").Value, ServiceText.CreateOptional("Mobile Banking").Value, [], [], [], null, CustomValue.NoValues),
+            new TaskContent(TitleText.Create("Card freeze").Value, ServiceText.CreateOptional("Mobile Banking").Value, null, null, [], null, CustomValue.NoValues),
             Backlog, Medium.Id, DateIntent.Unchanged, DateIntent.Unchanged, null, 1, Today, Now).Value;
 
     private static ChangeRequest Cr(SquadId? squad = null, PersonId? owner = null, PlannedRange? planned = null)

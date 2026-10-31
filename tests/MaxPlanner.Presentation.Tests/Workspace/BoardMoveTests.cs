@@ -212,7 +212,7 @@ public sealed class BoardMoveTests
     }
 
     private static Application.Tasks.TaskContentDraft Draft(string title) =>
-        new(title, "Service", [], [], [], null, Domain.Fields.CustomValue.NoValues);
+        new(title, "Service", null, null, [], null, Domain.Fields.CustomValue.NoValues);
 
     private static List<string> Titles(BoardColumnViewModel column) => [.. column.Cards.Select(c => c.Title)];
 }

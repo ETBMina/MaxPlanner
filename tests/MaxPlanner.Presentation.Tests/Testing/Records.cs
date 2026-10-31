@@ -112,7 +112,7 @@ internal static class Records
     };
 
     private static TaskContent Content(string title, string service) =>
-        new(TitleText.Create(title).Value, ServiceText.CreateOptional(service).Value, [], [], [], null, CustomValue.NoValues);
+        new(TitleText.Create(title).Value, ServiceText.CreateOptional(service).Value, null, null, [], null, CustomValue.NoValues);
 
     private static TaskStatusDefinition StatusOf(TaskStatusId id) => Workflow.FindTaskStatus(id)!;
 }

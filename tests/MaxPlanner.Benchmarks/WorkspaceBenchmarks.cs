@@ -59,7 +59,7 @@ public class WorkspaceBenchmarks : StoreBenchmark
         var task = _editable[_next++ % _editable.Count];
         var notes = "Benchmark edit " + _next.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var draft = new TaskContentDraft(
-            task.EffectiveTitle, task.Service, [.. task.Designers.Select(d => d.Id)], [.. task.Developers.Select(d => d.Id)], [.. task.Tags.Select(t => t.Id)], notes, task.CustomValues);
+            task.EffectiveTitle, task.Service, task.Designer?.Id, task.Developer?.Id, [.. task.Tags.Select(t => t.Id)], notes, task.CustomValues);
         var result = await new UpdateTaskContent(Fixture.Dataset.Coordinator).ExecuteAsync(
             new UpdateTaskContentCommand(OperationId.New(), task.Id, _revisions[task.Id], draft), CancellationToken.None);
         if (!result.IsSuccess)

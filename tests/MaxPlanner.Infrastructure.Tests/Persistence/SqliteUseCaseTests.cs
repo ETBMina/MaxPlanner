@@ -47,7 +47,7 @@ public sealed class SqliteUseCaseTests
             [risk] = new LookupCustomValue(new FieldOptionId(highRisk)),
         };
         var created = Succeeded(await new CreateTask(db.Coordinator).ExecuteAsync(new CreateTaskCommand(OperationId.New(), taskId,
-            new TaskContentDraft("Own title", "Mobile Banking", [alice, bob], [bob], [mobile], "Line 1\r\nLïne 2 — ✓", custom)), Ct));
+            new TaskContentDraft("Own title", "Mobile Banking", alice, bob, [mobile], "Line 1\r\nLïne 2 — ✓", custom)), Ct));
         var revision = Succeeded(await new AddChecklistItem(db.Coordinator).ExecuteAsync(
             new AddChecklistItemCommand(OperationId.New(), taskId, 1, new ChecklistItemId(Guid.NewGuid()), "First"), Ct)).Value;
         revision = Succeeded(await new AddChecklistItem(db.Coordinator).ExecuteAsync(
@@ -321,7 +321,7 @@ public sealed class SqliteUseCaseTests
 
     // Records hold lists, which record equality compares by reference; these shapes compare by content.
     private static string Shape(TaskItem t) => string.Join(" | ",
-        t.Id, t.OwnTitle, t.Service, t.StatusId, t.PriorityId, string.Join(",", t.DesignerIds), string.Join(",", t.DeveloperIds), string.Join(",", t.TagIds),
+        t.Id, t.OwnTitle, t.Service, t.StatusId, t.PriorityId, t.DesignerId, t.DeveloperId, string.Join(",", t.TagIds),
         t.Notes, t.Dates.Start, t.Dates.End, t.IsArchived, t.Rank, t.ChangeRequestId,
         string.Join(";", t.ChecklistItems.Select(i => $"{i.Id}:{i.Text}:{i.IsCompleted}:{i.Rank}")),
         Describe(t.CustomValues), t.Preserved.PreLinkTitle, string.Join(",", t.Preserved.UnselectedCrReferences), t.Preserved.LegacyJson,
@@ -348,7 +348,7 @@ public sealed class SqliteUseCaseTests
             for (var i = 0; i < 2; i++)
             {
                 var task = Succeeded(await new CreateTask(db.Coordinator).ExecuteAsync(new CreateTaskCommand(OperationId.New(), new TaskId(Guid.NewGuid()),
-                    new TaskContentDraft(null, "Service", [alice], [], [], null, CustomValue.NoValues), LinkTo: new CrLinkTarget(cr, 1)), Ct)).Value;
+                    new TaskContentDraft(null, "Service", alice, null, [], null, CustomValue.NoValues), LinkTo: new CrLinkTarget(cr, 1)), Ct)).Value;
                 var revision = 1L;
                 for (var item = 0; item <= i; item++)
                 {

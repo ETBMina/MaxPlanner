@@ -193,6 +193,9 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
             return false;
         }
 
+        // Text typed in the Developer box counts even when Save comes from Ctrl+Enter, before the box loses focus.
+        Developer.CommitText();
+
         if (!IsNew && !IsDirty)
         {
             Approve();

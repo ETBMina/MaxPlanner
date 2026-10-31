@@ -11,8 +11,8 @@ namespace MaxPlanner.Presentation.Common.Controls;
 /// top left. Only items whose estimated position meets the realization window are created and measured.
 /// </summary>
 /// <remarks>
-/// Phase 2 used <c>UniformGridLayout</c>, which sizes every item like the first one and clipped taller groups
-/// (implementation-plan 2g). Positions depend on the measured heights of earlier items; an item never measured
+/// Phase 2 used <c>UniformGridLayout</c>, which sizes every item like the first one and clipped taller groups.
+/// Positions depend on the measured heights of earlier items; an item never measured
 /// yet uses the average measured height, so positions below the viewport can shift as cards are realized.
 /// </remarks>
 public sealed partial class ColumnPackingLayout : VirtualizingLayout

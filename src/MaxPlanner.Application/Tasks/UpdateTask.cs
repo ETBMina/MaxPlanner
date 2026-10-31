@@ -54,7 +54,7 @@ public sealed class UpdateTask
         var validation = new ValidationCollector();
         var content = TaskContentParser.Parse(command.Content, isLinked: null, validation);
         var checklist = ChecklistDrafts.Parse(command.ChecklistItems, validation);
-        LookupAdditions.Validate(command.NewLookups, validation);
+        LookupAdditions.Validate(command.NewLookups, command.Content.DesignerId, command.Content.DeveloperId, validation);
         if (validation.HasErrors || content is null || checklist is null)
         {
             return UseCaseResults.Failed<long>(validation.ToError());

@@ -24,7 +24,7 @@ public sealed class CopyTaskTests
         var source = await _workspace.AddLinkedTaskAsync(cr, status: Review);
         var item = new ChecklistItemId(Guid.NewGuid());
         Succeeded(await new UpdateTask(_workspace.Coordinator).ExecuteAsync(
-            new UpdateTaskCommand(OperationId.New(), source, 1, Draft(null, "Mobile Banking", "Notes") with { TagIds = [Mobile.Id], DesignerIds = [Bob.Id] },
+            new UpdateTaskCommand(OperationId.New(), source, 1, Draft(null, "Mobile Banking", "Notes") with { TagIds = [Mobile.Id], DesignerId = Bob.Id },
                 Review.Id, High.Id, DateIntent.Set(Today.AddDays(-2)), DateIntent.Unchanged, [new(item, "Step", true)]),
             TestContext.Current.CancellationToken));
         Succeeded(await new CreateSubtaskCard(_workspace.Coordinator).ExecuteAsync(
@@ -43,7 +43,7 @@ public sealed class CopyTaskTests
         copy.StatusId.Should().Be(Backlog.Id, "B-06: the configured default status unless Keep current status");
         copy.PriorityId.Should().Be(High.Id, "the source priority still exists");
         copy.TagIds.Should().Equal(Mobile.Id);
-        copy.DesignerIds.Should().BeEmpty("people were not selected");
+        copy.DesignerId.Should().BeNull("people were not selected");
         copy.Notes.Should().BeNull();
         copy.Dates.Start.Should().BeNull("dates were not copied");
         copy.ChecklistItems.Should().ContainSingle().Which.Should().Match<Domain.Tasks.ChecklistItem>(i => i.Id != item && !i.IsCompleted && i.Text.Value == "Step");

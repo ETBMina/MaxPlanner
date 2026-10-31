@@ -1,6 +1,6 @@
 # Max Planner — UI and interaction contract
 
-This file defines how Max Planner looks and behaves. [Business Requirements.md](<Business Requirements.md>) is the product authority. When this file and the requirements disagree, the requirements win. Record the gap in §11 and do not silently change either file. Work order is tracked in [implementation-plan.md](implementation-plan.md) and decisions in `docs/adr/`.
+This file defines how Max Planner looks and behaves. [Business Requirements.md](<Business Requirements.md>) is the product authority. When this file and the requirements disagree, the requirements win. Record the gap in §11 and do not silently change either file. Decisions are recorded in `docs/adr/`.
 
 - **Visual reference:** `Designs/Max Planner.html`, a light-only web mock. It is an inventory, not a specification. Every element is mapped to a native control here, and departures are listed in §10.
 - **How it was grounded:**
@@ -93,7 +93,7 @@ Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to 
 | Field kind | Control |
 |---|---|
 | Lookup (Status, Priority, Squad, incl. "General", CR Owner) | `ToggleButton` chips in a `WrapPanel` `[gallery-togglebutton-1, gallery-wrappanel-1]`. A checked chip shows a CheckMark glyph as well as its fill. |
-| People (Designers, Developers) and Tags | People picker (§5.0). Tags add an "Any selected / All selected" `RadioButtons` (2 columns) `[gallery-radiobutton-1]`. |
+| People (Designer, Developer) and Tags | People picker (§5.0), multi-select in filters (any selected person matches). Tags add an "Any selected / All selected" `RadioButtons` (2 columns) `[gallery-radiobutton-1]`. |
 | CR | `AutoSuggestBox` CR picker with the special entries "Any CR" and "No CR". |
 | Service, text custom fields | `TextBox` with the header "Service contains". |
 | Dates | Two `CalendarDatePicker`s (From/To, inclusive) `[gallery-calendardatepicker-1]` plus a "Include records without a {field}" `CheckBox`. An inverted range shows an inline error and disables Apply. |
@@ -105,7 +105,7 @@ Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to 
 **Proposed notes (Phase 11, pending owner review):**
 - The Filters button and flyout are one shared `FilterButton` control and the context row is one `FilterChipsBar` control, used by Board, Grid and Calendar. Lookup chips wrap with a small native `WrapPanel` (ADR 0021: no Toolkit), not the Gallery `WrapPanel`.
 - **Apply** is the accent button; Enter activates it when it has focus and **Ctrl+Enter** applies from any field, because plain Enter belongs to the CR picker and the text boxes. Ctrl+Shift+F opens the flyout and Ctrl+Shift+L clears all filters on the visible page; Ctrl+F expands and focuses the page search (§2.3.1).
-- The flyout lists CR Owner chips only for people who own a CR (plus any already selected), so the chip group stays short. Designers, Developers and Tags use the TokenPicker with existing names only (no add-new in a filter).
+- The flyout lists CR Owner chips only for people who own a CR (plus any already selected), so the chip group stays short. Designer, Developer and Tags use the TokenPicker with existing names only (no add-new in a filter).
 - The search box applies immediately and is part of the scope (persisted with it, shown as a "Search: …" chip); it is outside the draft.
 - Custom fields: Text, Multiline and URL use "contains"; Number uses Min/Max; Date uses From/To with "Include records without a {field}"; Lookup uses chips. People/Tags custom fields are not filterable in release 1 (B-10 lists them under "need not be filterable").
 - A saved CR filter that refers to a deleted CR is cleared at startup with the same InfoBar ("…referred to a CR that no longer exists…"). A filter whose value is removed while the app runs is cleaned the same way.
@@ -158,7 +158,7 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
 ### 2.10 Person avatars (owner request, Oct 2026)
 - Wherever a person is named, a filled circle with their initials (`PersonAvatar`) comes before the name. It is 20 epx in dense rows, cards and chips, 24 epx by default, and 32 epx in Settings › People. Initials are the first letter or digit of the first and last word ("Wingtip Toys" → "WT"); a single word gives one letter.
 - The color comes from a fixed hash of the display name into an 11-color palette. White initials meet WCAG AA on every color, which is the same in Light and Dark. Nothing is stored, so renaming a person changes their initials and color. High Contrast uses system colors.
-- Several people in one compact field (Grid Designers, Developers, People fields; Dashboard unlinked rows) use an overlapping group (`PersonAvatarGroup`) of at most 3 circles, the last becoming "+N". The names stay as text.
+- Several people in one compact field (Grid People fields; Dashboard unlinked rows) use an overlapping group (`PersonAvatarGroup`) of at most 3 circles, the last becoming "+N". The names stay as text.
 - The avatar is decorative and hidden from UI Automation when the name is visible next to it; shown alone, it is an image named after the person, with the name as its tooltip.
 - Not shown: Calendar Month/Week bars (owner is in the tooltip only), joined text lines such as linked-CR secondary text, the import fallback-owner and lookup-replacement combos, and chart labels.
 
@@ -319,7 +319,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 | Service | `TextBox` | task (required if linked) | Subtask card: parent service, read-only |
 | Status | `ComboBox` | task, Subtask card | Status text + flag glyph |
 | Priority | `ComboBox` | task | Priority chip |
-| Designers / Developers | People picker in a `Flyout` | task | Comma-joined names, "+n" |
+| Designer / Developer | Single-person picker (§5.0) in a `Flyout` | task | Avatar + name, or blank (ADR 0024) |
 | Tags (and custom Tags fields) | Tag picker in a `Flyout` | task | One row of tag pills (§6.1) that fits the cell, then "+n"; tooltip and accessible name keep the comma-joined names |
 | Start Date / End Date | `CalendarDatePicker` | task, Subtask card | Short date |
 | Notes | Multiline `TextBox` in a `Flyout` with **Save** (Ctrl+Enter) / Cancel | task, Subtask card | First line, ellipsis |
@@ -342,9 +342,9 @@ States: Loading, Empty, Filtered-empty (distinct from Empty; when only archived 
 **Proposed notes (Phase 9, pending owner review):**
 - Columns are configurable, so header and row cells are created in code from the page's column list; custom field columns are keyed `Custom_{FieldId:N}`, never by label, and a removed field simply drops out of the saved layout. The chooser keeps at least one column visible.
 - Frozen column at S: the Title column is displayed first and pinned with a render transform that follows the horizontal scroll, so there is still one scroll region (header and rows cannot desynchronize). The configured order is unchanged at M/L.
-- Flyout editors: Notes, Designers, Developers, Tags, and multiline/People/Tags custom fields open in a `Flyout` with **Save** (Ctrl+Enter) and **Cancel**; Esc cancels. Light dismiss counts as leaving the cell, so it attempts the commit and keeps the flyout open with the error if it fails. Other editors are inline; dates have a **Clear** button (an explicit clear for B-04).
+- Flyout editors: Notes, Designer, Developer, Tags, and multiline/People/Tags custom fields open in a `Flyout` with **Save** (Ctrl+Enter) and **Cancel**; Esc cancels. Light dismiss counts as leaving the cell, so it attempts the commit and keeps the flyout open with the error if it fails. Other editors are inline; dates have a **Clear** button (an explicit clear for B-04).
 - Task cells other than Title, Service, and Status save through `UpdateTask` with the whole task as committed plus the one changed field, at the revision the edit began from (same status, so no transition dates). Subtask card dates and Notes save through `UpdateSubtaskCard`.
-- Custom People/Tags values pick existing names only; add-new stays with the built-in Designers, Developers, and Tags (B-02.6).
+- Custom People/Tags values pick existing names only; add-new stays with the built-in Designer, Developer, and Tags (B-02.6).
 - Priority shows as text (the §6.1 chip is not used in cells yet). **Export…** is shown disabled until the Data page (Phase 13).
 
 ### 4.4 Calendar (B-08, B-03, AC-11)
@@ -542,7 +542,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | Input | Control |
 |---|---|
 | People / tags (multi) | **TokenPicker** (Presentation control, ADR 0021): an `AutoSuggestBox` with case-insensitive suggestions and an "Add 'name'" suggestion, plus a wrapping `ItemsRepeater` of removable chip `Button`s (Delete removes). A new name is created only on Save (B-02.6). |
-| Single person (Owner, Review developer) | `AutoSuggestBox` with the same add-new behavior |
+| Single person (CR Owner, Review developer, task Designer and Developer; the Settings default CR Owner stays a plain `ComboBox` of existing people) | **Person dropdown** (owner request, Oct 2026): looks like a `ComboBox`. The box shows the chosen person (avatar + name) or a placeholder, with a chevron that opens the full list. Typing filters the list case-insensitively and offers "Add 'name'" when no name matches exactly; a new person is created on Save (B-02.6). No chip under the box. Optional fields can be cleared; Esc or leaving the box with unmatched text restores the chosen person. |
 | Lookups | `ComboBox` |
 | Dates | `CalendarDatePicker` with a **Clear** button beside it ("Clear start date"). An explicit clear is tracked for B-04. |
 | Numbers | `NumberBox` |
@@ -557,7 +557,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | 2 | Change request | Link card | **Unlinked:** the text "Not linked to a CR" + a **Link to CR…** button (inline step §5.6). **Pending:** a CR summary card + an InfoBar (Warning) "This link is permanent. When you save, the title becomes 'Card limits API' and the task number, squad and owner come from CR-1042." + **Choose a different CR** (allowed only while pending). **Linked:** a read-only card with the CR number link, title, CR status, Owner and "3 linked tasks". There is **no Unlink and no Change** (B-03.7). |
 | | | Task number · Squad · Owner | Read-only text, side by side at L. Helper: "From CR-1042. Edit them on the CR." Unlinked: Squad "General", no task number, "No owner". |
 | 3 | Workflow | **Status***, **Priority*** | `ComboBox`es. The creation route preselects the column status (B-02.1). |
-| 4 | People and tags | Designers, Developers, Tags | Token pickers |
+| 4 | People and tags | Designer, Developer, Tags | Single-person pickers for Designer and Developer (ADR 0024); token picker for Tags |
 | 5 | Dates | Start date, End date | Helpers come from the flags: "Set automatically when moved to In Progress" / "Filled when the task is completed". A range error appears under End date. |
 | 6 | Custom fields | Per definition order | Typed |
 | 7 | Checklist items | A `ListView` with `CanReorderItems` and an inline add box | Row: `CheckBox`, text (F2 rename), ⋯ (Rename, Pop out to card, Move up/down, Delete). These edits are part of the draft. **Pop out to card** runs immediately and is disabled while the draft is dirty (tooltip "Save the task first"). |
@@ -676,7 +676,7 @@ Route: the task editor and copy dialog (inline), the Grid row ⋯ "Link to CR…
 - **Body:** "In use by:" followed by counts (tasks incl. archived, Subtask cards, CRs, review items, defaults).
 - **Replacement:**
   - A **Replace with*** `ComboBox` that excludes the item being removed.
-  - For Designers/Developers, tags, squads and Review developers, `RadioButtons` offer "Replace with…" / "Clear from records". CR Owner usage and statuses/priorities offer **replace only** (see §11 Q4).
+  - For Designer/Developer, tags, squads and Review developers, `RadioButtons` offer "Replace with…" / "Clear from records". CR Owner usage and statuses/priorities offer **replace only** (see §11 Q4).
 - **Note:** "Dates are kept. This is not a status move."
 - **Buttons:** Primary **Remove and replace**; Close Cancel.
 - If the usage changes before commit, the counts refresh and a new confirmation is required.
@@ -859,7 +859,7 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
 | Calendar | `Calendar_ModeBar`, `Calendar_ModeMonthItem`, `Calendar_ModeWeekItem`, `Calendar_ModeRecordsItem`, `Calendar_TodayButton`, `Calendar_PrevButton`, `Calendar_NextButton`, `Calendar_PeriodButton`, `Calendar_NewCrButton`, `Calendar_BacklogToggle`, `Calendar_BacklogCollapseButton`, `Calendar_BacklogCount`, `Calendar_BacklogList`, `Calendar_BacklogCard_{CrId}`, `Calendar_Day_{yyyyMMdd}`, `Calendar_Bar_{CrId}_{yyyyMMdd}` (segment start), `Calendar_BarStartThumb_{CrId}`, `Calendar_BarEndThumb_{CrId}`, `Calendar_MoreLink_{yyyyMMdd}`, `Calendar_OutsideWorkdays_{yyyyMMdd}`, `Calendar_RecordsList`, `Calendar_RecordRow_{CrId}` |
 | Checklists | `Checklists_AddToTaskButton`, `Checklists_NewTodoButton`, `Checklists_GeneralGroup`, `Checklists_ReviewsGroup`, `Checklists_NewReviewLink`, `Checklists_TaskGroup_{TaskId}`, `Checklists_AddItemBox_{GroupKey}`, `Checklists_ItemCheck_{ItemId}`, `Checklists_ItemMenuButton_{ItemId}`, `Checklists_CompletedExpander_{GroupKey}`, `Checklists_ReviewCheck_{ReviewId}`, `Checklists_ReviewMenuButton_{ReviewId}` (`GroupKey` = `General`, `Reviews`, or the TaskId) |
 | Settings | `Settings_ThemeCombo`, `Settings_{Lookup}Expander` (TaskStatuses, CrStatuses, Priorities, Squads, People, Tags, TaskFields, CrFields), `Settings_{Lookup}Row_{Id}`, `Settings_{Lookup}AddBox`, `Settings_{Lookup}AddButton`, `Settings_Default{Name}Combo`, `Settings_DefaultCrOwnerPicker`, `Settings_DataLocationCard`, `Settings_OpenDataFolderButton`, `Settings_BackupNowButton`, `Settings_DataPageCard`, `Data_Breadcrumb`, `Data_ModeBar`, `Data_StepList`, `Data_BackButton`, `Data_NextButton`, `Data_CancelButton`, `Data_PreviewList` |
-| Dialogs | `TaskEditor_Dialog`, `TaskEditor_TitleBox`, `TaskEditor_ServiceBox`, `TaskEditor_LinkToCrButton`, `TaskEditor_CrCard`, `TaskEditor_StatusCombo`, `TaskEditor_PriorityCombo`, `TaskEditor_DesignersPicker`, `TaskEditor_DevelopersPicker`, `TaskEditor_TagsPicker`, `TaskEditor_StartDate`, `TaskEditor_EndDate`, `TaskEditor_NotesBox`, `TaskEditor_MoreMenu`, `SubtaskEditor_*`, `CrEditor_NumberBox`, `CrEditor_TaskNumberBox`, `CrEditor_TitleBox`, `CrEditor_OwnerPicker`, `CrEditor_MakeDefaultOwnerCheck`, `CrEditor_SquadCombo`, `CrEditor_LinkedTasksList`, `CrEditor_CreateTaskButton`, `CrEditor_LinkExistingButton`, `ReviewEditor_*`, `CopyTask_*`, `LinkCr_SearchBox`, `LinkCr_ResultsList`, `LinkCr_ConfirmStep`, `LinkCr_LinkButton`, `CascadeDelete_Dialog`, `CascadeDelete_Counts`, `DirtyClose_Dialog`, `DirtyClose_SaveButton`, `DirtyClose_DiscardButton`, `DirtyClose_ContinueButton`, `Conflict_ReviewButton`, `Conflict_ReloadButton`, `LookupRemove_ReplacementCombo` |
+| Dialogs | `TaskEditor_Dialog`, `TaskEditor_TitleBox`, `TaskEditor_ServiceBox`, `TaskEditor_LinkToCrButton`, `TaskEditor_CrCard`, `TaskEditor_StatusCombo`, `TaskEditor_PriorityCombo`, `TaskEditor_DesignerPicker`, `TaskEditor_DeveloperPicker`, `TaskEditor_TagsPicker`, `TaskEditor_StartDate`, `TaskEditor_EndDate`, `TaskEditor_NotesBox`, `TaskEditor_MoreMenu`, `SubtaskEditor_*`, `CrEditor_NumberBox`, `CrEditor_TaskNumberBox`, `CrEditor_TitleBox`, `CrEditor_OwnerPicker`, `CrEditor_MakeDefaultOwnerCheck`, `CrEditor_SquadCombo`, `CrEditor_LinkedTasksList`, `CrEditor_CreateTaskButton`, `CrEditor_LinkExistingButton`, `ReviewEditor_*`, `CopyTask_*`, `LinkCr_SearchBox`, `LinkCr_ResultsList`, `LinkCr_ConfirmStep`, `LinkCr_LinkButton`, `CascadeDelete_Dialog`, `CascadeDelete_Counts`, `DirtyClose_Dialog`, `DirtyClose_SaveButton`, `DirtyClose_DiscardButton`, `DirtyClose_ContinueButton`, `Conflict_ReviewButton`, `Conflict_ReloadButton`, `LookupRemove_ReplacementCombo` |
 
 ### 8.2 Names, roles and structure
 - **Names:** every interactive control has a name, through visible content or a `Header` (`[gallery-accessibilityscreenreader-1, -2]`) or through `AutomationProperties.Name`/`LabeledBy` `[-5]`. Icon-only buttons name the action and its target: "More actions for CR-1042".
@@ -941,7 +941,7 @@ Q1–Q6 and Q8 were resolved on 2026-10-22, and the requirements were updated (B
 | Q1 | Kind filter scope between Board and Grid | **Resolved (owner):** there is no Kind filter. Grid shows both kinds with a Kind column. |
 | Q2 | Which completed status a checked, popped-out item gets | **Resolved:** the first IsCompleted task status in configured order (B-16.3). |
 | Q3 | Whether Subtask cards of archived parents are editable in Grid | **Resolved:** read-only (B-16.6). |
-| Q4 | Clearing versus replacing a removed in-use person | **Resolved (owner):** CR Owner and the default CR Owner require a replacement. Designers, Developers and review Developer may be cleared or replaced (B-04). |
+| Q4 | Clearing versus replacing a removed in-use person | **Resolved (owner):** CR Owner and the default CR Owner require a replacement. Designer, Developer and review Developer may be cleared or replaced (B-04). |
 | Q5 | Whether the Calendar workweek is configurable | **Resolved (owner):** fixed Sun–Thu in release 1, shown read-only in Settings. |
 | Q6 | Lane cap in Week mode | **Resolved:** 4, the same as Month (B-08.9). **Revised 2026-10-28 by the owner:** Week mode shows as many lanes as fit the available height; Month keeps 4. |
 | Q7 | Dashboard drill-downs that need predicates outside B-10 (unscheduled, unlinked, active Subtask cards) | **Default:** non-editable "From Dashboard" chips; "No CR" also exists in the CR filter. |

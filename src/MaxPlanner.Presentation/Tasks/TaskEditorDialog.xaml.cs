@@ -95,9 +95,16 @@ public sealed partial class TaskEditorDialog : ContentDialog
             "ChecklistItems" => ChecklistList,
             _ => null,
         };
-        if (field == "Designers")
+        var picker = field switch
         {
-            DesignersPicker.FocusBox();
+            "Designer" => DesignerPicker,
+            "Developer" => DeveloperPicker,
+            "Tags" => TagsPicker,
+            _ => null,
+        };
+        if (picker is not null)
+        {
+            picker.FocusBox();
             return;
         }
 

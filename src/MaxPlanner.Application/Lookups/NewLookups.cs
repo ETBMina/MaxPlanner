@@ -28,12 +28,31 @@ public sealed record NewLookups(IReadOnlyList<NewPerson> People, IReadOnlyList<N
 /// <summary>Creates the new people and tags of a draft inside the draft's own transaction.</summary>
 internal static class LookupAdditions
 {
-    /// <summary>Validates the names before the transaction, so every name error is reported with the field errors.</summary>
-    public static void Validate(NewLookups? additions, ValidationCollector validation)
+    /// <summary>
+    /// Validates the names before the transaction, so every name error is reported with the field errors. A new
+    /// person's error names the role that holds it ("Designer", "Developer", or both), so the editor shows it on
+    /// that picker; a new person in neither role is reported under "People".
+    /// </summary>
+    public static void Validate(NewLookups? additions, PersonId? designerId, PersonId? developerId, ValidationCollector validation)
     {
         foreach (var person in additions?.People ?? [])
         {
-            validation.Check(LookupName.Create(person.Name, "People"));
+            var isDesigner = person.Id == designerId;
+            var isDeveloper = person.Id == developerId;
+            if (isDesigner)
+            {
+                validation.Check(LookupName.Create(person.Name, "Designer"));
+            }
+
+            if (isDeveloper)
+            {
+                validation.Check(LookupName.Create(person.Name, "Developer"));
+            }
+
+            if (!isDesigner && !isDeveloper)
+            {
+                validation.Check(LookupName.Create(person.Name, "People"));
+            }
         }
 
         foreach (var tag in additions?.Tags ?? [])
@@ -78,8 +97,8 @@ internal static class LookupAdditions
 
         return content with
         {
-            DesignerIds = [.. content.DesignerIds.Select(id => people.GetValueOrDefault(id, id)).Distinct()],
-            DeveloperIds = [.. content.DeveloperIds.Select(id => people.GetValueOrDefault(id, id)).Distinct()],
+            DesignerId = content.DesignerId is { } designer ? people.GetValueOrDefault(designer, designer) : null,
+            DeveloperId = content.DeveloperId is { } developer ? people.GetValueOrDefault(developer, developer) : null,
             TagIds = [.. content.TagIds.Select(id => tags.GetValueOrDefault(id, id)).Distinct()],
         };
     }

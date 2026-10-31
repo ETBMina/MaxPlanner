@@ -26,6 +26,8 @@ public sealed record InheritedCrValues(
 public sealed record ChecklistItemReadModel(ChecklistItemId Id, string Text, bool IsCompleted, long Rank);
 
 /// <summary>A task row/card as every view displays it (T-05, B-07).</summary>
+/// <param name="Designer">The task's single Designer, or null (ADR 0024).</param>
+/// <param name="Developer">The task's single Developer, or null (ADR 0024).</param>
 /// <param name="ChecklistItems">Every checklist item of the task, ordered by rank then ID.</param>
 public sealed record TaskReadModel(
     TaskId Id,
@@ -39,8 +41,8 @@ public sealed record TaskReadModel(
     LookupRef<PriorityId> Priority,
     int PriorityOrder,
     InheritedCrValues Cr,
-    IReadOnlyList<LookupRef<PersonId>> Designers,
-    IReadOnlyList<LookupRef<PersonId>> Developers,
+    LookupRef<PersonId>? Designer,
+    LookupRef<PersonId>? Developer,
     IReadOnlyList<LookupRef<TagId>> Tags,
     string? Notes,
     DateOnly? StartDate,

@@ -24,7 +24,7 @@ public sealed class RehydrateTests
     {
         var items = new[] { new ChecklistItem(new ChecklistItemId(Guid.NewGuid()), ChecklistText.Create("Done").Value, true, 1_024) };
         var preserved = new PreservedMetadata("Old own title", ["CR-9"], """{"x":1}""");
-        var content = new TaskContent(null, Service(), [new PersonId(Guid.NewGuid())], [], [new TagId(Guid.NewGuid())],
+        var content = new TaskContent(null, Service(), new PersonId(Guid.NewGuid()), null, [new TagId(Guid.NewGuid())],
             LongText.CreateOptional("Notes", "Notes").Value, new Dictionary<FieldId, CustomValue> { [Points] = new NumberCustomValue(5) });
 
         // In Progress sets StartDate on creation, but rehydration must keep the stored null.
@@ -48,8 +48,8 @@ public sealed class RehydrateTests
     [Fact]
     public void A_corrupt_task_row_is_reported_instead_of_loaded()
     {
-        var linkedWithTitle = new TaskContent(Title(), Service(), [], [], [], null, CustomValue.NoValues);
-        var unlinkedWithoutTitle = new TaskContent(null, null, [], [], [], null, CustomValue.NoValues);
+        var linkedWithTitle = new TaskContent(Title(), Service(), null, null, [], null, CustomValue.NoValues);
+        var unlinkedWithoutTitle = new TaskContent(null, null, null, null, [], null, CustomValue.NoValues);
         var duplicateItemId = new ChecklistItemId(Guid.NewGuid());
         ChecklistItem[] duplicates =
         [

@@ -47,7 +47,7 @@ public sealed class StoreEndToEndTests : IAsyncDisposable
 
         var taskId = new TaskId(Guid.NewGuid());
         await CommitAsync(store, new CreateTask(dataset.Coordinator).ExecuteAsync(
-            new CreateTaskCommand(OperationId.New(), taskId, new TaskContentDraft("Card freeze", "Mobile Banking", [], [], [], null, CustomValue.NoValues)), Ct));
+            new CreateTaskCommand(OperationId.New(), taskId, new TaskContentDraft("Card freeze", "Mobile Banking", null, null, [], null, CustomValue.NoValues)), Ct));
         TaskModel(store, taskId).EffectiveTitle.Should().Be("Card freeze");
         TaskModel(store, taskId).Cr.SquadName.Should().Be("General");
 

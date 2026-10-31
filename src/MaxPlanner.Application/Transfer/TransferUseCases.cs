@@ -408,8 +408,9 @@ public static class TransferDocumentBuilder
                 Service = t.Service?.Value,
                 StatusId = t.StatusId.Value,
                 PriorityId = t.PriorityId.Value,
-                DesignerIds = [.. t.DesignerIds.Select(p => p.Value)],
-                DeveloperIds = [.. t.DeveloperIds.Select(p => p.Value)],
+                // ADR 0024: the format keeps arrays; a task exports at most one element in each.
+                DesignerIds = t.DesignerId is { } designer ? [designer.Value] : [],
+                DeveloperIds = t.DeveloperId is { } developer ? [developer.Value] : [],
                 TagIds = [.. t.TagIds.Select(p => p.Value)],
                 Notes = t.Notes?.Value,
                 StartDate = t.Dates.Start,

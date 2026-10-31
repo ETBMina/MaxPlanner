@@ -307,23 +307,28 @@
                         <local:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
                         <local:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
 
+                        <!-- ADR 0024: one Designer and one Developer, single-person pickers (design §5.0). -->
                         <controls:TokenPicker
-                            x:Name="DesignersPicker"
-                            x:Uid="TaskEditor_DesignersPicker"
-                            BoxAutomationId="TaskEditor_DesignersPicker"
+                            x:Name="DesignerPicker"
+                            x:Uid="TaskEditor_DesignerPicker"
+                            BoxAutomationId="TaskEditor_DesignerPicker"
                             IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            ViewModel="{x:Bind ViewModel.Designers, Mode=OneWay}" />
+                            ViewModel="{x:Bind ViewModel.Designer, Mode=OneWay}" />
+                        <local:FieldError Text="{x:Bind ViewModel.DesignerError, Mode=OneWay}" />
                         <controls:TokenPicker
-                            x:Uid="TaskEditor_DevelopersPicker"
-                            BoxAutomationId="TaskEditor_DevelopersPicker"
+                            x:Name="DeveloperPicker"
+                            x:Uid="TaskEditor_DeveloperPicker"
+                            BoxAutomationId="TaskEditor_DeveloperPicker"
                             IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            ViewModel="{x:Bind ViewModel.Developers, Mode=OneWay}" />
+                            ViewModel="{x:Bind ViewModel.Developer, Mode=OneWay}" />
+                        <local:FieldError Text="{x:Bind ViewModel.DeveloperError, Mode=OneWay}" />
                         <controls:TokenPicker
+                            x:Name="TagsPicker"
                             x:Uid="TaskEditor_TagsPicker"
                             BoxAutomationId="TaskEditor_TagsPicker"
                             IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             ViewModel="{x:Bind ViewModel.Tags, Mode=OneWay}" />
-                        <local:FieldError Text="{x:Bind ViewModel.PeopleError, Mode=OneWay}" />
+                        <local:FieldError Text="{x:Bind ViewModel.TagsError, Mode=OneWay}" />
 
                         <!-- Dates: an explicit Clear is tracked for B-04 ("explicit manual clear"). -->
                         <Grid ColumnSpacing="8" RowSpacing="4">

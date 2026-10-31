@@ -98,8 +98,8 @@ internal static class TransactionGuards
     /// <summary>Every referenced person and tag must exist in the current workflow.</summary>
     public static void CheckPeopleAndTags(WorkflowSnapshot workflow, TaskContent content, ValidationCollector validation)
     {
-        CheckPeople(workflow, content.DesignerIds, "Designers", validation);
-        CheckPeople(workflow, content.DeveloperIds, "Developers", validation);
+        CheckPerson(workflow, content.DesignerId, "Designer", validation);
+        CheckPerson(workflow, content.DeveloperId, "Developer", validation);
         if (content.TagIds.Any(id => workflow.FindTag(id) is null))
         {
             validation.Add(new DomainError(DomainErrorCodes.UnknownReference, "Tags"));
@@ -131,9 +131,9 @@ internal static class TransactionGuards
 
     public static TxResult<T> Reject<T>(string code, string? field = null, long? limit = null) => Reject<T>(new DomainError(code, field, limit));
 
-    private static void CheckPeople(WorkflowSnapshot workflow, IReadOnlyList<PersonId> ids, string field, ValidationCollector validation)
+    private static void CheckPerson(WorkflowSnapshot workflow, PersonId? id, string field, ValidationCollector validation)
     {
-        if (ids.Any(id => workflow.FindPerson(id) is null))
+        if (id is { } person && workflow.FindPerson(person) is null)
         {
             validation.Add(new DomainError(DomainErrorCodes.UnknownReference, field));
         }

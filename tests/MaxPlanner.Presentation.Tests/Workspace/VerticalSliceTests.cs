@@ -206,7 +206,7 @@ public sealed class VerticalSliceTests
 
         // Another editor renames the task after this cell started editing.
         h.External(u => u.UpdateTaskContent.ExecuteAsync(new UpdateTaskContentCommand(OperationId.New(), task, 1,
-            new TaskContentDraft("Renamed elsewhere", "Mobile Banking", [], [], [], null, CustomValue.NoValues)), default));
+            new TaskContentDraft("Renamed elsewhere", "Mobile Banking", null, null, [], null, CustomValue.NoValues)), default));
         h.Await(grid.CommitAsync(row)).Should().BeFalse();
         h.Settle();
 
@@ -237,7 +237,7 @@ public sealed class VerticalSliceTests
         grid.BeginEdit(row, GridColumns.Service);
         row.DraftText = "Grid service";
         h.External(u => u.UpdateTaskContent.ExecuteAsync(new UpdateTaskContentCommand(OperationId.New(), task, 1,
-            new TaskContentDraft("Original title", "Saved service", [], [], [], null, CustomValue.NoValues)), default));
+            new TaskContentDraft("Original title", "Saved service", null, null, [], null, CustomValue.NoValues)), default));
         h.Await(grid.CommitAsync(row)).Should().BeFalse();
 
         grid.Reload(row);

@@ -96,7 +96,7 @@ public sealed record RemoveLookupCommand(OperationId OperationId, LookupKind Kin
 /// <remarks>
 /// A replaced status is not a transition: dates are kept (B-04). Active cards from the removed Board column
 /// are appended to the end of the replacement column in their previous order, so nothing lands silently at
-/// the top. CR Owner usage and the default CR Owner can only be replaced; Designers, Developers, review
+/// the top. CR Owner usage and the default CR Owner can only be replaced; Designer, Developer, review
 /// Developers, tags, and squads may be cleared (design §11 Q4). The confirmed counts are compared with the
 /// counts inside the transaction, so a confirmation shown for other data never applies.
 /// </remarks>

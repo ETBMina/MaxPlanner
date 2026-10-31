@@ -22,7 +22,7 @@ public sealed class UpdateAndMoveTaskTests
     public async Task Saving_content_commits_the_whole_draft_as_the_next_revision()
     {
         var id = await _workspace.AddTaskAsync();
-        var draft = Draft("Card freeze v2", "Cards API", "Line 1\nLine 2") with { DesignerIds = [Alice.Id, Alice.Id], TagIds = [Mobile.Id] };
+        var draft = Draft("Card freeze v2", "Cards API", "Line 1\nLine 2") with { DesignerId = Alice.Id, TagIds = [Mobile.Id] };
 
         var outcome = Succeeded(await Update(id, 1, draft));
 
@@ -30,7 +30,7 @@ public sealed class UpdateAndMoveTaskTests
         outcome.Value.Should().Be(2);
         task.OwnTitle!.Value.Should().Be("Card freeze v2");
         task.Notes!.Value.Should().Be("Line 1\nLine 2");
-        task.DesignerIds.Should().Equal(Alice.Id);
+        task.DesignerId.Should().Be(Alice.Id);
         _workspace.Coordinator.Published[^1].UpsertedTasks.Should().ContainSingle().Which.Should().Be(task);
     }
 

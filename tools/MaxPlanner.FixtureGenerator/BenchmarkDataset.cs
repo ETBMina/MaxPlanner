@@ -164,12 +164,15 @@ internal sealed class BenchmarkDataset(IMutationCoordinator coordinator, Random 
             linked ? Pick(crs) : null,
             Pick(workflow.Priorities).Id,
             Pick(workflow.TaskStatuses).Id,
-            Some(people, 2),
-            Some(people, 2),
+            OnePerson(people),
+            OnePerson(people),
             Some(tags, 2),
             random.Next(2) == 0 ? Pick(Notes) : null,
             checklist);
     }
+
+    // ADR 0024: a task has at most one Designer and one Developer.
+    private PersonId? OnePerson(List<PersonId> people) => people.Count == 0 || random.Next(3) == 0 ? null : Pick(people);
 
     private ReviewDraft ReviewFor(int i, List<PersonId> people) => new(
         Title(i, "Review"),

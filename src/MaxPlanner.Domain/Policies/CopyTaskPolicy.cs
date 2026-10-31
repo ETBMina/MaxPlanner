@@ -71,8 +71,8 @@ public static class CopyTaskPolicy
         var content = new TaskContent(
             sourceEffectiveTitle,
             Service: null,
-            options.CopyPeople ? source.DesignerIds : [],
-            options.CopyPeople ? source.DeveloperIds : [],
+            options.CopyPeople ? source.DesignerId : null,
+            options.CopyPeople ? source.DeveloperId : null,
             options.CopyTags ? source.TagIds : [],
             options.CopyNotes ? source.Notes : null,
             options.CopyCustomValues ? source.CustomValues : CustomValue.NoValues);
