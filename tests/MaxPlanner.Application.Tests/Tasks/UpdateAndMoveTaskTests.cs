@@ -111,9 +111,9 @@ public sealed class UpdateAndMoveTaskTests
         var b = await _workspace.AddTaskAsync("B", Review);
         var moved = await _workspace.AddTaskAsync("Moved");
 
-        Succeeded(await Move(moved, 1, Review, BoardPlacement.Between(_workspace.Task(a).Rank, _workspace.Task(b).Rank)));
+        Succeeded(await Move(moved, 1, Review, BoardPlacement.Between(_workspace.Task(b).Rank, _workspace.Task(a).Rank)));
 
-        _workspace.Task(moved).Rank.Should().Be(1_536);
+        _workspace.Task(moved).Rank.Should().Be(512, "B lands on top (rank 0) above A (rank 1024), so the slot between them is the midpoint 512");
         _workspace.Coordinator.Published[^1].UpsertedTasks.Select(t => t.Id).Should().Equal(moved);
     }
 

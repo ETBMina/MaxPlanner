@@ -141,7 +141,7 @@ public sealed class SqliteUseCaseTests
             return TxResult.Abort<long>(OperationCancelledError.Instance);
         }, Ct);
 
-        column.Select(c => c.Key).Should().Equal(new BoardCardKey(BoardCardKind.Task, parent.Value), new BoardCardKey(BoardCardKind.SubtaskCard, card.Value));
+        column.Select(c => c.Key).Should().Equal([new BoardCardKey(BoardCardKind.SubtaskCard, card.Value), new BoardCardKey(BoardCardKind.Task, parent.Value)], "B-07: the newer card lands above its parent");
         max.Should().Be(column[^1].Rank);
     }
 

@@ -137,7 +137,7 @@ public sealed class ChecklistAndSubtaskCardTests
 
     [Fact]
     [Trait("Req", "B-16.4")]
-    public async Task A_new_card_gets_its_own_creation_dates_and_appends_after_tasks_in_its_column()
+    public async Task A_new_card_gets_its_own_creation_dates_and_lands_above_the_tasks_in_its_column()
     {
         var parent = await _workspace.AddTaskAsync(status: Completed);
         var columnTask = await _workspace.AddTaskAsync("In progress already", InProgress);
@@ -146,7 +146,7 @@ public sealed class ChecklistAndSubtaskCardTests
         var card = Succeeded(await CreateCard(parent, InProgress.Id)).Value;
 
         _workspace.Card(card).Dates.Start.Should().Be(Today);
-        _workspace.Card(card).Rank.Should().BeGreaterThan(_workspace.Task(columnTask).Rank);
+        _workspace.Card(card).Rank.Should().BeLessThan(_workspace.Task(columnTask).Rank, "B-07: a new card lands at the top of its column");
         _workspace.Task(parent).Should().Be(parentBefore);
     }
 

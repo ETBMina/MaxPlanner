@@ -50,13 +50,13 @@ public sealed class BoardMoveTests
         h.Await(board.DropAsync(card, inProgress, 1));
         h.Settle();
 
-        Titles(inProgress).Should().Equal("First", "Moving", "Second");
+        Titles(inProgress).Should().Equal(["Second", "Moving", "First"], "B-07: each new task lands on top, and the drop takes slot 1");
         board.Columns[0].Cards.Should().BeEmpty();
         h.Task(moving).StartDate.Should().Be(Records.Today, "B-04: a transition to a start-setting status fills StartDate");
     }
 
     [Fact]
-    public void Keyboard_moves_append_to_the_adjacent_status_and_reorder_within_the_column()
+    public void Keyboard_moves_go_to_the_adjacent_status_and_reorder_within_the_column()
     {
         using var h = Board(out var board, "A", "B");
         var a = board.Columns[0].Cards[0];
@@ -179,7 +179,8 @@ public sealed class BoardMoveTests
     {
         var h = WorkspaceHarness.Create(async s =>
         {
-            foreach (var title in backlogTitles)
+            // New tasks land at the top of their column (B-07), so seed in reverse to show the titles in the given order.
+            foreach (var title in Enumerable.Reverse(backlogTitles))
             {
                 await s.TaskAsync(title);
             }

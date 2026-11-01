@@ -53,7 +53,7 @@ public sealed class VerticalSliceTests
     [Fact]
     [Trait("Req", "B-07")]
     [Trait("Req", "AC-05")]
-    public void A_grid_status_edit_moves_the_card_to_the_end_of_the_destination_column_and_applies_the_date_rule()
+    public void A_grid_status_edit_moves_the_card_to_the_top_of_the_destination_column_and_applies_the_date_rule()
     {
         TaskId moving = default;
         TaskId staying = default;
@@ -79,7 +79,7 @@ public sealed class VerticalSliceTests
 
         backlog.Cards.Select(c => c.Key).Should().Equal(staying.Value);
         backlog.Cards.Single().Should().BeSameAs(stayingCard, "cards that did not change keep their ViewModel");
-        inProgress.Cards.Select(c => c.Key).Should().Equal(inProgressAlready.Value, moving.Value);
+        inProgress.Cards.Select(c => c.Key).Should().Equal([moving.Value, inProgressAlready.Value], "B-07: a status change outside a Board drop lands at the top");
         inProgress.CountText.Should().Be("2");
         row.StatusText.Should().Be("In Progress");
         row.StartDateText.Should().NotBeEmpty("B-04: moving to a start-setting status sets the start date");

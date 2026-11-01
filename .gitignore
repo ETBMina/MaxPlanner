@@ -26,6 +26,9 @@ publish-*/
 *.db-wal
 *.db-shm
 
+# Local dev data checkpoints saved by scripts/dev-data.ps1.
+.dev-data/
+
 # WinApp CLI local state
 .winapp/
 AppX/

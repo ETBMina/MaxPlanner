@@ -62,7 +62,7 @@ public sealed class SliceBehaviourTests
         h.Await(System.Threading.Tasks.Task.WhenAll(first, second));
         h.Settle();
 
-        group.CompletedItems.Select(i => i.Text).Should().Equal("One", "Two");
+        group.CompletedItems.Select(i => i.Text).Should().Equal(["Two", "One"], "B-09: the most recently completed item is listed first");
         group.ToggleError.Should().BeNull("the second toggle waits for the first result instead of conflicting");
     }
 

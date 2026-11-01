@@ -96,7 +96,7 @@ public sealed class TaskEditorPersistenceTests
     [Fact]
     [Trait("Req", "B-05")]
     [Trait("Req", "B-06")]
-    public async Task Restore_and_copy_append_to_the_end_of_the_real_column()
+    public async Task Restore_and_copy_land_at_the_top_of_the_real_column()
     {
         await using var db = await CreateAsync();
         var first = await db.AddTaskAsync("First");
@@ -110,8 +110,8 @@ public sealed class TaskEditorPersistenceTests
 
         var tasks = (await db.SnapshotAsync()).Tasks.ToDictionary(t => t.Id);
         tasks[first].IsArchived.Should().BeFalse();
-        tasks[first].Rank.Should().BeGreaterThan(tasks[second].Rank);
-        tasks[copy].Rank.Should().BeGreaterThan(tasks[first].Rank);
+        tasks[first].Rank.Should().BeLessThan(tasks[second].Rank, "B-07: restore lands at the top");
+        tasks[copy].Rank.Should().BeLessThan(tasks[first].Rank, "B-07: a copy lands at the top");
         tasks[copy].Revision.Should().Be(1);
     }
 }
