@@ -24,9 +24,6 @@ using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Grid;
 
-/// <summary>Asks the view to move keyboard focus to a cell, optionally opening its editor.</summary>
-public sealed record GridFocusRequest(GridRowViewModel Row, string Column, bool BeginEdit);
-
 /// <summary>
 /// The Grid page (B-07 Grid, design §4.3): tasks and Subtask cards as rows with every column of B-07 plus active
 /// custom fields, typed cell editors, sortable and resizable columns, a column chooser, a persisted layout, and the
@@ -44,7 +41,6 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     private readonly ObservableCollection<PriorityOption> _priorityOptions = [];
     private readonly ObservableCollection<GridColumnViewModel> _columns = [];
     private WorkflowSnapshot? _workflow;
-    private Guid? _pendingFocus;
     private string? _sortColumn;
     private bool _sortDescending;
     private readonly bool _isConstructed;
@@ -75,8 +71,6 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         _isConstructed = true;
         ApplySort();
     }
-
-    public event EventHandler<GridFocusRequest>? FocusRequested;
 
     /// <summary>Raised when the visible column set or its order changed; the view rebuilds its header and cells.</summary>
     public event EventHandler? LayoutChanged;
@@ -415,33 +409,11 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     }
 
     /// <summary>
-    /// The accent New task (design §4.3): creates a task in the default status through CreateTask, then focuses
-    /// its Title cell with the editor open. B-02.2 requires a title, so the new task starts with the localized
-    /// "New task" title; the full editor is one row-menu Open away.
+    /// The accent New task (design §4.3) opens the same task editor as the Board's New task, in the default
+    /// status. The saved task reaches the grid through the shared projection store.
     /// </summary>
     [RelayCommand]
-    private async Task NewTaskAsync()
-    {
-        if (_context.IsEditingBlocked)
-        {
-            return;
-        }
-
-        var id = new TaskId(Guid.NewGuid());
-        var operation = OperationId.New();
-        var draft = new TaskContentDraft(_context.Strings.GetString("Grid_NewTaskTitle"), null, null, null, [], null, CustomValue.NoValues);
-        _context.SaveStatus.Begin();
-        var result = await _context.UseCases.CreateTask.ExecuteAsync(new CreateTaskCommand(operation, id, draft), CancellationToken.None);
-        if (!result.IsSuccess)
-        {
-            _context.SaveStatus.Report(CommandFailure.From(result.Error!, operation, "Record_Task", _context.Strings));
-            return;
-        }
-
-        _context.SaveStatus.Complete();
-        _pendingFocus = id.Value;
-        RaisePendingFocus();
-    }
+    private Task NewTaskAsync() => _context.Tasks.NewAsync(null);
 
     /// <summary>Archive visibility composes with the shared filters (B-10); column visibility never affects it.</summary>
     private Func<WorkItemRecord, bool> Membership(bool showArchived)
@@ -789,18 +761,6 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     private void OnRowsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         UpdateState();
-        RaisePendingFocus();
-    }
-
-    private void RaisePendingFocus()
-    {
-        if (_pendingFocus is not { } id || Rows.FirstOrDefault(r => r.Key == id) is not { } row)
-        {
-            return;
-        }
-
-        _pendingFocus = null;
-        FocusRequested?.Invoke(this, new GridFocusRequest(row, GridColumns.Title, BeginEdit: BeginEdit(row, GridColumns.Title)));
     }
 
     private void OnContextChanged(object? sender, PropertyChangedEventArgs e)

@@ -388,10 +388,6 @@
   <data name="Grid_NewTaskButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>New task (Ctrl+N)</value>
   </data>
-  <data name="Grid_NewTaskTitle" xml:space="preserve">
-    <value>New task</value>
-    <comment>Title of a task created by New task; the Title editor opens on it.</comment>
-  </data>
   <data name="Grid_StateView.LoadingMessage" xml:space="preserve">
     <value>Loading tasks…</value>
   </data>

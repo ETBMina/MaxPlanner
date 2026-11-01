@@ -68,7 +68,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         Table.Host = this;
-        ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();
         ((INotifyCollectionChanged)ViewModel.Rows).CollectionChanged += OnRowsChanged;
         SizeChanged += (_, e) =>
@@ -1091,18 +1090,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             ViewModel.Reload(row);
             ClosePopup();
             FocusCell(row, column);
-        }
-    }
-
-    private void OnFocusRequested(object? sender, GridFocusRequest request)
-    {
-        if (request.BeginEdit)
-        {
-            FocusEditorSoon(request.Row, request.Column, selectAll: true);
-        }
-        else
-        {
-            FocusCell(request.Row, request.Column);
         }
     }
 

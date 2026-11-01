@@ -6,6 +6,7 @@ using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Grid;
+using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Tests.Testing;
 using ViewState = MaxPlanner.Presentation.Workspace.ViewState;
 
@@ -278,22 +279,25 @@ public sealed class VerticalSliceTests
 
     [Fact]
     [Trait("Req", "B-02.1")]
-    public void New_task_creates_a_task_in_the_default_status_and_requests_focus_on_its_title_editor()
+    public void New_task_opens_the_task_editor_in_the_default_status_and_the_saved_task_arrives_as_a_row()
     {
         using var h = WorkspaceHarness.Create();
+        using var dialogs = new TaskEditorTests.DialogRecorder(h.Workspace.Context);
         var grid = h.Workspace.Grid;
         h.PumpUntil(() => grid.State == ViewState.Empty);
-        GridFocusRequest? request = null;
-        grid.FocusRequested += (_, r) => request = r;
 
-        grid.NewTaskCommand.Execute(null);
-        h.PumpUntil(() => request is not null);
+        var flow = grid.NewTaskCommand.ExecuteAsync(null);
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        editor.IsNew.Should().BeTrue();
+        h.Store.Tasks.Count.Should().Be(0, "nothing is created until the editor saves");
 
-        request!.Column.Should().Be(GridColumns.Title);
-        request.BeginEdit.Should().BeTrue();
-        request.Row.TitleText.Should().Be("Grid_NewTaskTitle");
-        request.Row.StatusText.Should().Be("Backlog");
-        request.Row.IsEditingTitle.Should().BeTrue();
+        editor.Title = "From the grid";
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+        h.Await(flow);
+        h.PumpUntil(() => grid.Rows.Count == 1);
+
+        grid.Rows.Single().TitleText.Should().Be("From the grid");
+        grid.Rows.Single().StatusText.Should().Be("Backlog");
         grid.State.Should().Be(ViewState.Populated);
     }
 
