@@ -35,11 +35,11 @@ public sealed class ValueRulesTests
 
     [Fact]
     [Trait("Req", "T-05")]
-    public void Notes_keep_line_breaks_and_unicode_exactly()
+    public void Notes_keep_line_breaks_as_lf_and_unicode_exactly()
     {
         const string notes = "  Line one\r\n\tالعربية — ✓\n";
 
-        LongText.CreateOptional(notes, "Notes").Value!.Value.Should().Be(notes);
+        LongText.CreateOptional(notes, "Notes").Value!.Value.Should().Be("  Line one\n\tالعربية — ✓\n", "ADR 0025: line breaks are stored as LF");
     }
 
     [Fact]

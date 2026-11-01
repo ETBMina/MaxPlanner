@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
 
@@ -109,6 +110,12 @@ public sealed partial class ChecklistItemViewModel : ObservableObject
         IsRenaming = true;
     }
 
+    /// <summary>
+    /// The rename draft equals the saved text. A text box returns CR line breaks and saved text uses LF (ADR 0025), so
+    /// the comparison is on normalized line breaks.
+    /// </summary>
+    public bool IsRenameUnchanged => string.Equals(LineBreaks.Normalize(RenameText), Text, StringComparison.Ordinal);
+
     /// <summary>Enter in the rename box: saves the new text; a failure keeps the box open with its draft and error.</summary>
     public async Task<bool> CommitRenameAsync()
     {
@@ -117,7 +124,7 @@ public sealed partial class ChecklistItemViewModel : ObservableObject
             return false;
         }
 
-        if (RenameText == Text)
+        if (IsRenameUnchanged)
         {
             CancelRename();
             return true;

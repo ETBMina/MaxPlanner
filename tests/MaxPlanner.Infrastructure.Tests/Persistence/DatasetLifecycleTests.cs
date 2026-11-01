@@ -46,11 +46,11 @@ public sealed class DatasetLifecycleTests
         snapshot.Tasks.Should().BeEmpty();
         snapshot.ChangeRequests.Should().BeEmpty();
         db.Dataset.Id.Value.Should().NotBeEmpty();
-        db.Dataset.SchemaVersion.Should().Be(2);
-        db.Scalar("PRAGMA user_version;").Should().Be(2);
-        db.Scalar("SELECT schema_version FROM app_metadata;").Should().Be(2);
+        db.Dataset.SchemaVersion.Should().Be(3);
+        db.Scalar("PRAGMA user_version;").Should().Be(3);
+        db.Scalar("SELECT schema_version FROM app_metadata;").Should().Be(3);
         StorageJson.ReadHistory(Text(db, "SELECT migration_history_json FROM app_metadata;"))
-            .Select(h => (h.Version, h.Name)).Should().Equal((1, "M0001_initial"), (2, "M0002_single_designer_developer"));
+            .Select(h => (h.Version, h.Name)).Should().Equal((1, "M0001_initial"), (2, "M0002_single_designer_developer"), (3, "M0003_lf_line_breaks"));
         Text(db, "PRAGMA journal_mode;").Should().Be("wal");
     }
 

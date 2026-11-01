@@ -609,9 +609,10 @@ public static class ImportPlanner
                 }
 
                 var content = CrContent(source, existing, number, errors);
-                var status = Supplied(supplied, nameof(source.StatusId))
+                // A new CR without a supplied status gets the default CR status, as tasks and cards do.
+                var status = Supplied(supplied, nameof(source.StatusId)) || existing is null
                     ? Resolve(source.StatusId ?? (existing is null ? _defaults.DefaultCrStatusId.Value : null), _crStatuses, s => s.Id.Value, "StatusId", errors)
-                    : _crStatuses.FirstOrDefault(s => s.Id == existing!.StatusId);
+                    : _crStatuses.FirstOrDefault(s => s.Id == existing.StatusId);
                 if (status is null && errors.Count == 0)
                 {
                     errors.Add(new DomainError(DomainErrorCodes.Required, "StatusId"));
@@ -692,7 +693,7 @@ public static class ImportPlanner
                 errors.Add(new DomainError(DomainErrorCodes.Required, "Number"));
             }
 
-            var title = Supplied(s, nameof(source.Title)) ? Check(TitleText.Create(source.Title), errors) : existing?.Title;
+            var title = Supplied(s, nameof(source.Title)) || existing is null ? Check(TitleText.Create(source.Title), errors) : existing.Title;
             PersonId? owner;
             if (Supplied(s, nameof(source.OwnerId)) || existing is null)
             {
@@ -831,7 +832,10 @@ public static class ImportPlanner
                             continue;
                         }
 
-                        if (linkCr is null && source.SuppliedFields is null && documentHasLinks)
+                        // ADR 0006 / AC-29: no CR for a linked task is an unlink attempt when the source states the link: a complete
+                        // (JSON) record in a document with links, or a tabular row that supplies a blank ChangeRequestId.
+                        var statesLink = source.SuppliedFields is null ? documentHasLinks : source.SuppliedFields.Contains(TransferColumns.ChangeRequestId);
+                        if (linkCr is null && statesLink)
                         {
                             Add(ImportSeverity.Conflict, Entity, key, ImportFindingCodes.UnlinkRefused, "ChangeRequestId");
                             Count(Entity, ImportAction.Conflict);

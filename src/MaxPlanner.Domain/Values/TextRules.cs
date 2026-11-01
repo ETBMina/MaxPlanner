@@ -33,8 +33,8 @@ internal static class TextRules
     }
 
     /// <summary>
-    /// Multiline text keeps its line breaks and inner whitespace (T-05: preserve multiline notes);
-    /// only text that is entirely whitespace counts as "no value".
+    /// Multiline text keeps its line breaks (stored as LF, ADR 0025) and inner whitespace (T-05: preserve multiline
+    /// notes); only text that is entirely whitespace counts as "no value".
     /// </summary>
     public static DomainResult<string?> OptionalMultiline(string? raw, int maxLength, string field)
     {
@@ -43,6 +43,7 @@ internal static class TextRules
             return DomainResult.Success<string?>(null);
         }
 
+        raw = LineBreaks.Normalize(raw);
         return raw.Length > maxLength
             ? DomainResult.Failure<string?>(DomainErrorCodes.TooLong, field, maxLength)
             : DomainResult.Success<string?>(raw);

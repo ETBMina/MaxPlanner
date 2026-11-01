@@ -8,6 +8,7 @@ using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
@@ -642,7 +643,7 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
         (StatusKey, SelectedStatus?.Id),
         (StartKey, DraftDates.FromPicker(StartDate)),
         (EndKey, DraftDates.FromPicker(EndDate)),
-        (NotesKey, Notes),
+        (NotesKey, LineBreaks.Normalize(Notes)),
     ]);
 
     private static DraftSnapshot ValuesOf(SubtaskCardReadModel model) => new(

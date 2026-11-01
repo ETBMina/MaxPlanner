@@ -32,6 +32,9 @@ public sealed record TextCustomValue(string Value) : CustomValue
 
 public sealed record MultilineTextCustomValue(string Value) : CustomValue
 {
+    /// <summary>The text with line breaks stored as LF (ADR 0025), so values from any route compare equal.</summary>
+    public string Value { get; } = LineBreaks.Normalize(Value ?? throw new ArgumentNullException(nameof(Value)));
+
     public override FieldKind Kind => FieldKind.MultilineText;
 
     public override bool IsEmpty => string.IsNullOrWhiteSpace(Value);

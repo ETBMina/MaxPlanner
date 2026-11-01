@@ -1094,7 +1094,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         (EndKey, DraftDates.FromPicker(PlannedEnd)),
         (EmailKey, EmailSubject.Trim()),
         (UrlKey, SolutionDesignUrl.Trim()),
-        (DescriptionKey, Description),
+        (DescriptionKey, LineBreaks.Normalize(Description)),
         (CustomFieldsKey, CustomFields.Signature),
     ]);
 

@@ -205,7 +205,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     private void OnRenameLostFocus(object sender, RoutedEventArgs e)
     {
         // Leaving the box keeps the draft only while it shows an error; otherwise an unchanged rename closes.
-        if (sender is TextBox { Tag: ChecklistItemViewModel item } && item.IsRenaming && !item.IsPending && item.RenameText == item.Text)
+        if (sender is TextBox { Tag: ChecklistItemViewModel item } && item.IsRenaming && !item.IsPending && item.IsRenameUnchanged)
         {
             item.CancelRename();
         }

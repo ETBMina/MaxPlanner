@@ -92,6 +92,9 @@ public sealed partial class CustomFieldEditorViewModel : ObservableObject
         FieldKind.Date => DraftDates.FromPicker(Date)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty,
         FieldKind.Lookup => SelectedOption?.Id?.Value.ToString("N") ?? string.Empty,
         FieldKind.People or FieldKind.Tags => string.Join(',', Tokens!.Ids.Select(id => id.ToString("N"))),
+
+        // A text box returns CR line breaks; stored text uses LF (ADR 0025).
+        FieldKind.MultilineText => LineBreaks.Normalize(Text).Trim(),
         _ => Text.Trim(),
     };
 

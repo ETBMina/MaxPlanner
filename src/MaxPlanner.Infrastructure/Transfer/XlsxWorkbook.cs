@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -12,6 +13,12 @@ namespace MaxPlanner.Infrastructure.Transfer;
 /// leading zeros and multiline text survive; business dates are real date cells; formulas are never written,
 /// evaluated, or accepted (T-10); both the 1900 and the 1904 date systems are recognized on read.
 /// </summary>
+/// <remarks>
+/// Text uses the OOXML <c>_xHHHH_</c> character escapes (ECMA-376 Part 1, 22.9.2.19; see <see cref="EscapeText"/>),
+/// decoded on read, so Excel shows the same text, any user text exports as valid XML, and workbooks authored in Excel
+/// (which write a carriage return as <c>_x000D_</c>) import correctly.
+/// Stored text has LF line breaks (ADR 0025), which Excel shows as line breaks.
+/// </remarks>
 internal static class XlsxWorkbook
 {
     /// <summary>Excel's per-cell text limit; longer content fails the export clearly instead of truncating (B-12).</summary>
@@ -91,7 +98,7 @@ internal static class XlsxWorkbook
                     }
 
                     // Inline strings keep identifiers (leading zeros) and user text exactly; they are never formulas.
-                    writer.WriteElement(new Cell(new InlineString(new Text(value) { Space = SpaceProcessingModeValues.Preserve })) { DataType = CellValues.InlineString });
+                    writer.WriteElement(new Cell(new InlineString(new Text(EscapeText(value)) { Space = SpaceProcessingModeValues.Preserve })) { DataType = CellValues.InlineString });
                     break;
             }
         }
@@ -129,7 +136,7 @@ internal static class XlsxWorkbook
             using var document = SpreadsheetDocument.Open(source, false, new OpenSettings { MaxCharactersInPart = TransferLimits.MaxExpandedBytes });
             var workbookPart = document.WorkbookPart ?? throw new TransferFormatException(TransferFailure.Malformed, "workbook");
             var is1904 = workbookPart.Workbook?.WorkbookProperties?.Date1904?.Value ?? false;
-            var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>().Select(s => s.InnerText).ToList() ?? [];
+            var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>().Select(s => UnescapeText(s.InnerText)).ToList() ?? [];
             var dateStyles = DateStyles(workbookPart.WorkbookStylesPart?.Stylesheet);
             foreach (var sheet in workbookPart.Workbook?.Sheets?.Elements<DocumentFormat.OpenXml.Spreadsheet.Sheet>() ?? [])
             {
@@ -206,7 +213,7 @@ internal static class XlsxWorkbook
         var type = cell.DataType?.Value;
         if (type == CellValues.InlineString)
         {
-            return cell.InlineString?.InnerText;
+            return cell.InlineString?.InnerText is { } inline ? UnescapeText(inline) : null;
         }
 
         if (type == CellValues.SharedString)
@@ -307,6 +314,107 @@ internal static class XlsxWorkbook
 
         return false;
     }
+
+    /// <summary>
+    /// Writes text as an OOXML string (ST_Xstring): every underscore that starts an escape-like <c>_xHHHH_</c> sequence
+    /// becomes <c>_x005F_</c>, and characters XML 1.0 cannot hold (C0 controls other than tab, LF, and CR; unpaired
+    /// surrogates; U+FFFE; U+FFFF) become <c>_xHHHH_</c>, as Excel writes them, so any text exports as valid XML. CR is
+    /// written as is: stored multiline text has none (ADR 0025), and JSON cells keep their line breaks readable.
+    /// </summary>
+    internal static string EscapeText(string text)
+    {
+        StringBuilder? escaped = null;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            string? replacement = null;
+            if (c == '_' && IsEscapeAt(text, i, out _))
+            {
+                replacement = "_x005F_";
+            }
+            else if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                escaped?.Append(c).Append(text[i + 1]);
+                i++;
+                continue;
+            }
+            else if (!IsXmlChar(c))
+            {
+                replacement = string.Create(CultureInfo.InvariantCulture, $"_x{(int)c:X4}_");
+            }
+
+            if (replacement is not null)
+            {
+                escaped ??= new StringBuilder(text.Length + 16).Append(text, 0, i);
+                escaped.Append(replacement);
+            }
+            else
+            {
+                escaped?.Append(c);
+            }
+        }
+
+        return escaped?.ToString() ?? text;
+    }
+
+    /// <summary>
+    /// Decodes OOXML <c>_xHHHH_</c> escapes left to right (so <c>_x005F_x0041_</c> reads as the literal <c>_x0041_</c>).
+    /// A high-surrogate escape decodes only together with a directly following low-surrogate escape; U+0000, U+FFFE,
+    /// U+FFFF, and unpaired surrogates stay literal text, so decoding never produces a string .NET or XML cannot hold.
+    /// </summary>
+    internal static string UnescapeText(string text)
+    {
+        if (!text.Contains("_x", StringComparison.Ordinal))
+        {
+            return text;
+        }
+
+        var decoded = new StringBuilder(text.Length);
+        var i = 0;
+        while (i < text.Length)
+        {
+            if (text[i] == '_' && IsEscapeAt(text, i, out var code))
+            {
+                if (char.IsHighSurrogate(code) && IsEscapeAt(text, i + EscapeLength, out var low) && char.IsLowSurrogate(low))
+                {
+                    decoded.Append(code).Append(low);
+                    i += 2 * EscapeLength;
+                    continue;
+                }
+
+                if (!char.IsSurrogate(code) && code is not ('\0' or '\uFFFE' or '\uFFFF'))
+                {
+                    decoded.Append(code);
+                    i += EscapeLength;
+                    continue;
+                }
+            }
+
+            decoded.Append(text[i]);
+            i++;
+        }
+
+        return decoded.ToString();
+    }
+
+    private const int EscapeLength = 7;
+
+    /// <summary>Whether <c>_xHHHH_</c> starts at <paramref name="index"/>, and the character it names.</summary>
+    private static bool IsEscapeAt(string text, int index, out char code)
+    {
+        code = default;
+        if (index + EscapeLength > text.Length || text[index] != '_' || text[index + 1] != 'x' || text[index + 6] != '_'
+            || !ushort.TryParse(text.AsSpan(index + 2, 4), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var value))
+        {
+            return false;
+        }
+
+        code = (char)value;
+        return true;
+    }
+
+    /// <summary>XML 1.0 characters within the BMP (surrogate pairs are handled by the caller).</summary>
+    private static bool IsXmlChar(char c) => c is '\t' or '\n' or '\r' or (>= '\u0020' and <= '\uD7FF') or (>= '\uE000' and <= '\uFFFD');
 
     private static int ColumnIndex(string reference)
     {

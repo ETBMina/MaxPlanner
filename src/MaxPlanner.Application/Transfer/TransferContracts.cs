@@ -3,6 +3,13 @@ using MaxPlanner.Application.Transfer.External;
 
 namespace MaxPlanner.Application.Transfer;
 
+/// <summary>Tabular (XLSX/CSV) column names that Application rules depend on; Infrastructure writes and reads the same names.</summary>
+public static class TransferColumns
+{
+    /// <summary>A task's link to its CR. When present (even blank) it is in <see cref="TransferTask.SuppliedFields"/> (ADR 0006).</summary>
+    public const string ChangeRequestId = "ChangeRequestId";
+}
+
 /// <summary>The T-10 design-default limits. The UI and every reader enforce the same values; nothing is truncated.</summary>
 public static class TransferLimits
 {

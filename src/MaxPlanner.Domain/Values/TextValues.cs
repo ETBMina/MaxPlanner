@@ -160,9 +160,12 @@ public sealed record ChecklistText
 
     public string Value { get; }
 
-    /// <summary>Blank text is a validation error; deleting an item is a separate explicit command (B-05).</summary>
+    /// <summary>
+    /// Blank text is a validation error; deleting an item is a separate explicit command (B-05). Imported items may
+    /// span lines, which are stored as LF (ADR 0025).
+    /// </summary>
     public static DomainResult<ChecklistText> Create(string? raw) =>
-        TextRules.RequiredLine(raw, DomainLimits.ChecklistText, "Text").Map(v => new ChecklistText(v));
+        TextRules.RequiredLine(raw is null ? null : LineBreaks.Normalize(raw), DomainLimits.ChecklistText, "Text").Map(v => new ChecklistText(v));
 
     public override string ToString() => Value;
 }

@@ -1110,8 +1110,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         Tags.Ids,
         FromPicker(StartDate),
         FromPicker(EndDate),
-        Notes,
-        [.. _checklist.Select(i => (i.Id, i.Text, i.IsCompleted))],
+        LineBreaks.Normalize(Notes),
+        [.. _checklist.Select(i => (i.Id, LineBreaks.Normalize(i.Text), i.IsCompleted))],
         CustomFields.Signature);
 
     private DraftValues ValuesOf(TaskReadModel model) => new(

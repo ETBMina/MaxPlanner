@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using static MaxPlanner.Infrastructure.Tests.Persistence.TestDataset;
 
@@ -30,7 +31,7 @@ public sealed class SingleDesignerDeveloperMigrationTests
         db.Execute(
             """
             DROP INDEX ux_task_people_task_role;
-            UPDATE app_metadata SET schema_version = 1, migration_history_json = json_remove(migration_history_json, '$[1]');
+            UPDATE app_metadata SET schema_version = 1, migration_history_json = json_remove(migration_history_json, '$[2]', '$[1]');
             PRAGMA user_version = 1;
             """);
         AddPerson(db, first, bob, "Designer", 1);
@@ -45,7 +46,7 @@ public sealed class SingleDesignerDeveloperMigrationTests
 
         await db.ReopenAsync();
 
-        db.Dataset.SchemaVersion.Should().Be(2);
+        db.Dataset.SchemaVersion.Should().Be(SqliteDataset.SupportedSchemaVersion);
         var tasks = (await db.SnapshotAsync()).Tasks;
         var several = tasks.Single(t => t.Id == first);
         several.DesignerId.Should().Be(alice, "Alice had the lowest position among the Designers");

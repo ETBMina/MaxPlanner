@@ -6,6 +6,7 @@ using MaxPlanner.Application.Lookups;
 using MaxPlanner.Application.Reviews;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
+using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Tasks;
@@ -412,7 +413,7 @@ public sealed partial class ReviewEditorViewModel : ObservableObject, IDialogVie
         Title,
         CrNumber,
         TaskNumber,
-        Comments,
+        LineBreaks.Normalize(Comments),
         IsDone,
         string.Join("\u001E", Services.Tokens.Select(t => t.Name)),
         string.Join("\u001E", Developer.Tokens.Select(t => t.Id)));

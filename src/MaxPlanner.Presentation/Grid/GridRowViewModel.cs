@@ -6,6 +6,7 @@ using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Projections;
@@ -315,7 +316,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
             GridColumns.Designer => !TokensEqual(PersonToken(baseModel.Task?.Designer).Select(t => t.Id)),
             GridColumns.Developer => !TokensEqual(PersonToken(baseModel.Task?.Developer).Select(t => t.Id)),
             GridColumns.Tags => !TokensEqual(baseModel.Task?.Tags.Select(t => t.Id.Value)),
-            GridColumns.Notes => !string.Equals(DraftText, (baseModel.Task is { } t ? t.Notes : baseModel.Card!.Notes) ?? string.Empty, StringComparison.Ordinal),
+            GridColumns.Notes => !string.Equals(LineBreaks.Normalize(DraftText), (baseModel.Task is { } t ? t.Notes : baseModel.Card!.Notes) ?? string.Empty, StringComparison.Ordinal),
             { } column when GridColumns.IsCustom(column) => DraftCustom is { } custom && baseModel.Task is { } owner
                 && custom.Signature != CustomFieldEditorViewModel.SignatureOf(custom.Field, owner.CustomValues.GetValueOrDefault(custom.Field.Id)),
             { } column => !string.Equals(DraftText, DisplayValueOf(baseModel, column), StringComparison.Ordinal),

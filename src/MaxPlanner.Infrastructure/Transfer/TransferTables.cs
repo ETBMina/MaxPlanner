@@ -60,7 +60,7 @@ internal static class TransferTables
     {
         TransferTable.Tasks =>
         [
-            new("Id", CellKind.Text), new("Title", CellKind.Text, true), new("OwnTitle", CellKind.Text), new("ChangeRequestId", CellKind.Text),
+            new("Id", CellKind.Text), new("Title", CellKind.Text, true), new("OwnTitle", CellKind.Text), new(TransferColumns.ChangeRequestId, CellKind.Text),
             new("CrNumber", CellKind.Text, true), new("TaskNumber", CellKind.Text, true), new("Squad", CellKind.Text, true), new("Owner", CellKind.Text, true),
             new("Service", CellKind.Text), new("StatusId", CellKind.Text), new("Status", CellKind.Text, true), new("PriorityId", CellKind.Text),
             new("Priority", CellKind.Text, true), new("DesignerIds", CellKind.Json), new("DeveloperIds", CellKind.Json), new("TagIds", CellKind.Json),
@@ -314,7 +314,7 @@ internal static class TransferTables
             foreach (var row in tasksTable.Rows)
             {
                 var id = r.RequiredGuid(row, "Id");
-                if (r.Guid(row, "ChangeRequestId") is { } cr)
+                if (r.Guid(row, TransferColumns.ChangeRequestId) is { } cr)
                 {
                     links.Add(new TransferLink(id, cr, null));
                 }

@@ -488,7 +488,7 @@ public sealed class TaskEditorTests
     }
 
     /// <summary>Answers dialog requests in place of the shell's host; each dialog's close request completes it.</summary>
-    private sealed class DialogRecorder : IDisposable
+    internal sealed class DialogRecorder : IDisposable
     {
         private readonly WorkspaceContext _context;
         private int _taken;

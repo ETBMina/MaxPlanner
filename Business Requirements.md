@@ -524,7 +524,7 @@ The user chooses **Entire dataset** or **Current view results** for export. Enti
 - Include internal IDs and explicit relationship IDs, in addition to human-readable number/label columns. Mark CR-derived task columns (Title for linked tasks, CR Number, TaskNumber, Squad, Owner) as informational; conflicting imported values must be resolved through an explicit CR update, never a task override.
 - Checklist items use one row per item with ParentTaskId, Id, Text, IsCompleted, Order. Do not use semicolon-delimited checkbox strings as the authoritative representation. Subtask cards use one row per card with ParentTaskId.
 - Use ISO date text or unambiguous native date cells with explicit formatting, UTC timestamp text, and text cells for identifiers. Collections/custom values use a documented JSON-cell encoding or normalized supporting sheets, not ambiguous comma splitting.
-- Import handles required/optional sheets by name, previews mappings, and reports unknown/missing columns. Preserve leading zeros and multiline content.
+- Import handles required/optional sheets by name, previews mappings, and reports unknown/missing columns. Preserve leading zeros and multiline content. Line breaks are stored and exported as LF (`\n`); imported CR and CRLF line breaks become LF (ADR 0025).
 - XLSX is a business-data transfer, not a byte-for-byte database backup. If an Excel cell limit prevents export, fail clearly and direct the user to JSON; do not truncate.
 
 #### CSV
