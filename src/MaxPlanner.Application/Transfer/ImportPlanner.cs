@@ -76,6 +76,14 @@ public static partial class ImportPlanner
         return new Run(document, snapshot, mode, context, options, nowUtc).Execute();
     }
 
+    private const string CustomValuePrefix = "CustomValues:";
+
+    /// <summary>
+    /// ADR 0027: the supplied-field member of one custom field. A partial source (an external table) that supplies it,
+    /// rather than <c>CustomValues</c> as a whole, changes only that field of an existing record; an absent value clears it.
+    /// </summary>
+    public static string CustomValueMember(Guid fieldId) => CustomValuePrefix + fieldId.ToString("D");
+
     private static bool Supplied(IReadOnlySet<string>? supplied, string member) => supplied is null || supplied.Contains(member);
 
     private sealed partial class Run(TransferDocument doc, ReadSnapshot snapshot, ImportMode mode, ImportContext context, ImportOptions? options, DateTimeOffset now)
@@ -329,6 +337,13 @@ public static partial class ImportPlanner
                         continue;
                     }
 
+                    if (context.SourceNamespace is not null && !existing.IsActive)
+                    {
+                        // ADR 0027: an external source only creates fields, and never writes values into a turned-off one.
+                        Add(ImportSeverity.Error, ImportEntity.Field, key, ImportFindingCodes.FieldInactive, null, fieldKey.Value.Display);
+                        continue;
+                    }
+
                     _fieldMap[source.Id] = existing.Id.Value;
                     if (existing.Id.Value != source.Id)
                     {
@@ -465,7 +480,11 @@ public static partial class ImportPlanner
             _taskStatuses.Any(s => s.Id.Value == id) || _crStatuses.Any(s => s.Id.Value == id) || _priorities.Any(p => p.Id.Value == id)
             || _squads.Any(s => s.Id.Value == id) || _people.Any(p => p.Id.Value == id) || _tags.Any(t => t.Id.Value == id);
 
-        private Guid? MapOption(Guid id) => _optionMap.TryGetValue(id, out var mapped) ? mapped : null;
+        /// <summary>A file option's target option; an external source names the options of existing fields directly (ADR 0027).</summary>
+        private Guid? MapOption(Guid id) =>
+            _optionMap.TryGetValue(id, out var mapped) ? mapped
+            : context.SourceNamespace is not null && _fields.Any(f => f.Options.Any(o => o.Id.Value == id)) ? id
+            : null;
 
         private T? Resolve<T>(Guid? id, IEnumerable<T> definitions, Func<T, Guid> idOf, string field, List<DomainError> errors)
             where T : class
@@ -554,6 +573,40 @@ public static partial class ImportPlanner
             }
 
             return values.AsReadOnly();
+        }
+
+        /// <summary>
+        /// The custom values a record gets: all supplied values (values of inactive fields are kept, B-11), only the
+        /// fields supplied one by one (<see cref="CustomValueMember"/>, ADR 0027), or the stored values unchanged.
+        /// </summary>
+        private IReadOnlyDictionary<FieldId, CustomValue> PlannedCustomValues(
+            IReadOnlySet<string>? supplied,
+            IReadOnlyDictionary<string, TransferValue>? source,
+            IReadOnlyDictionary<FieldId, CustomValue>? stored,
+            FieldTarget target,
+            List<DomainError> errors)
+        {
+            stored ??= CustomValue.NoValues;
+            if (Supplied(supplied, nameof(TransferTask.CustomValues)))
+            {
+                return CustomFieldPolicy.MergeForUpdate(target, _fields, stored, CustomValues(source, target, errors));
+            }
+
+            var fields = supplied!.Where(m => m.StartsWith(CustomValuePrefix, StringComparison.Ordinal))
+                .Select(m => Guid.TryParse(m.AsSpan(CustomValuePrefix.Length), out var id) ? new FieldId(_fieldMap.TryGetValue(id, out var mapped) ? mapped : id) : (FieldId?)null)
+                .OfType<FieldId>().ToList();
+            if (fields.Count == 0)
+            {
+                return stored;
+            }
+
+            var merged = stored.Where(v => !fields.Contains(v.Key)).ToDictionary();
+            foreach (var (id, value) in CustomValues(source, target, errors))
+            {
+                merged[id] = value;
+            }
+
+            return merged.AsReadOnly();
         }
 
         private void RequireCustomFields(FieldTarget target, IReadOnlyDictionary<FieldId, CustomValue> values, List<DomainError> errors) =>
@@ -767,9 +820,7 @@ public static partial class ImportPlanner
             var url = Supplied(s, nameof(source.SolutionDesignUrl)) ? Check(HttpUrl.CreateOptional(source.SolutionDesignUrl), errors) : existing?.SolutionDesignUrl;
             var description = Supplied(s, nameof(source.Description)) ? Check(LongText.CreateOptional(source.Description, "Description"), errors) : existing?.Description;
             var taskNumber = Supplied(s, nameof(source.TaskNumber)) ? Check(TaskNumber.CreateOptional(source.TaskNumber), errors) : existing?.TaskNumber;
-            var custom = Supplied(s, nameof(source.CustomValues))
-                ? CustomFieldPolicy.MergeForUpdate(FieldTarget.ChangeRequest, _fields, existing?.CustomValues ?? CustomValue.NoValues, CustomValues(source.CustomValues, FieldTarget.ChangeRequest, errors))
-                : existing?.CustomValues ?? CustomValue.NoValues;
+            var custom = PlannedCustomValues(s, source.CustomValues, existing?.CustomValues, FieldTarget.ChangeRequest, errors);
             RequireCustomFields(FieldTarget.ChangeRequest, custom, errors);
             return number is null || title is null || owner is null || priority is null
                 ? null
@@ -982,9 +1033,7 @@ public static partial class ImportPlanner
             var start = Supplied(s, nameof(source.StartDate)) ? source.StartDate : existing?.Dates.Start;
             var end = Supplied(s, nameof(source.EndDate)) ? source.EndDate : existing?.Dates.End;
             var archived = Supplied(s, nameof(source.IsArchived)) ? source.IsArchived ?? false : existing?.IsArchived ?? false;
-            var custom = Supplied(s, nameof(source.CustomValues))
-                ? CustomFieldPolicy.MergeForUpdate(FieldTarget.Task, _fields, existing?.CustomValues ?? CustomValue.NoValues, CustomValues(source.CustomValues, FieldTarget.Task, errors))
-                : existing?.CustomValues ?? CustomValue.NoValues;
+            var custom = PlannedCustomValues(s, source.CustomValues, existing?.CustomValues, FieldTarget.Task, errors);
             RequireCustomFields(FieldTarget.Task, custom, errors);
             var checklist = Supplied(s, nameof(source.ChecklistItems)) ? Checklist(source.ChecklistItems, errors) : existing?.ChecklistItems.ToList() ?? [];
             if (errors.Count > 0 || status is null || priority is null)

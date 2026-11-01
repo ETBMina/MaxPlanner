@@ -118,7 +118,8 @@ internal sealed class DatasetSession : IAsyncDisposable
             TransferAdapters.CreateExternalReader(),
             Dataset.ImportState,
             new DataMaintenanceService(Dataset, _provider.GetRequiredService<TimeProvider>(), restore, _provider.GetRequiredService<ILogger<DataMaintenanceService>>()),
-            pickers);
+            pickers,
+            _provider.GetRequiredService<TimeProvider>());
         Workspace ??= new WorkspaceViewModel(
             Store,
             _provider.GetRequiredService<WorkspaceUseCases>(),

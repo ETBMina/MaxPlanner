@@ -3442,7 +3442,7 @@
     <value>Ambiguous header: choose a field</value>
   </data>
   <data name="Import_Field_Ignore" xml:space="preserve">
-    <value>Don't import (keep as preserved content)</value>
+    <value>Don't import</value>
   </data>
   <data name="Import_Field_SourceId" xml:space="preserve">
     <value>Source ID</value>
@@ -3512,6 +3512,42 @@
   </data>
   <data name="Import_Field_CompletedOn" xml:space="preserve">
     <value>Completed on</value>
+  </data>
+  <data name="Import_Field_Created" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="Import_Field_ChecklistItems" xml:space="preserve">
+    <value>Checklist items</value>
+  </data>
+  <data name="Import_Field_Custom" xml:space="preserve">
+    <value>Custom field: {0}</value>
+  </data>
+  <data name="Import_Field_CreateCustom" xml:space="preserve">
+    <value>Create custom field…</value>
+  </data>
+  <data name="Import_Unmapped_Keep" xml:space="preserve">
+    <value>Keep hidden</value>
+  </data>
+  <data name="Import_Unmapped_Discard" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="Import_UnmappedComboName" xml:space="preserve">
+    <value>Unmapped values of {0}</value>
+  </data>
+  <data name="Import_NewFieldLabelBox.Header" xml:space="preserve">
+    <value>New field label</value>
+  </data>
+  <data name="Import_NewFieldKindCombo.Header" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Import_NewFieldLabelName" xml:space="preserve">
+    <value>New field label for {0}</value>
+  </data>
+  <data name="Import_NewFieldKindName" xml:space="preserve">
+    <value>New field kind for {0}</value>
+  </data>
+  <data name="Import_UnmappedSummary" xml:space="preserve">
+    <value>Unmapped columns: {0} kept hidden, {1} discarded.</value>
   </data>
   <data name="Import_NoDecisionsText.Text" xml:space="preserve">
     <value>Nothing needs a decision. Select Next to preview the import.</value>
@@ -3760,7 +3796,7 @@
     <value>Two columns are mapped to {0}. Map one of them to another field.</value>
   </data>
   <data name="Import_Finding_unknowncolumn" xml:space="preserve">
-    <value>Column {1} is not mapped; its values are kept as preserved content.</value>
+    <value>Column {1} is not mapped; its values are kept hidden with each record.</value>
   </data>
   <data name="Import_Finding_missingcolumn" xml:space="preserve">
     <value>No column is mapped to {0}.</value>
@@ -3812,6 +3848,39 @@
   </data>
   <data name="Import_Finding_defaultsinvalid" xml:space="preserve">
     <value>The business defaults don't match the file's values.</value>
+  </data>
+  <data name="Import_Finding_invalidcreated" xml:space="preserve">
+    <value>Created "{1}" is not an ISO date or date-time.</value>
+  </data>
+  <data name="Import_Finding_createdinfuture" xml:space="preserve">
+    <value>Created "{1}" is later than the import time.</value>
+  </data>
+  <data name="Import_Finding_invalidcustomvalue" xml:space="preserve">
+    <value>"{1}" is not a valid value for the custom field {0}.</value>
+  </data>
+  <data name="Import_Finding_customfieldinvalid" xml:space="preserve">
+    <value>The custom field for {1} can't be used or created: the label is empty or too long, or the field is no longer available. Change the label, or choose another field.</value>
+  </data>
+  <data name="Import_Finding_columndiscarded" xml:space="preserve">
+    <value>Column {1} is not mapped; its values are discarded.</value>
+  </data>
+  <data name="Import_Finding_columnnotstored" xml:space="preserve">
+    <value>Column {1} is not mapped. Reviews and General to-dos don't keep unmapped values, so its values are discarded.</value>
+  </data>
+  <data name="Import_Finding_lookupfieldvalues" xml:space="preserve">
+    <value>Custom field {1} can't be a Lookup: it needs between 1 and 200 different values. Choose Text instead.</value>
+  </data>
+  <data name="Import_Finding_invalidchecklist" xml:space="preserve">
+    <value>The checklist list has entries that are not text.</value>
+  </data>
+  <data name="Import_Finding_checklistconflict" xml:space="preserve">
+    <value>The record has a checklist in its body and a mapped Checklist items column. Map the column to another field.</value>
+  </data>
+  <data name="Import_Finding_fieldinactive" xml:space="preserve">
+    <value>Custom field {1} exists but is turned off. Turn it back on in Settings, or use another label.</value>
+  </data>
+  <data name="Import_NotStoredText.Text" xml:space="preserve">
+    <value>Not imported: reviews and General to-dos don't keep unmapped values.</value>
   </data>
   <data name="Restore_Step_Choose" xml:space="preserve">
     <value>Choose backup</value>

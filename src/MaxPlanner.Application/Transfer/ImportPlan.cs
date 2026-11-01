@@ -123,6 +123,38 @@ public static class ImportFindingCodes
 
     /// <summary>A field's People or Tags default names a value the configuration does not have; that value is dropped.</summary>
     public const string DefaultDropped = "default-dropped";
+
+    // ADR 0027: external mapping targets and unmapped columns.
+
+    /// <summary>A Created value is not an ISO date or date-time.</summary>
+    public const string InvalidCreated = "invalid-created";
+
+    /// <summary>A Created value is later than the import time.</summary>
+    public const string CreatedInFuture = "created-in-future";
+
+    /// <summary>A value is not valid for the kind of the custom field its column maps to; the field is its label.</summary>
+    public const string InvalidCustomValue = "invalid-custom-value";
+
+    /// <summary>A column's custom field cannot be used or created (label, key, or field); the detail is the label.</summary>
+    public const string CustomFieldInvalid = "custom-field-invalid";
+
+    /// <summary>An unmapped column the user chose to discard; the detail is the column.</summary>
+    public const string ColumnDiscarded = "column-discarded";
+
+    /// <summary>An unmapped column of a review or General to-do table, which have no preserved metadata; the detail is the column.</summary>
+    public const string ColumnNotStored = "column-not-stored";
+
+    /// <summary>A new Lookup field has no values, or more distinct values than a Lookup takes; the detail is the label.</summary>
+    public const string LookupFieldValues = "lookup-field-values";
+
+    /// <summary>A checklist list has elements that are not text.</summary>
+    public const string InvalidChecklist = "invalid-checklist";
+
+    /// <summary>A record has a checklist both in its Markdown body and in a mapped Checklist items column.</summary>
+    public const string ChecklistConflict = "checklist-conflict";
+
+    /// <summary>A custom field an external source creates matches an existing field that is turned off; the detail is its key.</summary>
+    public const string FieldInactive = "field-inactive";
 }
 
 /// <summary>ADR 0026: what an export writes or an import applies.</summary>

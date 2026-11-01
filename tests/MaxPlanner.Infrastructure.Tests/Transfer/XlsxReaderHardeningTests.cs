@@ -75,6 +75,37 @@ public sealed class XlsxReaderHardeningTests : IDisposable
         read.Should().Throw<TransferFormatException>().Which.Should().Match<TransferFormatException>(e => e.Failure == TransferFailure.Malformed && e.Detail == "Tasks!B2");
     }
 
+    [Theory]
+    [Trait("Adr", "0027")]
+    [InlineData(false, "45000.5", "2023-03-15T12:00:00")]
+    [InlineData(true, "45000.25", "2027-03-16T06:00:00")]
+    [InlineData(false, "45000.99999999", "2023-03-16T00:00:00")]
+    public void An_external_read_turns_a_date_time_cell_into_local_iso_text(bool date1904, string serial, string expected)
+    {
+        var bytes = Create([Sheet("Tasks", Header("Created"), Row(Number(serial, DateStyle)))], date1904, Styles(22));
+
+        ReadExternal(bytes)["Tasks"].Rows.Single()[0].Should().Be(expected);
+    }
+
+    [Theory]
+    [Trait("Adr", "0027")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    [InlineData("2958465.5")]
+    [InlineData("9999999999.5")]
+    [InlineData("-700000.5")]
+    [InlineData("1E+300")]
+    public void A_non_finite_or_out_of_range_date_serial_is_malformed_never_an_exception(string serial)
+    {
+        var bytes = Create([Sheet("Tasks", Header("Id", "Created"), Row(Text("x").At("A2"), Number(serial, DateStyle).At("B2")))], stylesheet: Styles(22));
+
+        foreach (var read in new Func<object>[] { () => ReadExternal(bytes), () => Read(bytes) })
+        {
+            read.Should().Throw<TransferFormatException>().Which.Should().Match<TransferFormatException>(e => e.Failure == TransferFailure.Malformed && e.Detail == "Tasks!B2");
+        }
+    }
+
     [Fact]
     public async Task Date_text_that_is_not_iso_is_rejected_with_its_location()
     {
@@ -343,7 +374,7 @@ public sealed class XlsxReaderHardeningTests : IDisposable
         using var stream = new MemoryStream(Create([Sheet("Tasks", Header("Id"), Row(Text("a")))]), writable: false);
         cancellation.Cancel();
 
-        var read = () => XlsxWorkbook.Read(stream, cancellation.Token);
+        var read = () => XlsxWorkbook.Read(stream, allowDateTimes: false, cancellation.Token);
 
         read.Should().Throw<OperationCanceledException>();
     }
@@ -358,7 +389,7 @@ public sealed class XlsxReaderHardeningTests : IDisposable
         // The second pass over the stream is the package read (the first is the ZIP check); once it has consumed half of
         // the file, which is almost all worksheet XML, the token is cancelled while rows are still being parsed.
         using var stream = new CancelAfterStream(bytes, bytes.Length / 2, cancellation);
-        var read = () => XlsxWorkbook.Read(stream, cancellation.Token);
+        var read = () => XlsxWorkbook.Read(stream, allowDateTimes: false, cancellation.Token);
 
         read.Should().Throw<OperationCanceledException>();
         stream.CancelledAt.Should().NotBeNull().And.BeLessThan(bytes.Length, "cancellation happened before the workbook was fully read");

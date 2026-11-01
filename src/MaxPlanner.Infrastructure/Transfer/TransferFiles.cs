@@ -211,7 +211,7 @@ internal sealed class TransferFileReader : ITransferFileReader
     private static TransferDocument ReadWorkbook(byte[] bytes, CancellationToken cancellationToken)
     {
         using var stream = new MemoryStream(bytes, writable: false);
-        var sheets = XlsxWorkbook.Read(stream, cancellationToken);
+        var sheets = XlsxWorkbook.Read(stream, allowDateTimes: false, cancellationToken);
         var definitions = TransferTables.ReadDefinitions(
             sheets.GetValueOrDefault(TransferTables.MetadataSheet),
             sheets.GetValueOrDefault(TransferTables.LookupsSheet),

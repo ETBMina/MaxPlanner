@@ -73,6 +73,7 @@ public interface IFilePickerService
 }
 
 /// <summary>Everything the Data page needs (B-12, B-13, T-09); null parts disable the matching workflow (tests).</summary>
+/// <param name="Time">The app clock and local time zone (ADR 0027: an external import's time and its Created zone); the system clock when null.</param>
 public sealed record DataServices(
     ExportTransfer Export,
     ImportTransfer Import,
@@ -80,4 +81,5 @@ public sealed record DataServices(
     IExternalSourceReader ExternalReader,
     IImportStateReader ImportState,
     IDataMaintenance Maintenance,
-    IFilePickerService Pickers);
+    IFilePickerService Pickers,
+    TimeProvider? Time = null);

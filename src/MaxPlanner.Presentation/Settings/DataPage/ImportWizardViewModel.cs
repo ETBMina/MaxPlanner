@@ -6,6 +6,8 @@ using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Transfer;
 using MaxPlanner.Application.Transfer.External;
+using MaxPlanner.Domain.Fields;
+using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -135,6 +137,10 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
 
     [ObservableProperty]
     public partial string PresenceText { get; private set; } = string.Empty;
+
+    /// <summary>ADR 0027: how many unmapped columns of the imported tables are kept hidden and how many are discarded.</summary>
+    [ObservableProperty]
+    public partial string UnmappedText { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial string ResultText { get; private set; } = string.Empty;
@@ -281,16 +287,16 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         }
 
         _source = source.Value;
+        var workflow = _context.Store.CurrentWorkflow;
         Tables.Clear();
         foreach (var table in _source.Tables)
         {
-            Tables.Add(new ImportTableViewModel(table, Entities, EntityChoices, Strings, Tables.Count));
+            Tables.Add(new ImportTableViewModel(table, Entities, EntityChoices, Strings, workflow?.Fields ?? [], Tables.Count));
         }
 
         ValueChoices.Clear();
         CrConflicts.Clear();
         CrReferenceChoices.Clear();
-        var workflow = _context.Store.CurrentWorkflow;
         People = [.. (workflow?.People ?? []).OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase)];
         OwnerChoices = [Strings.GetString("Import_NoFallbackOwner"), .. People.Select(p => p.Name.Display)];
         var defaultOwner = workflow?.Defaults.DefaultCrOwnerId;
@@ -314,10 +320,13 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         }
 
         var existingCrs = _context.Store.ChangeRequests.Items.ToDictionary(c => c.NormalizedNumber, c => c.Id.Value, StringComparer.Ordinal);
+        var time = _services.Time ?? TimeProvider.System;
         var options = new ExternalImportOptions
         {
             SourceNamespace = SourceNamespace.Trim(),
             Mode = ModeIndex == 1 ? ImportMode.Merge : ImportMode.CreateOnly,
+            NowUtc = time.GetUtcNow(),
+            TimeZone = time.LocalTimeZone,
             Tables = [.. Tables.Select(t => t.ToMapping())],
             ValueChoices = ValueChoices.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => (Guid?)c.Values[c.SelectedIndex]),
             CrValueChoices = CrConflicts.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => (string?)c.Values[c.SelectedIndex]),
@@ -425,6 +434,9 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         // imports no records, so there is nothing to say.
         PresenceText = plan.Content == TransferContent.ConfigurationOnly ? string.Empty
             : absent.Count == 0 ? Strings.GetString("Import_PresenceAll") : Strings.Format("Import_PresenceAbsent", string.Join(", ", absent));
+        var unmapped = IsExternal ? Tables.Where(t => t.IsImported).SelectMany(t => t.Columns).Where(c => c.IsIgnored).ToList() : [];
+        UnmappedText = unmapped.Count == 0 ? string.Empty
+            : Strings.Format("Import_UnmappedSummary", Number(unmapped.Count(c => !c.IsDiscarded)), Number(unmapped.Count(c => c.IsDiscarded)));
         RefreshCommands();
         return true;
     }
@@ -603,16 +615,25 @@ public sealed partial class ImportTableViewModel : ObservableObject
 {
     private readonly IReadOnlyList<ExternalEntity> _entities;
     private readonly ILocalizedStrings _strings;
+    private readonly IReadOnlyList<FieldDefinition> _customFields;
     private readonly int _index;
 
+    /// <param name="customFields">The dataset's active custom fields, offered as mapping targets (ADR 0027).</param>
     /// <param name="index">The table's position in the source, which keys its AutomationIds (design §8.1: never display text).</param>
-    public ImportTableViewModel(ExternalTable table, IReadOnlyList<ExternalEntity> entities, IReadOnlyList<string> entityChoices, ILocalizedStrings strings, int index = 0)
+    public ImportTableViewModel(
+        ExternalTable table,
+        IReadOnlyList<ExternalEntity> entities,
+        IReadOnlyList<string> entityChoices,
+        ILocalizedStrings strings,
+        IReadOnlyList<FieldDefinition> customFields,
+        int index = 0)
     {
         Table = table;
         _index = index;
         EntityAutomationId = "Data_ImportEntityCombo_" + index.ToString(CultureInfo.InvariantCulture);
         _entities = entities;
         _strings = strings;
+        _customFields = customFields;
         EntityChoices = entityChoices;
         RowCountText = strings.Format("Import_TableRows", table.Rows.Count);
         EntityIndex = Math.Max(0, entities.ToList().IndexOf(table.SuggestedEntity ?? ExternalEntity.Task));
@@ -633,48 +654,189 @@ public sealed partial class ImportTableViewModel : ObservableObject
     [ObservableProperty]
     public partial int EntityIndex { get; set; } = -1;
 
-    public ExternalTableMapping ToMapping() => new(Table.Name, Entity, [.. Columns.Select(c => c.Field)]);
+    public ExternalTableMapping ToMapping()
+    {
+        var indexed = Columns.Select((column, index) => (Column: column, Index: index)).ToList();
+        return new(Table.Name, Entity, [.. Columns.Select(c => c.Field)])
+        {
+            CustomFields = indexed.Where(c => c.Column.CustomFieldChoice is not null).ToDictionary(c => c.Index, c => c.Column.CustomFieldChoice!),
+            DiscardedColumns = indexed.Where(c => c.Column.IsDiscarded).Select(c => c.Index).ToHashSet(),
+        };
+    }
+
+    /// <summary>The table is imported (its entity is not Ignore).</summary>
+    public bool IsImported => Entity != ExternalEntity.Ignore;
 
     private ExternalEntity Entity => EntityIndex >= 0 && EntityIndex < _entities.Count ? _entities[EntityIndex] : ExternalEntity.Ignore;
 
     partial void OnEntityIndexChanged(int value)
     {
         // B-13.2: aliases propose a field for each column; an ambiguous header stays unmapped and is flagged for review.
+        // ADR 0027: the active custom fields of the entity follow the built-in fields, then "Create custom field…".
         Columns.Clear();
-        var fields = ExternalFieldAliases.FieldsFor(Entity);
-        var proposals = ExternalFieldAliases.Propose(Entity, Table.Columns);
+        var choices = ExternalFieldAliases.FieldsFor(Entity).Select(f => new ImportFieldChoice(_strings.GetString("Import_Field_" + f), f, null)).ToList();
+        var target = ExternalFieldAliases.CustomFieldTarget(Entity);
+        var fields = _customFields.Where(f => f.Target == target && f.IsActive).OrderBy(f => f.DisplayOrder).ToList();
+        choices.AddRange(fields.Select(f => new ImportFieldChoice(_strings.Format("Import_Field_Custom", f.Label.Display), ExternalField.CustomField, f.Id.Value)));
+        if (target is not null)
+        {
+            choices.Add(new ImportFieldChoice(_strings.GetString("Import_Field_CreateCustom"), ExternalField.CustomField, null));
+        }
+
+        var proposals = ExternalFieldAliases.Propose(Entity, Table.Columns, Table.Kind);
+        var kindChoices = ExternalValues.CreatableKinds.Select(k => _strings.GetString("FieldKind_" + k)).ToList();
+        IReadOnlyList<string> unmappedChoices = [_strings.GetString("Import_Unmapped_Keep"), _strings.GetString("Import_Unmapped_Discard")];
         for (var i = 0; i < Table.Columns.Count; i++)
         {
-            var sample = Table.Rows.Select(r => i < r.Values.Count ? r.Values[i] : null).FirstOrDefault(v => v is { IsEmpty: false });
+            var values = Table.Rows.Select(r => i < r.Values.Count ? r.Values[i] : null).ToList();
+            var sample = values.FirstOrDefault(v => v is { IsEmpty: false });
             var sampleText = sample?.Text ?? (sample?.Items is { } items ? string.Join(", ", items) : string.Empty);
-            Columns.Add(new ImportColumnViewModel(Table.Columns[i], sampleText.Length > 80 ? sampleText[..80] + "…" : sampleText, fields,
-                [.. fields.Select(f => _strings.GetString("Import_Field_" + f))], Math.Max(0, fields.ToList().IndexOf(proposals[i].Field)), proposals[i].IsAmbiguous)
+            var header = Table.Columns[i];
+            var proposed = proposals[i].Field != ExternalField.Ignore || proposals[i].IsAmbiguous
+                ? choices.FindIndex(c => c.Field == proposals[i].Field && c.CustomFieldId is null)
+                : choices.FindIndex(c => c.CustomFieldId is { } id && fields.Any(f => f.Id.Value == id && IsSameName(f, header)));
+            Columns.Add(new ImportColumnViewModel(header, sampleText.Length > 80 ? sampleText[..80] + "…" : sampleText, choices, Math.Max(0, proposed), proposals[i].IsAmbiguous,
+                () => ExternalValues.SuggestKind(values), kindChoices, unmappedChoices, _strings, canKeepHidden: target is not null)
             {
                 AutomationId = string.Create(CultureInfo.InvariantCulture, $"Data_ImportFieldCombo_{_index}_{i}"),
+                UnmappedAutomationId = string.Create(CultureInfo.InvariantCulture, $"Data_ImportUnmappedCombo_{_index}_{i}"),
+                NewFieldLabelAutomationId = string.Create(CultureInfo.InvariantCulture, $"Data_ImportNewFieldLabelBox_{_index}_{i}"),
+                NewFieldKindAutomationId = string.Create(CultureInfo.InvariantCulture, $"Data_ImportNewFieldKindCombo_{_index}_{i}"),
             });
         }
     }
+
+    /// <summary>A header that is an existing custom field's label or key proposes that field, so a repeated import reuses it.</summary>
+    private static bool IsSameName(FieldDefinition field, string header) =>
+        LookupName.Create(header, "Label") is { IsSuccess: true } name
+        && (name.Value.Normalized == field.Label.Normalized || string.Equals(header.Trim(), field.Key.Display, StringComparison.OrdinalIgnoreCase));
 }
 
-/// <summary>One source column and the field it maps to.</summary>
-public sealed partial class ImportColumnViewModel(string header, string sample, IReadOnlyList<ExternalField> fields, IReadOnlyList<string> fieldChoices, int fieldIndex, bool isAmbiguous) : ObservableObject
+/// <summary>A mapping target in a column's field ComboBox: a built-in field, an existing custom field, or Create.</summary>
+/// <param name="CustomFieldId">The existing custom field; null with <see cref="ExternalField.CustomField"/> means Create.</param>
+public sealed record ImportFieldChoice(string Text, ExternalField Field, Guid? CustomFieldId);
+
+/// <summary>One source column, the field it maps to, and (ADR 0027) a new field's label and kind or an unmapped column's keep-or-discard choice.</summary>
+public sealed partial class ImportColumnViewModel : ObservableObject
 {
-    public string Header { get; } = header;
+    private readonly IReadOnlyList<ImportFieldChoice> _choices;
+
+    // Reads every value of the column, so it runs once, when Create custom field… is first chosen.
+    private Func<FieldKind>? _suggestKind;
+
+    /// <param name="suggestKind">The kind suggested from the column's values (ADR 0027).</param>
+    public ImportColumnViewModel(
+        string header,
+        string sample,
+        IReadOnlyList<ImportFieldChoice> choices,
+        int fieldIndex,
+        bool isAmbiguous,
+        Func<FieldKind> suggestKind,
+        IReadOnlyList<string> kindChoices,
+        IReadOnlyList<string> unmappedChoices,
+        ILocalizedStrings strings,
+        bool canKeepHidden = true)
+    {
+        ArgumentNullException.ThrowIfNull(strings);
+        _choices = choices;
+        Header = header;
+        Sample = sample;
+        FieldChoices = [.. choices.Select(c => c.Text)];
+        IsAmbiguous = isAmbiguous;
+        KindChoices = kindChoices;
+        UnmappedChoices = unmappedChoices;
+        CanKeepHidden = canKeepHidden;
+        NewFieldLabel = header.Trim();
+        _suggestKind = suggestKind;
+        UnmappedName = strings.Format("Import_UnmappedComboName", header);
+        NewFieldLabelName = strings.Format("Import_NewFieldLabelName", header);
+        NewFieldKindName = strings.Format("Import_NewFieldKindName", header);
+        FieldIndex = fieldIndex;
+    }
+
+    public string Header { get; }
 
     /// <summary><c>Data_ImportFieldCombo_{table}_{column}</c>, positional (design §8.1: never display text).</summary>
     public string AutomationId { get; init; } = string.Empty;
 
-    public string Sample { get; } = sample;
+    public string UnmappedAutomationId { get; init; } = string.Empty;
 
-    public IReadOnlyList<string> FieldChoices { get; } = fieldChoices;
+    public string NewFieldLabelAutomationId { get; init; } = string.Empty;
+
+    public string NewFieldKindAutomationId { get; init; } = string.Empty;
+
+    public string UnmappedName { get; }
+
+    public string NewFieldLabelName { get; }
+
+    public string NewFieldKindName { get; }
+
+    public string Sample { get; }
+
+    public IReadOnlyList<string> FieldChoices { get; }
+
+    public IReadOnlyList<string> KindChoices { get; }
+
+    /// <summary>Keep hidden (default) / Discard.</summary>
+    public IReadOnlyList<string> UnmappedChoices { get; }
 
     /// <summary>The header matched more than one field's aliases (B-13.2: ambiguous mappings require review).</summary>
-    public bool IsAmbiguous { get; } = isAmbiguous;
+    public bool IsAmbiguous { get; }
 
     [ObservableProperty]
-    public partial int FieldIndex { get; set; } = fieldIndex;
+    [NotifyPropertyChangedFor(nameof(IsIgnored), nameof(IsNewField), nameof(ShowsKeepChoice), nameof(ShowsNotStored))]
+    public partial int FieldIndex { get; set; }
 
-    public ExternalField Field => FieldIndex >= 0 && FieldIndex < fields.Count ? fields[FieldIndex] : ExternalField.Ignore;
+    /// <summary>0 Keep hidden (ADR 0027 default), 1 Discard.</summary>
+    [ObservableProperty]
+    public partial int UnmappedIndex { get; set; }
+
+    /// <summary>The new custom field's label; the column header is proposed.</summary>
+    [ObservableProperty]
+    public partial string NewFieldLabel { get; set; }
+
+    /// <summary>The new field's kind in <see cref="ExternalValues.CreatableKinds"/>; the kind suggested from the values is proposed.</summary>
+    [ObservableProperty]
+    public partial int NewFieldKindIndex { get; set; }
+
+    public ExternalField Field => Choice?.Field ?? ExternalField.Ignore;
+
+    public bool IsIgnored => Field == ExternalField.Ignore;
+
+    public bool IsNewField => Choice is { Field: ExternalField.CustomField, CustomFieldId: null };
+
+    /// <summary>The column's values are stored nowhere: the user chose Discard, or its table has no preserved metadata.</summary>
+    public bool IsDiscarded => IsIgnored && (!CanKeepHidden || UnmappedIndex == 1);
+
+    /// <summary>
+    /// ADR 0027: tasks and CRs keep unmapped values hidden unless discarded; reviews and General to-dos have no preserved
+    /// metadata, so their unmapped columns are always discarded.
+    /// </summary>
+    public bool CanKeepHidden { get; }
+
+    public bool ShowsKeepChoice => IsIgnored && CanKeepHidden;
+
+    public bool ShowsNotStored => IsIgnored && !CanKeepHidden;
+
+    /// <summary>The custom field of a column mapped to one; null otherwise.</summary>
+    public ExternalCustomFieldChoice? CustomFieldChoice => Choice switch
+    {
+        { Field: ExternalField.CustomField, CustomFieldId: { } id } => ExternalCustomFieldChoice.Existing(id),
+        { Field: ExternalField.CustomField } => ExternalCustomFieldChoice.New(NewFieldLabel,
+            ExternalValues.CreatableKinds[Math.Clamp(NewFieldKindIndex, 0, ExternalValues.CreatableKinds.Count - 1)]),
+        _ => null,
+    };
+
+    private ImportFieldChoice? Choice => FieldIndex >= 0 && FieldIndex < _choices.Count ? _choices[FieldIndex] : null;
+
+    partial void OnFieldIndexChanged(int value)
+    {
+        if (IsNewField && _suggestKind is { } suggest)
+        {
+            _suggestKind = null;
+            NewFieldKindIndex = Math.Max(0, ExternalValues.CreatableKinds.ToList().IndexOf(suggest()));
+        }
+    }
 }
 
 /// <summary>A decision in the Lookups and relationships step: a value mapping, a CR-level value, or a task's one CR.</summary>

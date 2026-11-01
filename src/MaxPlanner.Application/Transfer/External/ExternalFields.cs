@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using MaxPlanner.Domain.Fields;
 
 namespace MaxPlanner.Application.Transfer.External;
 
@@ -36,6 +37,18 @@ public enum ExternalField
     Developer,
     Done,
     CompletedOn,
+
+    /// <summary>ADR 0027: the record's <c>CreatedAtUtc</c> (tasks, CRs, reviews, General to-dos).</summary>
+    Created,
+
+    /// <summary>ADR 0027: a task's checklist, one item per non-empty line of the cell.</summary>
+    ChecklistItems,
+
+    /// <summary>
+    /// ADR 0027: a custom field of a task or CR, existing or created by the import. The field itself is chosen per column
+    /// (<see cref="ExternalTableMapping.CustomFields"/>); it is never proposed from aliases or listed by <see cref="ExternalFieldAliases.FieldsFor"/>.
+    /// </summary>
+    CustomField,
 }
 
 /// <summary>
@@ -47,7 +60,7 @@ public static partial class ExternalFieldAliases
 {
     private const int TimeoutMs = 100;
 
-    /// <summary>The fields that make sense for <paramref name="entity"/>, in the wizard's display order.</summary>
+    /// <summary>The built-in fields that make sense for <paramref name="entity"/>, in the wizard's display order.</summary>
     public static IReadOnlyList<ExternalField> FieldsFor(ExternalEntity entity) => entity switch
     {
         ExternalEntity.Task =>
@@ -55,28 +68,41 @@ public static partial class ExternalFieldAliases
             ExternalField.Ignore, ExternalField.SourceId, ExternalField.Title, ExternalField.Service, ExternalField.Status, ExternalField.Priority,
             ExternalField.Designers, ExternalField.Developers, ExternalField.Tags, ExternalField.Notes, ExternalField.StartDate, ExternalField.EndDate,
             ExternalField.Archived, ExternalField.CrNumber, ExternalField.TaskNumber, ExternalField.Squad, ExternalField.Owner,
+            ExternalField.ChecklistItems, ExternalField.Created,
         ],
         ExternalEntity.ChangeRequest =>
         [
             ExternalField.Ignore, ExternalField.SourceId, ExternalField.CrNumber, ExternalField.Title, ExternalField.Owner, ExternalField.Squad,
             ExternalField.Status, ExternalField.Priority, ExternalField.PlannedStart, ExternalField.PlannedEnd, ExternalField.EmailSubject,
-            ExternalField.SolutionDesignUrl, ExternalField.Notes, ExternalField.TaskNumber,
+            ExternalField.SolutionDesignUrl, ExternalField.Notes, ExternalField.TaskNumber, ExternalField.Created,
         ],
         ExternalEntity.Review =>
         [
             ExternalField.Ignore, ExternalField.SourceId, ExternalField.Title, ExternalField.CrNumber, ExternalField.TaskNumber, ExternalField.Service,
-            ExternalField.Developer, ExternalField.Notes, ExternalField.Done, ExternalField.CompletedOn,
+            ExternalField.Developer, ExternalField.Notes, ExternalField.Done, ExternalField.CompletedOn, ExternalField.Created,
         ],
-        ExternalEntity.GeneralTodo => [ExternalField.Ignore, ExternalField.SourceId, ExternalField.Title, ExternalField.Done],
+        ExternalEntity.GeneralTodo => [ExternalField.Ignore, ExternalField.SourceId, ExternalField.Title, ExternalField.Done, ExternalField.Created],
         _ => [ExternalField.Ignore],
+    };
+
+    /// <summary>ADR 0027: the custom-field target of <paramref name="entity"/>; null for entities without custom fields.</summary>
+    public static FieldTarget? CustomFieldTarget(ExternalEntity entity) => entity switch
+    {
+        ExternalEntity.Task => FieldTarget.Task,
+        ExternalEntity.ChangeRequest => FieldTarget.ChangeRequest,
+        _ => null,
     };
 
     /// <summary>The proposed field of each column; ambiguous or unknown headers propose <see cref="ExternalField.Ignore"/>.</summary>
     /// <returns>The proposal per column and whether the header was ambiguous (matched two candidate fields).</returns>
-    public static IReadOnlyList<(ExternalField Field, bool IsAmbiguous)> Propose(ExternalEntity entity, IReadOnlyList<string> columns)
+    /// <param name="sourceKind">
+    /// The table's source. A Markdown record's checklist comes from its body (B-13.3), so Checklist items is never
+    /// proposed for a Markdown column (ADR 0027).
+    /// </param>
+    public static IReadOnlyList<(ExternalField Field, bool IsAmbiguous)> Propose(ExternalEntity entity, IReadOnlyList<string> columns, ExternalSourceKind? sourceKind = null)
     {
         ArgumentNullException.ThrowIfNull(columns);
-        var candidates = FieldsFor(entity);
+        var candidates = FieldsFor(entity).Where(f => !(f == ExternalField.ChecklistItems && sourceKind == ExternalSourceKind.Markdown)).ToList();
         var result = new List<(ExternalField, bool)>();
         foreach (var column in columns)
         {
@@ -122,6 +148,8 @@ public static partial class ExternalFieldAliases
                 ExternalField.SolutionDesignUrl => SolutionDesign().IsMatch(header),
                 ExternalField.Done => Done().IsMatch(header),
                 ExternalField.CompletedOn => CompletedOn().IsMatch(header),
+                ExternalField.Created => Created().IsMatch(header),
+                ExternalField.ChecklistItems => Checklist().IsMatch(header),
                 _ => false,
             };
         }
@@ -212,4 +240,10 @@ public static partial class ExternalFieldAliases
 
     [GeneratedRegex(@"^completed[ _-]?(on|date|at)$|^completedon$|^done[ _-]?(on|date)$", RegexOptions.CultureInvariant, TimeoutMs)]
     private static partial Regex CompletedOn();
+
+    [GeneratedRegex(@"^created([ _-]?(at|on))?$|^creation[ _-]?date$", RegexOptions.CultureInvariant, TimeoutMs)]
+    private static partial Regex Created();
+
+    [GeneratedRegex(@"^sub[ _-]?tasks$|^checklist([ _-]?items)?$", RegexOptions.CultureInvariant, TimeoutMs)]
+    private static partial Regex Checklist();
 }

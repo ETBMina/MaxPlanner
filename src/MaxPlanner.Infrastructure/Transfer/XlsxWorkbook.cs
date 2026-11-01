@@ -121,8 +121,12 @@ internal static class XlsxWorkbook
     /// Reads every worksheet into raw tables (first row = headers). Date-formatted numeric cells become ISO dates in
     /// the workbook's date system; booleans become <c>true</c>/<c>false</c>. A formula anywhere fails the read.
     /// </summary>
+    /// <param name="allowDateTimes">
+    /// External sources (ADR 0027): a date cell with a time of day becomes ISO <c>yyyy-MM-ddTHH:mm:ss</c> text instead of
+    /// failing the read; the mapping then decides whether the value is valid for its field.
+    /// </param>
     /// <exception cref="TransferFormatException">TooLarge, UnsafeArchive, FormulaRejected, or Malformed.</exception>
-    public static IReadOnlyDictionary<string, RawTable> Read(Stream source, CancellationToken cancellationToken)
+    public static IReadOnlyDictionary<string, RawTable> Read(Stream source, bool allowDateTimes, CancellationToken cancellationToken)
     {
         using (var archive = new ZipArchive(source, ZipArchiveMode.Read, leaveOpen: true))
         {
@@ -147,7 +151,7 @@ internal static class XlsxWorkbook
                     continue;
                 }
 
-                tables[name] = ReadSheet(name, part, sharedStrings, dateStyles, is1904, cancellationToken);
+                tables[name] = ReadSheet(name, part, sharedStrings, dateStyles, is1904, allowDateTimes, cancellationToken);
             }
         }
         catch (Exception ex) when (ex is OpenXmlPackageException or InvalidDataException or System.Xml.XmlException or FormatException)
@@ -158,7 +162,7 @@ internal static class XlsxWorkbook
         return tables;
     }
 
-    private static RawTable ReadSheet(string name, WorksheetPart part, List<string> sharedStrings, HashSet<uint> dateStyles, bool is1904, CancellationToken cancellationToken)
+    private static RawTable ReadSheet(string name, WorksheetPart part, List<string> sharedStrings, HashSet<uint> dateStyles, bool is1904, bool allowDateTimes, CancellationToken cancellationToken)
     {
         var rows = new List<string?[]>();
         string[]? headers = null;
@@ -188,7 +192,7 @@ internal static class XlsxWorkbook
                     throw new TransferFormatException(TransferFailure.FormulaRejected, name + "!" + (cell.CellReference?.Value ?? "?"));
                 }
 
-                values.Add(Value(cell, sharedStrings, dateStyles, is1904, name));
+                values.Add(Value(cell, sharedStrings, dateStyles, is1904, allowDateTimes, name));
                 position = column + 1;
             }
 
@@ -207,7 +211,7 @@ internal static class XlsxWorkbook
         return new RawTable(name, headers ?? [], rows);
     }
 
-    private static string? Value(Cell cell, List<string> sharedStrings, HashSet<uint> dateStyles, bool is1904, string sheet)
+    private static string? Value(Cell cell, List<string> sharedStrings, HashSet<uint> dateStyles, bool is1904, bool allowDateTimes, string sheet)
     {
         var raw = cell.CellValue?.Text;
         var type = cell.DataType?.Value;
@@ -243,13 +247,31 @@ internal static class XlsxWorkbook
             if (cell.StyleIndex?.Value is { } style && dateStyles.Contains(style)
                 && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var serial))
             {
-                if (serial != Math.Floor(serial))
+                var origin = is1904 ? new DateOnly(1904, 1, 1) : new DateOnly(1899, 12, 30);
+
+                // A serial must name a day DateTime can hold (a date-time also its next day, for rounding); NaN, infinities
+                // and out-of-range serials are malformed, never an exception from date arithmetic.
+                var days = Math.Floor(serial);
+                if (!double.IsFinite(serial) || days < -origin.DayNumber || days + 1 > DateOnly.MaxValue.DayNumber - origin.DayNumber)
                 {
-                    // A date with a time of day is ambiguous for a date-only field (T-10).
                     throw new TransferFormatException(TransferFailure.Malformed, sheet + "!" + cell.CellReference?.Value);
                 }
 
-                var origin = is1904 ? new DateOnly(1904, 1, 1) : new DateOnly(1899, 12, 30);
+                if (serial != days)
+                {
+                    if (!allowDateTimes)
+                    {
+                        // A date with a time of day is ambiguous for a date-only field (T-10).
+                        throw new TransferFormatException(TransferFailure.Malformed, sheet + "!" + cell.CellReference?.Value);
+                    }
+
+                    // ADR 0027: an external date-time cell is local wall time; it arrives as ISO text without an offset,
+                    // which a Created column reads and a date-only field reports as an invalid date.
+                    var seconds = Math.Round((serial - days) * 86_400);
+                    return origin.ToDateTime(TimeOnly.MinValue).AddDays(days).AddSeconds(seconds)
+                        .ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
+                }
+
                 return origin.AddDays((int)serial).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             }
         }

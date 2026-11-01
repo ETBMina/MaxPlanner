@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
+using DocumentFormat.OpenXml.Spreadsheet;
 using AwesomeAssertions;
 using MaxPlanner.Application.Transfer;
 using MaxPlanner.Application.Transfer.External;
+using MaxPlanner.Domain.Fields;
+using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Infrastructure.Tests.Persistence;
 using MaxPlanner.Infrastructure.Transfer;
 using MaxPlanner.Infrastructure.Transfer.External;
@@ -211,6 +214,170 @@ public sealed class ExternalXlsxImportTests : IDisposable
         SHA256.HashData(File.ReadAllBytes(path)).Should().Equal(hash);
         File.GetLastWriteTimeUtc(path).Should().Be(written);
         Directory.GetFiles(_folder.Path).Should().ContainSingle("nothing is written next to the source");
+    }
+
+    [Fact]
+    [Trait("Adr", "0027")]
+    public async Task Created_checklist_custom_field_and_unmapped_columns_import_into_a_dataset_and_merge_again()
+    {
+        await using var db = await CreateAsync();
+        var points = db.AddField("points", FieldKind.Number);
+        var first = await ReadAsync(WriteTracker(
+            Row(Text("T-1"), Text("Card freeze"), Number("45000.5", 1), Text("[ ] Draft\r\n- [x] Review\r\n\r\nPlain step"), Number("5"), Text("High"), Text("2026-12-01"), Text("x1"), Text("hidden-1")),
+            Row(Text("T-2"), Text("Card unfreeze"), Text("2025-06-01T08:30:00Z"), Text("One"), Text(""), Text("low"), Text(""), Text(""), Text("hidden-2")),
+            Row(Text("T-3"), Text("Bad dates"), Text("2099-01-01"), Text(""), Text("many"), Text("Low"), Text("tomorrow"), Text(""), Text(""))));
+        first.Tables[0].Rows[0].Values[2]!.Text.Should().Be("2023-03-15T12:00:00", "an external date-time cell arrives as local ISO text");
+
+        var invalid = await BuildMappedAsync(db, first, ImportMode.CreateOnly, ExternalCustomFieldChoice.New("Risk", FieldKind.Lookup));
+        invalid.Findings.Where(f => f.Severity == ImportSeverity.Error).Select(f => (f.RecordKey, f.Code, f.Field)).Should().BeEquivalentTo(
+        [
+            ("tracker.xlsx › Tasks#3", ImportFindingCodes.CreatedInFuture, "Created"),
+            ("tracker.xlsx › Tasks#3", ImportFindingCodes.InvalidCustomValue, "points"),
+            ("tracker.xlsx › Tasks#3", ImportFindingCodes.InvalidCustomValue, "Due"),
+        ]);
+
+        // Without the invalid row, the import applies: the new fields are created in the same transaction as the tasks.
+        var source = first with { Tables = [first.Tables[0] with { Rows = [.. first.Tables[0].Rows.Take(2)] }] };
+        var draft = await BuildMappedAsync(db, source, ImportMode.CreateOnly, ExternalCustomFieldChoice.New("Risk", FieldKind.Lookup));
+        var plan = await PreviewDraftAsync(db, draft, ImportMode.CreateOnly);
+        draft.Findings.Should().NotContain(f => f.Severity == ImportSeverity.Error);
+        plan.Findings.Where(f => f.Code == ImportFindingCodes.FieldCreated).Select(f => f.Detail).Should().BeEquivalentTo(["risk", "due"]);
+        await Transfers.ApplyAsync(db, plan);
+
+        var snapshot = await db.SnapshotAsync();
+        var fields = snapshot.Workflow.Fields.ToDictionary(f => f.Key.Display);
+        (fields["risk"].Kind, fields["risk"].IsRequired, fields["due"].Kind).Should().Be((FieldKind.Lookup, false, FieldKind.Date));
+        fields["risk"].Options.Select(o => o.Label.Display).Should().Equal("High", "low");
+        var t1 = snapshot.Tasks.Single(t => t.OwnTitle!.Value == "Card freeze");
+        var t2 = snapshot.Tasks.Single(t => t.OwnTitle!.Value == "Card unfreeze");
+        (t1.CreatedAtUtc, t1.UpdatedAtUtc).Should().Be((new DateTimeOffset(2023, 3, 15, 12, 0, 0, TimeSpan.Zero), db.Clock.UtcNow));
+        t2.CreatedAtUtc.Should().Be(new DateTimeOffset(2025, 6, 1, 8, 30, 0, TimeSpan.Zero));
+        t1.ChecklistItems.Select(i => (i.Text.Value, i.IsCompleted)).Should().Equal(("Draft", false), ("Review", true), ("Plain step", false));
+        t1.CustomValues.Should().BeEquivalentTo(new Dictionary<FieldId, CustomValue>
+        {
+            [points] = new NumberCustomValue(5m),
+            [fields["risk"].Id] = new LookupCustomValue(fields["risk"].Options[0].Id),
+            [fields["due"].Id] = new DateCustomValue(new DateOnly(2026, 12, 1)),
+        });
+        t1.Preserved.LegacyJson.Should().Be("""{"Extra":"x1"}""", "a column kept hidden is preserved (T-05)");
+        t2.Preserved.LegacyJson.Should().BeNull();
+        snapshot.Tasks.Should().NotContain(t => (t.Preserved.LegacyJson ?? string.Empty).Contains("hidden", StringComparison.Ordinal), "a discarded column is stored nowhere");
+        db.Scalar("SELECT COUNT(*) FROM tasks WHERE preserved_json LIKE '%hidden%';").Should().Be(0);
+
+        // Merge again: Risk now exists, so it is mapped instead of created; existing records keep their created time.
+        var again = await ReadAsync(WriteTracker(
+            Row(Text("T-1"), Text("Card freeze"), Text("2020-01-01"), Text("[x] Ship"), Text(""), Text("low"), Text("2026-12-01"), Text("x1"), Text("hidden-1")),
+            Row(Text("T-2"), Text("Card unfreeze"), Text("2025-06-01T08:30:00Z"), Text(""), Text("2"), Text("low"), Text(""), Text(""), Text("hidden-2"))));
+        db.Clock.UtcNow = db.Clock.UtcNow.AddHours(1);
+        var merge = await BuildMappedAsync(db, again, ImportMode.Merge, ExternalCustomFieldChoice.Existing(fields["risk"].Id.Value), ExternalCustomFieldChoice.Existing(fields["due"].Id.Value));
+        var mergePlan = await PreviewDraftAsync(db, merge, ImportMode.Merge);
+        merge.Findings.Should().NotContain(f => f.Severity == ImportSeverity.Error);
+        mergePlan.Counts[ImportEntity.Task].Should().Be(new ImportEntityCounts(0, 2, 0, 0, 0));
+        await Transfers.ApplyAsync(db, mergePlan);
+
+        var merged = await db.SnapshotAsync();
+        var m1 = merged.Tasks.Single(t => t.Id == t1.Id);
+        var m2 = merged.Tasks.Single(t => t.Id == t2.Id);
+        m1.CreatedAtUtc.Should().Be(t1.CreatedAtUtc, "T-10: an existing record keeps its own created time");
+        m1.ChecklistItems.Select(i => (i.Text.Value, i.IsCompleted)).Should().Equal(("Ship", true));
+        m2.ChecklistItems.Should().BeEmpty("an empty checklist cell clears the checklist");
+        m1.CustomValues.Should().BeEquivalentTo(new Dictionary<FieldId, CustomValue>
+        {
+            [fields["risk"].Id] = new LookupCustomValue(fields["risk"].Options[1].Id),
+            [fields["due"].Id] = new DateCustomValue(new DateOnly(2026, 12, 1)),
+        }, "an empty cell clears its field");
+        m2.CustomValues[points].Should().Be(new NumberCustomValue(2m));
+        merged.Workflow.Fields.Should().HaveCount(3, "no field is created twice");
+    }
+
+    [Fact]
+    [Trait("Adr", "0027")]
+    public async Task A_new_field_whose_proposed_key_is_taken_gets_a_generated_key_and_keeps_its_label()
+    {
+        await using var db = await CreateAsync();
+        db.AddField("points", FieldKind.Number);
+        db.AddField("risk", FieldKind.Text);
+        var source = await ReadAsync(WriteTracker(Row(Text("T-1"), Text("Card freeze"), Text(""), Text(""), Text(""), Text("High"))));
+
+        var draft = await BuildMappedAsync(db, source, ImportMode.CreateOnly, ExternalCustomFieldChoice.New("Risk", FieldKind.Lookup));
+        var plan = await PreviewDraftAsync(db, draft, ImportMode.CreateOnly);
+        await Transfers.ApplyAsync(db, plan);
+
+        draft.Findings.Should().NotContain(f => f.Severity == ImportSeverity.Error);
+        var fields = (await db.SnapshotAsync()).Workflow.Fields;
+        fields.Select(f => (f.Key.Display, f.Label.Display, f.Kind)).Should().Contain([("risk", "risk", FieldKind.Text), ("field", "Risk", FieldKind.Lookup), ("due", "Due", FieldKind.Date)]);
+    }
+
+    [Fact]
+    [Trait("Adr", "0027")]
+    public async Task A_json_checklist_array_with_non_text_entries_is_flagged_by_the_reader_and_reported()
+    {
+        await using var db = await CreateAsync();
+        var path = _folder.File("tracker.json");
+        await File.WriteAllTextAsync(path, """{ "tasks": [ { "id": "T-1", "title": "One", "subtasks": ["Draft", { "text": "Review" }] } ] }""", Ct);
+        var source = await ReadAsync(path);
+        var table = source.Tables.Single();
+        var subtasks = table.Rows.Single().Values[table.Columns.ToList().IndexOf("subtasks")]!;
+        subtasks.Should().Be(new ExternalValue(null, subtasks.Items, HasNonTextItems: true));
+        subtasks.Items.Should().Equal("Draft");
+
+        var snapshot = await db.SnapshotAsync();
+        var options = new ExternalImportOptions
+        {
+            SourceNamespace = Namespace,
+            Tables = [new ExternalTableMapping(table.Name, ExternalEntity.Task, [.. ExternalFieldAliases.Propose(ExternalEntity.Task, table.Columns, table.Kind).Select(p => p.Field)])],
+        };
+        var draft = ExternalImportPlanner.Build(source, options, snapshot.Workflow, new Dictionary<string, Guid>(), new Dictionary<(string, string), Guid>());
+
+        draft.Findings.Should().ContainSingle(f => f.Severity == ImportSeverity.Error).Which.Code.Should().Be(ImportFindingCodes.InvalidChecklist);
+        draft.Document.Tasks.Single().ChecklistItems.Should().BeNull("an invalid list never becomes a supplied, empty checklist");
+    }
+
+    private string WriteTracker(params Row[] rows) => _folder.Write("tracker.xlsx", Create(
+        [Sheet("Tasks", [Header("Key", "Title", "createdAt", "subtasks", "Points", "Risk", "Due", "Extra", "Secret"), .. rows])],
+        stylesheet: Styles(22)));
+
+    /// <summary>
+    /// The tracker mapping: aliases for Key, Title, createdAt and subtasks; Points to the existing <c>points</c> field;
+    /// Risk and Due as given (Due is a new Date field unless <paramref name="due"/> names one); Extra kept; Secret discarded.
+    /// </summary>
+    private static async Task<ExternalImportDraft> BuildMappedAsync(TestDataset db, ExternalSource source, ImportMode mode, ExternalCustomFieldChoice risk, ExternalCustomFieldChoice? due = null)
+    {
+        var snapshot = await db.SnapshotAsync();
+        var ledger = await db.Dataset.ImportState.LoadLedgerAsync(Namespace, Ct);
+        ledger.Error.Should().BeNull();
+        var table = source.Tables[0];
+        var fields = ExternalFieldAliases.Propose(ExternalEntity.Task, table.Columns).Select(p => p.Field).ToArray();
+        fields[..4].Should().Equal(ExternalField.SourceId, ExternalField.Title, ExternalField.Created, ExternalField.ChecklistItems);
+        fields[4] = fields[5] = fields[6] = ExternalField.CustomField;
+        var options = new ExternalImportOptions
+        {
+            SourceNamespace = Namespace,
+            Mode = mode,
+            NowUtc = db.Clock.UtcNow,
+            TimeZone = TimeZoneInfo.Utc,
+            Tables =
+            [
+                new ExternalTableMapping(table.Name, ExternalEntity.Task, fields)
+                {
+                    CustomFields = new Dictionary<int, ExternalCustomFieldChoice>
+                    {
+                        [4] = ExternalCustomFieldChoice.Existing(snapshot.Workflow.Fields.Single(f => f.Key.Display == "points").Id.Value),
+                        [5] = risk,
+                        [6] = due ?? ExternalCustomFieldChoice.New("Due", FieldKind.Date),
+                    },
+                    DiscardedColumns = new HashSet<int> { 8 },
+                },
+            ],
+        };
+        return ExternalImportPlanner.Build(source, options, snapshot.Workflow, snapshot.ChangeRequests.ToDictionary(c => c.Number.Normalized, c => c.Id.Value), ledger.Value);
+    }
+
+    private static async Task<ImportPlan> PreviewDraftAsync(TestDataset db, ExternalImportDraft draft, ImportMode mode)
+    {
+        var result = await Transfers.Importer(db).PreviewAsync(draft.Document, mode, Ct, Namespace, draft.SourceKeys);
+        result.Error.Should().BeNull();
+        return result.Value;
     }
 
     private string WriteSource(string standaloneTitle) => _folder.Write("jira.xlsx", Create(

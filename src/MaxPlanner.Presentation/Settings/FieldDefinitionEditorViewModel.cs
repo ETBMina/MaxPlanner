@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
@@ -247,7 +246,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
         if (IsNew && !_keyEdited)
         {
             _isProposingKey = true;
-            Key = ProposeKey(value);
+            Key = FieldKey.Propose(value);
             _isProposingKey = false;
         }
     }
@@ -261,30 +260,6 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
     }
 
     partial void OnKindIndexChanged(int value) => RefreshDefaultOptions();
-
-    private static string ProposeKey(string label)
-    {
-        var builder = new StringBuilder();
-        foreach (var c in label.Trim().ToLowerInvariant())
-        {
-            if (char.IsAsciiLetterOrDigit(c))
-            {
-                builder.Append(c);
-            }
-            else if (builder.Length > 0 && builder[^1] != '_')
-            {
-                builder.Append('_');
-            }
-        }
-
-        var key = builder.ToString().Trim('_');
-        while (key.Length > 0 && !char.IsAsciiLetter(key[0]))
-        {
-            key = key[1..];
-        }
-
-        return key.Length > DomainLimits.FieldKey ? key[..DomainLimits.FieldKey] : key;
-    }
 
     private FieldOptionRowViewModel NewOption(FieldOptionId id, string label)
     {

@@ -44,7 +44,7 @@ internal sealed class ExternalSourceReader : IExternalSourceReader
                     case ".XLSX":
                         using (var stream = new MemoryStream(bytes, writable: false))
                         {
-                            foreach (var (sheet, raw) in XlsxWorkbook.Read(stream, cancellationToken))
+                            foreach (var (sheet, raw) in XlsxWorkbook.Read(stream, allowDateTimes: true, cancellationToken))
                             {
                                 tables.Add(FromRaw(raw with { Name = name + " › " + sheet }, ExternalSourceKind.Xlsx, Suggest(sheet)));
                             }
@@ -158,7 +158,10 @@ internal sealed class ExternalSourceReader : IExternalSourceReader
         return tables;
     }
 
-    /// <summary>Scalars become text, arrays of scalars become lists (people, tags, services), objects stay raw JSON text.</summary>
+    /// <summary>
+    /// Scalars become text, arrays of scalars become lists (people, tags, services), objects stay raw JSON text. An array
+    /// element that is not text or a number is left out and flagged, so a checklist never silently loses it (ADR 0027).
+    /// </summary>
     private static ExternalValue? Value(JsonElement value) => value.ValueKind switch
     {
         JsonValueKind.Null or JsonValueKind.Undefined => null,
@@ -168,7 +171,8 @@ internal sealed class ExternalSourceReader : IExternalSourceReader
         JsonValueKind.Number => new ExternalValue(value.GetRawText()),
         JsonValueKind.Array => new ExternalValue(null, [.. value.EnumerateArray()
             .Where(i => i.ValueKind is JsonValueKind.String or JsonValueKind.Number)
-            .Select(i => i.ValueKind == JsonValueKind.String ? i.GetString() ?? string.Empty : i.GetRawText())]),
+            .Select(i => i.ValueKind == JsonValueKind.String ? i.GetString() ?? string.Empty : i.GetRawText())],
+            value.EnumerateArray().Any(i => i.ValueKind is not (JsonValueKind.String or JsonValueKind.Number))),
         _ => new ExternalValue(value.GetRawText()),
     };
 }

@@ -16,7 +16,8 @@ public enum ExternalSourceKind
 }
 
 /// <summary>One cell: text, or a list for JSON/YAML arrays (people, tags, services). Spreadsheet dates arrive as ISO text.</summary>
-public sealed record ExternalValue(string? Text, IReadOnlyList<string>? Items = null)
+/// <param name="HasNonTextItems">The source array also had elements that are not text or numbers; they are not in <see cref="Items"/>.</param>
+public sealed record ExternalValue(string? Text, IReadOnlyList<string>? Items = null, bool HasNonTextItems = false)
 {
     public bool IsEmpty => string.IsNullOrWhiteSpace(Text) && (Items is null || Items.Count == 0);
 }

@@ -204,7 +204,14 @@ internal static class TestWorkbook
     public static IReadOnlyDictionary<string, RawTable> Read(byte[] bytes)
     {
         using var stream = new MemoryStream(bytes, writable: false);
-        return XlsxWorkbook.Read(stream, TestContext.Current.CancellationToken);
+        return XlsxWorkbook.Read(stream, allowDateTimes: false, TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>Reads a workbook as the external-source reader does (ADR 0027: date-time cells become ISO text).</summary>
+    public static IReadOnlyDictionary<string, RawTable> ReadExternal(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes, writable: false);
+        return XlsxWorkbook.Read(stream, allowDateTimes: true, TestContext.Current.CancellationToken);
     }
 
     /// <summary>The sheets of a workbook in order, each as its rows of cells, for assertions on the written XML.</summary>

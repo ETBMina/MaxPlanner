@@ -153,7 +153,7 @@ Required mapping/integrity rules:
 - Revisions start at 1 and increment on committed mutation. Commands include expected revisions; stale writes return conflicts.
 - Link creation validates revisions/availability of both endpoints. Give mutation requests stable operation IDs (and preallocated IDs for new records) so retrying after an uncertain response cannot create duplicates or apply an ordering change twice.
 - Initial indexes: normalized CR number (unique), link TaskId (primary key), link ChangeRequestId, task status/archive fields, Subtask card parent/status, CR planned dates. Add other indexes based on measured query needs; an index does not make arbitrary substring search free.
-- Preserve unknown imported fields/body content in an explicit legacy extension structure even when not editable. Do not discard them during later saves or full exports.
+- Preserve unknown imported fields/body content in an explicit legacy extension structure even when not editable. Do not discard them during later saves or full exports. An external import may discard an unmapped column only when the user chooses Discard for it (ADR 0027).
 
 ### T-06. Database lifecycle, transactions, and concurrency
 
@@ -543,7 +543,7 @@ For every format: preview before applying, enforce zero-or-one permanent CR per 
 Provide a one-way import wizard (a page under Settings › Data) for user-selected JSON/CSV/XLSX files and, optionally, folders of Markdown records. Treat source files as read-only. This format contract is independent of any other application.
 
 1. In addition to B-12's canonical formats, accept simple JSON envelopes `{ "tasks": [...], "crs": [...], "reviews": [...] }` with object records, or user-mapped CSV/XLSX tables. The wizard identifies each table's entity type and maps source columns explicitly.
-2. Supply aliases for `number`/`crNumber`, `taskNumber`, `squad`, `owner`, `solutionDesign`/`solutionDesignUrl`, `archived`/`Archived`, status/priority labels, people scalars/arrays, tags, and notes. Ambiguous mappings require review.
+2. Supply aliases for `number`/`crNumber`, `taskNumber`, `squad`, `owner`, `solutionDesign`/`solutionDesignUrl`, `archived`/`Archived`, status/priority labels, people scalars/arrays, tags, notes, `createdAt`, and `subtasks`/`checklist`. Ambiguous mappings require review. Any column can also be mapped by hand to Created, Checklist items (tasks), or a custom field (existing, or created from the column). Each unmapped column is kept as hidden preserved metadata or discarded, at the user's choice; it is kept by default (ADR 0027).
 3. Optional Markdown import reads YAML frontmatter as record fields and preserves remaining body text as notes/legacy content. Recognize checkbox items outside fenced code blocks; for task records, import checkboxes under a “Subtasks” or “Checklist” heading, up to the next same-or-higher-level heading, as checklist items. A separately selected General checklist file imports its checkboxes as General to-dos. Preserve other content without duplicating imported checklist text in editable notes.
 4. A source that lacks checklist items, General to-dos, dates, or notes cannot reconstruct those values. Show which data is present or absent before import; do not invent missing content.
 5. Generate IDs for records without them, and persist an import ledger keyed by a user-selected source namespace plus source record identity. Repeated import previews updates/skips instead of silently duplicating records. Titles and filenames alone are not reliable cross-source identities.

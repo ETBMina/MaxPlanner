@@ -78,6 +78,35 @@ public sealed record FieldKey
             : DomainResult.Success(new FieldKey(key));
     }
 
+    /// <summary>
+    /// The key proposed for a label (design §4.6): lower case ASCII letters and digits, other runs as one '_', and no
+    /// leading digit. It can still be empty, reserved, or taken, so it goes through <see cref="Create"/>.
+    /// </summary>
+    public static string Propose(string label)
+    {
+        ArgumentNullException.ThrowIfNull(label);
+        var builder = new System.Text.StringBuilder();
+        foreach (var c in label.Trim().ToLowerInvariant())
+        {
+            if (char.IsAsciiLetterOrDigit(c))
+            {
+                builder.Append(c);
+            }
+            else if (builder.Length > 0 && builder[^1] != '_')
+            {
+                builder.Append('_');
+            }
+        }
+
+        var key = builder.ToString().Trim('_');
+        while (key.Length > 0 && !char.IsAsciiLetter(key[0]))
+        {
+            key = key[1..];
+        }
+
+        return key.Length > DomainLimits.FieldKey ? key[..DomainLimits.FieldKey] : key;
+    }
+
     public override string ToString() => Display;
 }
 

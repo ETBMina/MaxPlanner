@@ -133,13 +133,45 @@
                                                             <TextBlock x:Uid="Import_AmbiguousText" Foreground="{ThemeResource SystemFillColorCautionBrush}" Visibility="{x:Bind local:DataPageView.Show(IsAmbiguous), Mode=OneTime}" />
                                                         </StackPanel>
                                                         <TextBlock Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Sample, Mode=OneTime}" TextTrimming="CharacterEllipsis" />
-                                                        <ComboBox
-                                                            Grid.Column="2"
-                                                            HorizontalAlignment="Stretch"
-                                                            AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
-                                                            AutomationProperties.Name="{x:Bind Header, Mode=OneTime}"
-                                                            ItemsSource="{x:Bind FieldChoices, Mode=OneTime}"
-                                                            SelectedIndex="{x:Bind FieldIndex, Mode=TwoWay}" />
+                                                        <StackPanel Grid.Column="2" Spacing="8">
+                                                            <ComboBox
+                                                                HorizontalAlignment="Stretch"
+                                                                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                                                AutomationProperties.Name="{x:Bind Header, Mode=OneTime}"
+                                                                ItemsSource="{x:Bind FieldChoices, Mode=OneTime}"
+                                                                SelectedIndex="{x:Bind FieldIndex, Mode=TwoWay}" />
+                                                            <!-- ADR 0027: an unmapped column is kept hidden (default) or discarded. -->
+                                                            <ComboBox
+                                                                HorizontalAlignment="Stretch"
+                                                                AutomationProperties.AutomationId="{x:Bind UnmappedAutomationId, Mode=OneTime}"
+                                                                AutomationProperties.Name="{x:Bind UnmappedName, Mode=OneTime}"
+                                                                ItemsSource="{x:Bind UnmappedChoices, Mode=OneTime}"
+                                                                SelectedIndex="{x:Bind UnmappedIndex, Mode=TwoWay}"
+                                                                Visibility="{x:Bind local:DataPageView.Show(ShowsKeepChoice), Mode=OneWay}" />
+                                                            <!-- Reviews and General to-dos keep no hidden data, so their unmapped columns are discarded. -->
+                                                            <TextBlock
+                                                                x:Uid="Import_NotStoredText"
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                                TextWrapping="Wrap"
+                                                                Visibility="{x:Bind local:DataPageView.Show(ShowsNotStored), Mode=OneWay}" />
+                                                            <!-- ADR 0027: Create custom field… takes a label and a kind, suggested from the values. -->
+                                                            <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(IsNewField), Mode=OneWay}">
+                                                                <TextBox
+                                                                    x:Uid="Import_NewFieldLabelBox"
+                                                                    AutomationProperties.AutomationId="{x:Bind NewFieldLabelAutomationId, Mode=OneTime}"
+                                                                    AutomationProperties.Name="{x:Bind NewFieldLabelName, Mode=OneTime}"
+                                                                    MaxLength="100"
+                                                                    Text="{x:Bind NewFieldLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                                <ComboBox
+                                                                    x:Uid="Import_NewFieldKindCombo"
+                                                                    HorizontalAlignment="Stretch"
+                                                                    AutomationProperties.AutomationId="{x:Bind NewFieldKindAutomationId, Mode=OneTime}"
+                                                                    AutomationProperties.Name="{x:Bind NewFieldKindName, Mode=OneTime}"
+                                                                    ItemsSource="{x:Bind KindChoices, Mode=OneTime}"
+                                                                    SelectedIndex="{x:Bind NewFieldKindIndex, Mode=TwoWay}" />
+                                                            </StackPanel>
+                                                        </StackPanel>
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
@@ -241,6 +273,8 @@
                         <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 3), Mode=OneWay}">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.PreviewSummary, Mode=OneWay}" TextWrapping="Wrap" />
                             <TextBlock Text="{x:Bind ViewModel.PresenceText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Bind ViewModel.UnmappedText, Mode=OneWay}" TextWrapping="Wrap" />
+
                             <!-- ADR 0026: a configuration replace needs an explicit confirmation before Apply. -->
                             <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsConfigurationReplace), Mode=OneWay}">
                                 <InfoBar
