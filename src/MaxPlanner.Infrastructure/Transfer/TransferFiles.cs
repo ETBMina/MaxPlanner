@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Transfer;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MaxPlanner.Infrastructure.Transfer;
 
@@ -9,8 +11,10 @@ namespace MaxPlanner.Infrastructure.Transfer;
 /// moved over the destination only after a complete, flushed write, so cancellation or failure never replaces a valid
 /// existing export.
 /// </summary>
-internal sealed class TransferFileWriter : ITransferFileWriter
+internal sealed partial class TransferFileWriter(ILogger? logger = null) : ITransferFileWriter
 {
+    private readonly ILogger _logger = logger ?? NullLogger.Instance;
+
     public const string BundleMetadataEntry = "metadata.json";
 
     public Task<AppResult<string>> WriteAsync(TransferDocument document, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken)
@@ -20,7 +24,7 @@ internal sealed class TransferFileWriter : ITransferFileWriter
         return Task.Run(() => Write(document, format, table, destinationPath, cancellationToken), CancellationToken.None);
     }
 
-    private static AppResult<string> Write(TransferDocument document, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken)
+    private AppResult<string> Write(TransferDocument document, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken)
     {
         string? temp = null;
         try
@@ -68,6 +72,13 @@ internal sealed class TransferFileWriter : ITransferFileWriter
         {
             return AppResult.Failure<string>(new TransferFileError(TransferFailure.Io));
         }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // An unexpected writer failure is logged and reported as a failed write, never an unhandled exception at
+            // the port. No detail: the UI formats Detail into the message, and a type name means nothing to the user.
+            UnexpectedWriteFailure(_logger, format, ex);
+            return AppResult.Failure<string>(new TransferFileError(TransferFailure.Io));
+        }
         finally
         {
             if (temp is not null)
@@ -104,6 +115,10 @@ internal sealed class TransferFileWriter : ITransferFileWriter
         using var metadataStream = metadataEntry.Open();
         metadataStream.Write(TransferJson.Serialize(metadata));
     }
+
+    // T-09 logging: the format and the exception only; never record content or paths.
+    [LoggerMessage(EventId = 1601, Level = LogLevel.Error, Message = "Writing a {Format} transfer file failed unexpectedly.")]
+    private static partial void UnexpectedWriteFailure(ILogger logger, TransferFileFormat format, Exception exception);
 
     private static void TryDelete(string path)
     {
@@ -248,7 +263,8 @@ internal sealed class TransferFileReader : ITransferFileReader
 /// <summary>The transfer adapters for the composition root (the implementations stay internal to Infrastructure).</summary>
 public static class TransferAdapters
 {
-    public static ITransferFileWriter CreateWriter() => new TransferFileWriter();
+    /// <param name="logger">Receives unexpected write failures; null discards them (tests).</param>
+    public static ITransferFileWriter CreateWriter(ILogger? logger = null) => new TransferFileWriter(logger);
 
     public static ITransferFileReader CreateReader() => new TransferFileReader();
 

@@ -27,8 +27,10 @@ internal static class CsvTable
             writer.Header.Write();
             foreach (var row in rows)
             {
+                // Sep's NewRow(CancellationToken) requires asynchronous disposal; this writer is synchronous, so
+                // cancellation is checked once per row instead.
                 cancellationToken.ThrowIfCancellationRequested();
-                using var line = writer.NewRow(cancellationToken);
+                using var line = writer.NewRow(CancellationToken.None);
                 for (var i = 0; i < columns.Count; i++)
                 {
                     line[columns[i].Name].Set(Neutralize(i < row.Length ? row[i] : null, columns[i].Kind));

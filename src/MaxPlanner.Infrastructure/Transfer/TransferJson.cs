@@ -59,13 +59,59 @@ internal static class TransferJson
                 }
             }
 
-            return JsonSerializer.Deserialize(json.Span, TransferJsonContext.Default.TransferDocument)
+            var document = JsonSerializer.Deserialize(json.Span, TransferJsonContext.Default.TransferDocument)
                 ?? throw new TransferFormatException(TransferFailure.Malformed, "$");
+            return WithEmptyCollections(document);
         }
         catch (JsonException ex)
         {
             throw new TransferFormatException(TransferFailure.Malformed, ex.Path ?? "$", ex);
         }
+    }
+
+    /// <summary>
+    /// A hand-written file may omit a collection or write it as <c>null</c>, which binds as null despite the
+    /// non-null contract. Every collection, nested ones included, reads as empty instead, and null elements are dropped.
+    /// A JSON record is complete (no <c>SuppliedFields</c>), so an empty list means "none", as an export writes it.
+    /// </summary>
+    private static TransferDocument WithEmptyCollections(TransferDocument document)
+    {
+        var lookups = document.Lookups ?? new TransferLookups();
+        return document with
+        {
+            Lookups = lookups with
+            {
+                TaskStatuses = Items(lookups.TaskStatuses),
+                CrStatuses = Items(lookups.CrStatuses),
+                Priorities = Items(lookups.Priorities),
+                Squads = Items(lookups.Squads),
+                People = Items(lookups.People),
+                Tags = Items(lookups.Tags),
+            },
+            FieldDefinitions = [.. Items(document.FieldDefinitions).Select(f => f with { Options = Items(f.Options) })],
+            Tasks = [.. Items(document.Tasks).Select(t => t with
+            {
+                DesignerIds = t.DesignerIds ?? [],
+                DeveloperIds = t.DeveloperIds ?? [],
+                TagIds = t.TagIds ?? [],
+                ChecklistItems = Items(t.ChecklistItems),
+                CustomValues = Values(t.CustomValues),
+            })],
+            SubtaskCards = Items(document.SubtaskCards),
+            ChangeRequests = [.. Items(document.ChangeRequests).Select(c => c with { CustomValues = Values(c.CustomValues) })],
+            Links = Items(document.Links),
+            Reviews = [.. Items(document.Reviews).Select(r => r with { Services = Items(r.Services) })],
+            GeneralTodos = Items(document.GeneralTodos),
+        };
+
+        // The parameters are declared non-null by the contract but may hold null after binding.
+        static IReadOnlyList<T> Items<T>(IReadOnlyList<T>? items)
+            where T : class =>
+            items is null ? [] : items.Any(i => i is null) ? [.. items.Where(i => i is not null)] : items;
+
+        static IReadOnlyDictionary<string, TransferValue> Values(IReadOnlyDictionary<string, TransferValue>? values) =>
+            values is null ? new Dictionary<string, TransferValue>()
+                : values.Values.Any(v => v is null) ? values.Where(p => p.Value is not null).ToDictionary() : values;
     }
 
     public static string SerializeList(IReadOnlyList<Guid> ids) => JsonSerializer.Serialize([.. ids], TransferJsonContext.Default.ListGuid);

@@ -94,7 +94,7 @@ internal sealed class DatasetSession : IAsyncDisposable
         services.AddSingleton(sp => SettingsUseCases.Create(sp.GetRequiredService<IMutationCoordinator>(), sp.GetRequiredService<IReadSnapshotSource>()));
 
         // B-12, B-13 (ADR 0012): transfer use cases over the dataset's reader and writer, with the Infrastructure adapters.
-        services.AddSingleton(sp => new ExportTransfer(sp.GetRequiredService<IReadSnapshotSource>(), TransferAdapters.CreateWriter(), dataset.Id.Value, sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton(sp => new ExportTransfer(sp.GetRequiredService<IReadSnapshotSource>(), TransferAdapters.CreateWriter(sp.GetRequiredService<ILogger<ExportTransfer>>()), dataset.Id.Value, sp.GetRequiredService<TimeProvider>()));
         services.AddSingleton(sp => new ImportTransfer(sp.GetRequiredService<IMutationCoordinator>(), sp.GetRequiredService<IReadSnapshotSource>(), dataset.ImportState, sp.GetRequiredService<TimeProvider>()));
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
