@@ -13,9 +13,10 @@ using MaxPlanner.Presentation.Workspace;
 namespace MaxPlanner.Presentation.Settings.DataPage;
 
 /// <summary>
-/// Import (B-12, B-13, design §4.6): Source → Map (external) → Lookups and relationships (external) → Preview → Result.
+/// Import (B-12, B-13, design §4.6): Source → Map (external) → Lookups and relationships → Preview → Result.
 /// The preview writes nothing; Apply takes a safety backup of a non-empty dataset, then commits the reviewed plan in one
-/// transaction (T-10). A Max Planner export skips the mapping steps because it carries its own IDs and definitions.
+/// transaction (T-10). A Max Planner export skips the mapping step because it carries its own IDs and definitions; it
+/// visits the Lookups step only when a configuration replace removes values that are in use (ADR 0026).
 /// </summary>
 public sealed partial class ImportWizardViewModel : WizardViewModel
 {
@@ -34,6 +35,7 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     private string? _generalChecklistPath;
     private ExternalSource? _source;
     private ExternalImportDraft? _draft;
+    private TransferDocument? _document;
     private ImportPlan? _plan;
     private OperationId _operationId = OperationId.New();
 
@@ -44,11 +46,44 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         _services = services ?? throw new ArgumentNullException(nameof(services));
         EntityChoices = [.. Entities.Select(e => Strings.GetString("Import_Entity_" + e))];
         ModeChoices = [Strings.GetString("Import_Mode_CreateOnly"), Strings.GetString("Import_Mode_Merge")];
+        ContentChoices = [.. ExportWizardViewModel.Contents.Select(c => Strings.GetString("Transfer_Content_" + c))];
     }
 
     public IReadOnlyList<string> EntityChoices { get; }
 
     public IReadOnlyList<string> ModeChoices { get; }
+
+    public IReadOnlyList<string> ContentChoices { get; }
+
+    /// <summary>ADR 0026: Both (default) / Configuration only / Data only, for Max Planner files with definitions.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ContentHelp))]
+    public partial int ContentIndex { get; set; }
+
+    /// <summary>A single CSV table carries no definitions, so it keeps its data import without a content choice.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsContentAvailable), nameof(ContentHelp))]
+    public partial bool IsSingleCsv { get; private set; }
+
+    public bool IsContentAvailable => !IsSingleCsv;
+
+    public string ContentHelp => IsSingleCsv ? Strings.GetString("Import_ContentSingleCsv") : Strings.GetString("Import_ContentHelp_" + Content);
+
+    /// <summary>ADR 0026: in-use values a configuration replace removes, each with its replacement choice.</summary>
+    public ObservableCollection<ImportRemovalViewModel> RemovalChoices { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasRemovals { get; private set; }
+
+    /// <summary>The previewed plan replaces the configuration, so Apply needs <see cref="IsReplaceConfirmed"/>.</summary>
+    [ObservableProperty]
+    public partial bool IsConfigurationReplace { get; private set; }
+
+    /// <summary>"I understand the current configuration will be replaced" (design §4.6).</summary>
+    [ObservableProperty]
+    public partial bool IsReplaceConfirmed { get; set; }
+
+    private TransferContent Content => ExportWizardViewModel.Contents[Math.Clamp(ContentIndex, 0, ExportWizardViewModel.Contents.Count - 1)];
 
     /// <summary>False: a Max Planner export (JSON, XLSX, CSV); true: external data (CSV, XLSX, JSON, Markdown) with mapping.</summary>
     [ObservableProperty]
@@ -109,7 +144,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     protected override bool CanAdvance => StepIndex switch
     {
         SourceStep => _paths.Count > 0 && (!IsExternal || !string.IsNullOrWhiteSpace(SourceNamespace)),
-        PreviewStep => _plan?.CanApply == true && !_context.IsEditingBlocked,
+        LookupsStep when !IsExternal => RemovalChoices.All(c => c.SelectedIndex >= 0),
+        PreviewStep => _plan?.CanApply == true && !_context.IsEditingBlocked && (!IsConfigurationReplace || IsReplaceConfirmed),
         _ => true,
     };
 
@@ -121,12 +157,22 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         _generalChecklistPath = null;
         SourceText = string.Empty;
         GeneralChecklistText = string.Empty;
+        IsSingleCsv = false;
+        ClearRemovals();
         RefreshCommands();
     }
 
     partial void OnSourceNamespaceChanged(string value) => RefreshCommands();
 
-    protected override int PreviousStep(int current) => current == PreviewStep && !IsExternal ? SourceStep : current - 1;
+    partial void OnIsReplaceConfirmedChanged(bool value) => RefreshCommands();
+
+    // A Max Planner file skips the Map step, and visits the Lookups step only for in-use removals.
+    protected override int PreviousStep(int current) => (current, IsExternal) switch
+    {
+        (PreviewStep, false) => HasRemovals ? LookupsStep : SourceStep,
+        (LookupsStep, false) => SourceStep,
+        _ => current - 1,
+    };
 
     protected override async Task<int?> AdvanceAsync(CancellationToken cancellationToken)
     {
@@ -136,6 +182,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
                 return IsExternal ? await ReadExternalAsync(cancellationToken).ConfigureAwait(true) : await ReadOwnAsync(cancellationToken).ConfigureAwait(true);
             case MapStep:
                 return await BuildDraftAsync(cancellationToken).ConfigureAwait(true) ? LookupsStep : null;
+            case LookupsStep when !IsExternal:
+                return _document is { } document && await PreviewAsync(document, cancellationToken).ConfigureAwait(true) ? PreviewStep : null;
             case LookupsStep:
                 return await BuildDraftAsync(cancellationToken).ConfigureAwait(true) && await PreviewAsync(_draft!.Document, cancellationToken).ConfigureAwait(true) ? PreviewStep : null;
             case PreviewStep:
@@ -158,6 +206,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
 
         _paths.Clear();
         _paths.AddRange(files);
+        IsSingleCsv = !IsExternal && files[0].EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
+        ClearRemovals();
         SourceText = string.Join(Environment.NewLine, files.Select(Path.GetFileName));
         ProposeNamespace(Path.GetFileNameWithoutExtension(files[0]));
         RefreshCommands();
@@ -204,7 +254,21 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         }
 
         _draft = null;
-        return await PreviewAsync(document.Value, cancellationToken).ConfigureAwait(true) ? PreviewStep : null;
+        _document = document.Value;
+
+        // ADR 0026: a view or data-only export holds only part of a configuration, so it imports as data.
+        if (!IsSingleCsv && !ImportPlanner.HasCompleteConfiguration(document.Value))
+        {
+            ContentIndex = ExportWizardViewModel.Contents.ToList().IndexOf(TransferContent.DataOnly);
+        }
+
+        if (!await PreviewAsync(document.Value, cancellationToken).ConfigureAwait(true))
+        {
+            return null;
+        }
+
+        // ADR 0026: in-use values the replace removes need a replacement before the preview can apply.
+        return HasRemovals ? LookupsStep : PreviewStep;
     }
 
     private async Task<int?> ReadExternalAsync(CancellationToken cancellationToken)
@@ -312,7 +376,7 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         var mode = ModeIndex == 1 ? ImportMode.Merge : ImportMode.CreateOnly;
         var result = IsExternal && _draft is { } draft
             ? await _services.Import.PreviewAsync(document, mode, cancellationToken, SourceNamespace.Trim(), draft.SourceKeys).ConfigureAwait(true)
-            : await _services.Import.PreviewAsync(document, mode, cancellationToken).ConfigureAwait(true);
+            : await _services.Import.PreviewAsync(document, mode, cancellationToken, options: OwnFormatOptions()).ConfigureAwait(true);
         if (!result.IsSuccess)
         {
             ErrorMessage = Describe(result.Error!);
@@ -320,6 +384,9 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         }
 
         var plan = result.Value;
+        SyncRemovals(plan);
+        IsConfigurationReplace = plan.IsConfigurationReplace;
+        IsReplaceConfirmed = false;
         if (_draft is { Findings.Count: > 0 } withFindings)
         {
             plan = plan with { Findings = [.. withFindings.Findings, .. plan.Findings] };
@@ -336,9 +403,17 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             f.RecordKey,
             Strings.Format("Import_Finding_" + f.Code.Replace("-", string.Empty, StringComparison.Ordinal), FindingField(f), f.Detail ?? string.Empty)))];
         var errors = plan.Findings.Count(f => f.Severity == ImportSeverity.Error);
+        // ADR 0026: a configuration replace always gets a safety backup first.
+        var (readyKey, readyCount) = plan switch
+        {
+            { IsConfigurationReplace: true, Content: TransferContent.ConfigurationOnly } => ("Import_PreviewReadyConfiguration", plan.TotalWriteCount),
+            { IsConfigurationReplace: true } => ("Import_PreviewReadyReplace", plan.RecordWriteCount),
+            { IsTargetEmpty: true } => ("Import_PreviewReady", plan.RecordWriteCount),
+            _ => ("Import_PreviewReadySafety", plan.RecordWriteCount),
+        };
         PreviewSummary = errors > 0
             ? Strings.Format("Import_PreviewBlocked", Number(errors))
-            : plan.HasChanges ? Strings.Format(plan.IsTargetEmpty ? "Import_PreviewReady" : "Import_PreviewReadySafety", Number(plan.RecordWriteCount)) : Strings.GetString("Import_PreviewNothing");
+            : plan.HasChanges ? Strings.Format(readyKey, Number(readyCount)) : Strings.GetString("Import_PreviewNothing");
         var p = plan.Presence;
         var absent = new (bool Present, string Key)[]
         {
@@ -346,8 +421,10 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             (p.Reviews, "Reviews"), (p.GeneralTodos, "GeneralTodos"), (p.Dates, "Dates"), (p.Notes, "Notes"),
         }.Where(x => !x.Present).Select(x => Strings.GetString("Import_Presence_" + x.Key)).ToList();
 
-        // B-13.4: say what the source does not contain, because it cannot be reconstructed.
-        PresenceText = absent.Count == 0 ? Strings.GetString("Import_PresenceAll") : Strings.Format("Import_PresenceAbsent", string.Join(", ", absent));
+        // B-13.4: say what the source does not contain, because it cannot be reconstructed. A configuration-only import
+        // imports no records, so there is nothing to say.
+        PresenceText = plan.Content == TransferContent.ConfigurationOnly ? string.Empty
+            : absent.Count == 0 ? Strings.GetString("Import_PresenceAll") : Strings.Format("Import_PresenceAbsent", string.Join(", ", absent));
         RefreshCommands();
         return true;
     }
@@ -360,9 +437,10 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         }
 
         string? safety = null;
-        if (!plan.IsTargetEmpty)
+        if (!plan.IsTargetEmpty || plan.IsConfigurationReplace)
         {
-            // B-13.9 / T-09: a non-empty target gets an import-safety backup first; no backup, no import.
+            // B-13.9 / T-09: a non-empty target gets an import-safety backup first; no backup, no import. ADR 0026: so
+            // does every configuration replace, because the configuration it replaces is data of its own.
             var backup = await _services.Maintenance.CreateBackupAsync("import-safety", cancellationToken).ConfigureAwait(true);
             if (!backup.IsSuccess)
             {
@@ -387,9 +465,15 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             return false;
         }
 
-        ResultText = safety is null
-            ? Strings.Format("Import_Result", Number(result.Value.Value))
-            : Strings.Format("Import_ResultWithSafety", Number(result.Value.Value), safety);
+        var count = Number(result.Value.Value);
+        ResultText = plan switch
+        {
+            { IsConfigurationReplace: true, Content: TransferContent.ConfigurationOnly } => Strings.Format("Import_ResultConfigurationOnly", count, safety ?? string.Empty),
+            { IsConfigurationReplace: true } => Strings.Format("Import_ResultConfiguration", Strings.Format("Import_ResultWithSafety", count, safety ?? string.Empty)),
+            _ when safety is null => Strings.Format("Import_Result", count),
+            _ => Strings.Format("Import_ResultWithSafety", count, safety),
+        };
+
         _context.Announce(ResultText);
         return true;
     }
@@ -400,17 +484,118 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         _plan = null;
         _draft = null;
         _source = null;
+        _document = null;
         ErrorMessage = null;
         Findings = [];
         CountRows = [];
+        ClearRemovals();
+        IsConfigurationReplace = false;
+        IsReplaceConfirmed = false;
         GoTo(SourceStep);
         RefreshCommands();
     }
 
+    // ----- ADR 0026: content and configuration replace -----
+
+    /// <summary>The content choice for a Max Planner file with definitions; a single CSV table keeps its data import.</summary>
+    private ImportOptions? OwnFormatOptions() => IsSingleCsv
+        ? null
+        : new ImportOptions(Content, RemovalChoices.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => c.Values[c.SelectedIndex]));
+
+    private void ClearRemovals()
+    {
+        RemovalChoices.Clear();
+        HasRemovals = false;
+    }
+
+    /// <summary>Lists the plan's in-use removals; a choice made earlier for the same value is kept.</summary>
+    private void SyncRemovals(ImportPlan plan)
+    {
+        var previous = RemovalChoices.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => c.Values[c.SelectedIndex]);
+        RemovalChoices.Clear();
+        foreach (var removal in plan.Removals)
+        {
+            var kindText = removal.Key.Kind is { } kind
+                ? Strings.GetString("LookupKind_" + kind)
+                : Strings.Format("Import_RemovalOption", removal.FieldLabel ?? string.Empty);
+            var usage = Strings.Format("Import_RemovalUsage", Number(removal.Usage.Tasks), Number(removal.Usage.SubtaskCards), Number(removal.Usage.ChangeRequests), Number(removal.Usage.ReviewItems));
+            if (removal.Usage.Defaults != WorkspaceDefaultRoles.None)
+            {
+                usage = Strings.Format("Import_RemovalUsageDefaults", usage);
+            }
+
+            List<string> labels = [];
+            List<Guid?> values = [];
+            if (removal.CanClear)
+            {
+                labels.Add(Strings.GetString("Import_RemovalClear"));
+                values.Add(null);
+            }
+
+            labels.AddRange(removal.Choices.Select(c => c.Name));
+            values.AddRange(removal.Choices.Select(c => (Guid?)c.Id));
+            var selected = previous.TryGetValue(removal.Key, out var chosen) ? values.IndexOf(chosen)
+                : removal.IsResolved ? values.IndexOf(removal.ChosenId) : -1;
+            var choice = new ImportRemovalViewModel(removal.Key, kindText, removal.Name, usage, labels, values, selected)
+            {
+                AutomationId = "Data_ImportRemovalCombo_" + RemovalChoices.Count.ToString(CultureInfo.InvariantCulture),
+                AccessibleName = Strings.Format("Import_RemovalComboName", kindText, removal.Name),
+            };
+
+            // Next on the Lookups step waits until every removal has a choice.
+            choice.PropertyChanged += (_, _) => RefreshCommands();
+            RemovalChoices.Add(choice);
+        }
+
+        HasRemovals = RemovalChoices.Count > 0;
+    }
+
     // ADR 0024: "people-dropped" names the role with its label ("Designer"), not the transfer member ("DesignerIds").
-    private string FindingField(ImportFinding finding) => finding.Code == ImportFindingCodes.PeopleDropped
-        ? Strings.GetString(finding.Field == "DeveloperIds" ? "Field_Developer" : "Field_Designer")
-        : finding.Field ?? string.Empty;
+    // A lookup finding names its kind ("Task status"); a field finding names the field or the option's field.
+    private string FindingField(ImportFinding finding) => finding switch
+    {
+        { Code: ImportFindingCodes.PeopleDropped } => Strings.GetString(finding.Field == "DeveloperIds" ? "Field_Developer" : "Field_Designer"),
+        { Entity: ImportEntity.Lookup } when Enum.TryParse<LookupKind>(finding.Field, ignoreCase: false, out var kind) && Enum.IsDefined(kind) => Strings.GetString("LookupKind_" + kind),
+        { Entity: ImportEntity.Field, Code: ImportFindingCodes.ConfigurationAdded or ImportFindingCodes.ConfigurationUpdated or ImportFindingCodes.ConfigurationMissing } when finding.Field is null
+            => Strings.GetString("Transfer_Entity_field"),
+        { Entity: ImportEntity.Field, Code: ImportFindingCodes.ConfigurationRemoved or ImportFindingCodes.RemovalUnresolved or ImportFindingCodes.ConfigurationMissing }
+            => Strings.Format("Import_RemovalOption", finding.Field ?? string.Empty),
+        _ => finding.Field ?? string.Empty,
+    };
+}
+
+/// <summary>ADR 0026: one in-use value a configuration replace removes, and the value that replaces it (or Clear).</summary>
+/// <param name="SelectedIndex">-1 when nothing is chosen yet (the preview then reports an error).</param>
+public sealed partial class ImportRemovalViewModel(
+    ConfigurationRemovalKey key,
+    string kindText,
+    string name,
+    string usageText,
+    IReadOnlyList<string> options,
+    IReadOnlyList<Guid?> values,
+    int selectedIndex) : ObservableObject
+{
+    public ConfigurationRemovalKey Key { get; } = key;
+
+    /// <summary>A positional AutomationId for the replacement ComboBox (design §8.1).</summary>
+    public string AutomationId { get; init; } = string.Empty;
+
+    public string AccessibleName { get; init; } = string.Empty;
+
+    /// <summary>"Task status", or "Option of Risk".</summary>
+    public string KindText { get; } = kindText;
+
+    public string Name { get; } = name;
+
+    public string UsageText { get; } = usageText;
+
+    public IReadOnlyList<string> Options { get; } = options;
+
+    /// <summary>The replacement of each option; null is Clear.</summary>
+    public IReadOnlyList<Guid?> Values { get; } = values;
+
+    [ObservableProperty]
+    public partial int SelectedIndex { get; set; } = selectedIndex;
 }
 
 /// <summary>One source table in the Map step: its entity type and the field of each column (B-13.1).</summary>

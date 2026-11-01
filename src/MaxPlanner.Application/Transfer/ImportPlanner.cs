@@ -37,7 +37,7 @@ public sealed record ImportContext(
 /// <para>ADR 0006: an import may link a currently unlinked task once; it never removes or changes an existing link
 /// (reported as a conflict, and that task row is not applied). Historical dates are kept; B-04 automation never runs.</para>
 /// </remarks>
-public static class ImportPlanner
+public static partial class ImportPlanner
 {
     private const long RankStep = 1024;
 
@@ -63,17 +63,22 @@ public static class ImportPlanner
         return builder.Append(WorkflowStamps.Defaults(workflow)).ToString();
     }
 
-    public static ImportPlan Plan(TransferDocument document, ReadSnapshot snapshot, ImportMode mode, ImportContext context, DateTimeOffset nowUtc)
+    /// <param name="options">
+    /// ADR 0026: the content to import from a Max Planner file with definitions, and the replacements chosen for in-use
+    /// configuration it removes. Null for sources without that choice (a single CSV table, external data), which add
+    /// missing definitions and never replace configuration.
+    /// </param>
+    public static ImportPlan Plan(TransferDocument document, ReadSnapshot snapshot, ImportMode mode, ImportContext context, DateTimeOffset nowUtc, ImportOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(context);
-        return new Run(document, snapshot, mode, context, nowUtc).Execute();
+        return new Run(document, snapshot, mode, context, options, nowUtc).Execute();
     }
 
     private static bool Supplied(IReadOnlySet<string>? supplied, string member) => supplied is null || supplied.Contains(member);
 
-    private sealed class Run(TransferDocument doc, ReadSnapshot snapshot, ImportMode mode, ImportContext context, DateTimeOffset now)
+    private sealed partial class Run(TransferDocument doc, ReadSnapshot snapshot, ImportMode mode, ImportContext context, ImportOptions? options, DateTimeOffset now)
     {
         private readonly List<ImportFinding> _findings = [];
         private readonly Dictionary<string, ImportEntityCounts> _counts = [];
@@ -91,16 +96,17 @@ public static class ImportPlanner
         private List<TagDefinition> _tags = [];
         private List<FieldDefinition> _fields = [];
         private WorkflowDefaults _defaults = snapshot.Workflow.Defaults;
+        private ReadSnapshot _snapshot = snapshot;
         private bool _workflowChanged;
 
-        private bool IsTargetEmpty => snapshot.Tasks.Count == 0 && snapshot.ChangeRequests.Count == 0 && snapshot.SubtaskCards.Count == 0
-            && snapshot.ReviewItems.Count == 0 && snapshot.GeneralTodos.Count == 0;
+        private bool IsTargetEmpty => _snapshot.Tasks.Count == 0 && _snapshot.ChangeRequests.Count == 0 && _snapshot.SubtaskCards.Count == 0
+            && _snapshot.ReviewItems.Count == 0 && _snapshot.GeneralTodos.Count == 0;
 
         private string ExistsCode => context.SourceNamespace is null ? ImportFindingCodes.Exists : ImportFindingCodes.AlreadyImported;
 
         public ImportPlan Execute()
         {
-            var stamp = WorkflowStamp(snapshot.Workflow);
+            var stamp = WorkflowStamp(_snapshot.Workflow);
             var presence = Presence();
             if (doc.TopLevelRecordCount > TransferLimits.MaxTopLevelRecords)
             {
@@ -108,13 +114,42 @@ public static class ImportPlanner
                 return new ImportPlan { Mode = mode, WorkflowStamp = stamp, Findings = _findings, Presence = presence, IsTargetEmpty = IsTargetEmpty };
             }
 
-            MergeWorkflow();
+            switch (options?.Content)
+            {
+                case null:
+                    MergeWorkflow();
+                    break;
+                case TransferContent.DataOnly:
+                    MatchWorkflowForData();
+                    break;
+                default:
+                    ReplaceWorkflow();
+                    break;
+            }
+
             InitializeColumns();
-            var changeRequests = PlanChangeRequests();
-            var (tasks, links) = PlanTasks();
-            var cards = PlanSubtaskCards(tasks);
-            var reviews = PlanReviews();
-            var todos = PlanGeneralTodos();
+            List<PlannedRecord<ChangeRequest>> changeRequests = [];
+            List<PlannedRecord<TaskItem>> tasks = [];
+            List<PlannedLink> links = [];
+            List<PlannedRecord<SubtaskCard>> cards = [];
+            List<PlannedRecord<ReviewItem>> reviews = [];
+            List<PlannedRecord<GeneralTodo>> todos = [];
+            if (options?.Content == TransferContent.ConfigurationOnly)
+            {
+                if (doc.TopLevelRecordCount > 0)
+                {
+                    Add(ImportSeverity.Info, ImportEntity.File, string.Empty, ImportFindingCodes.RecordsIgnored, detail: Invariant(doc.TopLevelRecordCount));
+                }
+            }
+            else
+            {
+                changeRequests = PlanChangeRequests();
+                (tasks, links) = PlanTasks();
+                cards = PlanSubtaskCards(tasks);
+                reviews = PlanReviews();
+                todos = PlanGeneralTodos();
+            }
+
             var workflow = _workflowChanged
                 ? new WorkflowSnapshot(_taskStatuses, _crStatuses, _priorities, _squads, _people, _tags, _fields, _defaults)
                 : null;
@@ -122,8 +157,11 @@ public static class ImportPlanner
             return new ImportPlan
             {
                 Mode = mode,
+                Content = options?.Content,
                 WorkflowStamp = stamp,
                 NewWorkflow = workflow,
+                Replacement = _replacement,
+                Removals = _removals,
                 ChangeRequests = changeRequests,
                 Tasks = tasks,
                 Links = links,
@@ -189,7 +227,7 @@ public static class ImportPlanner
         // ----- Workflow -----
         private void MergeWorkflow()
         {
-            var w = snapshot.Workflow;
+            var w = _snapshot.Workflow;
             _taskStatuses = [.. w.TaskStatuses];
             _crStatuses = [.. w.CrStatuses];
             _priorities = [.. w.Priorities];
@@ -531,13 +569,13 @@ public static class ImportPlanner
         // ----- Board columns -----
         private void InitializeColumns()
         {
-            var archived = snapshot.Tasks.Where(t => t.IsArchived).Select(t => t.Id).ToHashSet();
-            foreach (var task in snapshot.Tasks.Where(t => !t.IsArchived))
+            var archived = _snapshot.Tasks.Where(t => t.IsArchived).Select(t => t.Id).ToHashSet();
+            foreach (var task in _snapshot.Tasks.Where(t => !t.IsArchived))
             {
                 Bump(task.StatusId.Value, task.Rank);
             }
 
-            foreach (var card in snapshot.SubtaskCards.Where(c => !archived.Contains(c.ParentTaskId)))
+            foreach (var card in _snapshot.SubtaskCards.Where(c => !archived.Contains(c.ParentTaskId)))
             {
                 Bump(card.StatusId.Value, card.Rank);
             }
@@ -558,8 +596,8 @@ public static class ImportPlanner
         {
             const string Entity = ImportEntity.ChangeRequest;
             var planned = new List<PlannedRecord<ChangeRequest>>();
-            var byId = snapshot.ChangeRequests.ToDictionary(c => c.Id.Value);
-            var byNumber = snapshot.ChangeRequests.ToDictionary(c => c.Number.Normalized, StringComparer.Ordinal);
+            var byId = _snapshot.ChangeRequests.ToDictionary(c => c.Id.Value);
+            var byNumber = _snapshot.ChangeRequests.ToDictionary(c => c.Number.Normalized, StringComparer.Ordinal);
             var plannedNumbers = new Dictionary<string, Guid>(StringComparer.Ordinal);
             foreach (var source in doc.ChangeRequests)
             {
@@ -754,8 +792,8 @@ public static class ImportPlanner
             const string Entity = ImportEntity.Task;
             var planned = new List<PlannedRecord<TaskItem>>();
             var links = new List<PlannedLink>();
-            var byId = snapshot.Tasks.ToDictionary(t => t.Id.Value);
-            var crIds = snapshot.ChangeRequests.Select(c => c.Id.Value).ToHashSet();
+            var byId = _snapshot.Tasks.ToDictionary(t => t.Id.Value);
+            var crIds = _snapshot.ChangeRequests.Select(c => c.Id.Value).ToHashSet();
             var linksByTask = doc.Links.GroupBy(l => l.TaskId).ToDictionary(g => g.Key, g => g.ToList());
             var seen = new HashSet<Guid>();
             var documentHasLinks = doc.Links.Count > 0 || doc.ChangeRequests.Count > 0;
@@ -1040,14 +1078,14 @@ public static class ImportPlanner
         {
             const string Entity = ImportEntity.SubtaskCard;
             var planned = new List<PlannedRecord<SubtaskCard>>();
-            var byId = snapshot.SubtaskCards.ToDictionary(c => c.Id.Value);
-            var parents = snapshot.Tasks.ToDictionary(t => t.Id.Value);
+            var byId = _snapshot.SubtaskCards.ToDictionary(c => c.Id.Value);
+            var parents = _snapshot.Tasks.ToDictionary(t => t.Id.Value);
             foreach (var task in plannedTasks)
             {
                 parents[task.Record.Id.Value] = task.Record;
             }
 
-            var perParent = snapshot.SubtaskCards.GroupBy(c => c.ParentTaskId.Value).ToDictionary(g => g.Key, g => g.Count());
+            var perParent = _snapshot.SubtaskCards.GroupBy(c => c.ParentTaskId.Value).ToDictionary(g => g.Key, g => g.Count());
             var seen = new HashSet<Guid>();
             foreach (var source in doc.SubtaskCards)
             {
@@ -1161,8 +1199,8 @@ public static class ImportPlanner
         {
             const string Entity = ImportEntity.Review;
             var planned = new List<PlannedRecord<ReviewItem>>();
-            var byId = snapshot.ReviewItems.ToDictionary(r => r.Id.Value);
-            var nextRank = snapshot.ReviewItems.Select(r => r.Rank).DefaultIfEmpty(0).Max();
+            var byId = _snapshot.ReviewItems.ToDictionary(r => r.Id.Value);
+            var nextRank = _snapshot.ReviewItems.Select(r => r.Rank).DefaultIfEmpty(0).Max();
             var seen = new HashSet<Guid>();
             foreach (var source in doc.Reviews)
             {
@@ -1274,8 +1312,8 @@ public static class ImportPlanner
         {
             const string Entity = ImportEntity.GeneralTodo;
             var planned = new List<PlannedRecord<GeneralTodo>>();
-            var byId = snapshot.GeneralTodos.ToDictionary(t => t.Id.Value);
-            var nextRank = snapshot.GeneralTodos.Select(t => t.Rank).DefaultIfEmpty(0).Max();
+            var byId = _snapshot.GeneralTodos.ToDictionary(t => t.Id.Value);
+            var nextRank = _snapshot.GeneralTodos.Select(t => t.Rank).DefaultIfEmpty(0).Max();
             var seen = new HashSet<Guid>();
             foreach (var source in doc.GeneralTodos)
             {

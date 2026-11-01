@@ -17,14 +17,26 @@ internal sealed partial class TransferFileWriter(ILogger? logger = null) : ITran
 
     public const string BundleMetadataEntry = "metadata.json";
 
-    public Task<AppResult<string>> WriteAsync(TransferDocument document, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken)
+    public Task<AppResult<string>> WriteAsync(
+        TransferDocument document,
+        TransferFileFormat format,
+        TransferTable? table,
+        string destinationPath,
+        CancellationToken cancellationToken,
+        TransferContent content = TransferContent.Both)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrWhiteSpace(destinationPath);
-        return Task.Run(() => Write(document, format, table, destinationPath, cancellationToken), CancellationToken.None);
+        if (content == TransferContent.ConfigurationOnly && format == TransferFileFormat.CsvTable)
+        {
+            throw new ArgumentException("A single CSV table holds records only.", nameof(format));
+        }
+
+        var definitionsOnly = content == TransferContent.ConfigurationOnly;
+        return Task.Run(() => Write(document, format, table, definitionsOnly, destinationPath, cancellationToken), CancellationToken.None);
     }
 
-    private AppResult<string> Write(TransferDocument document, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken)
+    private AppResult<string> Write(TransferDocument document, TransferFileFormat format, TransferTable? table, bool definitionsOnly, string destinationPath, CancellationToken cancellationToken)
     {
         string? temp = null;
         try
@@ -41,14 +53,14 @@ internal sealed partial class TransferFileWriter(ILogger? logger = null) : ITran
                         stream.Write(TransferJson.Serialize(document));
                         break;
                     case TransferFileFormat.Xlsx:
-                        XlsxWorkbook.Write(stream, Sheets(document), cancellationToken);
+                        XlsxWorkbook.Write(stream, Sheets(document, definitionsOnly), cancellationToken);
                         break;
                     case TransferFileFormat.CsvTable:
                         var single = table ?? TransferTable.Tasks;
                         CsvTable.Write(stream, TransferTables.Columns(single), TransferTables.Rows(document, single), cancellationToken);
                         break;
                     default:
-                        WriteBundle(stream, document, cancellationToken);
+                        WriteBundle(stream, document, definitionsOnly, cancellationToken);
                         break;
                 }
 
@@ -88,21 +100,25 @@ internal sealed partial class TransferFileWriter(ILogger? logger = null) : ITran
         }
     }
 
-    private static List<XlsxWorkbook.Sheet> Sheets(TransferDocument document)
+    // ADR 0026: a configuration-only workbook has the definition sheets alone.
+    private static List<XlsxWorkbook.Sheet> Sheets(TransferDocument document, bool definitionsOnly)
     {
-        var sheets = TransferTables.All
-            .Select(t => new XlsxWorkbook.Sheet(TransferTables.NameOf(t), TransferTables.Columns(t), TransferTables.Rows(document, t)))
-            .ToList();
+        var sheets = definitionsOnly
+            ? []
+            : TransferTables.All
+                .Select(t => new XlsxWorkbook.Sheet(TransferTables.NameOf(t), TransferTables.Columns(t), TransferTables.Rows(document, t)))
+                .ToList();
         sheets.Add(new XlsxWorkbook.Sheet(TransferTables.MetadataSheet, TransferTables.MetadataColumns, TransferTables.MetadataRows(document)));
         sheets.Add(new XlsxWorkbook.Sheet(TransferTables.LookupsSheet, TransferTables.LookupColumns, TransferTables.LookupRows(document)));
         sheets.Add(new XlsxWorkbook.Sheet(TransferTables.FieldsSheet, TransferTables.FieldColumns, TransferTables.FieldRows(document)));
         return sheets;
     }
 
-    private static void WriteBundle(Stream stream, TransferDocument document, CancellationToken cancellationToken)
+    // ADR 0026: a configuration-only bundle has metadata.json alone.
+    private static void WriteBundle(Stream stream, TransferDocument document, bool definitionsOnly, CancellationToken cancellationToken)
     {
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
-        foreach (var table in TransferTables.All)
+        foreach (var table in definitionsOnly ? [] : TransferTables.All)
         {
             var entry = archive.CreateEntry(TransferTables.NameOf(table) + ".csv", CompressionLevel.Optimal);
             using var entryStream = entry.Open();

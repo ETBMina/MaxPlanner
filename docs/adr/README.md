@@ -29,3 +29,4 @@ Each ADR records context, options considered, the decision, consequences, depend
 | [0023](0023-filter-scopes-and-drill-down-context.md) | Filter scopes, shared predicates, and the drill-down context stack | Proposed |
 | [0024](0024-single-designer-and-developer.md) | One Designer and one Developer per task | Accepted |
 | [0025](0025-lf-line-endings.md) | Stored text uses LF line breaks | Accepted |
+| [0026](0026-transfer-content-selection.md) | Transfer content selection and configuration replace | Accepted |

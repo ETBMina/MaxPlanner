@@ -106,9 +106,19 @@ public sealed record ImportNotApplicableError : AppError
 public interface ITransferFileWriter
 {
     /// <param name="table">The table of a <see cref="TransferFileFormat.CsvTable"/> export; ignored otherwise.</param>
+    /// <param name="content">
+    /// ADR 0026: <see cref="TransferContent.ConfigurationOnly"/> writes the definitions alone (XLSX: the definition sheets;
+    /// CSV bundle: <c>metadata.json</c>). It is not valid for a single CSV table.
+    /// </param>
     /// <returns>The written path, or a <see cref="TransferFileError"/> / <see cref="OperationCancelledError"/>.</returns>
     /// <remarks>Runs off the calling thread. Cancellation or failure leaves an existing file at the destination unchanged.</remarks>
-    Task<AppResult<string>> WriteAsync(TransferDocument document, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken);
+    Task<AppResult<string>> WriteAsync(
+        TransferDocument document,
+        TransferFileFormat format,
+        TransferTable? table,
+        string destinationPath,
+        CancellationToken cancellationToken,
+        TransferContent content = TransferContent.Both);
 }
 
 /// <summary>Reads a Max Planner transfer file (JSON, XLSX, CSV table, or CSV bundle) without writing anything.</summary>

@@ -1,8 +1,12 @@
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Checklists;
+using MaxPlanner.Domain.Fields;
+using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
 using MaxPlanner.Domain.Tasks;
+using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Application.Transfer;
 
@@ -84,6 +88,119 @@ public static class ImportFindingCodes
 
     /// <summary>ADR 0024: a task keeps one Designer and one Developer; the detail names the people that were dropped.</summary>
     public const string PeopleDropped = "people-dropped";
+
+    // ADR 0026: content selection and configuration replace.
+
+    /// <summary>A configuration import ignores the file's records; the detail is their number.</summary>
+    public const string RecordsIgnored = "records-ignored";
+
+    /// <summary>Data only: a value the records use matches no existing value by ID or name.</summary>
+    public const string ConfigurationMissing = "config-missing";
+
+    /// <summary>A replace adds this lookup value or custom field.</summary>
+    public const string ConfigurationAdded = "config-added";
+
+    /// <summary>A replace changes the name, order, flags, or options of this lookup value or custom field.</summary>
+    public const string ConfigurationUpdated = "config-updated";
+
+    /// <summary>A replace removes this lookup value or Lookup option; in-use ones are remapped as chosen.</summary>
+    public const string ConfigurationRemoved = "config-removed";
+
+    /// <summary>A replace turns off a custom field the file does not have; its values are kept (B-11).</summary>
+    public const string FieldDeactivated = "field-deactivated";
+
+    /// <summary>An in-use removed value has no valid replacement yet (B-04); Apply is blocked.</summary>
+    public const string RemovalUnresolved = "removal-unresolved";
+
+    /// <summary>The file has no task status, CR status, or priority, which B-04 requires.</summary>
+    public const string ConfigurationRequired = "config-required";
+
+    /// <summary>The file's business defaults do not resolve to its own values.</summary>
+    public const string DefaultsInvalid = "defaults-invalid";
+
+    /// <summary>A view or data-only export holds only part of a configuration, so it cannot replace one.</summary>
+    public const string ConfigurationIncomplete = "config-incomplete";
+
+    /// <summary>A field's People or Tags default names a value the configuration does not have; that value is dropped.</summary>
+    public const string DefaultDropped = "default-dropped";
+}
+
+/// <summary>ADR 0026: what an export writes or an import applies.</summary>
+public enum TransferContent
+{
+    /// <summary>Configuration and data (default).</summary>
+    Both,
+
+    /// <summary>Lookups, custom field definitions, and business defaults; no records.</summary>
+    ConfigurationOnly,
+
+    /// <summary>Records: an import never changes configuration; an export writes only the configuration they use.</summary>
+    DataOnly,
+}
+
+/// <summary>Identifies a configuration value an import removes: a lookup value, or a Lookup option of a field.</summary>
+public readonly record struct ConfigurationRemovalKey(LookupKind? Kind, Guid? FieldId, Guid Id)
+{
+    public static ConfigurationRemovalKey ForLookup(LookupKind kind, Guid id) => new(kind, null, id);
+
+    public static ConfigurationRemovalKey ForOption(Guid fieldId, Guid optionId) => new(null, fieldId, optionId);
+}
+
+/// <summary>ADR 0026: the import's content choice and the user's resolution of in-use removals.</summary>
+/// <param name="Replacements">
+/// For each in-use removed value: the value that takes over its references, or null to clear them where B-04 allows.
+/// A missing key means "not chosen yet".
+/// </param>
+public sealed record ImportOptions(TransferContent Content, IReadOnlyDictionary<ConfigurationRemovalKey, Guid?>? Replacements = null);
+
+/// <summary>A value a removed one can be replaced with.</summary>
+public sealed record ConfigurationChoice(Guid Id, string Name);
+
+/// <summary>An in-use value that a configuration replace removes, as the wizard's Lookups step shows it (ADR 0026).</summary>
+/// <param name="FieldLabel">For a Lookup option: the label of its field; null for lookup values.</param>
+/// <param name="Usage">The records (and defaults) that use the value.</param>
+/// <param name="CanClear">B-04: references may be cleared instead of replaced (Designer, Developer, review Developer, squads, tags, optional fields).</param>
+/// <param name="Choices">The file's values of the same kind, which can replace it.</param>
+/// <param name="IsResolved">A valid choice was made; <paramref name="ChosenId"/> is it (null = clear).</param>
+public sealed record ConfigurationRemoval(
+    ConfigurationRemovalKey Key,
+    string Name,
+    string? FieldLabel,
+    LookupUsageCounts Usage,
+    bool CanClear,
+    IReadOnlyList<ConfigurationChoice> Choices,
+    bool IsResolved,
+    Guid? ChosenId);
+
+/// <summary>A lookup value a replace deletes, with the record usage the preview saw (revalidated at commit, T-10).</summary>
+public sealed record RemovedLookup(LookupKind Kind, Guid Id, LookupUsageCounts RecordUsage);
+
+/// <summary>A Lookup option a replace deletes, with the number of records the preview saw use it.</summary>
+public sealed record RemovedOption(FieldOptionRemap Probe, FieldTarget Target, int RecordUsage);
+
+/// <summary>
+/// ADR 0026: how Apply replaces the configuration. The staging workflows are saved first (temporary names so renames
+/// never collide, then the new values beside the removed ones), the remapped records next, the imported data after
+/// them, and finally <see cref="ImportPlan.NewWorkflow"/>, which deletes the removed values.
+/// </summary>
+public sealed record ConfigurationReplacement
+{
+    public IReadOnlyList<WorkflowSnapshot> Staging { get; init; } = [];
+
+    public IReadOnlyList<PlannedRecord<TaskItem>> Tasks { get; init; } = [];
+
+    public IReadOnlyList<PlannedRecord<SubtaskCard>> SubtaskCards { get; init; } = [];
+
+    public IReadOnlyList<PlannedRecord<ChangeRequest>> ChangeRequests { get; init; } = [];
+
+    public IReadOnlyList<PlannedRecord<ReviewItem>> Reviews { get; init; } = [];
+
+    public IReadOnlyList<RemovedLookup> RemovedLookups { get; init; } = [];
+
+    public IReadOnlyList<RemovedOption> RemovedOptions { get; init; } = [];
+
+    /// <summary>Records whose references the replace moves to another value or clears.</summary>
+    public int RecordCount => Tasks.Count + SubtaskCards.Count + ChangeRequests.Count + Reviews.Count;
 }
 
 /// <param name="RecordKey">The record ID, or the source key of an external record; never record content.</param>
@@ -139,11 +256,22 @@ public sealed record ImportPlan
 {
     public required ImportMode Mode { get; init; }
 
+    /// <summary>ADR 0026: the content choice; null for sources without one (a single CSV table, external data).</summary>
+    public TransferContent? Content { get; init; }
+
     /// <summary>The workflow the preview was made against (<see cref="ImportPlanner.WorkflowStamp"/>).</summary>
     public required string WorkflowStamp { get; init; }
 
     /// <summary>The complete workflow after the import's new lookups, options, and fields; null when unchanged.</summary>
     public WorkflowSnapshot? NewWorkflow { get; init; }
+
+    /// <summary>ADR 0026: set when the import replaces the configuration (it then needs an explicit confirmation).</summary>
+    public ConfigurationReplacement? Replacement { get; init; }
+
+    /// <summary>ADR 0026: in-use values the replace removes, each resolved or still waiting for a choice.</summary>
+    public IReadOnlyList<ConfigurationRemoval> Removals { get; init; } = [];
+
+    public bool IsConfigurationReplace => Replacement is not null;
 
     public IReadOnlyList<PlannedRecord<ChangeRequest>> ChangeRequests { get; init; } = [];
 
@@ -172,6 +300,28 @@ public sealed record ImportPlan
 
     public int RecordWriteCount =>
         ChangeRequests.Count + Tasks.Count + Links.Count + SubtaskCards.Count + Reviews.Count + GeneralTodos.Count;
+
+    /// <summary>Every record Apply writes: the imported ones, plus those that only a configuration replace remaps.</summary>
+    public int TotalWriteCount
+    {
+        get
+        {
+            if (Replacement is not { } r)
+            {
+                return RecordWriteCount;
+            }
+
+            var tasks = Tasks.Select(t => t.Record.Id).ToHashSet();
+            var cards = SubtaskCards.Select(c => c.Record.Id).ToHashSet();
+            var changeRequests = ChangeRequests.Select(c => c.Record.Id).ToHashSet();
+            var reviews = Reviews.Select(c => c.Record.Id).ToHashSet();
+            return RecordWriteCount
+                + r.Tasks.Count(t => !tasks.Contains(t.Record.Id))
+                + r.SubtaskCards.Count(c => !cards.Contains(c.Record.Id))
+                + r.ChangeRequests.Count(c => !changeRequests.Contains(c.Record.Id))
+                + r.Reviews.Count(c => !reviews.Contains(c.Record.Id));
+        }
+    }
 
     public bool HasChanges => RecordWriteCount > 0 || NewWorkflow is not null || LedgerEntries.Count > 0;
 

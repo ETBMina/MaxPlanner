@@ -217,6 +217,14 @@ public sealed record ChangeRequest
         return changed ? result.Touch(nowUtc) : null;
     }
 
+    /// <summary>ADR 0026: moves a removed Lookup option's value to its replacement, or clears it.</summary>
+    /// <returns>The remapped CR, or null when it does not use the removed option.</returns>
+    public ChangeRequest? Remap(FieldOptionRemap remap, DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(remap);
+        return remap.MapCustomValues(CustomValues) is { } values ? (this with { CustomValues = values }).Touch(nowUtc) : null;
+    }
+
     private ChangeRequest WithContent(ChangeRequestContent content) => this with
     {
         Number = content.Number,

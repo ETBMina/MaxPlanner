@@ -104,7 +104,7 @@ public sealed class XlsxRoundTripTests : IDisposable
         var report = await Transfers.ExportAsync(db, path, scope);
 
         report.IsViewExport.Should().BeTrue();
-        report.Limitations.Should().BeEquivalentTo([ExportLimitationCodes.ViewIsNotBackup, ExportLimitationCodes.ParentsIncluded, ExportLimitationCodes.SpreadsheetNotBackup]);
+        report.Limitations.Should().BeEquivalentTo([ExportLimitationCodes.DataOnly, ExportLimitationCodes.ViewIsNotBackup, ExportLimitationCodes.ParentsIncluded, ExportLimitationCodes.SpreadsheetNotBackup]);
         var document = await Transfers.ReadAsync(path);
         document.Scope.Should().Be(new TransferScope(TransferFormat.ScopeCurrentView, "tasks", "Status: Blocked"));
         document.Tasks.Select(t => t.Id).Should().BeEquivalentTo([fixture.LinkedAtCreation.Value, fixture.Unlinked.Value], "the card's parent is included");
@@ -112,8 +112,10 @@ public sealed class XlsxRoundTripTests : IDisposable
         document.ChangeRequests.Should().ContainSingle().Which.Id.Should().Be(fixture.Cr.Value, "the CR of an exported task is included");
         document.Links.Should().ContainSingle().Which.Should().Match<TransferLink>(l => l.TaskId == fixture.LinkedAtCreation.Value && l.ChangeRequestId == fixture.Cr.Value);
         (document.Reviews.Count, document.GeneralTodos.Count).Should().Be((0, 0));
-        document.Lookups.People.Should().HaveCount(2, "every definition is included so the file stays resolvable");
-        document.FieldDefinitions.Should().HaveCount(2);
+        // ADR 0026: a view export is data only, with the configuration its records use and no defaults.
+        document.Lookups.People.Select(p => p.Id).Should().Equal([fixture.Alice.Value], "only the owner of the exported CR is used");
+        document.FieldDefinitions.Should().BeEmpty("no exported record has a custom value");
+        document.Defaults.Should().BeNull();
     }
 
     [Fact]

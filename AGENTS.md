@@ -44,6 +44,7 @@ Max Planner is a native Windows planning app (CRs, tasks, Board, Grid, Calendar,
 - Committed changes reach every page through the shared projection store, and incremental updates keep focus, selection, scroll, and drafts (ADR 0010).
 - UI strings live in `.resw` files. Interactive elements get stable AutomationIds and accessible names.
 - Automated and destructive tests use disposable datasets, never real user data.
+- **Transfer parity:** export and import must keep covering everything. When a change adds or alters configuration (statuses, people, tags, custom fields, defaults) or record data, update export and import in the same change, or confirm that nothing there needs to change. Round-trip tests must still pass (ADR 0026).
 
 ## Commands
 

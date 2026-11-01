@@ -62,6 +62,16 @@
                                 IsEnabled="{x:Bind ViewModel.IsViewAvailable, Mode=OneWay}" />
                             <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ViewModel.ViewDescription, Mode=OneWay}" TextWrapping="Wrap" />
                             <TextBlock x:Uid="Export_ScopeHelp" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            <!-- ADR 0026: content applies to the entire dataset; a view export is always data. -->
+                            <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsEntireDataset), Mode=OneWay}">
+                                <ComboBox
+                                    x:Uid="Export_ContentCombo"
+                                    MinWidth="260"
+                                    AutomationProperties.AutomationId="Data_ExportContentCombo"
+                                    ItemsSource="{x:Bind ViewModel.ContentChoices, Mode=OneTime}"
+                                    SelectedIndex="{x:Bind ViewModel.ContentIndex, Mode=TwoWay}" />
+                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ViewModel.ContentHelp, Mode=OneWay}" TextWrapping="Wrap" />
+                            </StackPanel>
                         </StackPanel>
                         <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 1), Mode=OneWay}">
                             <ComboBox
@@ -76,7 +86,13 @@
                                 AutomationProperties.AutomationId="Data_ExportTableCombo"
                                 ItemsSource="{x:Bind ViewModel.TableChoices, Mode=OneTime}"
                                 SelectedIndex="{x:Bind ViewModel.TableIndex, Mode=TwoWay}"
-                                Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsCsvTable), Mode=OneWay}" />
+                                Visibility="{x:Bind local:DataPageView.Show(ViewModel.ShowsTableChoice), Mode=OneWay}" />
+                            <InfoBar
+                                x:Uid="Export_FormatUnavailableInfoBar"
+                                AutomationProperties.AutomationId="Data_ExportFormatUnavailableInfoBar"
+                                IsClosable="False"
+                                IsOpen="{x:Bind ViewModel.IsFormatUnavailable, Mode=OneWay}"
+                                Severity="Warning" />
                             <TextBlock Text="{x:Bind ViewModel.FormatHelp, Mode=OneWay}" TextWrapping="Wrap" />
                         </StackPanel>
                         <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 2), Mode=OneWay}">

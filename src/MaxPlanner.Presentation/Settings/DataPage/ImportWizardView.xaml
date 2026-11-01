@@ -98,6 +98,17 @@
                                 ItemsSource="{x:Bind ViewModel.ModeChoices, Mode=OneTime}"
                                 SelectedIndex="{x:Bind ViewModel.ModeIndex, Mode=TwoWay}" />
                             <TextBlock x:Uid="Import_ModeHelp" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            <!-- ADR 0026: content applies to Max Planner files with definitions (not a single CSV table). -->
+                            <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsOwnFormat), Mode=OneWay}">
+                                <ComboBox
+                                    x:Uid="Import_ContentCombo"
+                                    MinWidth="240"
+                                    AutomationProperties.AutomationId="Data_ImportContentCombo"
+                                    IsEnabled="{x:Bind ViewModel.IsContentAvailable, Mode=OneWay}"
+                                    ItemsSource="{x:Bind ViewModel.ContentChoices, Mode=OneTime}"
+                                    SelectedIndex="{x:Bind ViewModel.ContentIndex, Mode=TwoWay}" />
+                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ViewModel.ContentHelp, Mode=OneWay}" TextWrapping="Wrap" />
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- Step 2: Map columns (external) -->
@@ -138,67 +149,108 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- Step 3: Lookups and relationships (external) -->
+                        <!-- Step 3: Lookups and relationships: in-use values a configuration replace removes (ADR 0026) -->
                         <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 2), Mode=OneWay}">
-                            <TextBlock x:Uid="Import_NoDecisionsText" Visibility="{x:Bind local:DataPageView.Show(ViewModel.HasNoDecisions), Mode=OneWay}" />
-                            <TextBlock x:Uid="Import_ValuesHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <ItemsControl ItemsSource="{x:Bind ViewModel.ValueChoices, Mode=OneTime}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="local:ImportChoiceViewModel">
-                                        <Grid Margin="0,4" ColumnSpacing="12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=": " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
-                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Detail, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock x:Uid="Import_CrConflictsHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <ItemsControl ItemsSource="{x:Bind ViewModel.CrConflicts, Mode=OneTime}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="local:ImportChoiceViewModel">
-                                        <Grid Margin="0,4" ColumnSpacing="12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
-                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock x:Uid="Import_CrChoicesHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TextBlock x:Uid="Import_CrChoicesPermanent" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                            <ItemsControl ItemsSource="{x:Bind ViewModel.CrReferenceChoices, Mode=OneTime}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="local:ImportChoiceViewModel">
-                                        <Grid Margin="0,4" ColumnSpacing="12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock VerticalAlignment="Center" Text="{x:Bind Label, Mode=OneTime}" TextWrapping="Wrap" />
-                                            <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <ComboBox
-                                x:Uid="Import_FallbackOwnerCombo"
-                                MinWidth="240"
-                                AutomationProperties.AutomationId="Data_ImportFallbackOwnerCombo"
-                                ItemsSource="{x:Bind ViewModel.OwnerChoices, Mode=OneWay}"
-                                SelectedIndex="{x:Bind ViewModel.FallbackOwnerIndex, Mode=TwoWay}" />
+                            <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(ViewModel.HasRemovals), Mode=OneWay}">
+                                <TextBlock x:Uid="Import_RemovalsHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_RemovalsHelp" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.RemovalChoices, Mode=OneTime}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:ImportRemovalViewModel">
+                                            <Grid Margin="0,4" ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock TextWrapping="Wrap"><Run Text="{x:Bind KindText, Mode=OneTime}" /><Run Text=": " /><Run FontWeight="SemiBold" Text="{x:Bind Name, Mode=OneTime}" /></TextBlock>
+                                                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind UsageText, Mode=OneTime}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <ComboBox
+                                                    Grid.Column="1"
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Center"
+                                                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                                    AutomationProperties.IsRequiredForForm="True"
+                                                    AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
+                                                    ItemsSource="{x:Bind Options, Mode=OneTime}"
+                                                    SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsExternal), Mode=OneWay}">
+                                <TextBlock x:Uid="Import_NoDecisionsText" Visibility="{x:Bind local:DataPageView.Show(ViewModel.HasNoDecisions), Mode=OneWay}" />
+                                <TextBlock x:Uid="Import_ValuesHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.ValueChoices, Mode=OneTime}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:ImportChoiceViewModel">
+                                            <Grid Margin="0,4" ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=": " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
+                                                <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Detail, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Uid="Import_CrConflictsHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.CrConflicts, Mode=OneTime}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:ImportChoiceViewModel">
+                                            <Grid Margin="0,4" ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{x:Bind Label, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind Detail, Mode=OneTime}" /></TextBlock>
+                                                <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Uid="Import_CrChoicesHeading" AutomationProperties.HeadingLevel="Level3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock x:Uid="Import_CrChoicesPermanent" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.CrReferenceChoices, Mode=OneTime}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:ImportChoiceViewModel">
+                                            <Grid Margin="0,4" ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center" Text="{x:Bind Label, Mode=OneTime}" TextWrapping="Wrap" />
+                                                <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}" AutomationProperties.Name="{x:Bind Label, Mode=OneTime}" ItemsSource="{x:Bind Options, Mode=OneTime}" SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <ComboBox
+                                    x:Uid="Import_FallbackOwnerCombo"
+                                    MinWidth="240"
+                                    AutomationProperties.AutomationId="Data_ImportFallbackOwnerCombo"
+                                    ItemsSource="{x:Bind ViewModel.OwnerChoices, Mode=OneWay}"
+                                    SelectedIndex="{x:Bind ViewModel.FallbackOwnerIndex, Mode=TwoWay}" />
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- Step 4: Preview -->
                         <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 3), Mode=OneWay}">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.PreviewSummary, Mode=OneWay}" TextWrapping="Wrap" />
                             <TextBlock Text="{x:Bind ViewModel.PresenceText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <!-- ADR 0026: a configuration replace needs an explicit confirmation before Apply. -->
+                            <StackPanel Spacing="8" Visibility="{x:Bind local:DataPageView.Show(ViewModel.IsConfigurationReplace), Mode=OneWay}">
+                                <InfoBar
+                                    x:Uid="Import_ReplaceInfoBar"
+                                    AutomationProperties.AutomationId="Data_ImportReplaceInfoBar"
+                                    IsClosable="False"
+                                    IsOpen="True"
+                                    Severity="Warning" />
+                                <CheckBox x:Uid="Import_ReplaceConfirmCheck" AutomationProperties.AutomationId="Data_ImportReplaceConfirmCheck" IsChecked="{x:Bind ViewModel.IsReplaceConfirmed, Mode=TwoWay}" />
+                            </StackPanel>
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="2*" />

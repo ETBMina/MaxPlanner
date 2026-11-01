@@ -1,5 +1,7 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Settings;
+using MaxPlanner.Domain.Fields;
 
 namespace MaxPlanner.Application.Transfer;
 
@@ -13,8 +15,9 @@ public sealed record EntireDatasetScope : TransferExportScope
 }
 
 /// <summary>
-/// The records a view showed (B-12 "Current view results"). The CRs of exported tasks, the parents of exported
-/// Subtask cards, and every definition are included so the file stays resolvable; it is still not a backup.
+/// The records a view showed (B-12 "Current view results"). The CRs of exported tasks and the parents of exported
+/// Subtask cards are included so links resolve. A view export is always data only (ADR 0026): it holds the lookups and
+/// fields its records use, so an import can match them by name, and it is never a backup.
 /// </summary>
 /// <param name="EntityType">The view's entity type, for example <c>tasks</c>.</param>
 /// <param name="Description">The view's filters as shown to the user.</param>
@@ -28,10 +31,20 @@ public static class ExportLimitationCodes
     public const string CsvFormulaNeutralized = "csv-formula-neutralized";
     public const string CsvSingleTable = "csv-single-table";
     public const string SpreadsheetNotBackup = "spreadsheet-not-backup";
+
+    /// <summary>ADR 0026: the file holds configuration only.</summary>
+    public const string ConfigurationOnly = "configuration-only";
+
+    /// <summary>ADR 0026: the file holds records with only the configuration they use, and no defaults.</summary>
+    public const string DataOnly = "data-only";
 }
 
-/// <param name="Counts">Exported records by <see cref="ImportEntity"/> name.</param>
-public sealed record ExportReport(string Path, TransferFileFormat Format, bool IsViewExport, IReadOnlyDictionary<string, int> Counts, IReadOnlyList<string> Limitations);
+/// <param name="Counts">Exported records by <see cref="ImportEntity"/> name; lookup values and fields for a configuration export.</param>
+public sealed record ExportReport(string Path, TransferFileFormat Format, bool IsViewExport, IReadOnlyDictionary<string, int> Counts, IReadOnlyList<string> Limitations)
+{
+    /// <summary>ADR 0026: what the file holds (a view export is always data only).</summary>
+    public TransferContent Content { get; init; }
+}
 
 /// <summary>
 /// Exports a read snapshot through <see cref="ITransferFileWriter"/> (B-12, T-10). Reads run on a pooled reader,
@@ -53,39 +66,64 @@ public sealed class ExportTransfer
     }
 
     /// <param name="table">The table of a single-CSV export.</param>
+    /// <param name="content">ADR 0026: what an entire-dataset export holds; a view export is always data only.</param>
     /// <returns>The report, or the snapshot/writer failure. A failure leaves an existing destination file unchanged.</returns>
-    public async Task<AppResult<ExportReport>> ExportAsync(TransferExportScope scope, TransferFileFormat format, TransferTable? table, string destinationPath, CancellationToken cancellationToken)
+    /// <exception cref="ArgumentException">Configuration only was asked of a single CSV table, which holds records only.</exception>
+    public async Task<AppResult<ExportReport>> ExportAsync(
+        TransferExportScope scope,
+        TransferFileFormat format,
+        TransferTable? table,
+        string destinationPath,
+        CancellationToken cancellationToken,
+        TransferContent content = TransferContent.Both)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentException.ThrowIfNullOrWhiteSpace(destinationPath);
+        content = scope is ViewExportScope ? TransferContent.DataOnly : content;
+        if (content == TransferContent.ConfigurationOnly && format == TransferFileFormat.CsvTable)
+        {
+            throw new ArgumentException("A single CSV table holds records only.", nameof(format));
+        }
+
         var snapshot = await _snapshots.LoadAsync(cancellationToken).ConfigureAwait(false);
         if (!snapshot.IsSuccess)
         {
             return AppResult.Failure<ExportReport>(snapshot.Error!);
         }
 
-        var document = TransferDocumentBuilder.Build(snapshot.Value, _datasetId, _time.GetUtcNow(), scope);
-        var written = await _writer.WriteAsync(document, format, table, destinationPath, cancellationToken).ConfigureAwait(false);
+        var document = TransferDocumentBuilder.Build(snapshot.Value, _datasetId, _time.GetUtcNow(), scope, content);
+        var written = await _writer.WriteAsync(document, format, table, destinationPath, cancellationToken, content).ConfigureAwait(false);
         if (!written.IsSuccess)
         {
             return AppResult.Failure<ExportReport>(written.Error!);
         }
 
-        var counts = new Dictionary<string, int>
-        {
-            [ImportEntity.Task] = document.Tasks.Count,
-            [ImportEntity.SubtaskCard] = document.SubtaskCards.Count,
-            [ImportEntity.ChangeRequest] = document.ChangeRequests.Count,
-            [ImportEntity.Link] = document.Links.Count,
-            [ImportEntity.Review] = document.Reviews.Count,
-            [ImportEntity.GeneralTodo] = document.GeneralTodos.Count,
-        };
+        var counts = content == TransferContent.ConfigurationOnly
+            ? new Dictionary<string, int>
+            {
+                [ImportEntity.Lookup] = LookupCount(document.Lookups),
+                [ImportEntity.Field] = document.FieldDefinitions.Count,
+            }
+            : new Dictionary<string, int>
+            {
+                [ImportEntity.Task] = document.Tasks.Count,
+                [ImportEntity.SubtaskCard] = document.SubtaskCards.Count,
+                [ImportEntity.ChangeRequest] = document.ChangeRequests.Count,
+                [ImportEntity.Link] = document.Links.Count,
+                [ImportEntity.Review] = document.Reviews.Count,
+                [ImportEntity.GeneralTodo] = document.GeneralTodos.Count,
+            };
         if (format == TransferFileFormat.CsvTable && table is { } single)
         {
             counts = counts.Where(c => c.Key == EntityOf(single)).ToDictionary();
         }
 
         var limitations = new List<string>();
+        if (content != TransferContent.Both && format != TransferFileFormat.CsvTable)
+        {
+            limitations.Add(content == TransferContent.ConfigurationOnly ? ExportLimitationCodes.ConfigurationOnly : ExportLimitationCodes.DataOnly);
+        }
+
         if (scope is ViewExportScope)
         {
             limitations.Add(ExportLimitationCodes.ViewIsNotBackup);
@@ -107,8 +145,11 @@ public sealed class ExportTransfer
             limitations.Add(ExportLimitationCodes.SpreadsheetNotBackup);
         }
 
-        return AppResult.Success(new ExportReport(written.Value, format, scope is ViewExportScope, counts, limitations));
+        return AppResult.Success(new ExportReport(written.Value, format, scope is ViewExportScope, counts, limitations) { Content = content });
     }
+
+    private static int LookupCount(TransferLookups l) =>
+        l.TaskStatuses.Count + l.CrStatuses.Count + l.Priorities.Count + l.Squads.Count + l.People.Count + l.Tags.Count;
 
     private static string EntityOf(TransferTable table) => table switch
     {
@@ -142,12 +183,14 @@ public sealed class ImportTransfer
     /// <summary>Validates <paramref name="document"/> against the current data and returns the full report (T-10).</summary>
     /// <param name="sourceNamespace">For external imports: the B-13.5 namespace whose ledger rows the plan adds.</param>
     /// <param name="sourceKeys">For external imports: the source identity of each document record ID.</param>
+    /// <param name="options">ADR 0026: the content choice for a Max Planner file with definitions (see <see cref="ImportPlanner.Plan"/>).</param>
     public async Task<AppResult<ImportPlan>> PreviewAsync(
         TransferDocument document,
         ImportMode mode,
         CancellationToken cancellationToken,
         string? sourceNamespace = null,
-        IReadOnlyDictionary<Guid, (string EntityKind, string SourceKey)>? sourceKeys = null)
+        IReadOnlyDictionary<Guid, (string EntityKind, string SourceKey)>? sourceKeys = null,
+        ImportOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         var snapshot = await _snapshots.LoadAsync(cancellationToken).ConfigureAwait(false);
@@ -167,7 +210,7 @@ public sealed class ImportTransfer
         var now = _time.GetUtcNow();
 
         // Planning is CPU work over up to 50,000 records; keep it off the caller's (UI) thread (T-10).
-        var plan = await Task.Run(() => ImportPlanner.Plan(document, snapshot.Value, mode, context, now), cancellationToken).ConfigureAwait(false);
+        var plan = await Task.Run(() => ImportPlanner.Plan(document, snapshot.Value, mode, context, now, options), cancellationToken).ConfigureAwait(false);
         return AppResult.Success(plan);
     }
 
@@ -202,6 +245,12 @@ public sealed class ImportTransfer
         if (ImportPlanner.WorkflowStamp(tx.Workflow.Read()) != plan.WorkflowStamp)
         {
             return TxResult.Abort<long>(new ImportPlanStaleError("workflow"));
+        }
+
+        // ADR 0026: a configuration replace first moves records off removed values (revalidated like the data, T-10).
+        if (plan.Replacement is { } replacement && StartReplacement(tx, replacement) is { } stale)
+        {
+            return TxResult.Abort<long>(stale);
         }
 
         foreach (var planned in plan.ChangeRequests)
@@ -264,8 +313,9 @@ public sealed class ImportTransfer
             }
         }
 
-        // Writes in foreign-key order: lookups and fields, CRs, tasks, links, Subtask cards, then the rest.
-        if (plan.NewWorkflow is { } workflow)
+        // Writes in foreign-key order: lookups and fields, CRs, tasks, links, Subtask cards, then the rest. A replace
+        // saves its final workflow last instead, once nothing refers to the values it removes.
+        if (plan.NewWorkflow is { } workflow && plan.Replacement is null)
         {
             tx.Lookups.SaveWorkflow(workflow);
         }
@@ -340,9 +390,87 @@ public sealed class ImportTransfer
             tx.ImportLedger.Insert(entry.SourceNamespace, entry.EntityKind, entry.SourceKey, entry.RecordId);
         }
 
+        if (plan.Replacement is not null && plan.NewWorkflow is { } replaced)
+        {
+            tx.Lookups.SaveWorkflow(replaced);
+        }
+
         // ADR 0010: a bulk import asks subscribers to reload one snapshot instead of applying records one by one.
         tx.Changes.RequireFullReload();
-        return TxResult.Commit((long)plan.RecordWriteCount);
+        return TxResult.Commit((long)plan.TotalWriteCount);
+    }
+
+    /// <summary>
+    /// Checks every record the replace remaps, and the use of every value it removes, against the preview; then saves
+    /// the staging workflows and the remapped records.
+    /// </summary>
+    /// <returns>The stale error, or null when the replace has started.</returns>
+    private static ImportPlanStaleError? StartReplacement(IWriteTransaction tx, ConfigurationReplacement replacement)
+    {
+        var stale = new ImportPlanStaleError("configuration");
+        if (replacement.Tasks.Any(p => tx.Tasks.Find(p.Record.Id)?.Revision != p.ExpectedRevision)
+            || replacement.SubtaskCards.Any(p => tx.SubtaskCards.Find(p.Record.Id)?.Revision != p.ExpectedRevision)
+            || replacement.ChangeRequests.Any(p => tx.ChangeRequests.Find(p.Record.Id)?.Revision != p.ExpectedRevision)
+            || replacement.Reviews.Any(p => tx.Reviews.Find(p.Record.Id)?.Revision != p.ExpectedRevision))
+        {
+            return stale;
+        }
+
+        if (replacement.RemovedLookups.Count > 0 || replacement.RemovedOptions.Count > 0)
+        {
+            // A record created or changed after the preview may use a removed value; the plan then no longer holds.
+            var defaults = tx.Workflow.Read().Defaults;
+            var tasks = tx.Tasks.ListAll();
+            var cards = tx.SubtaskCards.ListAll();
+            var changeRequests = tx.ChangeRequests.ListAll();
+            var reviews = tx.Reviews.ListAll();
+            foreach (var removed in replacement.RemovedLookups)
+            {
+                var usage = LookupUsageCounter.Count(removed.Kind, removed.Id, tasks, cards, changeRequests, reviews, defaults) with { Defaults = WorkspaceDefaultRoles.None };
+                if (usage != removed.RecordUsage)
+                {
+                    return stale;
+                }
+            }
+
+            foreach (var removed in replacement.RemovedOptions)
+            {
+                var count = removed.Target == FieldTarget.Task
+                    ? tasks.Count(t => removed.Probe.References(t.CustomValues))
+                    : changeRequests.Count(c => removed.Probe.References(c.CustomValues));
+                if (count != removed.RecordUsage)
+                {
+                    return stale;
+                }
+            }
+        }
+
+        foreach (var workflow in replacement.Staging)
+        {
+            tx.Lookups.SaveWorkflow(workflow);
+        }
+
+        foreach (var planned in replacement.Tasks)
+        {
+            tx.Tasks.Update(planned.Record);
+        }
+
+        foreach (var planned in replacement.SubtaskCards)
+        {
+            tx.SubtaskCards.Update(planned.Record);
+        }
+
+        foreach (var planned in replacement.ChangeRequests)
+        {
+            tx.ChangeRequests.Update(planned.Record);
+        }
+
+        foreach (var planned in replacement.Reviews)
+        {
+            tx.Reviews.Update(planned.Record);
+        }
+
+        return null;
     }
 
     /// <summary>A create needs an unused, never-deleted ID; an update needs the previewed revision.</summary>
@@ -355,10 +483,27 @@ public sealed class ImportTransfer
 /// <summary>Builds the transfer document of a read snapshot (B-12 export).</summary>
 public static class TransferDocumentBuilder
 {
-    public static TransferDocument Build(ReadSnapshot snapshot, Guid datasetId, DateTimeOffset exportedAtUtc, TransferExportScope scope)
+    /// <param name="content">
+    /// ADR 0026: <see cref="TransferContent.ConfigurationOnly"/> writes no records; <see cref="TransferContent.DataOnly"/>
+    /// (always for a view) writes only the configuration the records use, and no defaults.
+    /// </param>
+    public static TransferDocument Build(ReadSnapshot snapshot, Guid datasetId, DateTimeOffset exportedAtUtc, TransferExportScope scope, TransferContent content = TransferContent.Both)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(scope);
+        var full = BuildAll(snapshot, datasetId, exportedAtUtc, scope);
+        if (scope is ViewExportScope || content == TransferContent.DataOnly)
+        {
+            return TransferReferences.KeepReferencedConfiguration(full);
+        }
+
+        return content == TransferContent.ConfigurationOnly
+            ? full with { Tasks = [], SubtaskCards = [], ChangeRequests = [], Links = [], Reviews = [], GeneralTodos = [] }
+            : full;
+    }
+
+    private static TransferDocument BuildAll(ReadSnapshot snapshot, Guid datasetId, DateTimeOffset exportedAtUtc, TransferExportScope scope)
+    {
         var tasks = snapshot.Tasks.AsEnumerable();
         var cards = snapshot.SubtaskCards.AsEnumerable();
         var changeRequests = snapshot.ChangeRequests.AsEnumerable();

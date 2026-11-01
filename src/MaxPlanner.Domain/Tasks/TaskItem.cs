@@ -513,6 +513,14 @@ public sealed record TaskItem
         return changed ? result.Touch(nowUtc) : null;
     }
 
+    /// <summary>ADR 0026: moves a removed Lookup option's value to its replacement, or clears it; dates are kept.</summary>
+    /// <returns>The remapped task, or null when it does not use the removed option.</returns>
+    public TaskItem? Remap(FieldOptionRemap remap, DateTimeOffset nowUtc)
+    {
+        ArgumentNullException.ThrowIfNull(remap);
+        return remap.MapCustomValues(CustomValues) is { } values ? (this with { CustomValues = values }).Touch(nowUtc) : null;
+    }
+
     // B-04: a removed Designer or Developer is replaced, or cleared when the removal clears references.
     private static PersonId? Replacement(LookupRemap remap) => remap.ReplacementId is { } replacement ? new PersonId(replacement) : null;
 

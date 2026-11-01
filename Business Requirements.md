@@ -516,7 +516,8 @@ The user chooses **Entire dataset** or **Current view results** for export. Enti
 - Publish the schema and a populated round-trip fixture, not just an empty example.
 - Reject unsupported future format versions with instructions; support documented migrations for older versions.
 - Full export → new empty dataset import must reproduce business content and relationships exactly. Merge into an existing dataset follows T-10; revisions become local concurrency metadata rather than an instruction to overwrite newer changes.
-- Import is additive/merge, never implicit replacement. Replacing a dataset is the separate confirmed Restore workflow.
+- Business records are imported additively (create only or merge), never by implicit replacement. Replacing a dataset is the separate confirmed Restore workflow.
+- Export and import offer **Configuration only** (lookups, field definitions, business defaults), **Data only** (records), or **Both**. A configuration import replaces the current configuration after an explicit confirmation, and in-use removed values are remapped per B-04. A data-only import never changes configuration (ADR 0026).
 
 #### Excel (.xlsx)
 
