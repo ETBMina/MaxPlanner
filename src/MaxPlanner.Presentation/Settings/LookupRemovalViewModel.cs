@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
@@ -136,7 +137,23 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         var operation = _retryOperation ?? OperationId.New();
         IsSaving = true;
         _context.SaveStatus.Begin();
-        var result = await _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None).ConfigureAwait(true);
+        AppResult<CommandOutcome<long>> result;
+        try
+        {
+            result = await _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The coordinator logs the exception and rolls the transaction back; nothing was written, so the
+            // indicator keeps its last result and the dialog stays open with a generic message.
+            _context.SaveStatus.Reject();
+            _retryOperation = null;
+            IsSaving = false;
+            Error = _context.Strings.GetString("Error_Unexpected");
+            _context.Announce(Error, isFailure: true);
+            return false;
+        }
+
         if (!result.IsSuccess)
         {
             var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);

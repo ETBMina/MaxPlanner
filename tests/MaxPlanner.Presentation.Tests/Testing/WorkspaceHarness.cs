@@ -248,11 +248,15 @@ internal sealed class WorkspaceHarness : IDisposable
 internal sealed class ScriptedCoordinator(IMutationCoordinator inner) : IMutationCoordinator
 {
     private AppError? _failNext;
+    private Exception? _throwNext;
     private TaskCompletionSource? _holdNext;
 
     public int Calls { get; private set; }
 
     public void FailNext(AppError error) => _failNext = error;
+
+    /// <summary>The next command throws, as the real coordinator rethrows a non-storage exception after rollback.</summary>
+    public void ThrowNext(Exception exception) => _throwNext = exception;
 
     /// <summary>The next command waits until the returned source is completed, then runs normally.</summary>
     public TaskCompletionSource HoldNext()
@@ -272,6 +276,12 @@ internal sealed class ScriptedCoordinator(IMutationCoordinator inner) : IMutatio
         {
             _holdNext = null;
             await hold.Task.ConfigureAwait(false);
+        }
+
+        if (_throwNext is { } exception)
+        {
+            _throwNext = null;
+            throw exception;
         }
 
         if (_failNext is { } error)

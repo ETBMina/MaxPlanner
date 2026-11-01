@@ -143,7 +143,10 @@ public sealed class RemoveLookup
             return TransactionGuards.Reject<long>(backlog with { Field = "Replacement" });
         }
 
-        var ranks = command.Kind == LookupKind.TaskStatus ? AppendRanks(tx, new TaskStatusId(command.Id), new TaskStatusId(remap.RequiredReplacement)) : [];
+        // Only a replaced task status moves cards; an unused status is removed without a replacement.
+        var ranks = command.Kind == LookupKind.TaskStatus && remap.ReplacementId is { } replacement
+            ? AppendRanks(tx, new TaskStatusId(command.Id), new TaskStatusId(replacement))
+            : [];
         var count = 0L;
         foreach (var task in tasks)
         {
