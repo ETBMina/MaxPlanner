@@ -53,6 +53,8 @@ public sealed record TransferReferences(IReadOnlySet<Guid> Lookups, IReadOnlySet
         {
             One(task.StatusId);
             One(task.PriorityId);
+            One(task.DesignerId);
+            One(task.DeveloperId);
             Many(task.DesignerIds);
             Many(task.DeveloperIds);
             Many(task.TagIds);

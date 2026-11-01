@@ -16,7 +16,7 @@ Option 2.
 - **Storage:** a schema migration keeps, for each task and role, the first person by the current `position` and deletes the other rows. The schema then allows at most one person per task and role.
 - **UI:** the task editor and the Grid use the single-person picker (§5.0 of `design.md`, the same control as CR Owner and Review developer): a person dropdown that shows the chosen person in the box, with suggestions while typing and an "Add 'name'" entry; a new person is created on Save.
 - **Filters** keep multi-select: choosing several people matches tasks whose Designer (or Developer) is any of them.
-- **Transfers:** the file formats are unchanged; Designer and Developer stay arrays with at most one element on export. An import that finds more than one person keeps the first and reports a warning naming what was dropped.
+- **Transfers:** the file formats are unchanged; Designer and Developer stay arrays with at most one element on export. An import that finds more than one person keeps the first and reports a warning naming what was dropped. *Superseded by ADR 0028: format 2 carries single values; version 1 arrays still import with this rule.*
 
 ## Consequences
 - Data with more than one Designer or Developer per task loses the extra people on upgrade (owner approved: keep the first, drop the rest). Backups taken before the upgrade still hold them.

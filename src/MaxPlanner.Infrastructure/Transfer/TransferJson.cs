@@ -6,7 +6,8 @@ namespace MaxPlanner.Infrastructure.Transfer;
 
 /// <summary>
 /// System.Text.Json source generation for the transfer DTOs (ADR 0012). The camel-case names are the published
-/// <c>docs/schemas/transfer-v1.schema.json</c> format; null members are omitted and read back as null.
+/// format (version 2, ADR 0028); null members are omitted and read back as null, so the version 1 compatibility
+/// members (<c>designerIds</c>, <c>developerIds</c>) are never written.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
@@ -89,10 +90,10 @@ internal static class TransferJson
                 Tags = Items(lookups.Tags),
             },
             FieldDefinitions = [.. Items(document.FieldDefinitions).Select(f => f with { Options = Items(f.Options) })],
+            // The version 1 DesignerIds/DeveloperIds arrays stay null when absent, so only a file that has them takes the
+            // compatibility path (ADR 0028).
             Tasks = [.. Items(document.Tasks).Select(t => t with
             {
-                DesignerIds = t.DesignerIds ?? [],
-                DeveloperIds = t.DeveloperIds ?? [],
                 TagIds = t.TagIds ?? [],
                 ChecklistItems = Items(t.ChecklistItems),
                 CustomValues = Values(t.CustomValues),

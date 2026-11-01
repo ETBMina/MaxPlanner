@@ -506,7 +506,7 @@ public static partial class ImportPlanner
 
         /// <summary>
         /// ADR 0024: a task has at most one Designer and one Developer. The first resolved person is kept; any others
-        /// are dropped with a warning that names them (the file format still allows an array).
+        /// are dropped with a warning that names them (format version 1 wrote an array, ADR 0028).
         /// </summary>
         private PersonId? SinglePerson(IReadOnlyList<Guid>? ids, string field, string entity, string key, List<DomainError> errors)
         {
@@ -1020,12 +1020,8 @@ public static partial class ImportPlanner
             var priority = Supplied(s, nameof(source.PriorityId)) || existing is null
                 ? Resolve(source.PriorityId ?? _defaults.DefaultPriorityId.Value, _priorities, p => p.Id.Value, "PriorityId", errors)
                 : _priorities.FirstOrDefault(p => p.Id == existing.PriorityId);
-            var designer = Supplied(s, nameof(source.DesignerIds))
-                ? SinglePerson(source.DesignerIds, "DesignerIds", Entity, key, errors)
-                : existing?.DesignerId;
-            var developer = Supplied(s, nameof(source.DeveloperIds))
-                ? SinglePerson(source.DeveloperIds, "DeveloperIds", Entity, key, errors)
-                : existing?.DeveloperId;
+            var designer = PlannedPerson(source.DesignerId, nameof(source.DesignerId), source.DesignerIds, nameof(source.DesignerIds), existing?.DesignerId);
+            var developer = PlannedPerson(source.DeveloperId, nameof(source.DeveloperId), source.DeveloperIds, nameof(source.DeveloperIds), existing?.DeveloperId);
             var tags = Supplied(s, nameof(source.TagIds))
                 ? ResolveList(source.TagIds, id => _tags.Any(t => t.Id.Value == id), id => new TagId(id), "TagIds", errors)
                 : existing?.TagIds.ToList() ?? [];
@@ -1087,6 +1083,23 @@ public static partial class ImportPlanner
             }
 
             return built.Value;
+
+            // ADR 0028: a version 1 array (JSON member or legacy table column) wins when present and keeps its first
+            // person with a warning; otherwise the single ID. A supplied but empty legacy column clears the role.
+            PersonId? PlannedPerson(Guid? id, string field, IReadOnlyList<Guid>? legacy, string legacyField, PersonId? current)
+            {
+                if (legacy is not null)
+                {
+                    return SinglePerson(legacy, legacyField, Entity, key, errors);
+                }
+
+                if (Supplied(s, field))
+                {
+                    return SinglePerson(id is { } value ? [value] : null, field, Entity, key, errors);
+                }
+
+                return Supplied(s, legacyField) ? null : current;
+            }
         }
 
         private static List<ChecklistItem> Checklist(IReadOnlyList<TransferChecklistItem>? items, List<DomainError> errors)

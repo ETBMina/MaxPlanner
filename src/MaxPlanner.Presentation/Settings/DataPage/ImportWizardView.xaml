@@ -260,17 +260,22 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <ComboBox
-                                    x:Uid="Import_FallbackOwnerCombo"
-                                    MinWidth="240"
-                                    AutomationProperties.AutomationId="Data_ImportFallbackOwnerCombo"
-                                    ItemsSource="{x:Bind ViewModel.OwnerChoices, Mode=OneWay}"
-                                    SelectedIndex="{x:Bind ViewModel.FallbackOwnerIndex, Mode=TwoWay}" />
                             </StackPanel>
                         </StackPanel>
 
-                        <!-- Step 4: Preview -->
+                        <!-- Step 4: CR Owner for CRs without one (B-13.7), after people are mapped -->
                         <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 3), Mode=OneWay}">
+                            <TextBlock Text="{x:Bind ViewModel.MissingOwnerText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <ComboBox
+                                x:Uid="Import_FallbackOwnerCombo"
+                                MinWidth="240"
+                                AutomationProperties.AutomationId="Data_ImportFallbackOwnerCombo"
+                                ItemsSource="{x:Bind ViewModel.OwnerChoices, Mode=OneWay}"
+                                SelectedIndex="{x:Bind ViewModel.FallbackOwnerIndex, Mode=TwoWay}" />
+                        </StackPanel>
+
+                        <!-- Step 5: Preview -->
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 4), Mode=OneWay}">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.PreviewSummary, Mode=OneWay}" TextWrapping="Wrap" />
                             <TextBlock Text="{x:Bind ViewModel.PresenceText, Mode=OneWay}" TextWrapping="Wrap" />
                             <TextBlock Text="{x:Bind ViewModel.UnmappedText, Mode=OneWay}" TextWrapping="Wrap" />
@@ -347,8 +352,8 @@
                             </ListView>
                         </StackPanel>
 
-                        <!-- Step 5: Result -->
-                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 4), Mode=OneWay}">
+                        <!-- Step 6: Result -->
+                        <StackPanel Spacing="12" Visibility="{x:Bind local:DataPageView.AtStep(ViewModel.StepIndex, 5), Mode=OneWay}">
                             <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.ResultText, Mode=OneWay}" TextWrapping="Wrap" />
                             <Button x:Uid="Import_RestartButton" AutomationProperties.AutomationId="Data_ImportRestartButton" Command="{x:Bind ViewModel.RestartCommand, Mode=OneTime}" />
                         </StackPanel>

@@ -3318,6 +3318,9 @@
   <data name="Import_Step_Lookups" xml:space="preserve">
     <value>Lookups and relationships</value>
   </data>
+  <data name="Import_Step_Owner" xml:space="preserve">
+    <value>CR Owner</value>
+  </data>
   <data name="Import_Step_Preview" xml:space="preserve">
     <value>Preview</value>
   </data>
@@ -3591,8 +3594,14 @@
   <data name="Import_FallbackOwnerCombo.Header" xml:space="preserve">
     <value>Owner for CRs without one</value>
   </data>
-  <data name="Import_NoFallbackOwner" xml:space="preserve">
-    <value>None (report an error)</value>
+  <data name="Import_FallbackOwnerCombo.PlaceholderText" xml:space="preserve">
+    <value>Choose a person</value>
+  </data>
+  <data name="Import_NewOwnerOption" xml:space="preserve">
+    <value>{0} (new)</value>
+  </data>
+  <data name="Import_MissingOwnerText" xml:space="preserve">
+    <value>Imported CRs without an owner: {0}. Every CR needs an owner, so choose one for them. You can change it on each CR later.</value>
   </data>
   <data name="LookupKind_TaskStatus" xml:space="preserve">
     <value>Task status</value>

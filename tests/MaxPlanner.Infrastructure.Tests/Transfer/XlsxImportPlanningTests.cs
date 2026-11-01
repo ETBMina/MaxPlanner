@@ -297,7 +297,7 @@ public sealed class XlsxImportPlanningTests : IDisposable
         var badStatus = Guid.NewGuid();
         workbook.Set(Tasks, fixture.Unlinked.Value, "StatusId", badStatus.ToString())
             .Set(Tasks, fixture.Archived.Value, "ChangeRequestId", Guid.NewGuid().ToString())
-            .Set(Tasks, fixture.LinkedOwnTitle.Value, "DesignerIds", $"[\"{Guid.NewGuid()}\"]")
+            .Set(Tasks, fixture.LinkedOwnTitle.Value, "DesignerId", Guid.NewGuid().ToString())
             .Set("Subtask Cards", fixture.Card.Value, "ParentTaskId", Guid.NewGuid().ToString());
         await using var target = await CreateAsync();
 
@@ -306,7 +306,7 @@ public sealed class XlsxImportPlanningTests : IDisposable
         var errors = plan.Findings.Where(f => f.Severity == ImportSeverity.Error).ToList();
         errors.Should().Contain(new ImportFinding(ImportSeverity.Error, ImportEntity.Task, fixture.Unlinked.Value.ToString(), ImportFindingCodes.UnknownReference, "StatusId", "unknown-reference"));
         errors.Should().Contain(new ImportFinding(ImportSeverity.Error, ImportEntity.Task, fixture.Archived.Value.ToString(), ImportFindingCodes.UnknownReference, "ChangeRequestId", "unknown-reference"));
-        errors.Should().Contain(new ImportFinding(ImportSeverity.Error, ImportEntity.Task, fixture.LinkedOwnTitle.Value.ToString(), ImportFindingCodes.UnknownReference, "DesignerIds", "unknown-reference"));
+        errors.Should().Contain(new ImportFinding(ImportSeverity.Error, ImportEntity.Task, fixture.LinkedOwnTitle.Value.ToString(), ImportFindingCodes.UnknownReference, "DesignerId", "unknown-reference"));
         errors.Should().Contain(f => f.Entity == ImportEntity.SubtaskCard && f.RecordKey == fixture.Card.Value.ToString() && f.Code == ImportFindingCodes.MissingParent);
         string[] content =
         [

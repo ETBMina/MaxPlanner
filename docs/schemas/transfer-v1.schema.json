@@ -7,7 +7,7 @@
   "required": ["format", "formatVersion"],
   "properties": {
     "format": { "const": "max-planner-transfer" },
-    "formatVersion": { "type": "integer", "minimum": 1, "maximum": 1 },
+    "formatVersion": { "type": "integer", "minimum": 1, "maximum": 2, "description": "2 is written (ADR 0028); 1 is still read." },
     "datasetId": { "$ref": "#/$defs/id" },
     "exportedAtUtc": { "$ref": "#/$defs/timestamp" },
     "scope": {
@@ -155,8 +155,10 @@
         "service": { "type": "string", "maxLength": 250, "description": "Required for a linked task." },
         "statusId": { "$ref": "#/$defs/id" },
         "priorityId": { "$ref": "#/$defs/id" },
-        "designerIds": { "$ref": "#/$defs/idList" },
-        "developerIds": { "$ref": "#/$defs/idList" },
+        "designerId": { "$ref": "#/$defs/id", "description": "The single Designer (format version 2, ADR 0028)." },
+        "developerId": { "$ref": "#/$defs/id", "description": "The single Developer (format version 2, ADR 0028)." },
+        "designerIds": { "$ref": "#/$defs/idList", "description": "Format version 1 only; read, never written. The first ID is kept and the others are dropped with a warning (ADR 0024)." },
+        "developerIds": { "$ref": "#/$defs/idList", "description": "Format version 1 only; see designerIds." },
         "tagIds": { "$ref": "#/$defs/idList" },
         "notes": { "type": "string", "maxLength": 100000 },
         "startDate": { "$ref": "#/$defs/date" },

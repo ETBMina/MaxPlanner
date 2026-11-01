@@ -55,7 +55,7 @@ public sealed class XlsxExportWorkbookTests : IDisposable
 
         sheets["Tasks"].Should().Equal(
             "Id", "Title", "OwnTitle", "ChangeRequestId", "CrNumber", "TaskNumber", "Squad", "Owner", "Service", "StatusId", "Status", "PriorityId",
-            "Priority", "DesignerIds", "DeveloperIds", "TagIds", "Notes", "StartDate", "EndDate", "IsArchived", "Order", "CustomValues", "Preserved",
+            "Priority", "DesignerId", "Designer", "DeveloperId", "Developer", "TagIds", "Tags", "Notes", "StartDate", "EndDate", "IsArchived", "Order", "CustomValues", "Preserved",
             "CreatedAtUtc", "UpdatedAtUtc", "Revision");
         sheets["Change Requests"].Should().Equal(
             "Id", "Number", "Title", "OwnerId", "Owner", "SquadId", "Squad", "StatusId", "Status", "PriorityId", "Priority", "PlannedStart", "PlannedEnd",
@@ -199,8 +199,8 @@ public sealed class XlsxExportWorkbookTests : IDisposable
         var sheets = TestWorkbook.Cells(path).ToDictionary(s => s.Name, s => s.Rows);
         var task = Row(sheets["Tasks"], OwnTask);
 
-        JsonSerializer.Deserialize<List<Guid>>(TestWorkbook.DecodedText(task["DesignerIds"])!).Should().Equal(Alice);
-        JsonSerializer.Deserialize<List<Guid>>(TestWorkbook.DecodedText(task["DeveloperIds"])!).Should().BeEmpty("empty collections are written explicitly");
+        TestWorkbook.CellText(task["DesignerId"]).Should().Be(Alice.ToString("D"), "a task has one Designer, written as plain ID text (ADR 0028)");
+        TestWorkbook.CellText(task["DeveloperId"]).Should().BeNull();
         JsonSerializer.Deserialize<List<Guid>>(TestWorkbook.DecodedText(task["TagIds"])!).Should().Equal(Mobile);
         using (var custom = JsonDocument.Parse(TestWorkbook.DecodedText(task["CustomValues"])!))
         {
@@ -234,6 +234,36 @@ public sealed class XlsxExportWorkbookTests : IDisposable
     }
 
     [Fact]
+    [Trait("Req", "B-02")]
+    public async Task A_task_row_names_its_designer_developer_and_tags_beside_the_ids()
+    {
+        var bob = Guid.Parse("50000000-0000-0000-0000-000000000002");
+        var web = Guid.Parse("60000000-0000-0000-0000-000000000002");
+        var document = Document();
+        document = document with
+        {
+            Lookups = document.Lookups with
+            {
+                People = [.. document.Lookups.People, new TransferNamedLookup(bob, "Bob")],
+                Tags = [.. document.Lookups.Tags, new TransferNamedLookup(web, "Web")],
+            },
+            Tasks = [.. document.Tasks.Select(t => t.Id == OwnTask ? t with { DeveloperId = bob, TagIds = [web, Guid.NewGuid(), Mobile] } : t)],
+        };
+
+        var path = await WriteAsync(document);
+        var rows = TestWorkbook.Cells(path).Single(s => s.Name == "Tasks").Rows;
+        var own = Row(rows, OwnTask).ToDictionary(c => c.Key, c => TestWorkbook.CellText(c.Value));
+        var linked = Row(rows, LinkedTask).ToDictionary(c => c.Key, c => TestWorkbook.CellText(c.Value));
+
+        (own["DesignerId"], own["Designer"]).Should().Be((Alice.ToString("D"), "Alice"));
+        (own["DeveloperId"], own["Developer"]).Should().Be((bob.ToString("D"), "Bob"));
+        own["Tags"].Should().Be("Web, Mobile", "tag names follow the task's order and an unknown ID is skipped");
+        (linked["DesignerId"], linked["Designer"], linked["DeveloperId"], linked["Developer"], linked["Tags"]).Should().Be((null, null, null, null, null));
+        var read = (await Transfers.ReadAsync(path)).Tasks.Single(t => t.Id == OwnTask);
+        (read.DesignerId, read.DeveloperId, read.DesignerIds, read.DeveloperIds).Should().Be((Alice, bob, null, null), "the name columns are informational");
+    }
+
+    [Fact]
     public async Task Checklist_items_are_one_row_per_item_with_parent_id_text_completion_and_order()
     {
         var rows = TestWorkbook.Cells(await WriteAsync(Document())).Single(s => s.Name == "Checklist Items").Rows;
@@ -249,7 +279,7 @@ public sealed class XlsxExportWorkbookTests : IDisposable
             .Skip(1).ToDictionary(r => TestWorkbook.CellText(r[0])!, r => TestWorkbook.CellText(r[1]));
 
         metadata["format"].Should().Be(TransferFormat.Marker);
-        metadata["formatVersion"].Should().Be("1");
+        metadata["formatVersion"].Should().Be("2", "ADR 0028");
         metadata["datasetId"].Should().Be("e0000000-0000-0000-0000-000000000001");
         metadata["exportedAtUtc"].Should().Be("2026-10-22T09:00:00.0000000+00:00");
         metadata["scope"].Should().Be(TransferFormat.ScopeEntireDataset);
@@ -371,12 +401,12 @@ public sealed class XlsxExportWorkbookTests : IDisposable
         [
             new TransferTask
             {
-                Id = LinkedTask, StatusId = TaskStatus, PriorityId = Priority, DesignerIds = [], DeveloperIds = [], TagIds = [], IsArchived = false, Order = 1024,
+                Id = LinkedTask, StatusId = TaskStatus, PriorityId = Priority, TagIds = [], IsArchived = false, Order = 1024,
                 ChecklistItems = [], CreatedAtUtc = Created, UpdatedAtUtc = Created, Revision = 1,
             },
             new TransferTask
             {
-                Id = OwnTask, OwnTitle = "007 Own task", Service = "Cards API", StatusId = TaskStatus, PriorityId = Priority, DesignerIds = [Alice], DeveloperIds = [],
+                Id = OwnTask, OwnTitle = "007 Own task", Service = "Cards API", StatusId = TaskStatus, PriorityId = Priority, DesignerId = Alice,
                 TagIds = [Mobile], Notes = notes, StartDate = new DateOnly(2026, 10, 1), IsArchived = true, Order = 2048,
                 ChecklistItems = [new TransferChecklistItem(Item, "Check; with semicolon", true, 1024)],
                 CustomValues = new Dictionary<string, TransferValue> { [Field.ToString("D")] = new("Number", Number: 3.25m) },

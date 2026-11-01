@@ -63,8 +63,9 @@ internal static class TransferTables
             new("Id", CellKind.Text), new("Title", CellKind.Text, true), new("OwnTitle", CellKind.Text), new(TransferColumns.ChangeRequestId, CellKind.Text),
             new("CrNumber", CellKind.Text, true), new("TaskNumber", CellKind.Text, true), new("Squad", CellKind.Text, true), new("Owner", CellKind.Text, true),
             new("Service", CellKind.Text), new("StatusId", CellKind.Text), new("Status", CellKind.Text, true), new("PriorityId", CellKind.Text),
-            new("Priority", CellKind.Text, true), new("DesignerIds", CellKind.Json), new("DeveloperIds", CellKind.Json), new("TagIds", CellKind.Json),
-            new("Notes", CellKind.Text), new("StartDate", CellKind.Date), new("EndDate", CellKind.Date), new("IsArchived", CellKind.Boolean),
+            new("Priority", CellKind.Text, true), new("DesignerId", CellKind.Text), new("Designer", CellKind.Text, true), new("DeveloperId", CellKind.Text),
+            new("Developer", CellKind.Text, true), new("TagIds", CellKind.Json), new("Tags", CellKind.Text, true), new("Notes", CellKind.Text),
+            new("StartDate", CellKind.Date), new("EndDate", CellKind.Date), new("IsArchived", CellKind.Boolean),
             new("Order", CellKind.Number), new("CustomValues", CellKind.Json), new("Preserved", CellKind.Json), new("CreatedAtUtc", CellKind.Timestamp),
             new("UpdatedAtUtc", CellKind.Timestamp), new("Revision", CellKind.Number),
         ],
@@ -101,6 +102,12 @@ internal static class TransferTables
         ],
     };
 
+    /// <summary>
+    /// ADR 0028: the version 1 Tasks columns, never written but still read. The first ID of each array is kept and the
+    /// others are dropped with a warning (ADR 0024).
+    /// </summary>
+    private static IReadOnlyList<TableColumn> LegacyTaskColumns { get; } = [new("DesignerIds", CellKind.Json), new("DeveloperIds", CellKind.Json)];
+
     public static IReadOnlyList<TableColumn> LookupColumns { get; } =
     [
         new("Kind", CellKind.Text), new("Id", CellKind.Text), new("Name", CellKind.Text), new("Order", CellKind.Number),
@@ -123,6 +130,8 @@ internal static class TransferTables
         string? Label(Guid? id) => id is { } value && labels.TryGetValue(value, out var name) ? name : null;
         var crs = doc.ChangeRequests.ToDictionary(c => c.Id);
         var links = doc.Links.ToDictionary(l => l.TaskId, l => l.ChangeRequestId);
+        string? TagNames(IReadOnlyList<Guid>? ids) =>
+            ids?.Select(id => Label(id)).OfType<string>().ToList() is { Count: > 0 } names ? string.Join(", ", names) : null;
         switch (table)
         {
             case TransferTable.Tasks:
@@ -133,8 +142,8 @@ internal static class TransferTables
                     [
                         G(t.Id), cr?.Title ?? t.OwnTitle, t.OwnTitle, links.TryGetValue(t.Id, out var linked) ? G(linked) : null, cr?.Number, cr?.TaskNumber,
                         cr is null ? null : Label(cr.SquadId) ?? "General", Label(cr?.OwnerId), t.Service, G(t.StatusId), Label(t.StatusId), G(t.PriorityId),
-                        Label(t.PriorityId), TransferJson.SerializeList(t.DesignerIds ?? []), TransferJson.SerializeList(t.DeveloperIds ?? []),
-                        TransferJson.SerializeList(t.TagIds ?? []), t.Notes, D(t.StartDate), D(t.EndDate), B(t.IsArchived), N(t.Order),
+                        Label(t.PriorityId), G(t.DesignerId), Label(t.DesignerId), G(t.DeveloperId), Label(t.DeveloperId),
+                        TransferJson.SerializeList(t.TagIds ?? []), TagNames(t.TagIds), t.Notes, D(t.StartDate), D(t.EndDate), B(t.IsArchived), N(t.Order),
                         TransferJson.SerializeCustomValues(t.CustomValues), TransferJson.SerializePreserved(t.Preserved), Ts(t.CreatedAtUtc), Ts(t.UpdatedAtUtc), N(t.Revision),
                     ];
                 }
@@ -305,7 +314,7 @@ internal static class TransferTables
         if (tables.TryGetValue(TransferTable.Tasks, out var tasksTable))
         {
             var r = new Reader(tasksTable);
-            var supplied = r.Supplied(Columns(TransferTable.Tasks));
+            var supplied = r.Supplied([.. Columns(TransferTable.Tasks), .. LegacyTaskColumns]);
             if (itemsTable is not null)
             {
                 supplied.Add(nameof(TransferTask.ChecklistItems));
@@ -326,6 +335,8 @@ internal static class TransferTables
                     Service = r.Text(row, "Service"),
                     StatusId = r.Guid(row, "StatusId"),
                     PriorityId = r.Guid(row, "PriorityId"),
+                    DesignerId = r.Guid(row, "DesignerId"),
+                    DeveloperId = r.Guid(row, "DeveloperId"),
                     DesignerIds = r.Json(row, "DesignerIds", TransferJsonContext.Default.ListGuid),
                     DeveloperIds = r.Json(row, "DeveloperIds", TransferJsonContext.Default.ListGuid),
                     TagIds = r.Json(row, "TagIds", TransferJsonContext.Default.ListGuid),

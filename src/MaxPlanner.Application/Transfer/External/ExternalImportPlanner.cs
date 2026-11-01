@@ -71,6 +71,12 @@ public sealed record ExternalImportOptions
 
     /// <summary>B-13.7: the owner of CRs without a resolvable one; the wizard proposes the default CR Owner.</summary>
     public Guid? FallbackOwnerId { get; init; }
+
+    /// <summary>
+    /// B-13.7: a source person (by name) the import creates, used as the owner of CRs without one when
+    /// <see cref="FallbackOwnerId"/> is null. The wizard offers it after people are mapped.
+    /// </summary>
+    public string? FallbackOwnerName { get; init; }
 }
 
 /// <summary>How one source lookup value is resolved (B-13.8).</summary>
@@ -91,7 +97,11 @@ public sealed record ExternalImportDraft(
     IReadOnlyList<ImportFinding> Findings,
     IReadOnlyList<ExternalValueDecision> Values,
     IReadOnlyList<ExternalCrConflict> CrConflicts,
-    IReadOnlyList<ExternalCrChoice> CrChoices);
+    IReadOnlyList<ExternalCrChoice> CrChoices)
+{
+    /// <summary>B-13.7: new CRs whose source gives no owner, so they take the fallback owner.</summary>
+    public int MissingOwnerCount { get; init; }
+}
 
 /// <summary>
 /// Maps an external source into a transfer document with generated or ledger-supplied IDs (B-13). Pure; the result is
@@ -109,6 +119,8 @@ public sealed record ExternalImportDraft(
 /// </remarks>
 public static class ExternalImportPlanner
 {
+    private const string GeneralSquadName = "General";
+    private const string GeneralNoSquadName = "General (no squad)";
     private static readonly char[] ListSeparators = [',', ';', '\n'];
 
     /// <summary>ADR 0027: a new Lookup field takes at most this many distinct values as options; beyond it Text fits better.</summary>
@@ -150,6 +162,9 @@ public static class ExternalImportPlanner
         public string? TaskNumber { get; set; }
 
         public string? SquadName { get; set; }
+
+        /// <summary>The CR's own source row maps a Squad column, so an empty cell means "General" (no squad).</summary>
+        public bool HasSquadColumn { get; set; }
 
         public string? OwnerName { get; set; }
 
@@ -216,6 +231,7 @@ public static class ExternalImportPlanner
         private readonly List<TransferNamedLookup> _newPeople = [];
         private readonly List<TransferNamedLookup> _newTags = [];
         private readonly HashSet<(string, string)> _usedKeys = [];
+        private int _missingOwners;
         private readonly List<NewField> _newFields = [];
 
         public ExternalImportDraft Build()
@@ -290,7 +306,7 @@ public static class ExternalImportPlanner
                 Reviews = reviews,
                 GeneralTodos = todos,
             };
-            return new ExternalImportDraft(document, _sourceKeys, _findings, [.. _values.Values], _conflicts, _choices);
+            return new ExternalImportDraft(document, _sourceKeys, _findings, [.. _values.Values], _conflicts, _choices) { MissingOwnerCount = _missingOwners };
         }
 
         // ----- Mapping -----
@@ -647,8 +663,8 @@ public static class ExternalImportPlanner
             ExternalField.Service => "Service",
             ExternalField.Status => "StatusId",
             ExternalField.Priority => "PriorityId",
-            ExternalField.Designers => "DesignerIds",
-            ExternalField.Developers => "DeveloperIds",
+            ExternalField.Designers => "DesignerId",
+            ExternalField.Developers => "DeveloperId",
             ExternalField.Tags => "TagIds",
             ExternalField.Notes => "Notes",
             ExternalField.StartDate => "StartDate",
@@ -805,7 +821,7 @@ public static class ExternalImportPlanner
         /// it that does not resolve keeps its own error. Names after it are not resolved (so no person is created for a
         /// dropped one) and are reported in a warning.
         /// </summary>
-        private List<Guid> FirstPerson(ExternalValue? value, string field, string entity, string key)
+        private Guid? FirstPerson(ExternalValue? value, string field, string entity, string key)
         {
             var names = List(value);
             for (var i = 0; i < names.Count; i++)
@@ -820,10 +836,10 @@ public static class ExternalImportPlanner
                     _findings.Add(new ImportFinding(ImportSeverity.Warning, entity, key, ImportFindingCodes.PeopleDropped, field, string.Join(", ", names.Skip(i + 1))));
                 }
 
-                return [id];
+                return id;
             }
 
-            return [];
+            return null;
         }
 
         private List<Guid> Values(LookupKind kind, ExternalValue? value, string entity, string key) =>
@@ -885,6 +901,7 @@ public static class ExternalImportPlanner
             draft.Title = Text(row, columns, ExternalField.Title);
             draft.TaskNumber = Text(row, columns, ExternalField.TaskNumber);
             draft.SquadName = Text(row, columns, ExternalField.Squad);
+            draft.HasSquadColumn |= columns.ContainsKey(ExternalField.Squad);
             draft.OwnerName = Text(row, columns, ExternalField.Owner);
             var legacy = Legacy(table, row, map, null);
             var created = Created(row, columns, Entity, displayKey);
@@ -959,12 +976,19 @@ public static class ExternalImportPlanner
                 var title = Propose(cr, "Title", cr.Title);
                 var taskNumber = Propose(cr, "TaskNumber", cr.TaskNumber);
                 var squad = Propose(cr, "Squad", cr.SquadName);
+                var isGeneralSquad = squad is null ? cr.HasSquadColumn : IsGeneralSquad(squad);
+                if (isGeneralSquad)
+                {
+                    squad = null;
+                }
+
                 var owner = Propose(cr, "Owner", cr.OwnerName);
                 var key = cr.Number;
                 Guid? ownerId = owner is not null ? Value(LookupKind.Person, owner, ImportEntity.ChangeRequest, key) : null;
                 if (ownerId is null && !cr.IsExisting)
                 {
-                    if (options.FallbackOwnerId is { } fallback && workflow.FindPerson(new Domain.Identifiers.PersonId(fallback)) is not null)
+                    _missingOwners++;
+                    if (FallbackOwner(key) is { } fallback)
                     {
                         ownerId = fallback;
                         _findings.Add(new ImportFinding(ImportSeverity.Warning, ImportEntity.ChangeRequest, key, ImportFindingCodes.DefaultUsed, "OwnerId"));
@@ -991,7 +1015,7 @@ public static class ExternalImportPlanner
                     supplied.Add("TaskNumber");
                 }
 
-                if (squad is not null)
+                if (squad is not null || isGeneralSquad)
                 {
                     supplied.Add("SquadId");
                 }
@@ -1013,6 +1037,16 @@ public static class ExternalImportPlanner
 
             return result;
         }
+
+        // B-13.7: an existing person, or a source person the import creates (offered after people are mapped).
+        private Guid? FallbackOwner(string key) =>
+            options.FallbackOwnerId is { } id && workflow.FindPerson(new Domain.Identifiers.PersonId(id)) is not null ? id
+            : options.FallbackOwnerName is { } name ? Value(LookupKind.Person, name, ImportEntity.ChangeRequest, key)
+            : null;
+
+        // ADR 0020: no squad displays as "General"; an exported "General" label or an empty cell is no squad, never a new squad.
+        private static bool IsGeneralSquad(string name) =>
+            name.Equals(GeneralSquadName, StringComparison.OrdinalIgnoreCase) || name.Equals(GeneralNoSquadName, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>B-13.7: the CR's own value, else the single value its linked tasks agree on, else the user's choice.</summary>
         private string? Propose(CrDraft cr, string field, string? own)
@@ -1176,8 +1210,8 @@ public static class ExternalImportPlanner
                 Service = Text(row, columns, ExternalField.Service),
                 StatusId = Value(LookupKind.TaskStatus, Text(row, columns, ExternalField.Status), Entity, displayKey),
                 PriorityId = Value(LookupKind.Priority, Text(row, columns, ExternalField.Priority), Entity, displayKey),
-                DesignerIds = FirstPerson(Cell(row, columns, ExternalField.Designers), "DesignerIds", Entity, displayKey),
-                DeveloperIds = FirstPerson(Cell(row, columns, ExternalField.Developers), "DeveloperIds", Entity, displayKey),
+                DesignerId = FirstPerson(Cell(row, columns, ExternalField.Designers), "DesignerId", Entity, displayKey),
+                DeveloperId = FirstPerson(Cell(row, columns, ExternalField.Developers), "DeveloperId", Entity, displayKey),
                 TagIds = Values(LookupKind.Tag, Cell(row, columns, ExternalField.Tags), Entity, displayKey),
                 Notes = notes,
                 StartDate = Date(row, columns, ExternalField.StartDate, Entity, displayKey, supplied),

@@ -31,3 +31,4 @@ Each ADR records context, options considered, the decision, consequences, depend
 | [0025](0025-lf-line-endings.md) | Stored text uses LF line breaks | Accepted |
 | [0026](0026-transfer-content-selection.md) | Transfer content selection and configuration replace | Accepted |
 | [0027](0027-external-import-mapping-targets.md) | External import mapping targets and unmapped columns | Accepted |
+| [0028](0028-transfer-format-v2-single-people-and-readable-tables.md) | Transfer format 2: single Designer and Developer, readable task tables | Accepted |

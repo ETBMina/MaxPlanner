@@ -44,7 +44,7 @@ public sealed class ImportContentPlannerTests
         var document = new TransferDocument
         {
             Lookups = new TransferLookups { People = [new TransferNamedLookup(ghost, "Ghost"), new TransferNamedLookup(carol, "Carol")] },
-            Tasks = [new TransferTask { Id = Guid.NewGuid(), OwnTitle = "Imported", DesignerIds = [carol] }],
+            Tasks = [new TransferTask { Id = Guid.NewGuid(), OwnTitle = "Imported", DesignerId = carol }],
         };
 
         var plan = Plan(document, TransferContent.DataOnly);

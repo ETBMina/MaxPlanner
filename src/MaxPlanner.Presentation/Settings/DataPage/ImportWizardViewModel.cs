@@ -25,8 +25,9 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     private const int SourceStep = 0;
     private const int MapStep = 1;
     private const int LookupsStep = 2;
-    private const int PreviewStep = 3;
-    private const int ResultStep = 4;
+    private const int OwnerStep = 3;
+    private const int PreviewStep = 4;
+    private const int ResultStep = 5;
     private const int MaxFindingRows = 1_000;
 
     private static readonly IReadOnlyList<ExternalEntity> Entities = [ExternalEntity.Task, ExternalEntity.ChangeRequest, ExternalEntity.Review, ExternalEntity.GeneralTodo, ExternalEntity.Ignore];
@@ -42,7 +43,7 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     private OperationId _operationId = OperationId.New();
 
     public ImportWizardViewModel(WorkspaceContext context, DataServices services)
-        : base(context.Strings, ["Import_Step_Source", "Import_Step_Map", "Import_Step_Lookups", "Import_Step_Preview", "Import_Step_Result"])
+        : base(context.Strings, ["Import_Step_Source", "Import_Step_Map", "Import_Step_Lookups", "Import_Step_Owner", "Import_Step_Preview", "Import_Step_Result"])
     {
         _context = context;
         _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -116,12 +117,17 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
 
     public ObservableCollection<ImportChoiceViewModel> CrReferenceChoices { get; } = [];
 
+    /// <summary>B-13.7: existing people, then the people this import creates (after people are mapped).</summary>
     [ObservableProperty]
     public partial IReadOnlyList<string> OwnerChoices { get; private set; } = [];
 
-    /// <summary>B-13.7: the owner for CRs without one; the default CR Owner is proposed. 0 = none.</summary>
+    /// <summary>B-13.7: the owner for new CRs without one (required); the default CR Owner is proposed. -1 = not chosen.</summary>
     [ObservableProperty]
-    public partial int FallbackOwnerIndex { get; set; }
+    public partial int FallbackOwnerIndex { get; set; } = -1;
+
+    /// <summary>"N imported CRs have no owner…" on the Owner step.</summary>
+    [ObservableProperty]
+    public partial string MissingOwnerText { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial bool HasNoDecisions { get; private set; }
@@ -151,11 +157,17 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     {
         SourceStep => _paths.Count > 0 && (!IsExternal || !string.IsNullOrWhiteSpace(SourceNamespace)),
         LookupsStep when !IsExternal => RemovalChoices.All(c => c.SelectedIndex >= 0),
+        OwnerStep => FallbackOwnerIndex >= 0 && FallbackOwnerIndex < _ownerOptions.Count,
         PreviewStep => _plan?.CanApply == true && !_context.IsEditingBlocked && (!IsConfigurationReplace || IsReplaceConfirmed),
         _ => true,
     };
 
-    private IReadOnlyList<PersonDefinition> People { get; set; } = [];
+    // Parallel to OwnerChoices: an existing person's ID, or the name of a person the import creates.
+    private List<(Guid? Id, string? Name)> _ownerOptions = [];
+
+    private bool HasMissingOwners => _draft is { MissingOwnerCount: > 0 };
+
+    partial void OnFallbackOwnerIndexChanged(int value) => RefreshCommands();
 
     partial void OnIsExternalChanged(bool value)
     {
@@ -177,6 +189,7 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     {
         (PreviewStep, false) => HasRemovals ? LookupsStep : SourceStep,
         (LookupsStep, false) => SourceStep,
+        (PreviewStep, true) => HasMissingOwners ? OwnerStep : LookupsStep,
         _ => current - 1,
     };
 
@@ -191,6 +204,20 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             case LookupsStep when !IsExternal:
                 return _document is { } document && await PreviewAsync(document, cancellationToken).ConfigureAwait(true) ? PreviewStep : null;
             case LookupsStep:
+                if (!await BuildDraftAsync(cancellationToken).ConfigureAwait(true))
+                {
+                    return null;
+                }
+
+                // B-13.7: CRs without an owner ask for one after people are mapped, from existing and new people.
+                if (HasMissingOwners)
+                {
+                    SyncOwnerChoices(_draft!);
+                    return OwnerStep;
+                }
+
+                return await PreviewAsync(_draft!.Document, cancellationToken).ConfigureAwait(true) ? PreviewStep : null;
+            case OwnerStep:
                 return await BuildDraftAsync(cancellationToken).ConfigureAwait(true) && await PreviewAsync(_draft!.Document, cancellationToken).ConfigureAwait(true) ? PreviewStep : null;
             case PreviewStep:
                 return await ApplyAsync(cancellationToken).ConfigureAwait(true) ? ResultStep : null;
@@ -297,10 +324,9 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         ValueChoices.Clear();
         CrConflicts.Clear();
         CrReferenceChoices.Clear();
-        People = [.. (workflow?.People ?? []).OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase)];
-        OwnerChoices = [Strings.GetString("Import_NoFallbackOwner"), .. People.Select(p => p.Name.Display)];
-        var defaultOwner = workflow?.Defaults.DefaultCrOwnerId;
-        FallbackOwnerIndex = defaultOwner is { } owner ? People.ToList().FindIndex(p => p.Id == owner) + 1 : 0;
+        _ownerOptions = [];
+        OwnerChoices = [];
+        FallbackOwnerIndex = -1;
         return MapStep;
     }
 
@@ -331,7 +357,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
             ValueChoices = ValueChoices.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => (Guid?)c.Values[c.SelectedIndex]),
             CrValueChoices = CrConflicts.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => (string?)c.Values[c.SelectedIndex]),
             CrReferenceChoices = CrReferenceChoices.Where(c => c.SelectedIndex >= 0).ToDictionary(c => c.Key, c => (string?)c.Values[c.SelectedIndex]),
-            FallbackOwnerId = FallbackOwnerIndex > 0 && FallbackOwnerIndex <= People.Count ? People[FallbackOwnerIndex - 1].Id.Value : null,
+            FallbackOwnerId = SelectedOwner?.Id,
+            FallbackOwnerName = SelectedOwner?.Name,
         };
         var source = _source;
         _draft = await Task.Run(() => ExternalImportPlanner.Build(source, options, workflow, existingCrs, ledger.Value), cancellationToken).ConfigureAwait(true);
@@ -377,6 +404,23 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         }
 
         HasNoDecisions = ValueChoices.Count == 0 && CrConflicts.Count == 0 && CrReferenceChoices.Count == 0;
+    }
+
+    private (Guid? Id, string? Name)? SelectedOwner =>
+        FallbackOwnerIndex >= 0 && FallbackOwnerIndex < _ownerOptions.Count ? _ownerOptions[FallbackOwnerIndex] : null;
+
+    private void SyncOwnerChoices(ExternalImportDraft draft)
+    {
+        var previous = SelectedOwner;
+        var workflow = _context.Store.CurrentWorkflow;
+        var existing = (workflow?.People ?? []).Select(p => ((Guid?)p.Id.Value, (string?)null, p.Name.Display));
+        var created = draft.Values.Where(v => v is { Kind: LookupKind.Person, ChosenId: null }).Select(v => ((Guid?)null, (string?)v.SourceName, v.SourceName));
+        var options = existing.Concat(created).OrderBy(o => o.Item3, StringComparer.CurrentCultureIgnoreCase).ToList();
+        _ownerOptions = [.. options.Select(o => (o.Item1, o.Item2))];
+        OwnerChoices = [.. options.Select(o => o.Item2 is null ? o.Item3 : Strings.Format("Import_NewOwnerOption", o.Item3))];
+        (Guid? Id, string? Name)? proposed = previous ?? (workflow?.Defaults.DefaultCrOwnerId is { } owner ? (owner.Value, null) : null);
+        FallbackOwnerIndex = proposed is { } p ? _ownerOptions.IndexOf(p) : -1;
+        MissingOwnerText = Strings.Format("Import_MissingOwnerText", draft.MissingOwnerCount);
     }
 
     // ----- Preview and apply -----
@@ -562,11 +606,12 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
         HasRemovals = RemovalChoices.Count > 0;
     }
 
-    // ADR 0024: "people-dropped" names the role with its label ("Designer"), not the transfer member ("DesignerIds").
+    // ADR 0024: "people-dropped" names the role with its label ("Designer"), not the transfer member ("DesignerId", or
+    // "DesignerIds" from a version 1 file, ADR 0028).
     // A lookup finding names its kind ("Task status"); a field finding names the field or the option's field.
     private string FindingField(ImportFinding finding) => finding switch
     {
-        { Code: ImportFindingCodes.PeopleDropped } => Strings.GetString(finding.Field == "DeveloperIds" ? "Field_Developer" : "Field_Designer"),
+        { Code: ImportFindingCodes.PeopleDropped } => Strings.GetString(finding.Field?.StartsWith("Developer", StringComparison.Ordinal) == true ? "Field_Developer" : "Field_Designer"),
         { Entity: ImportEntity.Lookup } when Enum.TryParse<LookupKind>(finding.Field, ignoreCase: false, out var kind) && Enum.IsDefined(kind) => Strings.GetString("LookupKind_" + kind),
         { Entity: ImportEntity.Field, Code: ImportFindingCodes.ConfigurationAdded or ImportFindingCodes.ConfigurationUpdated or ImportFindingCodes.ConfigurationMissing } when finding.Field is null
             => Strings.GetString("Transfer_Entity_field"),

@@ -7,8 +7,8 @@ using static MaxPlanner.Application.Tests.TestWorkspace;
 namespace MaxPlanner.Application.Tests.Transfer;
 
 /// <summary>
-/// ADR 0024 transfers: the format keeps Designer and Developer arrays, and an import that finds several people keeps
-/// the first and warns, naming the people it drops.
+/// ADR 0024 and ADR 0028 transfers: format version 2 carries one Designer and one Developer ID; the version 1 arrays (and
+/// external sources that list several people) keep the first person and warn, naming the people they drop.
 /// </summary>
 [Trait("Req", "B-12")]
 [Trait("Req", "B-13")]
@@ -37,6 +37,69 @@ public sealed class SingleDesignerDeveloperTransferTests
         task.DeveloperId.Should().Be(Bob.Id);
         plan.Findings.Should().ContainSingle(f => f.Code == ImportFindingCodes.PeopleDropped)
             .Which.Should().Be(new ImportFinding(ImportSeverity.Warning, ImportEntity.Task, task.Id.Value.ToString(), ImportFindingCodes.PeopleDropped, "DesignerIds", "Bob"));
+    }
+
+    [Fact]
+    public void A_version_2_task_imports_its_single_designer_and_developer_without_a_warning()
+    {
+        var document = new TransferDocument
+        {
+            Tasks = [new TransferTask { Id = Guid.NewGuid(), OwnTitle = "Imported", DesignerId = Alice.Id.Value, DeveloperId = Bob.Id.Value }],
+        };
+
+        var plan = ImportPlanner.Plan(document, EmptySnapshot, ImportMode.CreateOnly, ImportContext.Empty, Now);
+
+        var task = plan.Tasks.Should().ContainSingle().Which.Record;
+        (task.DesignerId, task.DeveloperId).Should().Be((Alice.Id, Bob.Id));
+        plan.Findings.Should().NotContain(f => f.Code == ImportFindingCodes.PeopleDropped);
+    }
+
+    [Fact]
+    public void A_version_2_task_with_an_unknown_designer_reports_the_unknown_reference_on_its_field()
+    {
+        var id = Guid.NewGuid();
+        var document = new TransferDocument
+        {
+            Tasks = [new TransferTask { Id = id, OwnTitle = "Imported", DesignerId = Guid.NewGuid() }],
+        };
+
+        var plan = ImportPlanner.Plan(document, EmptySnapshot, ImportMode.CreateOnly, ImportContext.Empty, Now);
+
+        plan.Tasks.Should().BeEmpty();
+        plan.Findings.Should().Contain(f => f.Severity == ImportSeverity.Error && f.Code == ImportFindingCodes.UnknownReference
+            && f.Field == "DesignerId" && f.RecordKey == id.ToString());
+    }
+
+    [Fact]
+    public void A_version_1_array_takes_precedence_over_a_single_id_in_the_same_record()
+    {
+        var document = new TransferDocument
+        {
+            Tasks = [new TransferTask { Id = Guid.NewGuid(), OwnTitle = "Imported", DesignerId = Alice.Id.Value, DesignerIds = [Bob.Id.Value] }],
+        };
+
+        var plan = ImportPlanner.Plan(document, EmptySnapshot, ImportMode.CreateOnly, ImportContext.Empty, Now);
+
+        plan.Tasks.Should().ContainSingle().Which.Record.DesignerId.Should().Be(Bob.Id);
+    }
+
+    [Fact]
+    public void A_data_only_export_keeps_a_person_referenced_only_as_a_task_designer_or_developer()
+    {
+        var dana = Guid.NewGuid();
+        var erin = Guid.NewGuid();
+        var document = new TransferDocument
+        {
+            Lookups = new TransferLookups
+            {
+                People = [new TransferNamedLookup(dana, "Dana"), new TransferNamedLookup(erin, "Erin"), new TransferNamedLookup(Guid.NewGuid(), "Unused")],
+            },
+            Tasks = [new TransferTask { Id = Guid.NewGuid(), OwnTitle = "Only people reference", DesignerId = dana, DeveloperId = erin }],
+        };
+
+        var kept = TransferReferences.KeepReferencedConfiguration(document);
+
+        kept.Lookups.People.Select(p => p.Name).Should().Equal("Dana", "Erin");
     }
 
     [Fact]
@@ -88,7 +151,7 @@ public sealed class SingleDesignerDeveloperTransferTests
 
         var draft = ExternalImportPlanner.Build(new ExternalSource([table], []), options, SeedWorkflow, new Dictionary<string, Guid>(), new Dictionary<(string, string), Guid>());
 
-        draft.Document.Tasks.Should().ContainSingle().Which.DesignerIds.Should().Equal(Bob.Id.Value);
+        draft.Document.Tasks.Should().ContainSingle().Which.DesignerId.Should().Be(Bob.Id.Value);
         draft.Findings.Should().Contain(f => f.Severity == ImportSeverity.Error && f.Code == ImportFindingCodes.Invalid);
         draft.Findings.Should().ContainSingle(f => f.Code == ImportFindingCodes.PeopleDropped).Which.Detail.Should().Be("Dana");
         draft.Values.Select(v => v.SourceName).Should().NotContain("Dana");
@@ -112,10 +175,10 @@ public sealed class SingleDesignerDeveloperTransferTests
         var draft = ExternalImportPlanner.Build(new ExternalSource([table], []), options, SeedWorkflow, new Dictionary<string, Guid>(), new Dictionary<(string, string), Guid>());
 
         var task = draft.Document.Tasks.Should().ContainSingle().Subject;
-        task.DesignerIds.Should().Equal(Alice.Id.Value);
-        task.DeveloperIds.Should().ContainSingle("Erin is new and is the first Developer");
+        task.DesignerId.Should().Be(Alice.Id.Value);
+        task.DeveloperId.Should().NotBeNull("Erin is new and is the first Developer");
         draft.Values.Select(v => v.SourceName).Should().NotContain(["Dana", "Bob"]);
         draft.Findings.Where(f => f.Code == ImportFindingCodes.PeopleDropped).Select(f => (f.Severity, f.Field, f.Detail))
-            .Should().BeEquivalentTo([(ImportSeverity.Warning, "DesignerIds", "Dana"), (ImportSeverity.Warning, "DeveloperIds", "Bob")]);
+            .Should().BeEquivalentTo([(ImportSeverity.Warning, "DesignerId", "Dana"), (ImportSeverity.Warning, "DeveloperId", "Bob")]);
     }
 }

@@ -9,8 +9,11 @@ namespace MaxPlanner.Application.Transfer;
 /// <summary>Constants of the published transfer format.</summary>
 public static class TransferFormat
 {
-    /// <summary>The <c>formatVersion</c> this app writes and the newest it reads (B-12: newer versions are rejected).</summary>
-    public const int CurrentVersion = 1;
+    /// <summary>
+    /// The <c>formatVersion</c> this app writes and the newest it reads (B-12: newer versions are rejected). Version 2
+    /// (ADR 0028) replaced the task's Designer and Developer arrays with single IDs; version 1 files still import.
+    /// </summary>
+    public const int CurrentVersion = 2;
 
     /// <summary>The <c>format</c> marker of a Max Planner transfer file.</summary>
     public const string Marker = "max-planner-transfer";
@@ -141,8 +144,19 @@ public sealed record TransferTask
 
     public Guid? PriorityId { get; init; }
 
+    /// <summary>The single Designer (ADR 0028), or null.</summary>
+    public Guid? DesignerId { get; init; }
+
+    /// <summary>The single Developer (ADR 0028), or null.</summary>
+    public Guid? DeveloperId { get; init; }
+
+    /// <summary>
+    /// Read-only compatibility with format version 1, which wrote a Designer array. Never written: the import keeps the
+    /// first person and warns about the others (ADR 0024, ADR 0028). Takes precedence over <see cref="DesignerId"/>.
+    /// </summary>
     public IReadOnlyList<Guid>? DesignerIds { get; init; }
 
+    /// <summary>Read-only compatibility with format version 1; see <see cref="DesignerIds"/>.</summary>
     public IReadOnlyList<Guid>? DeveloperIds { get; init; }
 
     public IReadOnlyList<Guid>? TagIds { get; init; }

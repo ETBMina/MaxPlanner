@@ -63,8 +63,8 @@ public sealed class JsonMissingCollectionsTests : IDisposable
         document.Lookups.People.Should().BeEmpty();
         document.FieldDefinitions.Should().ContainSingle().Which.Options.Should().BeEmpty();
         var task = document.Tasks.Should().ContainSingle().Subject;
-        task.DesignerIds.Should().BeEmpty();
-        task.DeveloperIds.Should().BeEmpty();
+        task.DesignerIds.Should().BeNull("only a version 1 file with the arrays takes the compatibility path (ADR 0028)");
+        task.DeveloperIds.Should().BeNull();
         task.TagIds.Should().BeEmpty();
         task.ChecklistItems.Should().BeEmpty();
         task.CustomValues.Should().BeEmpty();

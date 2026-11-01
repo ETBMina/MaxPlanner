@@ -217,10 +217,10 @@ public sealed class XlsxReaderHardeningTests : IDisposable
     [Fact]
     public async Task A_newer_format_version_is_rejected_and_an_invalid_one_is_malformed()
     {
-        var newer = _folder.Write("v2.xlsx", Create([Metadata("2")]));
+        var newer = _folder.Write("v3.xlsx", Create([Metadata("3")]));
         var invalid = _folder.Write("vx.xlsx", Create([Metadata("one")]));
 
-        (await Transfers.ReadErrorAsync(newer)).Should().Be(new TransferFileError(TransferFailure.UnsupportedVersion, "2"));
+        (await Transfers.ReadErrorAsync(newer)).Should().Be(new TransferFileError(TransferFailure.UnsupportedVersion, "3"));
         (await Transfers.ReadErrorAsync(invalid)).Should().Be(new TransferFileError(TransferFailure.Malformed, "Metadata!formatVersion"));
     }
 
