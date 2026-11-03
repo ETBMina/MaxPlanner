@@ -34,7 +34,7 @@ public sealed record CopyTaskCommand(
 
 /// <summary>
 /// Creates a genuinely new task from a source task (B-06, AC-09): new task and checklist-item IDs, revision 1,
-/// active, at the end of its Board column, unlinked unless the user explicitly chose a CR. Subtask cards
+/// active, at the end of its Board bucket, unlinked unless the user explicitly chose a CR. Subtask cards
 /// are never copied. The source may be archived and linked; it is not changed.
 /// </summary>
 public sealed class CopyTask
@@ -121,7 +121,7 @@ public sealed class CopyTask
         }
 
         var created = TaskItem.Create(command.NewTaskId, content, status, priorityId, draft.Start, draft.End, changeRequest?.Id,
-            BoardColumnRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.Task, command.NewTaskId.Value)), tx.LocalToday, tx.UtcNow, draft.ChecklistItems);
+            BoardBucketRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.Task, command.NewTaskId.Value)), tx.LocalToday, tx.UtcNow, draft.ChecklistItems);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<TaskId>(invalid);

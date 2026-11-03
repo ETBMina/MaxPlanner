@@ -14,7 +14,7 @@ namespace MaxPlanner.Application.Tasks;
 public sealed record CrLinkTarget(ChangeRequestId Id, long ExpectedRevision);
 
 /// <param name="NewTaskId">Preallocated, so a retry with the same operation cannot create a second task (T-05).</param>
-/// <param name="StatusId">Null uses the default task status; Board creation passes the column's status (B-02.1).</param>
+/// <param name="StatusId">Null uses the default task status; Board creation passes the bucket's status (B-02.1).</param>
 /// <param name="PriorityId">Null uses the default priority.</param>
 /// <param name="LinkTo">Set when creating from a CR: the task and its permanent link are created together (B-03.5).</param>
 /// <param name="ChecklistItems">Items added in the task editor before the first save, in display order.</param>
@@ -31,7 +31,7 @@ public sealed record CreateTaskCommand(
     IReadOnlyList<ChecklistItemDraft>? ChecklistItems = null,
     NewLookups? NewLookups = null);
 
-/// <summary>Creates a task at the end of its Board column, optionally linked to a CR in the same transaction.</summary>
+/// <summary>Creates a task at the end of its Board bucket, optionally linked to a CR in the same transaction.</summary>
 public sealed class CreateTask
 {
     public const string OperationKind = "task.create";
@@ -100,7 +100,7 @@ public sealed class CreateTask
         }
 
         var created = TaskItem.Create(command.NewTaskId, content, status, priorityId, command.Start, command.End, changeRequest?.Id,
-            BoardColumnRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.Task, command.NewTaskId.Value)), tx.LocalToday, tx.UtcNow, items);
+            BoardBucketRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.Task, command.NewTaskId.Value)), tx.LocalToday, tx.UtcNow, items);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<TaskId>(invalid);

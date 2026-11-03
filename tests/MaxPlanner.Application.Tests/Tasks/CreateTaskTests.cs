@@ -18,7 +18,7 @@ public sealed class CreateTaskTests
 
     [Fact]
     [Trait("Req", "B-07")]
-    public async Task A_new_task_uses_the_workflow_defaults_and_lands_above_every_card_in_its_column()
+    public async Task A_new_task_uses_the_workflow_defaults_and_lands_above_every_card_in_its_bucket()
     {
         var first = await _workspace.AddTaskAsync("First");
         Succeeded(await new CreateSubtaskCard(_workspace.Coordinator).ExecuteAsync(
@@ -29,7 +29,7 @@ public sealed class CreateTaskTests
         second.StatusId.Should().Be(Backlog.Id);
         second.PriorityId.Should().Be(Medium.Id);
         second.Revision.Should().Be(1);
-        second.Rank.Should().Be(-RankPolicy.Step, "B-07: the Subtask card shares the column and holds the top rank 0, so the new task goes above it");
+        second.Rank.Should().Be(-RankPolicy.Step, "B-07: the Subtask card shares the bucket and holds the top rank 0, so the new task goes above it");
         second.Dates.Should().Be(ActualDates.None);
     }
 

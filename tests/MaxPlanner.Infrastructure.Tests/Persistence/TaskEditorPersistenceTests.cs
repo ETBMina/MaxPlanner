@@ -13,7 +13,7 @@ namespace MaxPlanner.Infrastructure.Tests.Persistence;
 /// <summary>
 /// The Phase 4 task editor commands on a real SQLite file (T-11.2): a whole draft with new people and tags,
 /// checklist changes and a permanent link survives a reopen; deletion removes the dependent rows and
-/// tombstones every ID; copy and restore use the real column ranks.
+/// tombstones every ID; copy and restore use the real bucket ranks.
 /// </summary>
 [Trait("Req", "B-02")]
 public sealed class TaskEditorPersistenceTests
@@ -96,7 +96,7 @@ public sealed class TaskEditorPersistenceTests
     [Fact]
     [Trait("Req", "B-05")]
     [Trait("Req", "B-06")]
-    public async Task Restore_and_copy_land_at_the_top_of_the_real_column()
+    public async Task Restore_and_copy_land_at_the_top_of_the_real_bucket()
     {
         await using var db = await CreateAsync();
         var first = await db.AddTaskAsync("First");

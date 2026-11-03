@@ -372,7 +372,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     public Task<bool> ArchiveRowAsync(GridRowViewModel row) =>
         row?.Model.Task is { IsArchived: false } task ? _context.Tasks.ArchiveAsync(task) : Task.FromResult(false);
 
-    /// <summary>Row ⋯ › Restore (archived tasks, B-05): back at the end of its Board column.</summary>
+    /// <summary>Row ⋯ › Restore (archived tasks, B-05): back at the end of its Board bucket.</summary>
     public Task<bool> RestoreRowAsync(GridRowViewModel row) =>
         row?.Model.Task is { IsArchived: true } task ? _context.Tasks.RestoreAsync(task) : Task.FromResult(false);
 
@@ -465,7 +465,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             (_, { } card, GridColumns.Subtitle) => await useCases.UpdateSubtaskCardContent.ExecuteAsync(
                 new UpdateSubtaskCardContentCommand(operation, card.Id, card.Revision, row.DraftText, card.Notes), CancellationToken.None),
 
-            // B-07: a status change from the Grid places the card at the top of the full destination column,
+            // B-07: a status change from the Grid places the card at the top of the full destination bucket,
             // the same rule as the editors, so it never renumbers cards the user cannot see.
             ({ } task, _, GridColumns.Status) => await useCases.MoveTask.ExecuteAsync(
                 new MoveTaskCommand(operation, task.Id, task.Revision, row.DraftStatus!.Id, BoardPlacement.Top), CancellationToken.None),

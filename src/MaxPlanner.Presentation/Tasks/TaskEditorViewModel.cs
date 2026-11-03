@@ -78,7 +78,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private readonly ChangeRequestId? _presetLinkId;
 
     /// <param name="taskId">The task to edit, or null for a new task.</param>
-    /// <param name="initialStatus">For a new task: the Board column's status (B-02.1); null uses the default.</param>
+    /// <param name="initialStatus">For a new task: the Board bucket's status (B-02.1); null uses the default.</param>
     /// <param name="linkTo">
     /// For a new task created from a CR (B-03.5): the saved CR, preselected as the pending permanent link so the
     /// task and its link are created together by Save (B-02.1 "CR creation preselects (and links) the CR").

@@ -100,7 +100,7 @@ public sealed class RenameLookup
 public sealed record MoveLookupCommand(OperationId OperationId, LookupKind Kind, Guid Id, string ExpectedOrderStamp, int Offset);
 
 /// <summary>
-/// Moves a status, priority, or squad up or down (B-04). Board columns, Calendar status lists, and Dashboard
+/// Moves a status, priority, or squad up or down (B-04). Board buckets, Calendar status lists, and Dashboard
 /// charts follow the configured order; no record changes.
 /// </summary>
 public sealed class MoveLookup

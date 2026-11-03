@@ -502,20 +502,20 @@
   <data name="Board_Unlinked" xml:space="preserve">
     <value>no CR</value>
   </data>
-  <data name="Board_ColumnName" xml:space="preserve">
-    <value>{0} column, {1} cards</value>
+  <data name="Board_BucketName" xml:space="preserve">
+    <value>{0} bucket, {1} cards</value>
   </data>
-  <data name="Board_ColumnNameOne" xml:space="preserve">
-    <value>{0} column, 1 card</value>
+  <data name="Board_BucketNameOne" xml:space="preserve">
+    <value>{0} bucket, 1 card</value>
   </data>
   <data name="Board_SummaryEmpty" xml:space="preserve">
     <value>No tasks yet</value>
   </data>
   <data name="Board_Summary" xml:space="preserve">
-    <value>{0} cards in {1} columns</value>
+    <value>{0} cards in {1} buckets</value>
   </data>
   <data name="Board_SummaryOne" xml:space="preserve">
-    <value>1 card in {1} columns</value>
+    <value>1 card in {1} buckets</value>
   </data>
   <data name="Checklists_PageTitle.Text" xml:space="preserve">
     <value>Checklists</value>
@@ -585,11 +585,11 @@
   <data name="Board_CardMenuName" xml:space="preserve">
     <value>More actions for {0}</value>
   </data>
-  <data name="Board_ColumnAddName" xml:space="preserve">
+  <data name="Board_BucketAddName" xml:space="preserve">
     <value>New task in {0}</value>
   </data>
-  <data name="Board_ColumnPickerItem" xml:space="preserve">
-    <value>Column: {0} ({1})</value>
+  <data name="Board_BucketPickerItem" xml:space="preserve">
+    <value>Bucket: {0} ({1})</value>
   </data>
   <data name="Board_CountFiltered" xml:space="preserve">
     <value>{0} of {1}</value>
@@ -613,7 +613,7 @@
     <value>Moved {0} to {1}. It is hidden by the current search.</value>
   </data>
   <data name="Board_ReorderOff" xml:space="preserve">
-    <value>Reordering within a column is off while search is active.</value>
+    <value>Reordering within a bucket is off while search is active.</value>
   </data>
   <data name="Board_ReorderOffCaption" xml:space="preserve">
     <value>Reordering is off while search is active</value>
@@ -624,11 +624,11 @@
   <data name="Board_MenuOpen" xml:space="preserve">
     <value>Open</value>
   </data>
-  <data name="Board_MenuTopOfColumn" xml:space="preserve">
-    <value>Top of column</value>
+  <data name="Board_MenuTopOfBucket" xml:space="preserve">
+    <value>Top of bucket</value>
   </data>
-  <data name="Board_MenuBottomOfColumn" xml:space="preserve">
-    <value>Bottom of column</value>
+  <data name="Board_MenuBottomOfBucket" xml:space="preserve">
+    <value>Bottom of bucket</value>
   </data>
   <data name="Board_MenuMoveUp" xml:space="preserve">
     <value>Move up</value>
@@ -657,20 +657,20 @@
   <data name="Board_NewTaskText.Text" xml:space="preserve">
     <value>New task</value>
   </data>
-  <data name="Board_PrevColumnButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Previous column</value>
+  <data name="Board_PrevBucketButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous bucket</value>
   </data>
-  <data name="Board_PrevColumnButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Previous column</value>
+  <data name="Board_PrevBucketButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous bucket</value>
   </data>
-  <data name="Board_NextColumnButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Next column</value>
+  <data name="Board_NextBucketButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next bucket</value>
   </data>
-  <data name="Board_NextColumnButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Next column</value>
+  <data name="Board_NextBucketButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next bucket</value>
   </data>
-  <data name="Board_ColumnPickerCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Column</value>
+  <data name="Board_BucketPickerCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Bucket</value>
   </data>
   <data name="Board_MovingCaption.Text" xml:space="preserve">
     <value>Moving</value>
@@ -2355,7 +2355,7 @@
     <value>Default task status</value>
   </data>
   <data name="Settings_DefaultTaskStatusCard.Description" xml:space="preserve">
-    <value>New tasks start here unless the Board column chooses another status.</value>
+    <value>New tasks start here unless the Board bucket chooses another status.</value>
   </data>
   <data name="Settings_DefaultTaskStatusCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Default task status</value>

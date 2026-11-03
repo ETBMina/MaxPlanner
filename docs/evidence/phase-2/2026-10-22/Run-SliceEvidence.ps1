@@ -55,8 +55,8 @@ function RowId([string]$RowName) {
 }
 
 function ColumnListId([string]$StatusName) {
-    $match = (UiJson search "$StatusName column").matches | Where-Object { $_.automationId -like 'Board_ColumnList_*' -and $_.name -like "$StatusName column*" } | Select-Object -First 1
-    if (-not $match) { throw "No Board column '$StatusName'." }
+    $match = (UiJson search "$StatusName bucket").matches | Where-Object { $_.automationId -like 'Board_BucketList_*' -and $_.name -like "$StatusName bucket*" } | Select-Object -First 1
+    if (-not $match) { throw "No Board bucket '$StatusName'." }
     $match.automationId
 }
 

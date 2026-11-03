@@ -18,7 +18,7 @@ using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Board;
 
-/// <summary>Where "Move to ▸" puts a card in the destination column (design §4.2 card menu).</summary>
+/// <summary>Where "Move to ▸" puts a card in the destination bucket (design §4.2 card menu).</summary>
 public enum BoardEdge
 {
     Top,
@@ -26,20 +26,20 @@ public enum BoardEdge
 }
 
 /// <summary>Asks the view to focus a card after a move (design §7.7: focus follows the moved card).</summary>
-public sealed record BoardFocusRequest(BoardColumnViewModel Column, BoardCardViewModel Card);
+public sealed record BoardFocusRequest(BoardBucketViewModel Bucket, BoardCardViewModel Card);
 
 /// <summary>
-/// One Board column: the active tasks and Subtask cards in one status, ordered by rank then ID (B-07).
+/// One Board bucket: the active tasks and Subtask cards in one status, ordered by rank then ID (B-07).
 /// Owns its list subscription. Use on the UI thread.
 /// </summary>
-public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
+public sealed partial class BoardBucketViewModel : ObservableObject, IDisposable
 {
     private readonly WorkspaceContext _context;
     private readonly ProjectionView<WorkItemRecord, Guid, BoardCardViewModel> _view;
     private readonly TaskStatusId _statusId;
     private bool _isFiltered;
 
-    internal BoardColumnViewModel(WorkspaceContext context, TaskStatusDefinition status, Func<WorkItemRecord, PriorityLevel> priorityLevel, Func<WorkItemRecord, bool> filter, bool isFiltered)
+    internal BoardBucketViewModel(WorkspaceContext context, TaskStatusDefinition status, Func<WorkItemRecord, PriorityLevel> priorityLevel, Func<WorkItemRecord, bool> filter, bool isFiltered)
     {
         _context = context;
         StatusId = status.Id;
@@ -83,14 +83,14 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(AccessibleName), nameof(PickerText))]
     public partial string CountText { get; private set; } = "0";
 
-    /// <summary>"Review column, 3 cards" (design §8.2).</summary>
-    public string AccessibleName => _context.Strings.Format(Cards.Count == 1 ? "Board_ColumnNameOne" : "Board_ColumnName", Name, Cards.Count);
+    /// <summary>"Review bucket, 3 cards" (design §8.2).</summary>
+    public string AccessibleName => _context.Strings.Format(Cards.Count == 1 ? "Board_BucketNameOne" : "Board_BucketName", Name, Cards.Count);
 
-    /// <summary>"New task in In Progress": the column + button (design §4.2).</summary>
-    public string AddButtonName => _context.Strings.Format("Board_ColumnAddName", Name);
+    /// <summary>"New task in In Progress": the bucket + button (design §4.2).</summary>
+    public string AddButtonName => _context.Strings.Format("Board_BucketAddName", Name);
 
-    /// <summary>"Column: In Progress (6)": the S-breakpoint column picker (design §4.2).</summary>
-    public string PickerText => _context.Strings.Format("Board_ColumnPickerItem", Name, CountText);
+    /// <summary>"Bucket: In Progress (6)": the S-breakpoint bucket picker (design §4.2).</summary>
+    public string PickerText => _context.Strings.Format("Board_BucketPickerItem", Name, CountText);
 
     /// <summary>"Drop to move to Review" (design §4.2 drop feedback).</summary>
     public string DropCaption => _context.Strings.Format("Board_DropCaption", Name);
@@ -112,7 +112,7 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
         Glyph = status.IsCompleted ? "\uE930" : status.SetsStartDate ? "\uE768" : status.IsBacklog ? "\uEA3A" : string.Empty;
     }
 
-    /// <summary>Applies the shared task filter (B-10) to this column; hidden cards keep their ranks (B-07).</summary>
+    /// <summary>Applies the shared task filter (B-10) to this bucket; hidden cards keep their ranks (B-07).</summary>
     internal void SetFilter(Func<WorkItemRecord, bool> filter, bool isFiltered)
     {
         _isFiltered = isFiltered;
@@ -150,7 +150,7 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// B-07: persisted rank, then ID with the .NET <see cref="Guid"/> comparison as the final tie-breaker,
-    /// the same order the writer uses when it renumbers a column (slice 1d).
+    /// the same order the writer uses when it renumbers a bucket (slice 1d).
     /// </summary>
     private sealed class RankOrder : IComparer<BoardCardViewModel>
     {
@@ -175,9 +175,9 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
 }
 
 /// <summary>
-/// The Board page (B-07, B-16, design §4.2): one column per task status in configured order, updated
+/// The Board page (B-07, B-16, design §4.2): one bucket per task status in configured order, updated
 /// incrementally from the shared store; drag/drop, keyboard and menu moves through the move use cases;
-/// the card menu; task search with the filtered-drop rule; the S-breakpoint column picker. A card moves
+/// the card menu; task search with the filtered-drop rule; the S-breakpoint bucket picker. A card moves
 /// on screen only after its move committed, so a failed move leaves the committed position (B-07). Use on
 /// the UI thread.
 /// </summary>
@@ -186,7 +186,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
     private readonly WorkspaceContext _context;
-    private readonly ObservableCollection<BoardColumnViewModel> _columns = [];
+    private readonly ObservableCollection<BoardBucketViewModel> _buckets = [];
     private readonly IDisposable _workflowSubscription;
     private readonly IDisposable _commits;
     private Dictionary<PriorityId, PriorityLevel> _priorityLevels = [];
@@ -194,7 +194,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     public BoardPageViewModel(WorkspaceContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        Columns = new ReadOnlyObservableCollection<BoardColumnViewModel>(_columns);
+        Buckets = new ReadOnlyObservableCollection<BoardBucketViewModel>(_buckets);
         Filters = context.TaskFilters;
         Filters.Changed += OnFiltersChanged;
         _workflowSubscription = context.Store.Workflow.ObserveOn(context.UiScheduler).Subscribe(OnWorkflow);
@@ -206,7 +206,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     /// <summary>Raised after a move, so the view focuses the moved card in its new position (design §7.7).</summary>
     public event EventHandler<BoardFocusRequest>? FocusRequested;
 
-    public ReadOnlyObservableCollection<BoardColumnViewModel> Columns { get; }
+    public ReadOnlyObservableCollection<BoardBucketViewModel> Buckets { get; }
 
     [ObservableProperty]
     public partial ViewState State { get; private set; } = ViewState.Loading;
@@ -217,17 +217,17 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     /// <summary>The shared Board/Grid task scope: search, filters, chips, and the Dashboard context (B-10).</summary>
     public TaskFilterScopeViewModel Filters { get; }
 
-    /// <summary>Task-scope search (B-10), shared with the Grid. While it is set, reordering within a column is off (B-07).</summary>
+    /// <summary>Task-scope search (B-10), shared with the Grid. While it is set, reordering within a bucket is off (B-07).</summary>
     public string SearchText
     {
         get => Filters.SearchText;
         set => Filters.SearchText = value;
     }
 
-    /// <summary>The column shown at the S breakpoint (design §4.2: one column per viewport with ‹ ›).</summary>
+    /// <summary>The bucket shown at the S breakpoint (design §4.2: one bucket per viewport with ‹ ›).</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PreviousColumnCommand), nameof(NextColumnCommand))]
-    public partial BoardColumnViewModel? SelectedColumn { get; set; }
+    [NotifyCanExecuteChangedFor(nameof(PreviousBucketCommand), nameof(NextBucketCommand))]
+    public partial BoardBucketViewModel? SelectedBucket { get; set; }
 
     public bool IsFiltered => Filters.IsFiltered;
 
@@ -238,13 +238,13 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     /// <summary>
     /// A drag/drop at <paramref name="insertIndex"/> of <paramref name="target"/>'s visible cards (design §9).
-    /// Filtered: a status change goes to the top of the full column and reordering is refused (B-07).
+    /// Filtered: a status change goes to the top of the full bucket and reordering is refused (B-07).
     /// </summary>
-    public Task<bool> DropAsync(BoardCardViewModel card, BoardColumnViewModel target, int insertIndex)
+    public Task<bool> DropAsync(BoardCardViewModel card, BoardBucketViewModel target, int insertIndex)
     {
         ArgumentNullException.ThrowIfNull(card);
         ArgumentNullException.ThrowIfNull(target);
-        var source = ColumnOf(card);
+        var source = BucketOf(card);
         if (IsFiltered)
         {
             return source == target ? RefuseReorder() : MoveAsync(card, target, BoardPlacement.Top);
@@ -255,15 +255,15 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     /// <summary>
     /// Move to ▸ {status} Top/Bottom from the card menu. While filtered the chosen edge applies to the full
-    /// column, so no hidden card is renumbered (B-07).
+    /// bucket, so no hidden card is renumbered (B-07).
     /// </summary>
-    public Task<bool> MoveToColumnAsync(BoardCardViewModel card, BoardColumnViewModel target, BoardEdge edge)
+    public Task<bool> MoveToBucketAsync(BoardCardViewModel card, BoardBucketViewModel target, BoardEdge edge)
     {
         ArgumentNullException.ThrowIfNull(card);
         ArgumentNullException.ThrowIfNull(target);
         if (IsFiltered)
         {
-            return ColumnOf(card) == target
+            return BucketOf(card) == target
                 ? RefuseReorder()
                 : MoveAsync(card, target, edge == BoardEdge.Top ? BoardPlacement.Top : BoardPlacement.AppendToEnd);
         }
@@ -271,22 +271,22 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         return PlaceAtAsync(card, target, edge == BoardEdge.Top ? 0 : int.MaxValue);
     }
 
-    /// <summary>Alt+Shift+Left/Right (design §7.3): the previous/next status, placed at the top of the full column (B-07).</summary>
-    public Task<bool> MoveToAdjacentColumnAsync(BoardCardViewModel card, int direction)
+    /// <summary>Alt+Shift+Left/Right (design §7.3): the previous/next status, placed at the top of the full bucket (B-07).</summary>
+    public Task<bool> MoveToAdjacentBucketAsync(BoardCardViewModel card, int direction)
     {
         ArgumentNullException.ThrowIfNull(card);
-        var index = ColumnOf(card) is { } source ? _columns.IndexOf(source) : -1;
+        var index = BucketOf(card) is { } source ? _buckets.IndexOf(source) : -1;
         var target = index + Math.Sign(direction);
-        return index < 0 || target < 0 || target >= _columns.Count
+        return index < 0 || target < 0 || target >= _buckets.Count
             ? Task.FromResult(false)
-            : MoveAsync(card, _columns[target], BoardPlacement.Top);
+            : MoveAsync(card, _buckets[target], BoardPlacement.Top);
     }
 
-    /// <summary>Alt+Shift+Up/Down and Move up/down (design §7.3): reorder within the column; off while filtered.</summary>
-    public Task<bool> MoveWithinColumnAsync(BoardCardViewModel card, int delta)
+    /// <summary>Alt+Shift+Up/Down and Move up/down (design §7.3): reorder within the bucket; off while filtered.</summary>
+    public Task<bool> MoveWithinBucketAsync(BoardCardViewModel card, int delta)
     {
         ArgumentNullException.ThrowIfNull(card);
-        if (ColumnOf(card) is not { } column)
+        if (BucketOf(card) is not { } bucket)
         {
             return Task.FromResult(false);
         }
@@ -296,13 +296,13 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
             return RefuseReorder();
         }
 
-        var index = column.Cards.IndexOf(card) + Math.Sign(delta);
-        return index < 0 || index >= column.Cards.Count ? Task.FromResult(false) : PlaceAtAsync(card, column, index);
+        var index = bucket.Cards.IndexOf(card) + Math.Sign(delta);
+        return index < 0 || index >= bucket.Cards.Count ? Task.FromResult(false) : PlaceAtAsync(card, bucket, index);
     }
 
-    public bool CanMoveUp(BoardCardViewModel card) => CanReorder && ColumnOf(card) is { } c && c.Cards.IndexOf(card) > 0;
+    public bool CanMoveUp(BoardCardViewModel card) => CanReorder && BucketOf(card) is { } c && c.Cards.IndexOf(card) > 0;
 
-    public bool CanMoveDown(BoardCardViewModel card) => CanReorder && ColumnOf(card) is { } c && c.Cards.IndexOf(card) < c.Cards.Count - 1;
+    public bool CanMoveDown(BoardCardViewModel card) => CanReorder && BucketOf(card) is { } c && c.Cards.IndexOf(card) < c.Cards.Count - 1;
 
     /// <summary>Open (Enter): the task editor, or the Subtask card editor for a Subtask card (design §5.2).</summary>
     public Task OpenAsync(BoardCardViewModel card)
@@ -325,8 +325,8 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         return card.Model.Cr.ChangeRequestId is { } id ? _context.ChangeRequests.OpenAsync(id) : Task.CompletedTask;
     }
 
-    /// <summary>Accent New task (default status) or a column's + (that status, B-02.1).</summary>
-    public Task NewTaskAsync(BoardColumnViewModel? column = null) => _context.Tasks.NewAsync(column?.StatusId);
+    /// <summary>Accent New task (default status) or a bucket's + (that status, B-02.1).</summary>
+    public Task NewTaskAsync(BoardBucketViewModel? bucket = null) => _context.Tasks.NewAsync(bucket?.StatusId);
 
     public Task CopyAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
 
@@ -341,41 +341,41 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         _ => Task.FromResult(false),
     };
 
-    /// <summary>The column that shows <paramref name="card"/>, or null when it is no longer visible.</summary>
-    public BoardColumnViewModel? ColumnOf(BoardCardViewModel card) => _columns.FirstOrDefault(c => c.Cards.Contains(card));
+    /// <summary>The bucket that shows <paramref name="card"/>, or null when it is no longer visible.</summary>
+    public BoardBucketViewModel? BucketOf(BoardCardViewModel card) => _buckets.FirstOrDefault(c => c.Cards.Contains(card));
 
     public void Dispose()
     {
         Filters.Changed -= OnFiltersChanged;
         _commits.Dispose();
         _workflowSubscription.Dispose();
-        foreach (var column in _columns)
+        foreach (var bucket in _buckets)
         {
-            column.Dispose();
+            bucket.Dispose();
         }
 
-        _columns.Clear();
+        _buckets.Clear();
     }
 
     [RelayCommand]
     private Task NewTask() => NewTaskAsync();
 
     [RelayCommand(CanExecute = nameof(CanGoPrevious))]
-    private void PreviousColumn() => SelectedColumn = _columns[_columns.IndexOf(SelectedColumn!) - 1];
+    private void PreviousBucket() => SelectedBucket = _buckets[_buckets.IndexOf(SelectedBucket!) - 1];
 
     [RelayCommand(CanExecute = nameof(CanGoNext))]
-    private void NextColumn() => SelectedColumn = _columns[_columns.IndexOf(SelectedColumn!) + 1];
+    private void NextBucket() => SelectedBucket = _buckets[_buckets.IndexOf(SelectedBucket!) + 1];
 
-    private bool CanGoPrevious() => SelectedColumn is { } c && _columns.IndexOf(c) > 0;
+    private bool CanGoPrevious() => SelectedBucket is { } c && _buckets.IndexOf(c) > 0;
 
-    private bool CanGoNext() => SelectedColumn is { } c && _columns.IndexOf(c) < _columns.Count - 1;
+    private bool CanGoNext() => SelectedBucket is { } c && _buckets.IndexOf(c) < _buckets.Count - 1;
 
     private void OnFiltersChanged(object? sender, EventArgs e)
     {
         var filter = Filters.Predicate();
-        foreach (var column in _columns)
+        foreach (var bucket in _buckets)
         {
-            column.SetFilter(filter, IsFiltered);
+            bucket.SetFilter(filter, IsFiltered);
         }
 
         OnPropertyChanged(nameof(SearchText));
@@ -386,14 +386,14 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     /// <summary>
     /// Places the card before the card now at <paramref name="index"/> of the destination's visible list
-    /// (the moved card itself excluded). Unfiltered, the visible list is the full column, so its neighbours'
-    /// ranks are exact; the writer respaces the full column when they leave no gap (B-07).
+    /// (the moved card itself excluded). Unfiltered, the visible list is the full bucket, so its neighbours'
+    /// ranks are exact; the writer respaces the full bucket when they leave no gap (B-07).
     /// </summary>
-    private Task<bool> PlaceAtAsync(BoardCardViewModel card, BoardColumnViewModel target, int index)
+    private Task<bool> PlaceAtAsync(BoardCardViewModel card, BoardBucketViewModel target, int index)
     {
         var others = target.Cards.Where(c => c.Key != card.Key).ToList();
         index = Math.Clamp(index, 0, others.Count);
-        if (ColumnOf(card) == target && target.Cards.IndexOf(card) == index)
+        if (BucketOf(card) == target && target.Cards.IndexOf(card) == index)
         {
             return Task.FromResult(true);
         }
@@ -414,9 +414,9 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     /// stays where it is until the result is displayed; on failure it simply stays, the save status says
     /// Failed, and the failure is announced (B-07, design §4.2, §8.3).
     /// </summary>
-    private async Task<bool> MoveAsync(BoardCardViewModel card, BoardColumnViewModel target, BoardPlacement placement)
+    private async Task<bool> MoveAsync(BoardCardViewModel card, BoardBucketViewModel target, BoardPlacement placement)
     {
-        var source = ColumnOf(card);
+        var source = BucketOf(card);
         if (_context.IsEditingBlocked)
         {
             _context.Announce(_context.Strings.GetString("Error_EditingBlocked"), isFailure: true);
@@ -462,39 +462,39 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     }
 
     /// <summary>
-    /// B-04 statuses are configurable, so columns follow the workflow: new statuses add a column, removed ones
+    /// B-04 statuses are configurable, so buckets follow the workflow: new statuses add a bucket, removed ones
     /// drop theirs, renames and reorders update in place. Lookup changes arrive with a store batch.
     /// </summary>
     private void OnWorkflow(WorkflowSnapshot workflow)
     {
         _priorityLevels = PriorityLevels(workflow.Priorities);
         var statuses = workflow.TaskStatuses.OrderBy(s => s.Order).ToList();
-        var removed = _columns.Where(c => statuses.All(s => s.Id != c.StatusId)).ToList();
+        var removed = _buckets.Where(c => statuses.All(s => s.Id != c.StatusId)).ToList();
         KeyedCollectionSync.Sync(
-            _columns,
+            _buckets,
             statuses,
             status => status.Id,
-            column => column.StatusId,
+            bucket => bucket.StatusId,
             status =>
             {
-                var column = new BoardColumnViewModel(_context, status, LevelOf, Filters.Predicate(), IsFiltered);
-                column.Initialized += (_, _) => UpdateState();
-                column.CardsChanged += (_, _) => UpdateState();
-                return column;
+                var bucket = new BoardBucketViewModel(_context, status, LevelOf, Filters.Predicate(), IsFiltered);
+                bucket.Initialized += (_, _) => UpdateState();
+                bucket.CardsChanged += (_, _) => UpdateState();
+                return bucket;
             },
-            (column, status) => column.Update(status));
-        foreach (var column in removed)
+            (bucket, status) => bucket.Update(status));
+        foreach (var bucket in removed)
         {
-            column.Dispose();
+            bucket.Dispose();
         }
 
-        if (SelectedColumn is null || !_columns.Contains(SelectedColumn))
+        if (SelectedBucket is null || !_buckets.Contains(SelectedBucket))
         {
-            SelectedColumn = _columns.FirstOrDefault();
+            SelectedBucket = _buckets.FirstOrDefault();
         }
 
-        PreviousColumnCommand.NotifyCanExecuteChanged();
-        NextColumnCommand.NotifyCanExecuteChanged();
+        PreviousBucketCommand.NotifyCanExecuteChanged();
+        NextBucketCommand.NotifyCanExecuteChanged();
         UpdateState();
     }
 
@@ -502,9 +502,9 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     {
         if (IsFiltered)
         {
-            foreach (var column in _columns)
+            foreach (var bucket in _buckets)
             {
-                column.UpdateCount();
+                bucket.UpdateCount();
             }
 
             UpdateState();
@@ -532,10 +532,10 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     private void UpdateState()
     {
-        // The Board keeps its columns visible even with no cards (design §4.2 Empty), so Empty only changes
+        // The Board keeps its buckets visible even with no cards (design §4.2 Empty), so Empty only changes
         // the summary; the StateView covers loading and errors.
-        var initialized = _columns.Count > 0 && _columns.All(c => c.IsInitialized);
-        var cards = _columns.Sum(c => c.Cards.Count);
+        var initialized = _buckets.Count > 0 && _buckets.All(c => c.IsInitialized);
+        var cards = _buckets.Sum(c => c.Cards.Count);
         State = initialized ? ViewState.Populated : ViewState.Loading;
         if (IsFiltered)
         {
@@ -546,6 +546,6 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
         Summary = cards == 0
             ? _context.Strings.GetString("Board_SummaryEmpty")
-            : _context.Strings.Format(cards == 1 ? "Board_SummaryOne" : "Board_Summary", cards, _columns.Count);
+            : _context.Strings.Format(cards == 1 ? "Board_SummaryOne" : "Board_Summary", cards, _buckets.Count);
     }
 }

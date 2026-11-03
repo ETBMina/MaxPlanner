@@ -25,11 +25,11 @@ public sealed class TaskEditorTests
     [Trait("Req", "B-02.1")]
     [Trait("Req", "B-02.6")]
     [Trait("Req", "B-02.9")]
-    public void A_column_plus_opens_a_new_draft_in_that_status_that_validates_then_creates_with_a_new_person()
+    public void A_bucket_plus_opens_a_new_draft_in_that_status_that_validates_then_creates_with_a_new_person()
     {
         using var h = BoardMoveTests.Board(out var board, "Existing");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var review = board.Columns[3];
+        var review = board.Buckets[3];
 
         var flow = board.NewTaskAsync(review);
         var editor = dialogs.Next<TaskEditorViewModel>(h);
@@ -52,7 +52,7 @@ public sealed class TaskEditorTests
         var created = h.Task(editor.CreatedTaskId!.Value);
         created.Status.Id.Should().Be(review.StatusId);
         created.Designer!.Name.Should().Be("Dana", "B-02.6: the new person is created by the save");
-        board.Columns[3].Cards.Select(c => c.Title).Should().Contain("Brand new");
+        board.Buckets[3].Cards.Select(c => c.Title).Should().Contain("Brand new");
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var card = board.Columns[0].Cards.Single();
+        var card = board.Buckets[0].Cards.Single();
         var people = h.Store.CurrentWorkflow!.People.Count;
 
         var flow = board.OpenAsync(card);
@@ -94,7 +94,7 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var card = board.Columns[0].Cards.Single();
+        var card = board.Buckets[0].Cards.Single();
         var people = h.Store.CurrentWorkflow!.People.Count;
 
         var flow = board.OpenAsync(card);
@@ -122,7 +122,7 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var card = board.Columns[0].Cards.Single();
+        var card = board.Buckets[0].Cards.Single();
 
         var flow = board.OpenAsync(card);
         var editor = dialogs.Next<TaskEditorViewModel>(h);
@@ -148,7 +148,7 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var card = board.Columns[0].Cards.Single();
+        var card = board.Buckets[0].Cards.Single();
         var people = h.Store.CurrentWorkflow!.People.Count;
 
         var flow = board.OpenAsync(card);
@@ -188,7 +188,7 @@ public sealed class TaskEditorTests
         using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Original", "Mobile Banking"));
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Title = "Mine";
         editor.Notes = "My notes";
@@ -228,7 +228,7 @@ public sealed class TaskEditorTests
         using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Original"));
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        _ = board.OpenAsync(board.Columns[0].Cards.Single());
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Title = "Mine";
         h.External(u => u.UpdateTaskContent.ExecuteAsync(
@@ -253,7 +253,7 @@ public sealed class TaskEditorTests
         using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task", "Service", null, "Draft"));
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        _ = board.OpenAsync(board.Columns[0].Cards.Single());
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         var item = h.Task(id).ChecklistItems.Single();
 
@@ -282,7 +282,7 @@ public sealed class TaskEditorTests
         });
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.CanLinkToCr.Should().BeTrue();
 
@@ -307,7 +307,7 @@ public sealed class TaskEditorTests
         linked.Cr.ChangeRequestId.Should().Be(cr);
         linked.EffectiveTitle.Should().Be("Instant card freeze");
 
-        flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.IsLinked.Should().BeTrue();
         editor.CanLinkToCr.Should().BeFalse("AC-29: no route offers a second link");
@@ -325,17 +325,17 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Source");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        h.Await(board.MoveToAdjacentColumnAsync(board.Columns[0].Cards.Single(), 1));
+        h.Await(board.MoveToAdjacentBucketAsync(board.Buckets[0].Cards.Single(), 1));
         h.Settle();
-        var source = board.Columns[1].Cards.Single();
+        var source = board.Buckets[1].Cards.Single();
 
         var flow = board.CopyAsync(source);
         var copy = dialogs.Next<CopyTaskViewModel>(h);
         copy.Title.Should().Be("Source");
         copy.Service.Should().BeEmpty();
-        copy.SelectedStatus!.Id.Should().Be(board.Columns[0].StatusId, "B-06: the default status unless Keep current status");
+        copy.SelectedStatus!.Id.Should().Be(board.Buckets[0].StatusId, "B-06: the default status unless Keep current status");
         copy.KeepCurrentStatus = true;
-        copy.SelectedStatus!.Id.Should().Be(board.Columns[1].StatusId);
+        copy.SelectedStatus!.Id.Should().Be(board.Buckets[1].StatusId);
 
         h.Await(copy.PrimaryAsync()).Should().BeFalse();
         copy.IsReviewStep.Should().BeTrue();
@@ -345,9 +345,9 @@ public sealed class TaskEditorTests
         h.Settle();
 
         var created = h.Task(copy.CreatedTaskId!.Value);
-        created.Status.Id.Should().Be(board.Columns[1].StatusId);
+        created.Status.Id.Should().Be(board.Buckets[1].StatusId);
         created.Cr.ChangeRequestId.Should().BeNull();
-        board.Columns[1].Cards.Should().HaveCount(2);
+        board.Buckets[1].Cards.Should().HaveCount(2);
     }
 
     [Fact]
@@ -363,7 +363,7 @@ public sealed class TaskEditorTests
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
 
-        var flow = board.CopyAsync(board.Columns[0].Cards.Single());
+        var flow = board.CopyAsync(board.Buckets[0].Cards.Single());
         var copy = dialogs.Next<CopyTaskViewModel>(h);
         copy.HasPendingLink.Should().BeTrue();
         copy.PendingLink!.Id.Should().Be(cr);
@@ -396,7 +396,7 @@ public sealed class TaskEditorTests
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
 
-        var flow = board.CopyAsync(board.Columns[0].Cards.Single());
+        var flow = board.CopyAsync(board.Buckets[0].Cards.Single());
         var copy = dialogs.Next<CopyTaskViewModel>(h);
         copy.ClearLink();
         copy.HasPendingLink.Should().BeFalse();
@@ -440,20 +440,20 @@ public sealed class TaskEditorTests
         var board = BoardMoveTests.Ready(h);
         h.Strings.With("DeleteTask_Message", "Delete '{0}'? {1} items, {2} cards.");
         using var dialogs = new DialogRecorder(h.Workspace.Context) { Answer = ConfirmationResult.Secondary };
-        var kept = board.Columns[0].Cards.Single(c => c.Title == "Kept");
+        var kept = board.Buckets[0].Cards.Single(c => c.Title == "Kept");
 
         h.Await(board.DeleteAsync(kept)).Should().BeTrue();
         h.Settle();
-        board.Columns[0].Cards.Should().NotContain(c => c.Title == "Kept", "Archive instead hides it from the Board");
+        board.Buckets[0].Cards.Should().NotContain(c => c.Title == "Kept", "Archive instead hides it from the Board");
         h.Store.Tasks.Items.Single(t => t.EffectiveTitle == "Kept").IsArchived.Should().BeTrue();
 
         dialogs.Answer = ConfirmationResult.Primary;
-        var doomed = board.Columns[0].Cards.Single(c => c.Title == "Doomed");
+        var doomed = board.Buckets[0].Cards.Single(c => c.Title == "Doomed");
         h.Await(board.DeleteAsync(doomed)).Should().BeTrue();
         h.Settle();
 
         dialogs.Shown.OfType<ConfirmationViewModel>().Last().Message.Should().Be("Delete 'Doomed'? 2 items, 1 cards.");
-        board.Columns[0].Cards.Should().BeEmpty("the task and its Subtask card are gone");
+        board.Buckets[0].Cards.Should().BeEmpty("the task and its Subtask card are gone");
         h.Store.Tasks.Items.Should().ContainSingle();
         h.Store.SubtaskCards.Count.Should().Be(0);
     }
@@ -464,7 +464,7 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
 
         h.Await(editor.ArchiveAsync()).Should().BeTrue();
@@ -472,12 +472,12 @@ public sealed class TaskEditorTests
         editor.IsArchived.Should().BeTrue();
         editor.CanEditFields.Should().BeFalse();
         editor.CanSave.Should().BeFalse();
-        board.Columns[0].Cards.Should().BeEmpty();
+        board.Buckets[0].Cards.Should().BeEmpty();
 
         h.Await(editor.RestoreAsync()).Should().BeTrue();
         h.Settle();
         editor.IsArchived.Should().BeFalse();
-        board.Columns[0].Cards.Should().ContainSingle();
+        board.Buckets[0].Cards.Should().ContainSingle();
         editor.TryClose().Should().BeTrue();
         dialogs.CloseCurrent();
         h.Await(flow);
@@ -489,7 +489,7 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Parent");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
 
         editor.NewSubtaskCardText = "Follow-up";
@@ -498,7 +498,7 @@ public sealed class TaskEditorTests
 
         editor.SubtaskCards.Select(c => c.Subtitle).Should().Equal("Follow-up");
         editor.IsDirty.Should().BeFalse("cards are created immediately, not drafted");
-        board.Columns[0].Cards.Should().Contain(c => c.IsSubtaskCard && c.Title == "Follow-up");
+        board.Buckets[0].Cards.Should().Contain(c => c.IsSubtaskCard && c.Title == "Follow-up");
         editor.TryClose().Should().BeTrue();
         dialogs.CloseCurrent();
         h.Await(flow);
@@ -512,7 +512,7 @@ public sealed class TaskEditorTests
         using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task", "Service", null, "First", "Second"));
         var board = BoardMoveTests.Ready(h);
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
 
         editor.NewChecklistText = "   ";
@@ -537,9 +537,9 @@ public sealed class TaskEditorTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new DialogRecorder(h.Workspace.Context);
-        var taskId = new TaskId(board.Columns[0].Cards.Single().Key);
+        var taskId = new TaskId(board.Buckets[0].Cards.Single().Key);
 
-        var flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Designer.Query = "Dana";
         editor.Designer.SubmitQuery().Should().BeTrue();
@@ -548,7 +548,7 @@ public sealed class TaskEditorTests
         h.Settle();
         h.Task(taskId).Designer!.Name.Should().Be("Dana");
 
-        flow = board.OpenAsync(board.Columns[0].Cards.Single());
+        flow = board.OpenAsync(board.Buckets[0].Cards.Single());
         editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Designer.Query.Should().Be("Dana", "the box shows the saved Designer");
         editor.Designer.Query = string.Empty;

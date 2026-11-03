@@ -170,7 +170,7 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
 | NavigationView pane / TitleBar | Transparent over Mica (default templates) | Solid |
 | Page content layer | `LayerFillColorDefaultBrush` with `CardStrokeColorDefaultBrush` top-left rounding (`OverlayCornerRadius`), the standard content-on-Mica layer | Solid layer brush |
 | Cards (Dashboard, Board, Checklist groups, Settings) | `CardBackgroundFillColorDefaultBrush` + 1-px `CardStrokeColorDefaultBrush` + `ControlCornerRadius` (8 for cards, 4 for chips) | Same; the strokes keep boundaries visible |
-| Nested / secondary card (Board column, Calendar backlog) | `CardBackgroundFillColorSecondaryBrush` | Same |
+| Nested / secondary card (Board bucket, Calendar backlog) | `CardBackgroundFillColorSecondaryBrush` | Same |
 | Flyouts, MenuFlyout, context menus | `FlyoutBase.SystemBackdrop = DesktopAcrylicBackdrop` **only where the platform applies it natively**. Otherwise use the default `AcrylicBackgroundFillColorDefaultBrush` template | Platform solid flyout brush |
 | ContentDialog | The native dialog surface (no backdrop override) and the default smoke layer | — |
 | Accent | `AccentFillColorDefaultBrush` for the single primary button per surface, selection, the current day and the selected bar outline. `AccentTextFillColorPrimaryBrush` for links | — |
@@ -245,12 +245,12 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 | Region | Controls |
 |---|---|
 | Header | Title "Board". Filters, then the expanding Search icon (task scope, §2.3.1). Filters share the Board/Grid scope (B-10). Accent **New task** (opens the editor with the default status). CommandBar: New Subtask card… (task picker), Clear all filters; overflow: Board help. |
-| Surface | A horizontal `ScrollViewer` (`HorizontalScrollMode=Enabled`, vertical disabled) hosting a non-virtualized `ItemsRepeater` of **columns**, because there are ≤ ~20 statuses. Each column is a fixed-width card (`CardBackgroundFillColorSecondaryBrush`) with a header and a **virtualized `ListView`** in a bounded height (the column fills the viewport height) `[gallery-listview-3]`. The scroll axes do not conflict: the page scrolls horizontally and each column scrolls vertically. |
-| Column header | Status name (`BodyStrongTextBlockStyle`, HeadingLevel 2), a count chip ("6", or "4 of 6" when filtered: visible / total active, B-07), status flag glyph (§6.2), **+** button ("New task in In Progress"), and **⋯** `MenuFlyout` (Collapse column, Workflow settings…). |
+| Surface | A horizontal `ScrollViewer` (`HorizontalScrollMode=Enabled`, vertical disabled) hosting a non-virtualized `ItemsRepeater` of **buckets**, because there are ≤ ~20 statuses. Each bucket is a fixed-width card (`CardBackgroundFillColorSecondaryBrush`) with a header and a **virtualized `ListView`** in a bounded height (the bucket fills the viewport height) `[gallery-listview-3]`. The scroll axes do not conflict: the page scrolls horizontally and each bucket scrolls vertically. |
+| Bucket header | Status name (`BodyStrongTextBlockStyle`, HeadingLevel 2), a count chip ("6", or "4 of 6" when filtered: visible / total active, B-07), status flag glyph (§6.2), **+** button ("New task in In Progress"), and **⋯** `MenuFlyout` (Collapse bucket, Workflow settings…). |
 | Task card | Anatomy listed after this table. |
 | Subtask card | Anatomy listed after this table. |
 | Card menu | `MenuFlyout` from right-click, Shift+F10, the Application key or the **⋯** button `[gallery-listview-8, gallery-menuflyout-6]`. Items listed after this table. |
-| Drop feedback | The insertion line uses `AccentFillColorDefaultBrush` (2 epx) and the destination column gets a highlight stroke plus the caption "Drop to move to Review". During a drag the card has 60% opacity plus a "Moving" caption. When the Board is filtered, a drop places the card at the **top** of the full destination column and the insertion line is replaced by "Will be added to the top of Review" (B-07 filtered rule). |
+| Drop feedback | The insertion line uses `AccentFillColorDefaultBrush` (2 epx) and the destination bucket gets a highlight stroke plus the caption "Drop to move to Review". During a drag the card has 60% opacity plus a "Moving" caption. When the Board is filtered, a drop places the card at the **top** of the full destination bucket and the insertion line is replaced by "Will be added to the top of Review" (B-07 filtered rule). |
 
 **Task card anatomy:**
 1. Effective Title (`BodyStrongTextBlockStyle`, max 3 lines, full text in a tooltip).
@@ -266,7 +266,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 
 **Card menu items:**
 - Open (Enter)
-- Move to ▸ (every status, with Top/Bottom of column; while filtered both address the full column and the card's own column is disabled)
+- Move to ▸ (every status, with Top/Bottom of bucket; while filtered both address the full bucket and the card's own bucket is disabled)
 - Move up / Move down
 - Copy… (tasks only)
 - Add Subtask card (tasks only)
@@ -279,13 +279,13 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 | Card | Full anatomy | Full anatomy | Checklist preview limited to 2 items |
 | Header | Search icon expands inline | Search expands into the free space | Search overlays the Filters button when expanded (§2.3.1) |
 
-States: Loading; Empty (statuses exist but no tasks: "No tasks yet" + New task, and the empty columns still render); Filtered-empty (columns render with "0 of n"); Error. **Filtered mode:**
+States: Loading; Empty (statuses exist but no tasks: "No tasks yet" + New task, and the empty buckets still render); Filtered-empty (buckets render with "0 of n"); Error. **Filtered mode:**
 - No InfoBar explains the filtered rules; the drag caption ("Will be added to the top of Review") and the forbidden cursor on same-column drops carry them.
 - Move up/down are disabled, and `CanReorderItems = false`.
 
 A failed move restores the committed position, sets the save status to Failed, and announces the failure (B-07).
 
-A card that is created, copied or restored, or whose status changes outside a positional Board drop (task or Subtask card editor, Grid status cell, Alt+Shift+Left/Right), lands at the **top** of its destination column (B-07). Only a drop uses the dropped slot (unfiltered) or the top of the column (filtered).
+A card that is created, copied or restored, or whose status changes outside a positional Board drop (task or Subtask card editor, Grid status cell, Alt+Shift+Left/Right), lands at the **top** of its destination bucket (B-07). Only a drop uses the dropped slot (unfiltered) or the top of the bucket (filtered).
 
 **Proposed notes (Phase 3, pending owner review):**
 - Drop feedback is a 2-epx accent stroke on the destination list, the drag caption ("Drop to move to Review" / "Will be added to the top of Review"), and a 2-epx insertion line (`AccentFillColorDefaultBrush`; `SystemColorHighlightColorBrush` in High Contrast) at the slot the card will take. The slot follows the pointer live: before a card when the pointer is above its midpoint, otherwise after it; the space below the last card, or an empty column, is the end. The line is an overlay drawn over the list (no placeholder item), follows edge auto-scroll, and disappears when the drag leaves the list, drops, or ends; the drop uses the same slot. Dropping a card next to its own position is a no-op. While the Board is filtered the line marks the top of the destination list (the filtered rule above), and same-column reordering stays forbidden. The card itself is dimmed with a "Moving" caption until the move is saved. A card moves on screen only after the move committed, so a failure needs no visual rollback.
@@ -558,7 +558,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | | | **Service** | Marked * when linked or a link is pending. Helper when linked: "Tells this task apart from the other 2 tasks on CR-1042." |
 | 2 | Change request | Link card | **Unlinked:** the text "Not linked to a CR" + a **Link to CR…** button (inline step §5.6). **Pending:** a CR summary card + an InfoBar (Warning) "This link is permanent. When you save, the title becomes 'Card limits API' and the task number, squad and owner come from CR-1042." + **Choose a different CR** (allowed only while pending). **Linked:** a read-only card with the CR number link, title, CR status, Owner and "3 linked tasks". There is **no Unlink and no Change** (B-03.7). |
 | | | Task number · Squad · Owner | Read-only text, side by side at L. Helper: "From CR-1042. Edit them on the CR." Unlinked: Squad "General", no task number, "No owner". |
-| 3 | Workflow | **Status***, **Priority*** | `ComboBox`es. The creation route preselects the column status (B-02.1). |
+| 3 | Workflow | **Status***, **Priority*** | `ComboBox`es. The creation route preselects the bucket status (B-02.1). |
 | 4 | People and tags | Designer, Developer, Tags | Single-person pickers for Designer and Developer (ADR 0024); token picker for Tags |
 | 5 | Dates | Start date, End date | Helpers come from the flags: "Set automatically when moved to In Progress" / "Filled when the task is completed". A range error appears under End date. |
 | 6 | Custom fields | Per definition order | Typed |
@@ -705,7 +705,7 @@ Anatomy: a `Border` with `CornerRadius` 4, padding 6×2, the `CaptionTextBlockSt
 | `SquadChip` | Squad / "General" | `ControlFillColorSecondaryBrush` + `ControlStrokeColorDefaultBrush` | Text primary | People | Same |
 | `ServiceChip` | Service (Board cards use `AccentChip`) | `SystemFillColorAttentionBackgroundBrush` | Text primary | Repair | Same |
 | `ArchivedChip` | Archived | `SystemFillColorNeutralBackgroundBrush` | Text secondary | Archive† | Same |
-| `AccentChip` | Board column counts and Board card service | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Repair (service only) | Highlight/HighlightText |
+| `AccentChip` | Board bucket counts and Board card service | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Repair (service only) | Highlight/HighlightText |
 | `FlagChip` | Settings flags | `SubtleFillColorSecondaryBrush` + stroke | Text secondary | per flag | Same |
 
 Priority tokens are assigned by **configured rank**, never by name, because priorities are editable lookups (B-04). A chip's name is "Priority: Urgent".
@@ -856,7 +856,7 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
 | Shell | `Shell_TitleBar`, `Shell_Nav`, `Shell_NavDashboardItem`, `Shell_NavBoardItem`, `Shell_NavGridItem`, `Shell_NavCalendarItem`, `Shell_NavChecklistsItem`, `Shell_NavSettingsItem`, `Shell_BackButton`, `Shell_AppInfoBar`, `Shell_SaveStatus`, `Shell_StatusSummary` |
 | Common | `{Page}_SearchButton`, `{Page}_SearchBox`, `{Page}_SearchClearButton`, `{Page}_FiltersButton`, `{Page}_FiltersApplyButton`, `{Page}_FiltersCancelButton`, `{Page}_FiltersClearButton`, `{Page}_ClearAllFiltersLink`, `{Page}_FilterChip_{Field}`, `{Page}_StateView`, `{Page}_RetryButton`, `{Page}_ReturnToDashboardButton` |
 | Dashboard | `Dashboard_SquadCombo`, `Dashboard_PriorityCombo`, `Dashboard_OwnerCombo`, `Dashboard_ClearFiltersLink`, `Dashboard_ActiveTasksCard`, `Dashboard_CompletedTasksCard`, `Dashboard_UnscheduledTasksCard`, `Dashboard_OverdueCrsCard`, `Dashboard_ActiveSubtaskCardsCard`, `Dashboard_ReviewsCard`, `Dashboard_StatusChart`, `Dashboard_StatusChartTableToggle`, `Dashboard_StatusBar_{StatusId}`, `Dashboard_SquadBar_{SquadId|General}`, `Dashboard_ReviewDevBar_{PersonId|Unassigned}`, `Dashboard_OverdueList`, `Dashboard_OverdueRow_{CrId}`, `Dashboard_OverdueViewAllLink`, `Dashboard_UnlinkedList`, `Dashboard_UnlinkedRow_{TaskId}`, `Dashboard_UnlinkedViewAllLink` |
-| Board | `Board_NewTaskButton`, `Board_Column_{StatusId}`, `Board_ColumnAddButton_{StatusId}`, `Board_ColumnMenu_{StatusId}`, `Board_ColumnList_{StatusId}`, `Board_TaskCard_{TaskId}`, `Board_SubtaskCard_{CardId}`, `Board_CardMenuButton_{Id}`, `Board_CardCrLink_{Id}`, `Board_ChecklistCheck_{ItemId}`, `Board_ShowAllLink_{TaskId}`, `Board_ColumnPickerCombo`, `Board_PrevColumnButton`, `Board_NextColumnButton` |
+| Board | `Board_NewTaskButton`, `Board_Bucket_{StatusId}`, `Board_BucketAddButton_{StatusId}`, `Board_BucketMenu_{StatusId}`, `Board_BucketList_{StatusId}`, `Board_TaskCard_{TaskId}`, `Board_SubtaskCard_{CardId}`, `Board_CardMenuButton_{Id}`, `Board_CardCrLink_{Id}`, `Board_ChecklistCheck_{ItemId}`, `Board_ShowAllLink_{TaskId}`, `Board_BucketPickerCombo`, `Board_PrevBucketButton`, `Board_NextBucketButton` |
 | Grid | `Grid_Table`, `Grid_ShowArchivedToggle`, `Grid_ColumnsButton`, `Grid_ColumnCheck_{ColumnKey}`, `Grid_ExportButton`, `Grid_NewTaskButton`, `Grid_Header_{ColumnKey}`, `Grid_Row_{Id}`, `Grid_Cell_{Id}_{ColumnKey}`, `Grid_RowMenuButton_{Id}`, `Grid_CellEditor` |
 | Calendar | `Calendar_ModeBar`, `Calendar_ModeMonthItem`, `Calendar_ModeWeekItem`, `Calendar_ModeRecordsItem`, `Calendar_TodayButton`, `Calendar_PrevButton`, `Calendar_NextButton`, `Calendar_PeriodButton`, `Calendar_NewCrButton`, `Calendar_BacklogToggle`, `Calendar_BacklogCollapseButton`, `Calendar_BacklogCount`, `Calendar_BacklogList`, `Calendar_BacklogCard_{CrId}`, `Calendar_Day_{yyyyMMdd}`, `Calendar_Bar_{CrId}_{yyyyMMdd}` (segment start), `Calendar_BarStartThumb_{CrId}`, `Calendar_BarEndThumb_{CrId}`, `Calendar_MoreLink_{yyyyMMdd}`, `Calendar_OutsideWorkdays_{yyyyMMdd}`, `Calendar_RecordsList`, `Calendar_RecordRow_{CrId}` |
 | Checklists | `Checklists_AddToTaskButton`, `Checklists_NewTodoButton`, `Checklists_GeneralGroup`, `Checklists_ReviewsGroup`, `Checklists_NewReviewLink`, `Checklists_TaskGroup_{TaskId}`, `Checklists_AddItemBox_{GroupKey}`, `Checklists_ItemCheck_{ItemId}`, `Checklists_ItemMenuButton_{ItemId}`, `Checklists_CompletedExpander_{GroupKey}`, `Checklists_ReviewCheck_{ReviewId}`, `Checklists_ReviewMenuButton_{ReviewId}` (`GroupKey` = `General`, `Reviews`, or the TaskId) |
@@ -870,7 +870,7 @@ Space = toggle checkbox (items and reviews); F2 = rename; **Alt+Shift+Up/Down** 
   - Subtask card: "Subtask card Fix rounding, subtask of Card limits API, In Progress".
   - `HelpText` carries "Press Shift F10 for actions".
 - **Structure:** page titles are `HeadingLevel 1` and sections are level 2 `[-10]`. The navigation pane is `LandmarkType=Navigation`, and the content frame is `Main`. Search boxes are `Search` `[-9]`.
-- **Lists:** Board columns and Checklists groups are lists that expose `PositionInSet`/`SizeOfSet` (auto from ListView) `[-7]`. Each column list's name is "Review column, 3 cards".
+- **Lists:** Board buckets and Checklists groups are lists that expose `PositionInSet`/`SizeOfSet` (auto from ListView) `[-7]`. Each bucket list's name is "Review bucket, 3 cards".
 - **Required and invalid fields:** `IsRequiredForForm`, plus a `FullDescription` linked to the error text.
 - **Charts:** each bar row is a button named with its category, count and share (§4.1). The Table toggle exposes the same data as a list. Charts never depend on hover.
 
@@ -894,16 +894,16 @@ Use `AutomationPeer.RaiseNotificationEvent` (`AutomationNotificationKind.ActionC
   - When `UISettings.AnimationsEnabled` is false, transitions are removed and the scroll animation for "move into view" is disabled.
   - Information never depends on motion.
 - **Text scaling (100–225%):** text wraps in cards, headers and dialogs. Use `TextTrimming` only where the full text is also available in a tooltip and the accessible name.
-  - Fixed heights are avoided. Board column width stays fixed, while card height grows. Calendar row height = header + lanes × (bar height scaled by `TextScaleFactor`). In Month mode the lane cap is 4; in Week mode it is however many lanes fit. When lanes no longer fit, the lane cap drops and "+N more" absorbs the rest (B-08.9).
+  - Fixed heights are avoided. Board bucket width stays fixed, while card height grows. Calendar row height = header + lanes × (bar height scaled by `TextScaleFactor`). In Month mode the lane cap is 4; in Week mode it is however many lanes fit. When lanes no longer fit, the lane cap drops and "+N more" absorbs the rest (B-08.9).
   - Test at 200% scale and with larger text at every breakpoint (AC-16, AC-27).
 - **Mouse wheel** (mouse input only; touch, pen and precision-touchpad gestures stay native):
-  - The normal wheel only ever scrolls vertically. A horizontal-only scroller (Grid table, Board columns, Calendar Records, filter chips) never turns it sideways: it goes to the innermost vertical scroller under the pointer (doing nothing at that list's end), else to the region's designated list (Grid header → Grid rows; Records header → Records rows), else to the nearest vertically scrolling ancestor, else nowhere.
-  - The tilt (side) wheel, and Shift+wheel, only ever scroll horizontally, to the nearest horizontally scrolling element under the pointer or ancestor, even from inside a vertical list (a Board column → the Board; Grid rows → the Grid's horizontal scroll). Tilt right and Shift+wheel down reveal content to the right.
-  - Board exception: the wheel over a column's card list scrolls that column; over the column header or other non-list parts of the column it scrolls the Board horizontally; over the gaps between and after columns it does nothing.
-  - Ctrl+wheel, popups and flyouts, dialogs, and controls that consume the wheel themselves (ComboBox lists, NumberBox, date pickers, multi-line text) keep their native behaviour. A routed step is 120 epx per wheel notch (one column per notch on the snapped Board at S), animated unless animations are off.
+  - The normal wheel only ever scrolls vertically. A horizontal-only scroller (Grid table, Board buckets, Calendar Records, filter chips) never turns it sideways: it goes to the innermost vertical scroller under the pointer (doing nothing at that list's end), else to the region's designated list (Grid header → Grid rows; Records header → Records rows), else to the nearest vertically scrolling ancestor, else nowhere.
+  - The tilt (side) wheel, and Shift+wheel, only ever scroll horizontally, to the nearest horizontally scrolling element under the pointer or ancestor, even from inside a vertical list (a Board bucket → the Board; Grid rows → the Grid's horizontal scroll). Tilt right and Shift+wheel down reveal content to the right.
+  - Board exception: the wheel over a bucket's card list scrolls that bucket; over the bucket header or other non-list parts of the bucket it scrolls the Board horizontally; over the gaps between and after buckets it does nothing.
+  - Ctrl+wheel, popups and flyouts, dialogs, and controls that consume the wheel themselves (ComboBox lists, NumberBox, date pickers, multi-line text) keep their native behaviour. A routed step is 120 epx per wheel notch (one bucket per notch on the snapped Board at S), animated unless animations are off.
   - Mechanism: `Common/WheelScrolling` (`RoutesMouseWheel` on the scroller or list, `VerticalWheelTarget`, `VerticalWheelScrollsHorizontally` on a region).
 - **Drag and drop:**
-  - Use native `ListView` drag/reorder for Board columns, checklist items, reviews and Settings rows `[gallery-listview-3]`.
+  - Use native `ListView` drag/reorder for Board buckets, checklist items, reviews and Settings rows `[gallery-listview-3]`.
   - Calendar drop targets use `AllowDrop` and `DragOver` with an `AcceptedOperation` and `DragUIOverride.Caption` text such as "Schedule on Oct 13".
   - Drop feedback is a stroke plus a caption, never color only (§6.3).
   - Every drag has a keyboard and menu equivalent (§7), and touch drag works through the same handlers. Long-press opens the context menu.

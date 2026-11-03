@@ -8,7 +8,7 @@ using MaxPlanner.Presentation.Common.Store;
 namespace MaxPlanner.Presentation.Common.Projections;
 
 /// <summary>
-/// A task or a Subtask card as one list record, because the Board columns and the Grid show both kinds
+/// A task or a Subtask card as one list record, because the Board buckets and the Grid show both kinds
 /// together (B-07, B-16.5). Exactly one of <see cref="Task"/> and <see cref="Card"/> is set.
 /// </summary>
 public sealed record WorkItemRecord

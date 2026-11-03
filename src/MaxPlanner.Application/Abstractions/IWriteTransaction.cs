@@ -63,7 +63,7 @@ public enum BoardCardKind
     SubtaskCard,
 }
 
-/// <summary>A card in a Board column: a task or a Subtask card, which share columns and ranks (B-16.5).</summary>
+/// <summary>A card in a Board bucket: a task or a Subtask card, which share buckets and ranks (B-16.5).</summary>
 public readonly record struct BoardCardKey(BoardCardKind Kind, Guid Id);
 
 public interface ITaskStore
@@ -81,19 +81,19 @@ public interface ITaskStore
     void Delete(TaskId id);
 
     /// <summary>
-    /// The highest rank in a Board column, or null when it is empty. Covers non-archived tasks and the
-    /// Subtask cards of non-archived parents, because both kinds share the column (B-07, B-16.5).
+    /// The highest rank in a Board bucket, or null when it is empty. Covers non-archived tasks and the
+    /// Subtask cards of non-archived parents, because both kinds share the bucket (B-07, B-16.5).
     /// </summary>
     long? MaxBoardRank(TaskStatusId status);
 
-    /// <summary>The lowest rank in a Board column, or null when it is empty; same membership as <see cref="MaxBoardRank"/>.</summary>
+    /// <summary>The lowest rank in a Board bucket, or null when it is empty; same membership as <see cref="MaxBoardRank"/>.</summary>
     long? MinBoardRank(TaskStatusId status);
 
     /// <summary>
-    /// Every card of a Board column in order (rank, then ID), with the same membership as
-    /// <see cref="MaxBoardRank"/>. Used to renumber the full column, filtered-out cards included (B-07).
+    /// Every card of a Board bucket in order (rank, then ID), with the same membership as
+    /// <see cref="MaxBoardRank"/>. Used to renumber the full bucket, filtered-out cards included (B-07).
     /// </summary>
-    IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardColumn(TaskStatusId status);
+    IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardBucket(TaskStatusId status);
 
     /// <summary>Every task, archived included, with its checklist items and link (lookup replacement, B-04).</summary>
     IReadOnlyList<TaskItem> ListAll();

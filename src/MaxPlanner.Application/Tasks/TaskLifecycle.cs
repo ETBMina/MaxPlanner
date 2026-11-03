@@ -46,7 +46,7 @@ public sealed class ArchiveTask
 public sealed record RestoreTaskCommand(OperationId OperationId, TaskId TaskId, long ExpectedRevision);
 
 /// <summary>
-/// Restores an archived task (B-05) at the end of its current Board column, deterministically; its Subtask
+/// Restores an archived task (B-05) at the end of its current Board bucket, deterministically; its Subtask
 /// cards and checklist group reappear because they follow the parent's archive state.
 /// </summary>
 public sealed class RestoreTask
@@ -68,14 +68,14 @@ public sealed class RestoreTask
                 return TxResult.Abort<long>(error);
             }
 
-            if (tx.Workflow.Read().FindTaskStatus(task.StatusId) is not { } column)
+            if (tx.Workflow.Read().FindTaskStatus(task.StatusId) is not { } bucket)
             {
                 return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
             }
 
-            // B-07: a restored task returns to the top of its column. The column covers active cards only,
+            // B-07: a restored task returns to the top of its bucket. The bucket covers active cards only,
             // so the archived task itself never counts.
-            var restored = task.Restore(BoardColumnRanks.TopRank(tx, column, new BoardCardKey(BoardCardKind.Task, task.Id.Value)), tx.UtcNow);
+            var restored = task.Restore(BoardBucketRanks.TopRank(tx, bucket, new BoardCardKey(BoardCardKind.Task, task.Id.Value)), tx.UtcNow);
             if (restored.Error is { } invalid)
             {
                 return TransactionGuards.Reject<long>(invalid);

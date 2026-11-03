@@ -227,7 +227,7 @@ public sealed record TaskItem
     /// </summary>
     /// <param name="current">The definition of the task's current status (checked against <see cref="StatusId"/>).</param>
     /// <param name="target">The status after the edit; equal to <paramref name="current"/> when it is unchanged.</param>
-    /// <param name="rank">The Board rank after the edit; the caller appends to the target column on a status change.</param>
+    /// <param name="rank">The Board rank after the edit; the caller appends to the target bucket on a status change.</param>
     /// <param name="linkTo">
     /// Links this unlinked task in the same change. The edit is validated as the unlinked task it still is
     /// (its own title is required), then the title moves to preserved metadata exactly as <see cref="LinkTo"/> does.
@@ -397,10 +397,10 @@ public sealed record TaskItem
             ? DomainResult.Failure<TaskItem>(DomainErrorCodes.ArchivedReadOnly)
             : DomainResult.Success((this with { IsArchived = true }).Touch(nowUtc));
 
-    /// <summary>Restores at <paramref name="rankAtTopOfColumn"/>: B-05 puts a restored task at the top of its column.</summary>
-    public DomainResult<TaskItem> Restore(long rankAtTopOfColumn, DateTimeOffset nowUtc) =>
+    /// <summary>Restores at <paramref name="rankAtTopOfBucket"/>: B-05 puts a restored task at the top of its bucket.</summary>
+    public DomainResult<TaskItem> Restore(long rankAtTopOfBucket, DateTimeOffset nowUtc) =>
         IsArchived
-            ? DomainResult.Success((this with { IsArchived = false, Rank = rankAtTopOfColumn }).Touch(nowUtc))
+            ? DomainResult.Success((this with { IsArchived = false, Rank = rankAtTopOfBucket }).Touch(nowUtc))
             : DomainResult.Failure<TaskItem>(DomainErrorCodes.NotArchived);
 
     public DomainResult<TaskItem> AddChecklistItem(ChecklistItemId id, ChecklistText text, DateTimeOffset nowUtc)
@@ -464,19 +464,19 @@ public sealed record TaskItem
     /// Designer, Developer, Tags, and People/Tags custom values) at the replacement, or clears them where
     /// allowed. Not a status transition: dates are kept, and archived tasks are remapped too (AC-08).
     /// </summary>
-    /// <param name="rankInReplacementColumn">
-    /// The Board rank when the task's status is replaced; the caller appends it to the replacement column so
+    /// <param name="rankInReplacementBucket">
+    /// The Board rank when the task's status is replaced; the caller appends it to the replacement bucket so
     /// cards are never placed silently at the top. Null keeps the current rank.
     /// </param>
     /// <returns>The remapped task with the next revision, or null when it does not reference the removed value.</returns>
-    public TaskItem? Remap(LookupRemap remap, long? rankInReplacementColumn, DateTimeOffset nowUtc)
+    public TaskItem? Remap(LookupRemap remap, long? rankInReplacementBucket, DateTimeOffset nowUtc)
     {
         ArgumentNullException.ThrowIfNull(remap);
         var changed = false;
         var result = this;
         if (remap.Targets(LookupKind.TaskStatus, StatusId.Value))
         {
-            result = result with { StatusId = new TaskStatusId(remap.RequiredReplacement), Rank = rankInReplacementColumn ?? Rank };
+            result = result with { StatusId = new TaskStatusId(remap.RequiredReplacement), Rank = rankInReplacementBucket ?? Rank };
             changed = true;
         }
 

@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MaxPlanner.Presentation.Board;
 
-/// <summary>A Board column's card list; its containers name each card for UI Automation (design §8.1–8.2).</summary>
+/// <summary>A Board bucket's card list; its containers name each card for UI Automation (design §8.1–8.2).</summary>
 public sealed partial class BoardCardList : ListView
 {
     public BoardCardList()

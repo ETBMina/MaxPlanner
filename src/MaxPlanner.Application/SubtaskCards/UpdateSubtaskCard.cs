@@ -63,9 +63,9 @@ public sealed class UpdateSubtaskCard
             return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
         }
 
-        // B-07: a status change from the editor places the card at the top of the full destination column,
+        // B-07: a status change from the editor places the card at the top of the full destination bucket,
         // the same rule as the task editor; an unchanged status keeps its rank.
-        var rank = target.Id == current.Id ? card.Rank : BoardColumnRanks.TopRank(tx, target, new BoardCardKey(BoardCardKind.SubtaskCard, card.Id.Value));
+        var rank = target.Id == current.Id ? card.Rank : BoardBucketRanks.TopRank(tx, target, new BoardCardKey(BoardCardKind.SubtaskCard, card.Id.Value));
         var updated = card.Update(subtitle, notes, current, target, rank, command.Start, command.End, tx.LocalToday, tx.UtcNow);
         if (updated.Error is { } invalid)
         {

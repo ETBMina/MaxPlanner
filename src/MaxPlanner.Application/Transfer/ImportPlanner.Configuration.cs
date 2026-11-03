@@ -759,18 +759,18 @@ public static partial class ImportPlanner
                 .Select(p => new PlannedRecord<T>(p.updated, revisionOf(p.record)))];
 
         /// <summary>
-        /// B-04 (as <see cref="RemoveLookup"/>): the active cards of a removed column, tasks and Subtask cards alike, move
-        /// to the end of the replacement column in their previous order. Archived work keeps its rank.
+        /// B-04 (as <see cref="RemoveLookup"/>): the active cards of a removed bucket, tasks and Subtask cards alike, move
+        /// to the end of the replacement bucket in their previous order. Archived work keeps its rank.
         /// </summary>
         private static Dictionary<(int Kind, Guid Id), long> AppendRanks(List<TaskItem> tasks, List<SubtaskCard> cards, Guid removed, Guid replacement)
         {
             var archived = tasks.Where(t => t.IsArchived).Select(t => t.Id).ToHashSet();
-            var column = tasks.Where(t => !t.IsArchived).Select(t => (Kind: 0, Id: t.Id.Value, Status: t.StatusId.Value, t.Rank))
+            var bucket = tasks.Where(t => !t.IsArchived).Select(t => (Kind: 0, Id: t.Id.Value, Status: t.StatusId.Value, t.Rank))
                 .Concat(cards.Where(c => !archived.Contains(c.ParentTaskId)).Select(c => (Kind: 1, Id: c.Id.Value, Status: c.StatusId.Value, c.Rank)))
                 .ToList();
-            long? last = column.Where(c => c.Status == replacement).Select(c => (long?)c.Rank).Max();
+            long? last = bucket.Where(c => c.Status == replacement).Select(c => (long?)c.Rank).Max();
             var ranks = new Dictionary<(int Kind, Guid Id), long>();
-            foreach (var card in column.Where(c => c.Status == removed).OrderBy(c => c.Rank).ThenBy(c => c.Kind).ThenBy(c => c.Id))
+            foreach (var card in bucket.Where(c => c.Status == removed).OrderBy(c => c.Rank).ThenBy(c => c.Kind).ThenBy(c => c.Id))
             {
                 var rank = RankPolicy.After(last);
                 ranks[(card.Kind, card.Id)] = rank;

@@ -1,7 +1,7 @@
 namespace MaxPlanner.Domain.Policies;
 
 /// <summary>
-/// Persisted ordering for Board columns and checklists (B-07). Order is (Rank, Id); the ID is the
+/// Persisted ordering for Board buckets and checklists (B-07). Order is (Rank, Id); the ID is the
 /// final deterministic tie-breaker.
 /// </summary>
 public static class RankPolicy
@@ -39,7 +39,7 @@ public static class RankPolicy
     /// changes, so a renumber touches no unaffected record.
     /// </summary>
     /// <remarks>
-    /// B-07: pass the complete column, hidden (filtered-out) cards included. Renumbering only the
+    /// B-07: pass the complete bucket, hidden (filtered-out) cards included. Renumbering only the
     /// visible cards would corrupt the hidden order.
     /// </remarks>
     public static IReadOnlyList<(TKey Key, long Rank)> Renumber<TKey>(IReadOnlyList<(TKey Key, long Rank)> orderedItems)

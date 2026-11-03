@@ -38,7 +38,7 @@ public sealed class TaskCommands
         return RunEditorAsync(editor);
     }
 
-    /// <summary>Opens the task editor for a new task; Board creation preselects the column's status (B-02.1).</summary>
+    /// <summary>Opens the task editor for a new task; Board creation preselects the bucket's status (B-02.1).</summary>
     public Task NewAsync(TaskStatusId? status = null) => RunEditorAsync(new TaskEditorViewModel(_context, taskId: null, status));
 
     /// <summary>

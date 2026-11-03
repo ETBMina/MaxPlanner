@@ -25,7 +25,7 @@ namespace MaxPlanner.Presentation.Common;
 /// On a scroller whose vertical axis is disabled (a horizontal-only scroller would otherwise turn the normal wheel
 /// sideways), a normal wheel goes to the innermost vertical scroller under the pointer — doing nothing at its end, so
 /// it never chains sideways — else to <see cref="VerticalWheelTargetProperty"/>, else to the nearest vertically
-/// scrolling ancestor, else nowhere. A <see cref="VerticalWheelScrollsHorizontallyProperty"/> region (a Board column
+/// scrolling ancestor, else nowhere. A <see cref="VerticalWheelScrollsHorizontallyProperty"/> region (a Board bucket
 /// header) instead scrolls the horizontal scroller. On every opted-in scroller, a horizontal wheel goes to the
 /// nearest horizontally scrolling element under the pointer or ancestor, else nowhere, so an inner vertical list never
 /// keeps it from the page's horizontal scroller. A normal wheel on a vertical scroller and Ctrl+wheel stay native.
@@ -119,7 +119,7 @@ public static class WheelScrolling
         var change = (properties.IsHorizontalMouseWheel ? properties.MouseWheelDelta : -properties.MouseWheelDelta) * OffsetPerWheelDelta;
 
         // Mandatory snap points would pull a small step back to the current snap point, so step a viewport instead
-        // (the Board at S shows one column per viewport, design §4.2).
+        // (the Board at S shows one bucket per viewport, design §4.2).
         var snap = horizontal ? scroller.HorizontalSnapPointsType : scroller.VerticalSnapPointsType;
         if (snap is SnapPointsType.Mandatory or SnapPointsType.MandatorySingle)
         {

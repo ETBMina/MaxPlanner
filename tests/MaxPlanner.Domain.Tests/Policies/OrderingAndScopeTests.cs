@@ -19,12 +19,12 @@ public sealed class OrderingAndScopeTests
 
     [Fact]
     [Trait("Req", "B-07")]
-    public void Renumbering_spaces_the_whole_column_but_reports_only_records_that_change()
+    public void Renumbering_spaces_the_whole_bucket_but_reports_only_records_that_change()
     {
         // The second card already sits on its target rank, so only the other two are rewritten.
-        var column = new List<(string Key, long Rank)> { ("hidden-a", 5), ("visible-b", 2 * RankPolicy.Step), ("hidden-c", 2 * RankPolicy.Step + 1) };
+        var bucket = new List<(string Key, long Rank)> { ("hidden-a", 5), ("visible-b", 2 * RankPolicy.Step), ("hidden-c", 2 * RankPolicy.Step + 1) };
 
-        var changes = RankPolicy.Renumber(column);
+        var changes = RankPolicy.Renumber(bucket);
 
         changes.Should().Equal(("hidden-a", RankPolicy.Step), ("hidden-c", 3 * RankPolicy.Step));
     }

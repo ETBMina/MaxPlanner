@@ -13,20 +13,20 @@ using Windows.UI.Core;
 namespace MaxPlanner.Presentation.Board;
 
 /// <summary>
-/// The Board page view. Code-behind handles view mechanics only (AGENTS §4): column widths per breakpoint,
+/// The Board page view. Code-behind handles view mechanics only (AGENTS §4): bucket widths per breakpoint,
 /// drag visuals and the drop index, keyboard routing, the card menu, focus after a move, and the S-breakpoint
-/// column scroll. Every move and command is run by <see cref="BoardPageViewModel"/>.
+/// bucket scroll. Every move and command is run by <see cref="BoardPageViewModel"/>.
 /// </summary>
 public sealed partial class BoardPageView : UserControl, Shell.IPageView
 {
     private static readonly ResourceStrings Strings = new();
 
-    private readonly HashSet<FrameworkElement> _columns = [];
-    private readonly Dictionary<BoardColumnViewModel, BoardCardList> _lists = [];
-    private double _columnWidth = 300;
+    private readonly HashSet<FrameworkElement> _buckets = [];
+    private readonly Dictionary<BoardBucketViewModel, BoardCardList> _lists = [];
+    private double _bucketWidth = 300;
     private bool _isSmall;
     private BoardCardViewModel? _dragged;
-    private BoardColumnViewModel? _dragSource;
+    private BoardBucketViewModel? _dragSource;
 
     // Drop feedback (design §4.2): the list under the drag, its scroller, and the last list-local pointer Y.
     private BoardCardList? _feedbackList;
@@ -57,12 +57,12 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         };
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-        ColumnPicker.SelectedItem = ViewModel.SelectedColumn;
+        BucketPicker.SelectedItem = ViewModel.SelectedBucket;
 
-        // Edge auto-scroll watches drag events that column lists may already have handled.
-        ColumnsScroller.AddHandler(DragOverEvent, new DragEventHandler(OnScrollerDragOver), true);
-        ColumnsScroller.AddHandler(DragLeaveEvent, new DragEventHandler(OnScrollerDragLeave), true);
-        ColumnsScroller.AddHandler(DropEvent, new DragEventHandler((_, _) => StopAutoScroll()), true);
+        // Edge auto-scroll watches drag events that bucket lists may already have handled.
+        BucketsScroller.AddHandler(DragOverEvent, new DragEventHandler(OnScrollerDragOver), true);
+        BucketsScroller.AddHandler(DragLeaveEvent, new DragEventHandler(OnScrollerDragLeave), true);
+        BucketsScroller.AddHandler(DropEvent, new DragEventHandler((_, _) => StopAutoScroll()), true);
 
         // Runs when the dataset closes and the view is dropped; a page switch only hides the view (OnHidden).
         Unloaded += (_, _) =>
@@ -125,99 +125,99 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private static bool IsDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 
-    private void OnColumnLoaded(object sender, RoutedEventArgs e)
+    private void OnBucketLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement column && _columns.Add(column))
+        if (sender is FrameworkElement bucket && _buckets.Add(bucket))
         {
-            column.Width = _columnWidth;
+            bucket.Width = _bucketWidth;
         }
     }
 
-    private void OnColumnUnloaded(object sender, RoutedEventArgs e)
+    private void OnBucketUnloaded(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement column)
+        if (sender is FrameworkElement bucket)
         {
-            _columns.Remove(column);
+            _buckets.Remove(bucket);
         }
     }
 
     private void OnListLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is BoardCardList { DataContext: BoardColumnViewModel column } list)
+        if (sender is BoardCardList { DataContext: BoardBucketViewModel bucket } list)
         {
-            _lists[column] = list;
+            _lists[bucket] = list;
         }
     }
 
     private void OnListUnloaded(object sender, RoutedEventArgs e)
     {
-        if (sender is BoardCardList { DataContext: BoardColumnViewModel column } list && _lists.TryGetValue(column, out var known) && known == list)
+        if (sender is BoardCardList { DataContext: BoardBucketViewModel bucket } list && _lists.TryGetValue(bucket, out var known) && known == list)
         {
-            _lists.Remove(column);
+            _lists.Remove(bucket);
         }
     }
 
     private void ApplyBreakpoint(double width)
     {
-        // Design §4.2: L 300 epx columns, M 280, S one full readable column per viewport (no column shrinks
-        // below a readable width; the column picker and the horizontal scroll reach the others).
+        // Design §4.2: L 300 epx buckets, M 280, S one full readable bucket per viewport (no bucket shrinks
+        // below a readable width; the bucket picker and the horizontal scroll reach the others).
         var padding = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
-        _columnWidth = width >= 1008 ? 300 : width >= 640 ? 280 : Math.Max(260, width - (2 * padding) - 12);
+        _bucketWidth = width >= 1008 ? 300 : width >= 640 ? 280 : Math.Max(260, width - (2 * padding) - 12);
         HeaderRoot.Padding = width >= 1008 ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
 
         // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
-        ColumnsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
+        BucketsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
         _isSmall = width < 640;
         ChipsBar.IsCompact = _isSmall;
-        ColumnsScroller.HorizontalSnapPointsType = _isSmall ? SnapPointsType.MandatorySingle : SnapPointsType.None;
-        ColumnPickerRow.Visibility = _isSmall ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var column in _columns)
+        BucketsScroller.HorizontalSnapPointsType = _isSmall ? SnapPointsType.MandatorySingle : SnapPointsType.None;
+        BucketPickerRow.Visibility = _isSmall ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var bucket in _buckets)
         {
-            column.Width = _columnWidth;
+            bucket.Width = _bucketWidth;
         }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(BoardPageViewModel.SelectedColumn))
+        if (e.PropertyName != nameof(BoardPageViewModel.SelectedBucket))
         {
             return;
         }
 
-        if (!Equals(ColumnPicker.SelectedItem, ViewModel.SelectedColumn))
+        if (!Equals(BucketPicker.SelectedItem, ViewModel.SelectedBucket))
         {
-            ColumnPicker.SelectedItem = ViewModel.SelectedColumn;
+            BucketPicker.SelectedItem = ViewModel.SelectedBucket;
         }
 
-        if (_isSmall && ViewModel.SelectedColumn is { } selected)
+        if (_isSmall && ViewModel.SelectedBucket is { } selected)
         {
-            ScrollToColumn(selected);
-        }
-    }
-
-    private void OnColumnPickerSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (ColumnPicker.SelectedItem is BoardColumnViewModel column)
-        {
-            ViewModel.SelectedColumn = column;
+            ScrollToBucket(selected);
         }
     }
 
-    private void ScrollToColumn(BoardColumnViewModel column)
+    private void OnBucketPickerSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        var index = ViewModel.Columns.IndexOf(column);
+        if (BucketPicker.SelectedItem is BoardBucketViewModel bucket)
+        {
+            ViewModel.SelectedBucket = bucket;
+        }
+    }
+
+    private void ScrollToBucket(BoardBucketViewModel bucket)
+    {
+        var index = ViewModel.Buckets.IndexOf(bucket);
         if (index >= 0)
         {
             // Design §9: no scroll animation when Windows animations are turned off.
-            ColumnsScroller.ChangeView(index * (_columnWidth + 12), null, null, disableAnimation: !Common.Services.MotionSettings.AnimationsEnabled);
+            BucketsScroller.ChangeView(index * (_bucketWidth + 12), null, null, disableAnimation: !Common.Services.MotionSettings.AnimationsEnabled);
         }
     }
 
-    private void OnColumnAddClick(object sender, RoutedEventArgs e)
+    private void OnBucketAddClick(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: BoardColumnViewModel column })
+        if (sender is FrameworkElement { DataContext: BoardBucketViewModel bucket })
         {
-            _ = ViewModel.NewTaskAsync(column);
+            _ = ViewModel.NewTaskAsync(bucket);
         }
     }
 
@@ -266,23 +266,23 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
         var moveTo = new MenuFlyoutSubItem { Text = Strings.GetString("Board_MenuMoveTo") };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(moveTo, "Board_MenuMoveToItem");
-        foreach (var column in ViewModel.Columns)
+        foreach (var bucket in ViewModel.Buckets)
         {
-            var target = new MenuFlyoutSubItem { Text = column.Name };
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(target, "Board_MenuMoveTo_" + column.StatusId.Value.ToString("N"));
-            // B-07: while filtered Top/Bottom address the full column and same-column reordering is off.
-            var enabled = !ViewModel.IsFiltered || ViewModel.ColumnOf(card) != column;
-            target.Items.Add(Item("Board_MenuTopOfColumn", "Board_MenuTop_" + column.StatusId.Value.ToString("N"), null,
-                () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Top), enabled));
-            target.Items.Add(Item("Board_MenuBottomOfColumn", "Board_MenuBottom_" + column.StatusId.Value.ToString("N"), null,
-                () => _ = ViewModel.MoveToColumnAsync(card, column, BoardEdge.Bottom), enabled));
+            var target = new MenuFlyoutSubItem { Text = bucket.Name };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(target, "Board_MenuMoveTo_" + bucket.StatusId.Value.ToString("N"));
+            // B-07: while filtered Top/Bottom address the full bucket and same-bucket reordering is off.
+            var enabled = !ViewModel.IsFiltered || ViewModel.BucketOf(card) != bucket;
+            target.Items.Add(Item("Board_MenuTopOfBucket", "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), null,
+                () => _ = ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top), enabled));
+            target.Items.Add(Item("Board_MenuBottomOfBucket", "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), null,
+                () => _ = ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom), enabled));
 
             moveTo.Items.Add(target);
         }
 
         menu.Items.Add(moveTo);
-        menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => _ = ViewModel.MoveWithinColumnAsync(card, -1), ViewModel.CanMoveUp(card)));
-        menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => _ = ViewModel.MoveWithinColumnAsync(card, 1), ViewModel.CanMoveDown(card)));
+        menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, -1), ViewModel.CanMoveUp(card)));
+        menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, 1), ViewModel.CanMoveDown(card)));
         if (card.IsTask)
         {
             menu.Items.Add(new MenuFlyoutSeparator());
@@ -331,7 +331,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     // ----- Keyboard (design §7.3) -----
     private void OnListPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not BoardCardList { DataContext: BoardColumnViewModel column } || FindContainer(e.OriginalSource as DependencyObject) is not { Content: BoardCardViewModel card })
+        if (sender is not BoardCardList { DataContext: BoardBucketViewModel bucket } || FindContainer(e.OriginalSource as DependencyObject) is not { Content: BoardCardViewModel card })
         {
             return;
         }
@@ -343,15 +343,15 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         {
             case VirtualKey.Left or VirtualKey.Right when alt && shift:
                 e.Handled = true;
-                _ = ViewModel.MoveToAdjacentColumnAsync(card, e.Key == VirtualKey.Left ? -1 : 1);
+                _ = ViewModel.MoveToAdjacentBucketAsync(card, e.Key == VirtualKey.Left ? -1 : 1);
                 break;
             case VirtualKey.Up or VirtualKey.Down when alt && shift:
                 e.Handled = true;
-                _ = ViewModel.MoveWithinColumnAsync(card, e.Key == VirtualKey.Up ? -1 : 1);
+                _ = ViewModel.MoveWithinBucketAsync(card, e.Key == VirtualKey.Up ? -1 : 1);
                 break;
             case VirtualKey.Left or VirtualKey.Right when control:
                 e.Handled = true;
-                FocusAdjacentColumn(column, column.Cards.IndexOf(card), e.Key == VirtualKey.Left ? -1 : 1);
+                FocusAdjacentBucket(bucket, bucket.Cards.IndexOf(card), e.Key == VirtualKey.Left ? -1 : 1);
                 break;
             case VirtualKey.Enter when !alt && !control && !shift:
                 e.Handled = true;
@@ -376,21 +376,21 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
     }
 
-    // Design §7.3 Ctrl+Left/Right: the adjacent column at the same index, clamped.
-    private void FocusAdjacentColumn(BoardColumnViewModel column, int index, int direction)
+    // Design §7.3 Ctrl+Left/Right: the adjacent bucket at the same index, clamped.
+    private void FocusAdjacentBucket(BoardBucketViewModel bucket, int index, int direction)
     {
-        var target = ViewModel.Columns.IndexOf(column) + direction;
-        if (target < 0 || target >= ViewModel.Columns.Count || !_lists.TryGetValue(ViewModel.Columns[target], out var list))
+        var target = ViewModel.Buckets.IndexOf(bucket) + direction;
+        if (target < 0 || target >= ViewModel.Buckets.Count || !_lists.TryGetValue(ViewModel.Buckets[target], out var list))
         {
             return;
         }
 
         if (_isSmall)
         {
-            ViewModel.SelectedColumn = ViewModel.Columns[target];
+            ViewModel.SelectedBucket = ViewModel.Buckets[target];
         }
 
-        var cards = ViewModel.Columns[target].Cards;
+        var cards = ViewModel.Buckets[target].Cards;
         if (cards.Count == 0)
         {
             list.Focus(FocusState.Keyboard);
@@ -404,10 +404,10 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (_isSmall)
         {
-            ViewModel.SelectedColumn = request.Column;
+            ViewModel.SelectedBucket = request.Bucket;
         }
 
-        if (_lists.TryGetValue(request.Column, out var list))
+        if (_lists.TryGetValue(request.Bucket, out var list))
         {
             FocusCard(list, request.Card);
         }
@@ -429,14 +429,14 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     // ----- Drag and drop (design §4.2 drop feedback, §9) -----
     private void OnDragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
-        if (ViewModel.IsEditingBlocked || e.Items.FirstOrDefault() is not BoardCardViewModel card || sender is not BoardCardList { DataContext: BoardColumnViewModel column })
+        if (ViewModel.IsEditingBlocked || e.Items.FirstOrDefault() is not BoardCardViewModel card || sender is not BoardCardList { DataContext: BoardBucketViewModel bucket })
         {
             e.Cancel = true;
             return;
         }
 
         _dragged = card;
-        _dragSource = column;
+        _dragSource = bucket;
         card.IsMoving = true;
         e.Data.RequestedOperation = DataPackageOperation.Move;
         e.Data.SetText(card.Title);
@@ -444,7 +444,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private void OnDragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {
-        // A drop that did not run a move (cancelled, rejected, outside a column) leaves the card as it was.
+        // A drop that did not run a move (cancelled, rejected, outside a bucket) leaves the card as it was.
         if (_dragged is { } card && args.DropResult == DataPackageOperation.None)
         {
             card.IsMoving = false;
@@ -458,14 +458,14 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private void OnListDragOver(object sender, DragEventArgs e)
     {
-        if (_dragged is null || sender is not BoardCardList { DataContext: BoardColumnViewModel column } list)
+        if (_dragged is null || sender is not BoardCardList { DataContext: BoardBucketViewModel bucket } list)
         {
             e.AcceptedOperation = DataPackageOperation.None;
             return;
         }
 
         e.DragUIOverride.IsCaptionVisible = true;
-        if (ViewModel.IsFiltered && column == _dragSource)
+        if (ViewModel.IsFiltered && bucket == _dragSource)
         {
             // B-07: positional reordering is off while filtered; the forbidden cursor and caption say so (§9).
             e.AcceptedOperation = DataPackageOperation.None;
@@ -475,7 +475,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
 
         e.AcceptedOperation = DataPackageOperation.Move;
-        e.DragUIOverride.Caption = ViewModel.IsFiltered ? column.TopCaption : column.DropCaption;
+        e.DragUIOverride.Caption = ViewModel.IsFiltered ? bucket.TopCaption : bucket.DropCaption;
         ShowDropFeedback(list, e.GetPosition(list).Y);
     }
 
@@ -499,7 +499,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private void OnListDrop(object sender, DragEventArgs e)
     {
-        if (_dragged is not { } card || sender is not BoardCardList { DataContext: BoardColumnViewModel column } list)
+        if (_dragged is not { } card || sender is not BoardCardList { DataContext: BoardBucketViewModel bucket } list)
         {
             return;
         }
@@ -508,8 +508,8 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         var index = DropSlot(list, e.GetPosition(list).Y).Index;
         ClearDropFeedback();
 
-        // The view model's index excludes the dragged card itself, so a later slot in its own column shifts by one.
-        var current = column.Cards.IndexOf(card);
+        // The view model's index excludes the dragged card itself, so a later slot in its own bucket shifts by one.
+        var current = bucket.Cards.IndexOf(card);
         if (current >= 0 && current < index)
         {
             index--;
@@ -523,13 +523,13 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             return;
         }
 
-        _ = ViewModel.DropAsync(card, column, index);
+        _ = ViewModel.DropAsync(card, bucket, index);
     }
 
     /// <summary>
     /// The insert slot for a list-local pointer Y and the Y of its insertion line: before the first card whose
-    /// midpoint is below the pointer, else the end (also for an empty column or the space under the last card).
-    /// While filtered a cross-column drop appends to the full column (B-07), so the slot is always the end.
+    /// midpoint is below the pointer, else the end (also for an empty bucket or the space under the last card).
+    /// While filtered a cross-bucket drop appends to the full bucket (B-07), so the slot is always the end.
     /// </summary>
     private (int Index, double LineY) DropSlot(BoardCardList list, double pointerY)
     {
@@ -554,7 +554,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             lastRealized = i;
         }
 
-        // An end slot below the realized cards (a long filtered column) is pinned to the list's visible bottom.
+        // An end slot below the realized cards (a long filtered bucket) is pinned to the list's visible bottom.
         return (count, count > 0 && lastRealized < count - 1 ? list.ActualHeight : endY);
     }
 
@@ -612,7 +612,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         _feedbackScroller = null;
     }
 
-    // The column template places the insertion line beside the list in the same Grid cell.
+    // The bucket template places the insertion line beside the list in the same Grid cell.
     private static Microsoft.UI.Xaml.Shapes.Rectangle? InsertionLine(BoardCardList list) =>
         VisualTreeHelper.GetParent(list) is Panel panel ? panel.Children.OfType<Microsoft.UI.Xaml.Shapes.Rectangle>().FirstOrDefault() : null;
 
@@ -624,8 +624,8 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             return;
         }
 
-        var point = e.GetPosition(ColumnsScroller);
-        SetHorizontalDepth(EdgeDepth(point.X, ColumnsScroller.ActualWidth));
+        var point = e.GetPosition(BucketsScroller);
+        SetHorizontalDepth(EdgeDepth(point.X, BucketsScroller.ActualWidth));
 
         _verticalScroller = FindAncestor<BoardCardList>(e.OriginalSource as DependencyObject) is { } list ? FindScroller(list) : null;
         _verticalDepth = _verticalScroller is { } scroller ? EdgeDepth(e.GetPosition(scroller).Y, scroller.ActualHeight) : 0;
@@ -634,9 +634,9 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private void OnScrollerDragLeave(object sender, DragEventArgs e)
     {
-        // Leave events bubble from the column lists too; only leaving the scroller itself stops the horizontal axis.
-        var point = e.GetPosition(ColumnsScroller);
-        if (point.X < 0 || point.Y < 0 || point.X > ColumnsScroller.ActualWidth || point.Y > ColumnsScroller.ActualHeight)
+        // Leave events bubble from the bucket lists too; only leaving the scroller itself stops the horizontal axis.
+        var point = e.GetPosition(BucketsScroller);
+        if (point.X < 0 || point.Y < 0 || point.X > BucketsScroller.ActualWidth || point.Y > BucketsScroller.ActualHeight)
         {
             StopAutoScroll();
             return;
@@ -700,7 +700,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         var moving = false;
         if (_horizontalDepth != 0)
         {
-            var scrolled = _isSmall ? PageColumn() : ScrollBy(ColumnsScroller, _horizontalDepth * AutoScrollMaxStep, horizontal: true);
+            var scrolled = _isSmall ? PageBucket() : ScrollBy(BucketsScroller, _horizontalDepth * AutoScrollMaxStep, horizontal: true);
             if (scrolled)
             {
                 // The lists moved under the pointer; the next DragOver picks the list now under it.
@@ -737,9 +737,9 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             : scroller.ChangeView(null, target, null, disableAnimation: true);
     }
 
-    // At S the scroller snaps to one column per viewport (§4.2), so a free offset would snap back; dwelling in
-    // the edge zone pages one column instead, sooner the deeper the pointer is.
-    private bool PageColumn()
+    // At S the scroller snaps to one bucket per viewport (§4.2), so a free offset would snap back; dwelling in
+    // the edge zone pages one bucket instead, sooner the deeper the pointer is.
+    private bool PageBucket()
     {
         _pageProgress += Math.Abs(_horizontalDepth);
         if (_pageProgress < SmallPageThreshold)
@@ -748,7 +748,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
 
         _pageProgress = 0;
-        var command = _horizontalDepth < 0 ? ViewModel.PreviousColumnCommand : ViewModel.NextColumnCommand;
+        var command = _horizontalDepth < 0 ? ViewModel.PreviousBucketCommand : ViewModel.NextBucketCommand;
         if (!command.CanExecute(null))
         {
             return false;

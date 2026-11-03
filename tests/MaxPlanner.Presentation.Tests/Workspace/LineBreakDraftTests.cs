@@ -33,7 +33,7 @@ public sealed class LineBreakDraftTests
     {
         using var h = BoardMoveTests.Board(out var board, "Task");
         using var dialogs = new TaskEditorTests.DialogRecorder(h.Workspace.Context);
-        var card = board.Columns[0].Cards.Single();
+        var card = board.Buckets[0].Cards.Single();
         var flow = board.OpenAsync(card);
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Notes = TextBoxText;
@@ -42,7 +42,7 @@ public sealed class LineBreakDraftTests
         h.Settle();
         h.Task(new TaskId(card.Key)).Notes.Should().Be(StoredText);
 
-        _ = board.OpenAsync(board.Columns[0].Cards.Single());
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
         var reopened = dialogs.Next<TaskEditorViewModel>(h);
         reopened.Notes = TextBoxText;
 

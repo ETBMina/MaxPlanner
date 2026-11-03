@@ -164,13 +164,13 @@ public sealed record SubtaskCard
     /// B-04 status removal: moves the card to the replacement status without a transition, so its dates are
     /// kept. Cards of archived parents are remapped too.
     /// </summary>
-    /// <param name="rankInReplacementColumn">The rank at the end of the replacement column; null keeps the current rank.</param>
+    /// <param name="rankInReplacementBucket">The rank at the end of the replacement bucket; null keeps the current rank.</param>
     /// <returns>The remapped card, or null when it does not use the removed status.</returns>
-    public SubtaskCard? Remap(LookupRemap remap, long? rankInReplacementColumn, DateTimeOffset nowUtc)
+    public SubtaskCard? Remap(LookupRemap remap, long? rankInReplacementBucket, DateTimeOffset nowUtc)
     {
         ArgumentNullException.ThrowIfNull(remap);
         return remap.Targets(LookupKind.TaskStatus, StatusId.Value)
-            ? (this with { StatusId = new TaskStatusId(remap.RequiredReplacement), Rank = rankInReplacementColumn ?? Rank }).Touch(nowUtc)
+            ? (this with { StatusId = new TaskStatusId(remap.RequiredReplacement), Rank = rankInReplacementBucket ?? Rank }).Touch(nowUtc)
             : null;
     }
 

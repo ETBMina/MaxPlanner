@@ -29,7 +29,7 @@ Dates follow the workflow (Settings): moving a task or Subtask card into a statu
 Cards for Active tasks, Completed tasks, Unscheduled tasks, Overdue CRs, Active Subtask cards and Reviews (open, done this week and this month; weeks start on Sunday); charts of tasks by status, tasks by squad and open reviews by developer, each with a **Table** view; lists of overdue CRs and unlinked tasks. Filter by squad, priority and CR owner. Select a card, bar or list to **drill down**: tasks open in the Grid, overdue CRs in Calendar › Records, reviews in Checklists › Reviews, with the matching filter shown as "From Dashboard". **Return to Dashboard**, the title-bar Back button, or Alt+Left go back with the Dashboard's filters and scroll position.
 
 ### Board
-One column per task status, with task cards and Subtask cards. Drag a card to another column or position, or use the keyboard (below). While a search or filter is active, a card moved to another column goes to the end of that column and reordering within a column is off. Each card's **⋯** menu (also right-click or Shift+F10) has Open, Move to, Move up/down, Copy…, Add Subtask card, Open CR, Archive and Delete…. In a narrow window the Board shows one column at a time with a column picker.
+One bucket per task status, with task cards and Subtask cards. Drag a card to another bucket or position, or use the keyboard (below). While a search or filter is active, a card moved to another bucket goes to the top of that bucket and reordering within a bucket is off. Each card's **⋯** menu (also right-click or Shift+F10) has Open, Move to, Move up/down, Copy…, Add Subtask card, Open CR, Archive and Delete…. In a narrow window the Board shows one bucket at a time with a bucket picker.
 
 ### Grid
 A spreadsheet of tasks and Subtask cards. Edit a cell with F2, a double-click, or by typing; Enter commits, Esc cancels, Tab commits and moves to the next editable cell. Inherited CR values are read-only (edit them on the CR). Sort by a column header; resize, reorder and hide columns (Columns button; Reset column layout in the overflow). **Show archived** includes archived tasks. **Export…** exports the rows shown. The row ⋯ menu adds Link to CR… and Restore.
@@ -75,7 +75,7 @@ Board, Grid, Calendar and Checklists have a search box (Ctrl+F); in a narrow win
 | Enter / Delete / Ctrl+D | Open / Delete… / Copy… the focused record |
 | **Board** Alt+Shift+Left/Right | Move the card to the previous/next status |
 | **Board** Alt+Shift+Up/Down | Move the card up/down (not while filtered) |
-| **Board** Ctrl+Left/Right | Go to the next column |
+| **Board** Ctrl+Left/Right | Go to the next bucket |
 | **Grid** F2, Enter, Esc, Tab | Edit, commit, cancel, commit and move |
 | **Grid** Alt+Left/Right, Ctrl+Shift+Left/Right (on a header) | Resize / move the column |
 | **Calendar** arrows, PageUp/PageDown, Ctrl+T | Move between days, periods, today |

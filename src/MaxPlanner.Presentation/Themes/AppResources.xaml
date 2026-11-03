@@ -311,7 +311,7 @@
     <Style x:Key="SquadChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource SquadChipBackgroundBrush}" />
     </Style>
-    <!-- Board column counts and card service chips (design §4.2): accent fill with on-accent text and glyph. -->
+    <!-- Board bucket counts and card service chips (design §4.2): accent fill with on-accent text and glyph. -->
     <Style x:Key="AccentChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource AccentChipBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource AccentChipStrokeBrush}" />

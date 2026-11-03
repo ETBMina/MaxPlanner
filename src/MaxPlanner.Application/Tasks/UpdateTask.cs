@@ -12,7 +12,7 @@ namespace MaxPlanner.Application.Tasks;
 
 /// <summary>A task editor's whole draft for an existing task (B-02.8, design §5.1).</summary>
 /// <param name="Content">For a linked task (or one being linked) the title is ignored by the UI and must be its own title while unlinked.</param>
-/// <param name="StatusId">A change is a status transition: B-04 dates apply and the task moves to the end of the new Board column (B-07).</param>
+/// <param name="StatusId">A change is a status transition: B-04 dates apply and the task moves to the end of the new Board bucket (B-07).</param>
 /// <param name="ChecklistItems">The complete checklist in display order; items left out are deleted.</param>
 /// <param name="NewLookups">People and tags the draft created; they are inserted only by this save (B-02.6).</param>
 /// <param name="LinkTo">
@@ -121,9 +121,9 @@ public sealed class UpdateTask
             return TxResult.Abort<long>(itemError!);
         }
 
-        // B-07: a status change from the editor places the task at the top of the full destination column,
+        // B-07: a status change from the editor places the task at the top of the full destination bucket,
         // the same rule as Grid and Board menu moves; an unchanged status keeps its rank.
-        var rank = targetStatus.Id == current.Id ? task.Rank : BoardColumnRanks.TopRank(tx, targetStatus, new BoardCardKey(BoardCardKind.Task, task.Id.Value));
+        var rank = targetStatus.Id == current.Id ? task.Rank : BoardBucketRanks.TopRank(tx, targetStatus, new BoardCardKey(BoardCardKind.Task, task.Id.Value));
         var edited = task.Edit(
             new TaskEdit(content, command.PriorityId, command.Start, command.End, items),
             current,

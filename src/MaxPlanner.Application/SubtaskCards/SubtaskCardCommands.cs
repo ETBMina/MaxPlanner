@@ -9,7 +9,7 @@ using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Application.SubtaskCards;
 
-/// <param name="StatusId">Null uses the default task status; Board creation passes the column's status.</param>
+/// <param name="StatusId">Null uses the default task status; Board creation passes the bucket's status.</param>
 public sealed record CreateSubtaskCardCommand(
     OperationId OperationId,
     TaskId ParentTaskId,
@@ -188,7 +188,7 @@ internal static class SubtaskCardRules
             : null;
     }
 
-    /// <summary>Creates the card at the top of its Board column with B-04 creation dates for the card only.</summary>
+    /// <summary>Creates the card at the top of its Board bucket with B-04 creation dates for the card only.</summary>
     public static TxResult<SubtaskCardId> Insert(
         IWriteTransaction tx,
         SubtaskCardId id,
@@ -200,7 +200,7 @@ internal static class SubtaskCardRules
         DateIntent end)
     {
         var created = SubtaskCard.Create(id, parentId, subtitle, notes, status, start, end,
-            BoardColumnRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.SubtaskCard, id.Value)), tx.LocalToday, tx.UtcNow);
+            BoardBucketRanks.TopRank(tx, status, new BoardCardKey(BoardCardKind.SubtaskCard, id.Value)), tx.LocalToday, tx.UtcNow);
         if (created.Error is { } invalid)
         {
             return TransactionGuards.Reject<SubtaskCardId>(invalid);

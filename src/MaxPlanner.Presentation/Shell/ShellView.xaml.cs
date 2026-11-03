@@ -257,7 +257,7 @@ public sealed partial class ShellView : UserControl
     /// <summary>
     /// T-11/AC-17: makes <paramref name="slot"/> the visible page. Replacing the host's content took the previous page
     /// out of the tree, so every switch re-ran Unloaded/Loaded across it: each realized Grid row rebuilt its cells,
-    /// each Board column list re-realized its cards, and templates were re-applied and re-measured. A collapsed page
+    /// each Board bucket list re-realized its cards, and templates were re-applied and re-measured. A collapsed page
     /// keeps its realized items, scroll offsets, selection and drafts, and costs no layout until it is shown again.
     /// </summary>
     /// <remarks>

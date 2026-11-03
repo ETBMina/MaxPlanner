@@ -94,8 +94,8 @@ public sealed record RemoveLookupCommand(OperationId OperationId, LookupKind Kin
 /// where allowed, cleared, and the value is deleted, all in one transaction (T-06.3).
 /// </summary>
 /// <remarks>
-/// A replaced status is not a transition: dates are kept (B-04). Active cards from the removed Board column
-/// are appended to the end of the replacement column in their previous order, so nothing lands silently at
+/// A replaced status is not a transition: dates are kept (B-04). Active cards from the removed Board bucket
+/// are appended to the end of the replacement bucket in their previous order, so nothing lands silently at
 /// the top. CR Owner usage and the default CR Owner can only be replaced; Designer, Developer, review
 /// Developers, tags, and squads may be cleared (design §11 Q4). The confirmed counts are compared with the
 /// counts inside the transaction, so a confirmation shown for other data never applies.
@@ -194,15 +194,15 @@ public sealed class RemoveLookup
     }
 
     /// <summary>
-    /// The active cards of the removed column (tasks and Subtask cards share columns, B-16.5), each with a rank
-    /// after the end of the replacement column, in their previous order. Archived tasks and the cards of
-    /// archived parents keep their ranks: restoring a task places it at the end of its column anyway (B-05).
+    /// The active cards of the removed bucket (tasks and Subtask cards share buckets, B-16.5), each with a rank
+    /// after the end of the replacement bucket, in their previous order. Archived tasks and the cards of
+    /// archived parents keep their ranks: restoring a task places it at the end of its bucket anyway (B-05).
     /// </summary>
     private static Dictionary<BoardCardKey, long> AppendRanks(IWriteTransaction tx, TaskStatusId removed, TaskStatusId replacement)
     {
         var ranks = new Dictionary<BoardCardKey, long>();
         var last = tx.Tasks.MaxBoardRank(replacement);
-        foreach (var (key, _) in tx.Tasks.ListBoardColumn(removed))
+        foreach (var (key, _) in tx.Tasks.ListBoardBucket(removed))
         {
             var rank = RankPolicy.After(last);
             ranks[key] = rank;

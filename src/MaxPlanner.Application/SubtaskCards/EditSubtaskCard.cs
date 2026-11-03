@@ -96,7 +96,7 @@ public sealed class MoveSubtaskCard
             return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
         }
 
-        var rank = BoardColumnRanks.RankFor(tx, target, new BoardCardKey(BoardCardKind.SubtaskCard, card.Id.Value), command.Placement);
+        var rank = BoardBucketRanks.RankFor(tx, target, new BoardCardKey(BoardCardKind.SubtaskCard, card.Id.Value), command.Placement);
         var moved = card.MoveTo(current, target, rank, command.Start, command.End, tx.LocalToday, tx.UtcNow);
         if (moved.Error is { } invalid)
         {

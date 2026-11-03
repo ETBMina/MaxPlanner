@@ -232,17 +232,17 @@
             SubtaskTemplate="{StaticResource SubtaskCardTemplate}"
             TaskTemplate="{StaticResource TaskCardTemplate}" />
 
-        <DataTemplate x:Key="ColumnTemplate" x:DataType="local:BoardColumnViewModel">
+        <DataTemplate x:Key="BucketTemplate" x:DataType="local:BoardBucketViewModel">
             <Border
                 Width="300"
                 Margin="0,0,12,0"
                 Padding="8,12,8,0"
                 common:WheelScrolling.VerticalWheelScrollsHorizontally="True"
-                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_Column_', StatusId.Value), Mode=OneTime}"
+                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_Bucket_', StatusId.Value), Mode=OneTime}"
                 AutomationProperties.Name="{x:Bind Name, Mode=OneWay}"
-                Loaded="OnColumnLoaded"
+                Loaded="OnBucketLoaded"
                 Style="{StaticResource SecondaryCardBorderStyle}"
-                Unloaded="OnColumnUnloaded">
+                Unloaded="OnBucketUnloaded">
                 <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -264,24 +264,24 @@
                             Text="{x:Bind Name, Mode=OneWay}" />
                         <Border Style="{StaticResource AccentChipStyle}">
                             <TextBlock
-                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnCount_', StatusId.Value), Mode=OneTime}"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_BucketCount_', StatusId.Value), Mode=OneTime}"
                                 Style="{StaticResource AccentChipTextStyle}"
                                 Text="{x:Bind CountText, Mode=OneWay}" />
                         </Border>
                     </StackPanel>
-                    <!-- Design §4.2: + creates a task in this column's status (B-02.1). -->
+                    <!-- Design §4.2: + creates a task in this bucket's status (B-02.1). -->
                     <Button
                         Padding="6,4"
                         HorizontalAlignment="Right"
-                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnAddButton_', StatusId.Value), Mode=OneTime}"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_BucketAddButton_', StatusId.Value), Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind AddButtonName, Mode=OneWay}"
                         Background="Transparent"
                         BorderThickness="0"
-                        Click="OnColumnAddClick"
+                        Click="OnBucketAddClick"
                         ToolTipService.ToolTip="{x:Bind AddButtonName, Mode=OneWay}">
                         <FontIcon FontSize="14" Glyph="&#xE710;" />
                     </Button>
-                    <!-- The column fills the viewport height, so this list is bounded and virtualizes (T-08). -->
+                    <!-- The bucket fills the viewport height, so this list is bounded and virtualizes (T-08). -->
                     <!--
                         Native ListView drag and drop (design §9) [gallery-listview-3]. The list never reorders its own
                         items: a drop runs a move command, and the card moves only after it committed (B-07).
@@ -290,7 +290,7 @@
                         Grid.Row="1"
                         common:WheelScrolling.RoutesMouseWheel="True"
                         AllowDrop="True"
-                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_ColumnList_', StatusId.Value), Mode=OneTime}"
+                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_BucketList_', StatusId.Value), Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
                         BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
                         BorderThickness="0"
@@ -397,9 +397,9 @@
                     </StackPanel>
                 </Button>
             </Grid>
-            <!-- Design §4.2 S: one column per viewport, chosen here or with the previous/next buttons. -->
+            <!-- Design §4.2 S: one bucket per viewport, chosen here or with the previous/next buttons. -->
             <Grid
-                x:Name="ColumnPickerRow"
+                x:Name="BucketPickerRow"
                 ColumnSpacing="8"
                 Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
@@ -408,24 +408,24 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Button
-                    x:Uid="Board_PrevColumnButton"
-                    AutomationProperties.AutomationId="Board_PrevColumnButton"
-                    Command="{x:Bind ViewModel.PreviousColumnCommand}">
+                    x:Uid="Board_PrevBucketButton"
+                    AutomationProperties.AutomationId="Board_PrevBucketButton"
+                    Command="{x:Bind ViewModel.PreviousBucketCommand}">
                     <FontIcon FontSize="12" Glyph="&#xE76B;" />
                 </Button>
                 <ComboBox
-                    x:Name="ColumnPicker"
-                    x:Uid="Board_ColumnPickerCombo"
+                    x:Name="BucketPicker"
+                    x:Uid="Board_BucketPickerCombo"
                     Grid.Column="1"
                     HorizontalAlignment="Stretch"
-                    AutomationProperties.AutomationId="Board_ColumnPickerCombo"
-                    ItemsSource="{x:Bind ViewModel.Columns, Mode=OneTime}"
-                    SelectionChanged="OnColumnPickerSelectionChanged" />
+                    AutomationProperties.AutomationId="Board_BucketPickerCombo"
+                    ItemsSource="{x:Bind ViewModel.Buckets, Mode=OneTime}"
+                    SelectionChanged="OnBucketPickerSelectionChanged" />
                 <Button
-                    x:Uid="Board_NextColumnButton"
+                    x:Uid="Board_NextBucketButton"
                     Grid.Column="2"
-                    AutomationProperties.AutomationId="Board_NextColumnButton"
-                    Command="{x:Bind ViewModel.NextColumnCommand}">
+                    AutomationProperties.AutomationId="Board_NextBucketButton"
+                    Command="{x:Bind ViewModel.NextBucketCommand}">
                     <FontIcon FontSize="12" Glyph="&#xE76C;" />
                 </Button>
             </Grid>
@@ -442,11 +442,11 @@
             PageKey="Board"
             State="{x:Bind ViewModel.State, Mode=OneWay}">
             <!--
-                Design §4.2: the page scrolls horizontally and each column scrolls vertically. AllowDrop and the
+                Design §4.2: the page scrolls horizontally and each bucket scrolls vertically. AllowDrop and the
                 transparent background only let drag events reach the scroller for edge auto-scroll; it accepts no drop.
             -->
             <ScrollViewer
-                x:Name="ColumnsScroller"
+                x:Name="BucketsScroller"
                 common:WheelScrolling.RoutesMouseWheel="True"
                 AllowDrop="True"
                 Background="Transparent"
@@ -455,12 +455,12 @@
                 VerticalScrollBarVisibility="Disabled"
                 VerticalScrollMode="Disabled">
                 <ItemsControl
-                    x:Name="ColumnsHost"
+                    x:Name="BucketsHost"
                     Margin="32,0,20,12"
-                    AutomationProperties.AutomationId="Board_Columns"
+                    AutomationProperties.AutomationId="Board_Buckets"
                     IsTabStop="False"
-                    ItemTemplate="{StaticResource ColumnTemplate}"
-                    ItemsSource="{x:Bind ViewModel.Columns, Mode=OneTime}">
+                    ItemTemplate="{StaticResource BucketTemplate}"
+                    ItemsSource="{x:Bind ViewModel.Buckets, Mode=OneTime}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal" />

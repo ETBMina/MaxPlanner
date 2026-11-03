@@ -263,7 +263,7 @@ public sealed partial class SubtaskCardEditorViewModel : ObservableObject, IDial
     }
 
     /// <summary>A new Subtask card under <paramref name="parentId"/> (B-16.3 "Add Subtask card").</summary>
-    /// <param name="status">Board creation passes the column's status; null uses the default task status.</param>
+    /// <param name="status">Board creation passes the bucket's status; null uses the default task status.</param>
     public static SubtaskCardEditorViewModel ForNewCard(WorkspaceContext context, TaskId parentId, TaskStatusId? status = null)
     {
         ArgumentNullException.ThrowIfNull(context);

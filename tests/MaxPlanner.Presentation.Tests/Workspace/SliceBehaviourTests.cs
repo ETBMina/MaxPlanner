@@ -34,7 +34,7 @@ public sealed class SliceBehaviourTests
         h.PumpUntil(() => checklists.Groups.Count == 1 && board.State == ViewState.Populated);
         h.Settle();
         var group = checklists.Groups.Single();
-        var card = board.Columns.SelectMany(c => c.Cards).Single();
+        var card = board.Buckets.SelectMany(c => c.Cards).Single();
         card.ChecklistText.Should().Be("Checklist 0/2");
 
         h.Await(group.ToggleAsync(group.OpenItems[0], true));
@@ -43,9 +43,9 @@ public sealed class SliceBehaviourTests
         group.OpenItems.Select(i => i.Text).Should().Equal("Review");
         group.CompletedItems.Select(i => i.Text).Should().Equal("Draft");
         group.ProgressText.Should().Be("1 of 2 done");
-        board.Columns.SelectMany(c => c.Cards).Single().Should().BeSameAs(card);
+        board.Buckets.SelectMany(c => c.Cards).Single().Should().BeSameAs(card);
         card.ChecklistText.Should().Be("Checklist 1/2");
-        h.Task(task).Status.Id.Should().Be(board.Columns[0].StatusId, "B-09: checking items never changes the task status");
+        h.Task(task).Status.Id.Should().Be(board.Buckets[0].StatusId, "B-09: checking items never changes the task status");
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public sealed class SliceBehaviourTests
 
         h.Settle();
 
-        // Grid: tasks + Subtask cards; Board: tasks + Subtask cards per status column (8 seeded); Checklists: tasks.
+        // Grid: tasks + Subtask cards; Board: tasks + Subtask cards per status bucket (8 seeded); Checklists: tasks.
         afterFirstCycle.Should().Be(2 + (8 * 2) + 1);
         h.Store.ActiveCacheSubscriptions.Should().Be(afterFirstCycle);
         (h.Workspace.Board, h.Workspace.Grid, h.Workspace.Checklists).Should().Be(pages, "page ViewModels are retained, never recreated");

@@ -74,7 +74,7 @@ public sealed class EditSubtaskCardTests
     [Fact]
     [Trait("Req", "B-16.4")]
     [Trait("Req", "AC-05")]
-    public async Task Moving_a_card_applies_date_rules_to_the_card_only_and_appends_to_the_column()
+    public async Task Moving_a_card_applies_date_rules_to_the_card_only_and_appends_to_the_bucket()
     {
         var (parent, card) = await AddCardAsync(parentStatus: Completed);
         var existing = await _workspace.AddTaskAsync("Already in progress", InProgress);
@@ -86,7 +86,7 @@ public sealed class EditSubtaskCardTests
         outcome.Value.Should().Be(2);
         moved.StatusId.Should().Be(InProgress.Id);
         moved.Dates.Start.Should().Be(Today);
-        moved.Rank.Should().BeGreaterThan(_workspace.Task(existing).Rank, "a status change appends to the full destination column (B-07)");
+        moved.Rank.Should().BeGreaterThan(_workspace.Task(existing).Rank, "a status change appends to the full destination bucket (B-07)");
         _workspace.Task(parent).Should().Be(parentBefore);
     }
 

@@ -82,7 +82,7 @@ Owned child rows (checklist items, task people/tags, review services) cascade wi
 - At commit, the same transaction increments `app_metadata.commit_sequence` (`UPDATE … RETURNING`) and inserts the ledger row. A rollback therefore consumes no sequence, and committed sequences are gap-free (T-07).
 - UPDATEs are guarded with `WHERE id = $id AND revision = $previous`, where `$previous` is the revision the transaction loaded. Zero affected rows is a defect, not a user conflict; use cases report conflicts before writing.
 - Checklist items are diffed on update, so toggling one item writes one row.
-- Board columns (`ITaskStore.ListBoardColumn`/`MaxBoardRank`) contain the non-archived tasks in the status plus the Subtask cards of non-archived parents in the status, ordered by rank and then by .NET `Guid` comparison.
+- Board buckets (`ITaskStore.ListBoardBucket`/`MaxBoardRank`) contain the non-archived tasks in the status plus the Subtask cards of non-archived parents in the status, ordered by rank and then by .NET `Guid` comparison.
 
 ## Reads
 

@@ -54,7 +54,7 @@ public sealed class VerticalSliceTests
     [Fact]
     [Trait("Req", "B-07")]
     [Trait("Req", "AC-05")]
-    public void A_grid_status_edit_moves_the_card_to_the_top_of_the_destination_column_and_applies_the_date_rule()
+    public void A_grid_status_edit_moves_the_card_to_the_top_of_the_destination_bucket_and_applies_the_date_rule()
     {
         TaskId moving = default;
         TaskId staying = default;
@@ -66,10 +66,10 @@ public sealed class VerticalSliceTests
             inProgressAlready = await s.TaskAsync("Started earlier");
         });
         var (grid, board, _) = OpenPages(h);
-        var inProgress = board.Columns.Single(c => c.Name == "In Progress");
+        var inProgress = board.Buckets.Single(c => c.Name == "In Progress");
         h.External(u => u.MoveTask.ExecuteAsync(
             new MoveTaskCommand(OperationId.New(), inProgressAlready, 1, inProgress.StatusId, BoardPlacement.AppendToEnd), default));
-        var backlog = board.Columns.Single(c => c.Name == "Backlog");
+        var backlog = board.Buckets.Single(c => c.Name == "Backlog");
         var stayingCard = BoardCard(board, staying.Value);
         var row = Row(grid, moving.Value);
 
@@ -315,5 +315,5 @@ public sealed class VerticalSliceTests
 
     private static GridRowViewModel Row(GridPageViewModel grid, Guid id) => grid.Rows.Single(r => r.Key == id);
 
-    private static BoardCardViewModel BoardCard(BoardPageViewModel board, Guid id) => board.Columns.SelectMany(c => c.Cards).Single(c => c.Key == id);
+    private static BoardCardViewModel BoardCard(BoardPageViewModel board, Guid id) => board.Buckets.SelectMany(c => c.Cards).Single(c => c.Key == id);
 }

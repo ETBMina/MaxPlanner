@@ -20,7 +20,7 @@ public sealed class TaskEditorUseCaseTests
     [Trait("Req", "B-02.8")]
     [Trait("Req", "B-04")]
     [Trait("Req", "B-07")]
-    public async Task Saving_a_draft_with_a_status_change_is_one_revision_at_the_top_of_the_new_column_with_its_dates()
+    public async Task Saving_a_draft_with_a_status_change_is_one_revision_at_the_top_of_the_new_bucket_with_its_dates()
     {
         var id = await _workspace.AddTaskAsync();
         var inProgress = await _workspace.AddTaskAsync("Already there", InProgress);
@@ -32,7 +32,7 @@ public sealed class TaskEditorUseCaseTests
         task.StatusId.Should().Be(InProgress.Id);
         task.PriorityId.Should().Be(High.Id);
         task.Dates.Start.Should().Be(Today, "B-04: the status transition fills StartDate");
-        task.Rank.Should().BeLessThan(_workspace.Task(inProgress).Rank, "B-07: a status change outside a Board drop lands at the top of the column");
+        task.Rank.Should().BeLessThan(_workspace.Task(inProgress).Rank, "B-07: a status change outside a Board drop lands at the top of the bucket");
         _workspace.Coordinator.Published[^1].OperationKind.Should().Be(UpdateTask.OperationKind);
     }
 
@@ -208,7 +208,7 @@ public sealed class TaskEditorUseCaseTests
 
     [Fact]
     [Trait("Req", "B-05")]
-    public async Task Archive_and_restore_put_the_task_back_at_the_top_of_its_column()
+    public async Task Archive_and_restore_put_the_task_back_at_the_top_of_its_bucket()
     {
         var id = await _workspace.AddTaskAsync("First");
         Succeeded(await new ArchiveTask(_workspace.Coordinator).ExecuteAsync(new ArchiveTaskCommand(OperationId.New(), id, 1), TestContext.Current.CancellationToken));
@@ -219,7 +219,7 @@ public sealed class TaskEditorUseCaseTests
 
         var restored = _workspace.Task(id);
         restored.IsArchived.Should().BeFalse();
-        restored.Rank.Should().BeLessThan(_workspace.Task(later).Rank, "B-05, B-07: restore inserts at the top of the column");
+        restored.Rank.Should().BeLessThan(_workspace.Task(later).Rank, "B-05, B-07: restore inserts at the top of the bucket");
     }
 
     [Fact]

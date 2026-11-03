@@ -94,7 +94,7 @@ public static partial class ImportPlanner
         private readonly Dictionary<Guid, Guid> _fieldMap = [];
         private readonly Dictionary<Guid, Guid> _optionMap = [];
         private readonly Dictionary<Guid, Guid?> _crMap = [];
-        private readonly Dictionary<Guid, long> _columnMax = [];
+        private readonly Dictionary<Guid, long> _bucketMax = [];
         private readonly List<ImportLedgerEntry> _ledger = [];
         private List<TaskStatusDefinition> _taskStatuses = [];
         private List<CrStatusDefinition> _crStatuses = [];
@@ -135,7 +135,7 @@ public static partial class ImportPlanner
                     break;
             }
 
-            InitializeColumns();
+            InitializeBuckets();
             List<PlannedRecord<ChangeRequest>> changeRequests = [];
             List<PlannedRecord<TaskItem>> tasks = [];
             List<PlannedLink> links = [];
@@ -619,8 +619,8 @@ public static partial class ImportPlanner
             return (c, u < c ? c : u);
         }
 
-        // ----- Board columns -----
-        private void InitializeColumns()
+        // ----- Board buckets -----
+        private void InitializeBuckets()
         {
             var archived = _snapshot.Tasks.Where(t => t.IsArchived).Select(t => t.Id).ToHashSet();
             foreach (var task in _snapshot.Tasks.Where(t => !t.IsArchived))
@@ -634,13 +634,13 @@ public static partial class ImportPlanner
             }
         }
 
-        private void Bump(Guid status, long rank) => _columnMax[status] = Math.Max(_columnMax.GetValueOrDefault(status, 0), rank);
+        private void Bump(Guid status, long rank) => _bucketMax[status] = Math.Max(_bucketMax.GetValueOrDefault(status, 0), rank);
 
-        /// <summary>B-07: a record without a supplied rank is appended to the end of its full column.</summary>
+        /// <summary>B-07: a record without a supplied rank is appended to the end of its full bucket.</summary>
         private long Append(Guid status)
         {
-            var rank = _columnMax.GetValueOrDefault(status, 0) + RankStep;
-            _columnMax[status] = rank;
+            var rank = _bucketMax.GetValueOrDefault(status, 0) + RankStep;
+            _bucketMax[status] = rank;
             return rank;
         }
 

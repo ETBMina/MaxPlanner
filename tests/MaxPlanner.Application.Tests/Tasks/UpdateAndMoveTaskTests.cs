@@ -90,7 +90,7 @@ public sealed class UpdateAndMoveTaskTests
     [Fact]
     [Trait("Req", "B-04")]
     [Trait("Req", "AC-05")]
-    public async Task Moving_to_another_column_changes_status_dates_and_rank_together()
+    public async Task Moving_to_another_bucket_changes_status_dates_and_rank_together()
     {
         var waiting = await _workspace.AddTaskAsync("Already there", InProgress);
         var id = await _workspace.AddTaskAsync();
@@ -119,7 +119,7 @@ public sealed class UpdateAndMoveTaskTests
 
     [Fact]
     [Trait("Req", "B-07")]
-    public async Task Without_room_the_full_column_is_renumbered_in_the_same_commit_writing_only_changed_cards()
+    public async Task Without_room_the_full_bucket_is_renumbered_in_the_same_commit_writing_only_changed_cards()
     {
         var a = await _workspace.AddTaskAsync("A", Review);
         var b = await _workspace.AddTaskAsync("B", Review);

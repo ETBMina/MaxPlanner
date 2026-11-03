@@ -104,7 +104,7 @@ public sealed class SqliteUseCaseTests
         SetRank(db, archived.Value, 2048);
         db.Execute("UPDATE tasks SET is_archived = 1 WHERE id = $id;", ("$id", archived.Value));
 
-        // Between 2048 and 2049 there is no free rank, so the full column is renumbered (B-07).
+        // Between 2048 and 2049 there is no free rank, so the full bucket is renumbered (B-07).
         var result = await new MoveTask(db.Coordinator).ExecuteAsync(
             new MoveTaskCommand(OperationId.New(), moved, 1, backlog.Id, BoardPlacement.Between(2048, 2049)), Ct);
 
@@ -115,12 +115,12 @@ public sealed class SqliteUseCaseTests
         (tasks[high].Rank, tasks[high].Revision).Should().Be((3072, 2));
         (tasks[moved.Value].Rank, tasks[moved.Value].StatusId).Should().Be((4096, backlog.Id));
         (tasks[last.Value].Rank, tasks[last.Value].Revision).Should().Be((5120, 2));
-        (tasks[archived.Value].Rank, tasks[archived.Value].Revision).Should().Be((2048, 1), "archived tasks are not in the Board column");
+        (tasks[archived.Value].Rank, tasks[archived.Value].Revision).Should().Be((2048, 1), "archived tasks are not in the Board bucket");
     }
 
     [Fact]
     [Trait("Req", "B-16.5")]
-    public async Task A_board_column_holds_active_tasks_and_the_subtask_cards_of_active_parents()
+    public async Task A_board_bucket_holds_active_tasks_and_the_subtask_cards_of_active_parents()
     {
         await using var db = await CreateAsync();
         var backlog = await db.TaskStatusAsync("Backlog");
@@ -132,17 +132,17 @@ public sealed class SqliteUseCaseTests
             new CreateSubtaskCardCommand(OperationId.New(), archivedParent, new SubtaskCardId(Guid.NewGuid()), "Hidden card"), Ct);
         db.Execute("UPDATE tasks SET is_archived = 1 WHERE id = $id;", ("$id", archivedParent.Value));
 
-        IReadOnlyList<(BoardCardKey Key, long Rank)> column = [];
+        IReadOnlyList<(BoardCardKey Key, long Rank)> bucket = [];
         long? max = null;
-        await db.Coordinator.ExecuteAsync(OperationId.New(), "test.read-column", tx =>
+        await db.Coordinator.ExecuteAsync(OperationId.New(), "test.read-bucket", tx =>
         {
-            column = tx.Tasks.ListBoardColumn(backlog.Id);
+            bucket = tx.Tasks.ListBoardBucket(backlog.Id);
             max = tx.Tasks.MaxBoardRank(backlog.Id);
             return TxResult.Abort<long>(OperationCancelledError.Instance);
         }, Ct);
 
-        column.Select(c => c.Key).Should().Equal([new BoardCardKey(BoardCardKind.SubtaskCard, card.Value), new BoardCardKey(BoardCardKind.Task, parent.Value)], "B-07: the newer card lands above its parent");
-        max.Should().Be(column[^1].Rank);
+        bucket.Select(c => c.Key).Should().Equal([new BoardCardKey(BoardCardKind.SubtaskCard, card.Value), new BoardCardKey(BoardCardKind.Task, parent.Value)], "B-07: the newer card lands above its parent");
+        max.Should().Be(bucket[^1].Rank);
     }
 
     [Fact]

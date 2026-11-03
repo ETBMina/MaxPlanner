@@ -10,8 +10,8 @@ internal sealed class SqliteTaskStore(SqliteWriteTransaction tx) : ITaskStore
 {
     private const string Entity = "task";
 
-    // B-07/B-16.5: a Board column holds the active tasks and the Subtask cards of active parents.
-    private const string BoardColumnSql = """
+    // B-07/B-16.5: a Board bucket holds the active tasks and the Subtask cards of active parents.
+    private const string BoardBucketSql = """
         SELECT 0 AS kind, id, rank FROM tasks WHERE status_id = $status AND is_archived = 0
         UNION ALL
         SELECT 1 AS kind, c.id, c.rank FROM subtask_cards c JOIN tasks p ON p.id = c.parent_task_id
@@ -107,22 +107,22 @@ internal sealed class SqliteTaskStore(SqliteWriteTransaction tx) : ITaskStore
 
     public long? MaxBoardRank(TaskStatusId status)
     {
-        using var command = tx.Command($"SELECT MAX(rank) FROM ({BoardColumnSql});");
+        using var command = tx.Command($"SELECT MAX(rank) FROM ({BoardBucketSql});");
         command.Add("$status", status.Value);
         return command.ExecuteScalar() is long rank ? rank : null;
     }
 
     public long? MinBoardRank(TaskStatusId status)
     {
-        using var command = tx.Command($"SELECT MIN(rank) FROM ({BoardColumnSql});");
+        using var command = tx.Command($"SELECT MIN(rank) FROM ({BoardBucketSql});");
         command.Add("$status", status.Value);
         return command.ExecuteScalar() is long rank ? rank : null;
     }
 
-    public IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardColumn(TaskStatusId status)
+    public IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardBucket(TaskStatusId status)
     {
         var cards = new List<(BoardCardKey Key, long Rank)>();
-        using (var command = tx.Command(BoardColumnSql + ";"))
+        using (var command = tx.Command(BoardBucketSql + ";"))
         {
             command.Add("$status", status.Value);
             using var reader = command.ExecuteReader();

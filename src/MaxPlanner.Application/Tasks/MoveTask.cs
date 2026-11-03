@@ -8,18 +8,18 @@ using MaxPlanner.Domain.Workflow;
 
 namespace MaxPlanner.Application.Tasks;
 
-/// <summary>Where a moved card lands in its destination column.</summary>
+/// <summary>Where a moved card lands in its destination bucket.</summary>
 public abstract record BoardPlacement
 {
     private protected BoardPlacement()
     {
     }
 
-    /// <summary>The end of the full column. Used for Move to ▸ {status} Bottom while the Board is filtered (B-07).</summary>
+    /// <summary>The end of the full bucket. Used for Move to ▸ {status} Bottom while the Board is filtered (B-07).</summary>
     public static BoardPlacement AppendToEnd { get; } = new AppendToEndPlacement();
 
     /// <summary>
-    /// The top of the full column. The default for status changes made outside a positional Board drop
+    /// The top of the full bucket. The default for status changes made outside a positional Board drop
     /// (editors, Grid, Board menu and keyboard moves) and for new, copied and restored cards (B-07).
     /// </summary>
     public static BoardPlacement Top { get; } = new TopPlacement();
@@ -45,7 +45,7 @@ public sealed record MoveTaskCommand(
     DateIntent Start = default,
     DateIntent End = default);
 
-/// <summary>Moves a task within or across Board columns: status, B-04 dates, and order in one transaction (B-07).</summary>
+/// <summary>Moves a task within or across Board buckets: status, B-04 dates, and order in one transaction (B-07).</summary>
 public sealed class MoveTask
 {
     public const string OperationKind = "task.move";
@@ -77,7 +77,7 @@ public sealed class MoveTask
             return TransactionGuards.Reject<long>(DomainErrorCodes.UnknownReference, "Status");
         }
 
-        var rank = BoardColumnRanks.RankFor(tx, target, new BoardCardKey(BoardCardKind.Task, task.Id.Value), command.Placement);
+        var rank = BoardBucketRanks.RankFor(tx, target, new BoardCardKey(BoardCardKind.Task, task.Id.Value), command.Placement);
 
         var moved = task.MoveTo(current, target, rank, command.Start, command.End, tx.LocalToday, tx.UtcNow);
         if (moved.Error is { } invalid)
@@ -91,33 +91,33 @@ public sealed class MoveTask
     }
 }
 
-/// <summary>Rank assignment for a card entering a Board column; shared by task and Subtask card moves (B-07, B-16.5).</summary>
-internal static class BoardColumnRanks
+/// <summary>Rank assignment for a card entering a Board bucket; shared by task and Subtask card moves (B-07, B-16.5).</summary>
+internal static class BoardBucketRanks
 {
-    /// <summary>The rank for <paramref name="moved"/> at <paramref name="placement"/> in <paramref name="column"/>.</summary>
-    public static long RankFor(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey moved, BoardPlacement placement) => placement switch
+    /// <summary>The rank for <paramref name="moved"/> at <paramref name="placement"/> in <paramref name="bucket"/>.</summary>
+    public static long RankFor(IWriteTransaction tx, TaskStatusDefinition bucket, BoardCardKey moved, BoardPlacement placement) => placement switch
     {
         BetweenPlacement between => RankPolicy.Between(between.BeforeRank, between.AfterRank)
-            ?? RenumberColumn(tx, column, moved, between.BeforeRank),
-        TopPlacement => RankPolicy.Before(tx.Tasks.MinBoardRank(column.Id)) ?? RenumberColumn(tx, column, moved, beforeRank: null),
-        _ => RankPolicy.After(tx.Tasks.MaxBoardRank(column.Id)),
+            ?? RenumberBucket(tx, bucket, moved, between.BeforeRank),
+        TopPlacement => RankPolicy.Before(tx.Tasks.MinBoardRank(bucket.Id)) ?? RenumberBucket(tx, bucket, moved, beforeRank: null),
+        _ => RankPolicy.After(tx.Tasks.MaxBoardRank(bucket.Id)),
     };
 
     /// <summary>
-    /// The rank for a card that enters <paramref name="column"/> without a positional drop: new, copied,
-    /// restored, or changed status elsewhere. It goes to the top of the full column (B-07).
+    /// The rank for a card that enters <paramref name="bucket"/> without a positional drop: new, copied,
+    /// restored, or changed status elsewhere. It goes to the top of the full bucket (B-07).
     /// </summary>
-    public static long TopRank(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey entering) =>
-        RankFor(tx, column, entering, BoardPlacement.Top);
+    public static long TopRank(IWriteTransaction tx, TaskStatusDefinition bucket, BoardCardKey entering) =>
+        RankFor(tx, bucket, entering, BoardPlacement.Top);
 
     /// <summary>
-    /// B-07: when two neighbours have no free rank between them, the full destination column (cards hidden
+    /// B-07: when two neighbours have no free rank between them, the full destination bucket (cards hidden
     /// by filters included) is respaced in this same transaction. Only cards whose rank changes are
     /// written; the moved card's new rank is returned for its own move.
     /// </summary>
-    public static long RenumberColumn(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey moved, long? beforeRank)
+    public static long RenumberBucket(IWriteTransaction tx, TaskStatusDefinition bucket, BoardCardKey moved, long? beforeRank)
     {
-        var cards = tx.Tasks.ListBoardColumn(column.Id).Where(c => c.Key != moved).ToList();
+        var cards = tx.Tasks.ListBoardBucket(bucket.Id).Where(c => c.Key != moved).ToList();
         var index = beforeRank is { } before ? cards.FindLastIndex(c => c.Rank <= before) + 1 : 0;
         cards.Insert(index, (moved, long.MinValue));
 
@@ -130,7 +130,7 @@ internal static class BoardColumnRanks
             }
             else
             {
-                Reposition(tx, column, key, rank);
+                Reposition(tx, bucket, key, rank);
             }
         }
 
@@ -138,19 +138,19 @@ internal static class BoardColumnRanks
     }
 
     // Respacing is a same-status move, so no date automation applies (B-04: not a transition).
-    private static void Reposition(IWriteTransaction tx, TaskStatusDefinition column, BoardCardKey key, long rank)
+    private static void Reposition(IWriteTransaction tx, TaskStatusDefinition bucket, BoardCardKey key, long rank)
     {
         if (key.Kind == BoardCardKind.Task)
         {
-            var task = tx.Tasks.Find(new TaskId(key.Id)) ?? throw new InvalidOperationException($"Board column lists missing task {key.Id}.");
-            var repositioned = task.MoveTo(column, column, rank, DateIntent.Unchanged, DateIntent.Unchanged, tx.LocalToday, tx.UtcNow).Value;
+            var task = tx.Tasks.Find(new TaskId(key.Id)) ?? throw new InvalidOperationException($"Board bucket lists missing task {key.Id}.");
+            var repositioned = task.MoveTo(bucket, bucket, rank, DateIntent.Unchanged, DateIntent.Unchanged, tx.LocalToday, tx.UtcNow).Value;
             tx.Tasks.Update(repositioned);
             tx.Changes.UpsertTask(repositioned);
         }
         else
         {
-            var card = tx.SubtaskCards.Find(new SubtaskCardId(key.Id)) ?? throw new InvalidOperationException($"Board column lists missing Subtask card {key.Id}.");
-            var repositioned = card.MoveTo(column, column, rank, DateIntent.Unchanged, DateIntent.Unchanged, tx.LocalToday, tx.UtcNow).Value;
+            var card = tx.SubtaskCards.Find(new SubtaskCardId(key.Id)) ?? throw new InvalidOperationException($"Board bucket lists missing Subtask card {key.Id}.");
+            var repositioned = card.MoveTo(bucket, bucket, rank, DateIntent.Unchanged, DateIntent.Unchanged, tx.LocalToday, tx.UtcNow).Value;
             tx.SubtaskCards.Update(repositioned);
             tx.Changes.UpsertSubtaskCard(repositioned);
         }

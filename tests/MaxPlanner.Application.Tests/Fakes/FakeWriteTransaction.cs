@@ -104,14 +104,14 @@ internal sealed class FakeWriteTransaction : IWriteTransaction
             _revisions.Forget(id.Value);
         }
 
-        public long? MaxBoardRank(TaskStatusId status) => Column(status).Select(c => (long?)c.Rank).Max();
+        public long? MaxBoardRank(TaskStatusId status) => Bucket(status).Select(c => (long?)c.Rank).Max();
 
-        public long? MinBoardRank(TaskStatusId status) => Column(status).Select(c => (long?)c.Rank).Min();
+        public long? MinBoardRank(TaskStatusId status) => Bucket(status).Select(c => (long?)c.Rank).Min();
 
-        public IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardColumn(TaskStatusId status) =>
-            [.. Column(status).OrderBy(c => c.Rank).ThenBy(c => c.Key.Id)];
+        public IReadOnlyList<(BoardCardKey Key, long Rank)> ListBoardBucket(TaskStatusId status) =>
+            [.. Bucket(status).OrderBy(c => c.Rank).ThenBy(c => c.Key.Id)];
 
-        private IEnumerable<(BoardCardKey Key, long Rank)> Column(TaskStatusId status) =>
+        private IEnumerable<(BoardCardKey Key, long Rank)> Bucket(TaskStatusId status) =>
             data.Tasks.Values
                 .Where(t => t.StatusId == status && !t.IsArchived)
                 .Select(t => (new BoardCardKey(BoardCardKind.Task, t.Id.Value), t.Rank))

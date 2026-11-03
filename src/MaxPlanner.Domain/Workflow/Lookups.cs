@@ -6,7 +6,7 @@ namespace MaxPlanner.Domain.Workflow;
 // B-04/T-04: configurable lookups are records with stable IDs. Behavior comes from the explicit
 // flags, never from matching the (renamable) label.
 
-/// <summary>A Board column / task workflow status. Also used by Subtask cards.</summary>
+/// <summary>A Board bucket / task workflow status. Also used by Subtask cards.</summary>
 public sealed record TaskStatusDefinition(
     TaskStatusId Id,
     LookupName Name,
