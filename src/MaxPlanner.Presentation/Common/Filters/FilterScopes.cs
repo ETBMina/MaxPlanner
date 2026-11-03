@@ -335,7 +335,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
 
         if (spec.EndDate is { IsSet: true } endDate)
         {
-            yield return (FilterKeys.EndDate, Chip("Filters_EndDate", FilterText.Range(s, endDate)));
+            yield return (FilterKeys.EndDate, Chip("Filters_EndDate", FilterText.Range(s, endDate is { From: not null, To: null } ? endDate with { IncludeUndated = true } : endDate)));
         }
 
         foreach (var chip in DraftFields.CustomChips(s, w, spec.CustomFields))

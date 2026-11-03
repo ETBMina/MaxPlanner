@@ -432,7 +432,7 @@ The copy dialog creates a genuinely new task with new task/checklist-item IDs, n
 - Show incomplete checklist items with working checkboxes. Use a bounded preview for long lists and an accessible “Show all” action. A task with no checklist items must not look 100% complete.
 - Support open/edit, copy, archive, delete, add Subtask card, and create-in-column commands. Move task cards and Subtask cards within/across columns by drag/drop and an equivalent keyboard/menu command.
 - Persist status and order atomically. New, copied, and restored cards, and status changes made outside a positional Board drop (editors, Grid, Board menu and keyboard moves), are placed at the top of the destination column; an unfiltered Board drop keeps its dropped position. Order uses persisted ranks with ID as the final deterministic tie-breaker; renumber only affected records when needed.
-- **Design default for filtered Board:** allow changing a card's status, appending it to the full destination column; disable positional reordering until search/filters are cleared. Never renumber only visible cards and corrupt hidden order.
+- **Design default for filtered Board:** allow changing a card's status, placing it at the top of the full destination column; disable positional reordering until search/filters are cleared. Never renumber only visible cards and corrupt hidden order.
 - Keep scroll position during moves and show drop feedback. A failed move restores the last committed position/status and reports the failure.
 - Column counts reflect visible filtered active cards; when filtered, also show the total active count.
 - Support adding/renaming/removing/reordering columns through the workflow settings rules in B-04.

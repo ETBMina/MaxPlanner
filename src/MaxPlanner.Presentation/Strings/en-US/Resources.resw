@@ -597,8 +597,8 @@
   <data name="Board_DropCaption" xml:space="preserve">
     <value>Drop to move to {0}</value>
   </data>
-  <data name="Board_DropAppendCaption" xml:space="preserve">
-    <value>Will be added to the end of {0}</value>
+  <data name="Board_DropTopCaption" xml:space="preserve">
+    <value>Will be added to the top of {0}</value>
   </data>
   <data name="Board_MenuMoveTo" xml:space="preserve">
     <value>Move to</value>
@@ -671,12 +671,6 @@
   </data>
   <data name="Board_ColumnPickerCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Column</value>
-  </data>
-  <data name="Board_FilteredInfoBar.Message" xml:space="preserve">
-    <value>Reordering within a column is off while search or filters are active. Dropping a card on another status adds it to the end of that column.</value>
-  </data>
-  <data name="Board_ClearSearchButton.Content" xml:space="preserve">
-    <value>Clear all filters</value>
   </data>
   <data name="Board_MovingCaption.Text" xml:space="preserve">
     <value>Moving</value>

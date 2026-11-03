@@ -98,10 +98,11 @@ public sealed class BoardMoveTests
 
     [Fact]
     [Trait("Req", "B-07")]
-    public void While_searching_a_status_move_appends_to_the_full_column_and_reordering_is_refused()
+    public void While_searching_a_status_move_lands_at_the_top_of_the_full_column_and_reordering_is_refused()
     {
         using var h = Board(out var board, "Match one", "Hidden", "Match two");
         h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden blocker"), board.Columns[1].StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden newer"), board.Columns[1].StatusId), TestContext.Current.CancellationToken));
         var announcements = Announcements(h);
         board.SearchText = "match";
         h.Settle();
@@ -117,11 +118,11 @@ public sealed class BoardMoveTests
         h.Coordinator.Calls.Should().Be(calls, "positional reordering is off while filtered");
         announcements.Should().Contain(a => a.IsFailure && a.Text == "Board_ReorderOff");
 
-        // A drop at the top of another column still appends to the end of the full column, after the hidden card.
-        h.Await(board.DropAsync(first, board.Columns[1], 0)).Should().BeTrue();
+        // A drop anywhere in another column lands at the top of the full column; hidden cards keep their order.
+        h.Await(board.DropAsync(first, board.Columns[1], 1)).Should().BeTrue();
         board.SearchText = string.Empty;
         h.Settle();
-        Titles(board.Columns[1]).Should().Equal("Hidden blocker", "Match one");
+        Titles(board.Columns[1]).Should().Equal("Match one", "Hidden newer", "Hidden blocker");
     }
 
     [Fact]

@@ -68,7 +68,7 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
     public bool IsInitialized => _view.IsInitialized;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AccessibleName), nameof(AddButtonName), nameof(PickerText), nameof(DropCaption), nameof(AppendCaption))]
+    [NotifyPropertyChangedFor(nameof(AccessibleName), nameof(AddButtonName), nameof(PickerText), nameof(DropCaption), nameof(TopCaption))]
     public partial string Name { get; private set; } = string.Empty;
 
     /// <summary>Segoe Fluent Icons from the status flags (design §6.2); empty when no flag applies.</summary>
@@ -95,8 +95,8 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
     /// <summary>"Drop to move to Review" (design §4.2 drop feedback).</summary>
     public string DropCaption => _context.Strings.Format("Board_DropCaption", Name);
 
-    /// <summary>"Will be added to the end of Review" (filtered drop, B-07).</summary>
-    public string AppendCaption => _context.Strings.Format("Board_DropAppendCaption", Name);
+    /// <summary>"Will be added to the top of Review" (filtered drop, B-07).</summary>
+    public string TopCaption => _context.Strings.Format("Board_DropTopCaption", Name);
 
     public override string ToString() => PickerText;
 
@@ -177,7 +177,7 @@ public sealed partial class BoardColumnViewModel : ObservableObject, IDisposable
 /// <summary>
 /// The Board page (B-07, B-16, design §4.2): one column per task status in configured order, updated
 /// incrementally from the shared store; drag/drop, keyboard and menu moves through the move use cases;
-/// the card menu; task search with the filtered-append rule; the S-breakpoint column picker. A card moves
+/// the card menu; task search with the filtered-drop rule; the S-breakpoint column picker. A card moves
 /// on screen only after its move committed, so a failed move leaves the committed position (B-07). Use on
 /// the UI thread.
 /// </summary>
@@ -238,7 +238,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     /// <summary>
     /// A drag/drop at <paramref name="insertIndex"/> of <paramref name="target"/>'s visible cards (design §9).
-    /// Filtered: a status change appends to the end of the full column and reordering is refused (B-07).
+    /// Filtered: a status change goes to the top of the full column and reordering is refused (B-07).
     /// </summary>
     public Task<bool> DropAsync(BoardCardViewModel card, BoardColumnViewModel target, int insertIndex)
     {
@@ -247,7 +247,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         var source = ColumnOf(card);
         if (IsFiltered)
         {
-            return source == target ? RefuseReorder() : MoveAsync(card, target, BoardPlacement.AppendToEnd);
+            return source == target ? RefuseReorder() : MoveAsync(card, target, BoardPlacement.Top);
         }
 
         return PlaceAtAsync(card, target, insertIndex);
@@ -359,10 +359,6 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     [RelayCommand]
     private Task NewTask() => NewTaskAsync();
-
-    /// <summary>The filtered InfoBar's Clear all filters (B-10).</summary>
-    [RelayCommand]
-    private void ClearSearch() => Filters.ClearAll();
 
     [RelayCommand(CanExecute = nameof(CanGoPrevious))]
     private void PreviousColumn() => SelectedColumn = _columns[_columns.IndexOf(SelectedColumn!) - 1];

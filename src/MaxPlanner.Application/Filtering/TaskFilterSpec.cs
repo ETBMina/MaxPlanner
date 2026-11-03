@@ -224,7 +224,10 @@ public static class TaskFilterMatcher
             return false;
         }
 
-        if (spec.EndDate is { } endFilter && !endFilter.Matches(end))
+        // An End Date range open at the top (From only) also keeps records that have not ended yet (no end date).
+        if (spec.EndDate is { } endFilter
+            && !(end is null && endFilter is { From: not null, To: null })
+            && !endFilter.Matches(end))
         {
             return false;
         }

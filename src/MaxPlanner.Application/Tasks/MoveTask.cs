@@ -15,7 +15,7 @@ public abstract record BoardPlacement
     {
     }
 
-    /// <summary>The end of the full column. Used for a cross-column drop while the Board is filtered (B-07).</summary>
+    /// <summary>The end of the full column. Used for Move to ▸ {status} Bottom while the Board is filtered (B-07).</summary>
     public static BoardPlacement AppendToEnd { get; } = new AppendToEndPlacement();
 
     /// <summary>

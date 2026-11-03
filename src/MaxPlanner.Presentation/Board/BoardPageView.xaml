@@ -433,20 +433,6 @@
                 x:Name="ChipsBar"
                 PageKey="Board"
                 Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-            <!-- Design §4.2 filtered mode: reordering is off; a status move appends to the end (B-07). -->
-            <InfoBar
-                x:Uid="Board_FilteredInfoBar"
-                AutomationProperties.AutomationId="Board_FilteredInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.IsFiltered, Mode=OneWay}"
-                Severity="Informational">
-                <InfoBar.ActionButton>
-                    <Button
-                        x:Uid="Board_ClearSearchButton"
-                        AutomationProperties.AutomationId="Board_ClearAllFiltersLink"
-                        Command="{x:Bind ViewModel.ClearSearchCommand}" />
-                </InfoBar.ActionButton>
-            </InfoBar>
         </StackPanel>
 
         <controls:StateView

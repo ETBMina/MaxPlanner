@@ -475,7 +475,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
 
         e.AcceptedOperation = DataPackageOperation.Move;
-        e.DragUIOverride.Caption = ViewModel.IsFiltered ? column.AppendCaption : column.DropCaption;
+        e.DragUIOverride.Caption = ViewModel.IsFiltered ? column.TopCaption : column.DropCaption;
         ShowDropFeedback(list, e.GetPosition(list).Y);
     }
 
