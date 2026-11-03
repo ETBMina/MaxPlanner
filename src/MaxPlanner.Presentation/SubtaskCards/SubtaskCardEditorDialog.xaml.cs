@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Grid;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,37 +18,19 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        EditorDialogLayout.Attach(this);
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusRequested += OnFocusRequested;
-        Loaded += (_, _) => ApplyLayout();
         Opened += (_, _) => SubtitleBox.Focus(FocusState.Programmatic);
         Unloaded += (_, _) =>
         {
             viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             viewModel.FocusRequested -= OnFocusRequested;
-            if (XamlRoot is not null)
-            {
-                XamlRoot.Changed -= OnXamlRootChanged;
-            }
         };
     }
 
     public SubtaskCardEditorViewModel ViewModel { get; }
-
-    private void ApplyLayout()
-    {
-        if (XamlRoot is not { } root)
-        {
-            return;
-        }
-
-        root.Changed -= OnXamlRootChanged;
-        root.Changed += OnXamlRootChanged;
-        FullSizeDesired = root.Size.Width < 640 || root.Size.Height < 600;
-    }
-
-    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => ApplyLayout();
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

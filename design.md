@@ -522,8 +522,10 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
   - The title row is a `Grid`: the title, a secondary caption (e.g. "Created Oct 6, 2026 · last saved 2 minutes ago"), and a right-aligned **More** `DropDownButton` (⋯) for secondary record commands `[gallery-dropdownbutton-1]`.
   - Footer: Primary = **Save** (or a verb such as "Create task" or "Link permanently"), Close = **Cancel**, Secondary only where it is listed below. `DefaultButton = Primary` for editors and `Close` for destructive confirmations.
 - **Width:**
-  - L: a local `ContentDialogMaxWidth` override of 840, with two-column field groups (`Grid` with 2 star columns).
-  - M: max 640, one column.
+  - The record editors (Task, CR, Review, Subtask card) have a **fixed** width set by the window size, never by their content: `max(320, min(target, windowWidth − 48))`, so they always keep 24 epx from the window edges. Long content wraps or scrolls inside. The rule lives in `EditorDialogSizing` / `EditorDialogLayout` and is re-applied on window resize.
+  - L: target 840. Task and CR editors use two-column field groups (`Grid` with 2 star columns).
+  - M: target 640, one column.
+  - Other dialogs (Field definition, Copy task, confirmations) keep 640 as a maximum and size to their content.
   - S, or a window height under 600: `FullSizeDesired = true`, one column.
   - In every case the content is a `ScrollViewer` and the footer buttons stay visible (T-08.1).
 - **Required** fields show the header text followed by " *" and `AutomationProperties.IsRequiredForForm=True`. The record editors (Task, CR, Review, Subtask card) show no separate legend because each required field is already marked.

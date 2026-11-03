@@ -21,11 +21,6 @@
     PrimaryButtonClick="OnPrimaryClick"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneWay}"
     Style="{StaticResource DefaultContentDialogStyle}">
-    <ContentDialog.Resources>
-        <!-- Design §5.0: L allows 840 epx with two field columns; narrower windows use one column. -->
-        <x:Double x:Key="ContentDialogMaxWidth">840</x:Double>
-    </ContentDialog.Resources>
-
     <ScrollViewer x:Name="ContentScroller" VerticalScrollBarVisibility="Auto">
         <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
             <StackPanel.KeyboardAccelerators>

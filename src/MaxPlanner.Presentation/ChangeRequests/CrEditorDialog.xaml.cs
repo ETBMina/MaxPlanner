@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,21 +18,17 @@ public sealed partial class CrEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        EditorDialogLayout.Attach(this, ApplyLayout);
         SquadCombo.SelectedItem = viewModel.SelectedSquad;
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         PriorityCombo.SelectedItem = viewModel.SelectedPriority;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusRequested += OnFocusRequested;
-        Loaded += (_, _) => ApplyLayout();
         Opened += (_, _) => NumberBox.Focus(FocusState.Programmatic);
         Unloaded += (_, _) =>
         {
             viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             viewModel.FocusRequested -= OnFocusRequested;
-            if (XamlRoot is not null)
-            {
-                XamlRoot.Changed -= OnXamlRootChanged;
-            }
         };
     }
 
@@ -39,18 +36,9 @@ public sealed partial class CrEditorDialog : ContentDialog
 
     // Design §5.0 width rules: field pairs side by side only when the window leaves room; S or a short window
     // gets a full-size dialog so Save and Cancel stay reachable (T-08.1).
-    private void ApplyLayout()
+    private void ApplyLayout(Windows.Foundation.Size size)
     {
-        if (XamlRoot is not { } root)
-        {
-            return;
-        }
-
-        root.Changed -= OnXamlRootChanged;
-        root.Changed += OnXamlRootChanged;
-        var size = root.Size;
-        FullSizeDesired = size.Width < 640 || size.Height < 600;
-        var twoColumns = size.Width >= 1008;
+        var twoColumns = size.Width >= EditorDialogSizing.LargeBreakpoint;
         Pair(NumberPair, TaskNumberPanel, twoColumns);
         Pair(OwnerPair, SquadPanel, twoColumns);
         Pair(StatusPair, PriorityPanel, twoColumns);
@@ -63,8 +51,6 @@ public sealed partial class CrEditorDialog : ContentDialog
         Microsoft.UI.Xaml.Controls.Grid.SetRow(second, twoColumns ? 0 : 1);
         pair.ColumnDefinitions[1].Width = twoColumns ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
     }
-
-    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => ApplyLayout();
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

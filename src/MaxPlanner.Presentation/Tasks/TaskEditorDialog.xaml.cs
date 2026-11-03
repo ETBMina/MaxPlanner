@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Grid;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,19 +19,15 @@ public sealed partial class TaskEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        EditorDialogLayout.Attach(this, ApplyLayout);
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         PriorityCombo.SelectedItem = viewModel.SelectedPriority;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.FocusRequested += OnFocusRequested;
-        Loaded += (_, _) => ApplyLayout();
         Unloaded += (_, _) =>
         {
             viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             viewModel.FocusRequested -= OnFocusRequested;
-            if (XamlRoot is not null)
-            {
-                XamlRoot.Changed -= OnXamlRootChanged;
-            }
         };
     }
 
@@ -43,24 +40,13 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     // Design §5.0 width rules: two field columns only when the window leaves room; S or a short window gets a
     // full-size dialog so Save and Cancel stay reachable (T-08.1).
-    private void ApplyLayout()
+    private void ApplyLayout(Windows.Foundation.Size size)
     {
-        if (XamlRoot is not { } root)
-        {
-            return;
-        }
-
-        root.Changed -= OnXamlRootChanged;
-        root.Changed += OnXamlRootChanged;
-        var size = root.Size;
-        FullSizeDesired = size.Width < 640 || size.Height < 600;
-        var twoColumns = size.Width >= 1008;
+        var twoColumns = size.Width >= EditorDialogSizing.LargeBreakpoint;
         Microsoft.UI.Xaml.Controls.Grid.SetColumn(RightPanel, twoColumns ? 1 : 0);
         Microsoft.UI.Xaml.Controls.Grid.SetRow(RightPanel, twoColumns ? 0 : 1);
         RightColumn.Width = twoColumns ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
     }
-
-    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => ApplyLayout();
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
