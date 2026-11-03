@@ -351,6 +351,83 @@ public sealed class TaskEditorTests
     }
 
     [Fact]
+    [Trait("Req", "B-06")]
+    public void Copying_a_linked_task_starts_linked_to_the_same_cr()
+    {
+        ChangeRequestId cr = default;
+        using var h = WorkspaceHarness.Create(async s =>
+        {
+            cr = await s.CrAsync("CR-1042", "Instant card freeze");
+            await s.TaskAsync(null, "Cards API", cr);
+        });
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+
+        var flow = board.CopyAsync(board.Columns[0].Cards.Single());
+        var copy = dialogs.Next<CopyTaskViewModel>(h);
+        copy.HasPendingLink.Should().BeTrue();
+        copy.PendingLink!.Id.Should().Be(cr);
+        copy.CrPicker.Selected!.Id.Should().Be(cr, "Link to CR opens on the current choice");
+        copy.IsTitleEditable.Should().BeFalse();
+        copy.LinkStateText.Should().Be("Copy_WillLink");
+
+        h.Await(copy.PrimaryAsync()).Should().BeFalse();
+        copy.IsReviewStep.Should().BeFalse("D10: a linked copy needs a Service");
+        copy.ServiceError.Should().Be("Error_ServiceRequiredWhenLinked");
+        copy.Service = "Cards API";
+        h.Await(copy.PrimaryAsync()).Should().BeFalse();
+        copy.ReviewLines.Should().Contain("Copy_WillLink");
+        h.Await(copy.PrimaryAsync()).Should().BeTrue();
+        h.Await(flow);
+        h.Settle();
+
+        h.Task(copy.CreatedTaskId!.Value).Cr.ChangeRequestId.Should().Be(cr);
+    }
+
+    [Fact]
+    [Trait("Req", "B-06")]
+    public void Clearing_the_default_link_creates_an_unlinked_copy()
+    {
+        using var h = WorkspaceHarness.Create(async s =>
+        {
+            var cr = await s.CrAsync("CR-1042", "Instant card freeze");
+            await s.TaskAsync(null, "Cards API", cr);
+        });
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+
+        var flow = board.CopyAsync(board.Columns[0].Cards.Single());
+        var copy = dialogs.Next<CopyTaskViewModel>(h);
+        copy.ClearLink();
+        copy.HasPendingLink.Should().BeFalse();
+        copy.IsTitleEditable.Should().BeTrue();
+        copy.Title.Should().Be("Instant card freeze", "the title is prefilled from the effective title");
+        copy.LinkStateText.Should().Be("Copy_Unlinked");
+
+        h.Await(copy.PrimaryAsync()).Should().BeFalse();
+        copy.ReviewLines.Should().Contain("Copy_Unlinked");
+        h.Await(copy.PrimaryAsync()).Should().BeTrue();
+        h.Await(flow);
+        h.Settle();
+
+        h.Task(copy.CreatedTaskId!.Value).Cr.ChangeRequestId.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Req", "B-06")]
+    public void A_source_cr_that_no_longer_exists_falls_back_to_unlinked()
+    {
+        using var h = BoardMoveTests.Board(out var board, "Source");
+        var source = h.Store.Tasks.Items.Single();
+        var orphan = source with { Cr = source.Cr with { ChangeRequestId = new ChangeRequestId(Guid.NewGuid()), CrNumber = "CR-9999" } };
+
+        var copy = new CopyTaskViewModel(h.Workspace.Context, orphan);
+
+        copy.HasPendingLink.Should().BeFalse();
+        copy.LinkStateText.Should().Be("Copy_Unlinked");
+    }
+
+    [Fact]
     [Trait("Req", "B-05")]
     public void Delete_names_the_content_and_offers_archive_instead()
     {

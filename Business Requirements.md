@@ -349,7 +349,7 @@ Provide an offline workspace for an individual managing CRs, their tasks, follow
 4. **Confirmed cardinality:** one CR may link to zero or more tasks; one task may link to zero or one CR. The CR owns one shared Title, TaskNumber, Squad, and Owner, inherited by all of its linked tasks. Archiving a task does not release its link.
 5. “Create Task” from a CR creates a new task and link atomically on every invocation. The CR editor and records list show the number of linked tasks and provide commands to create a task or open its linked-task list.
 6. Linking an existing task requires explicit selection, is offered only for unlinked tasks (active or archived), and requires confirming that the link is permanent and that the task's title becomes the CR's title. A CR is never considered occupied merely because it already has tasks.
-7. **Links are permanent.** There is no unlink or reassign command in any route (editor, Grid, Board, import). A wrong link is corrected by deleting the task or by copying it (copies start unlinked, B-06).
+7. **Links are permanent.** There is no unlink or reassign command in any route (editor, Grid, Board, import). A wrong link is corrected by deleting the task or by copying it and clearing the preselected CR so the copy is unlinked (B-06).
 8. Task and CR workflow statuses are independent. Completing a task does not complete the CR; completing the CR does not complete its tasks, checklist items, or Subtask cards. No hidden cascading status rule.
 9. Planned CR dates and task actual dates are independent. Changing a CR schedule does not rewrite task or Subtask card actual dates.
 10. Renaming a CR number or title preserves its task links and updates all visible derived references. Imported conflicts use the same rules.
@@ -419,7 +419,7 @@ The copy dialog creates a genuinely new task with new task/checklist-item IDs, n
 - Prefill the copy's own Title from the source's effective (possibly inherited) title and allow editing; Service starts blank and is editable (required if a CR is selected).
 - Default Status is the configured default task status for new tasks (Backlog out of the box). A **Keep current status** option (off by default) starts the copy in the source task's current status, falling back to the configured default if that status no longer exists. Default Priority is the source priority if still available, otherwise the configured default.
 - Independent options: Copy people, dates, tags, notes, checklist items, and custom values. All are unchecked initially. Subtask cards are not copied.
-- **Design default:** copied tasks start unlinked and therefore do not copy the CR link or inherited Title source, TaskNumber, Squad, or Owner. Display “New copy will be unlinked.” The user may select any CR, including one that already has other tasks, explicitly; the permanence notice of B-02.4 applies.
+- **Design default:** a copy of a linked task starts with the source's CR preselected as its link target (Title, TaskNumber, Squad, and Owner then come from that CR); the permanence notice of B-02.4 applies. The user may clear the selection to create an unlinked copy (the way to correct a wrong link) or choose any other CR, including one that already has other tasks. A copy of an unlinked task, or of a task whose CR no longer exists, starts unlinked and displays “New copy will be unlinked.”
 - When copying checklist items, **design default:** reset completion; provide an explicit “Preserve completion” option.
 - If dates are copied, preserve them subject to validation. Otherwise start empty and apply the ordinary creation/date rules for the chosen status.
 - Show the resulting draft before Save. Cancel creates no records/lookups.
@@ -565,7 +565,7 @@ Provide a one-way import wizard (a page under Settings › Data) for user-select
 | AC-06 | Toggle checklist item in Checklists | Board progress and task editor update without full reload; unrelated focus/scroll persists |
 | AC-07 | Save fails or an older editor submits a stale revision | No false success or partial shared-state update; draft is recoverable and conflict explained |
 | AC-08 | Rename/remove a status while tasks are filtered or archived | All records remain valid; replacement/default changes are atomic |
-| AC-09 | Copy an archived linked task with selected copy options | New active task has new IDs; no copied link/number/owner; its own title is prefilled from the source's effective title; selected fields follow B-06 |
+| AC-09 | Copy an archived linked task with selected copy options | New active task has new IDs; the source's CR is preselected (clearing it yields an unlinked copy with no number/owner); its own title is prefilled from the source's effective title; selected fields follow B-06 |
 | AC-10 | Archive and restore a linked task with checklist items and Subtask cards | Content/link retained; active projections (including Subtask cards and checklist group) disappear/reappear consistently |
 | AC-11 | Schedule/rescale a CR across month/year/workweek boundaries | Inclusive date range preserved; no UTC drift; deterministic lanes/overflow; keyboard equivalent works |
 | AC-12 | Export populated full JSON, import into empty dataset | Tasks, CRs, owners, links, checklist items, Subtask cards, reviews, General to-dos, archives, definitions, preserved titles, and unknown legacy content round-trip |

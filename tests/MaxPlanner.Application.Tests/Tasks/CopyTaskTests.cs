@@ -100,6 +100,29 @@ public sealed class CopyTaskTests
     }
 
     [Fact]
+    [Trait("Req", "B-06")]
+    public async Task A_copy_linked_to_the_source_cr_is_created_and_linked_in_one_transaction()
+    {
+        var cr = await _workspace.AddCrAsync();
+        var source = await _workspace.AddLinkedTaskAsync(cr);
+        var revision = _workspace.Data.ChangeRequests[cr].Revision;
+
+        var stale = new TaskId(Guid.NewGuid());
+        var rejected = await Copy(source, stale, null, service: "Cards API", linkTo: new CrLinkTarget(cr, revision + 98));
+        rejected.IsSuccess.Should().BeFalse("a stale CR revision rejects the whole copy");
+        _workspace.Data.Tasks.Should().NotContainKey(stale, "the task is not created without its link");
+        _workspace.Data.Links.Should().NotContainKey(stale);
+
+        var copyId = new TaskId(Guid.NewGuid());
+        Succeeded(await Copy(source, copyId, null, service: "Cards API", linkTo: new CrLinkTarget(cr, revision)));
+
+        _workspace.Task(copyId).ChangeRequestId.Should().Be(cr);
+        _workspace.Task(source).ChangeRequestId.Should().Be(cr, "the source keeps its link");
+        _workspace.Data.Links.Should().ContainKey(copyId);
+        _workspace.Data.AssertIntegrity();
+    }
+
+    [Fact]
     [Trait("Req", "B-02.2")]
     public async Task An_unlinked_copy_needs_a_title()
     {

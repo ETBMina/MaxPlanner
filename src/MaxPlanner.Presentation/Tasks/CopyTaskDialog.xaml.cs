@@ -66,5 +66,7 @@ public sealed partial class CopyTaskDialog : ContentDialog
 
     private void OnConfirmLinkClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmLink();
 
+    private void OnClearLinkClick(object sender, RoutedEventArgs e) => ViewModel.ClearLink();
+
     private void OnStepBackClick(object sender, RoutedEventArgs e) => ViewModel.StepBack();
 }

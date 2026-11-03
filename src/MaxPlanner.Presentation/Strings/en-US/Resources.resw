@@ -798,6 +798,9 @@
   <data name="CopyTask_LinkToCrButton.Content" xml:space="preserve">
     <value>Link to CR…</value>
   </data>
+  <data name="CopyTask_ClearLinkButton.Content" xml:space="preserve">
+    <value>Don't link</value>
+  </data>
   <data name="CopyTask_ReviewHeading.Text" xml:space="preserve">
     <value>Review the copy</value>
   </data>

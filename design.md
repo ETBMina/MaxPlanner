@@ -626,8 +626,8 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 - Caption "Copy of: {effective title} · CR-1042".
 - **Title*** (prefilled from the effective title).
 - **Service** (blank; * if a CR is chosen).
-- InfoBar (Informational): "New copy will be unlinked."
-- Optional **Link to CR…** (inline §5.6, which includes the permanence notice).
+- **Link to CR…** (inline §5.6, which includes the permanence notice). When the source is linked and its CR still exists, that CR is preselected; the user can clear it or pick another CR.
+- InfoBar (Informational) reflecting the link state: "New copy will be unlinked." when no CR is selected, otherwise that the copy will be linked to the selected CR.
 - **Status*** (Backlog) and **Priority*** (the source priority if it still exists, otherwise the default).
 - Copy checkboxes, all unchecked: People, Dates, Tags, Notes, Checklist items (with an indented "Preserve completion"), Custom values.
 - The note "Subtask cards are not copied."

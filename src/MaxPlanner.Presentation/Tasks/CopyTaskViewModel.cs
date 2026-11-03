@@ -51,6 +51,14 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         SelectedStatus = _defaultStatus;
         SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == source.Priority.Id)
             ?? PriorityOptions.FirstOrDefault(o => o.Id == workflow.Defaults.DefaultPriorityId);
+
+        // A copy of a linked task starts linked to the same CR, as if chosen through Link to CR (design §5.6);
+        // the user can clear or change it. A CR that no longer exists falls back to unlinked.
+        if (source.Cr.ChangeRequestId is { } sourceCr && CrPicker.Current(sourceCr) is { } current)
+        {
+            PendingLink = current;
+            CrPicker.Selected = current;
+        }
     }
 
     public event EventHandler? CloseRequested;
@@ -252,6 +260,14 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         PendingLink = chosen;
         CurrentStep = CopyStep.Options;
         return true;
+    }
+
+    /// <summary>Clears the chosen CR, so the copy is created unlinked.</summary>
+    public void ClearLink()
+    {
+        PendingLink = null;
+        CrPicker.Selected = null;
+        ServiceError = null;
     }
 
     public void StepBack() => CurrentStep = CurrentStep switch

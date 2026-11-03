@@ -61,7 +61,11 @@
                     IsClosable="False"
                     IsOpen="{x:Bind ViewModel.HasPendingLink, Mode=OneWay}"
                     Message="{x:Bind ViewModel.PendingLinkWarning, Mode=OneWay}"
-                    Severity="Warning" />
+                    Severity="Warning">
+                    <InfoBar.ActionButton>
+                        <Button x:Uid="CopyTask_ClearLinkButton" AutomationProperties.AutomationId="CopyTask_ClearLinkButton" Click="OnClearLinkClick" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
