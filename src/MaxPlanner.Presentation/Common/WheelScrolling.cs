@@ -28,8 +28,11 @@ namespace MaxPlanner.Presentation.Common;
 /// scrolling ancestor, else nowhere. A <see cref="VerticalWheelScrollsHorizontallyProperty"/> region (a Board bucket
 /// header) instead scrolls the horizontal scroller. On every opted-in scroller, a horizontal wheel goes to the
 /// nearest horizontally scrolling element under the pointer or ancestor, else nowhere, so an inner vertical list never
-/// keeps it from the page's horizontal scroller. A normal wheel on a vertical scroller and Ctrl+wheel stay native.
-/// Only mouse input is routed: touch, pen and precision touchpad gestures keep their native behaviour.
+/// keeps it from the page's horizontal scroller. An opted-in vertical scroller takes the normal wheel itself (unless a
+/// scrollable inner scroller is under the pointer), so every routed step is capped by
+/// <see cref="MaxWheelDeltaPerEvent"/> and <see cref="MaxLeadInViewports"/>; the native wheel would apply a
+/// driver-accelerated event in full. Ctrl+wheel stays native. Only mouse input is routed: touch, pen and precision
+/// touchpad gestures keep their native behaviour.
 /// </para>
 /// </remarks>
 public static class WheelScrolling
@@ -37,6 +40,14 @@ public static class WheelScrolling
     // One wheel notch (WHEEL_DELTA = 120) scrolls 120 epx, the step the Grid's row scroll bar forwarding already
     // used; a high-resolution wheel's smaller deltas scroll proportionally less.
     private const double OffsetPerWheelDelta = 1;
+
+    // The most one wheel event scrolls, in wheel delta units (three notches). Some mouse drivers accelerate a fast
+    // spin or free-spin into single events worth 10–35 notches; taken at face value each one jumps several viewports.
+    public const int MaxWheelDeltaPerEvent = 3 * 120;
+
+    // How far, in viewports, a wheel target may lead the actual offset. A fast spin stacks several notches onto an
+    // animation still in flight, but a wheel flood (free-spin or high-resolution) can never run the target to the end.
+    public const double MaxLeadInViewports = 2;
 
     public static readonly DependencyProperty RoutesMouseWheelProperty = DependencyProperty.RegisterAttached(
         "RoutesMouseWheel",
@@ -111,12 +122,13 @@ public static class WheelScrolling
     /// <summary>
     /// Scrolls <paramref name="scroller"/> along <paramref name="axis"/> by one wheel event, animated like the native
     /// wheel unless animations are off. A tilt to the right, and a normal wheel turned toward the user, move toward the
-    /// end. Successive events build on the offset still being animated to, so a fast spin loses no distance.
+    /// end. Successive events build on the offset still being animated to, so a fast spin loses no distance, but that
+    /// target never leads the actual offset by more than <see cref="MaxLeadInViewports"/> viewports.
     /// </summary>
     public static void ScrollByWheel(ScrollViewer scroller, Orientation axis, PointerPointProperties properties)
     {
         var horizontal = axis == Orientation.Horizontal;
-        var change = (properties.IsHorizontalMouseWheel ? properties.MouseWheelDelta : -properties.MouseWheelDelta) * OffsetPerWheelDelta;
+        var change = ComputeWheelChange(properties.MouseWheelDelta, properties.IsHorizontalMouseWheel);
 
         // Mandatory snap points would pull a small step back to the current snap point, so step a viewport instead
         // (the Board at S shows one bucket per viewport, design §4.2).
@@ -133,14 +145,44 @@ public static class WheelScrolling
         }
 
         var pendingProperty = horizontal ? PendingHorizontalOffsetProperty : PendingVerticalOffsetProperty;
+        var current = horizontal ? scroller.HorizontalOffset : scroller.VerticalOffset;
         var pending = (double)scroller.GetValue(pendingProperty);
-        var from = double.IsNaN(pending) ? (horizontal ? scroller.HorizontalOffset : scroller.VerticalOffset) : pending;
-        var to = Math.Clamp(from + change, 0, horizontal ? scroller.ScrollableWidth : scroller.ScrollableHeight);
+        var to = ComputeWheelTarget(
+            current,
+            pending,
+            change,
+            horizontal ? scroller.ViewportWidth : scroller.ViewportHeight,
+            horizontal ? scroller.ScrollableWidth : scroller.ScrollableHeight);
         scroller.SetValue(pendingProperty, to);
         var disableAnimation = !MotionSettings.AnimationsEnabled;
         _ = horizontal
             ? scroller.ChangeView(to, null, null, disableAnimation)
             : scroller.ChangeView(null, to, null, disableAnimation);
+    }
+
+    /// <summary>
+    /// The offset change, in epx, of one wheel event of <paramref name="mouseWheelDelta"/>: 120 epx per notch, toward
+    /// the end for a tilt to the right or a normal wheel turned toward the user, and never more than
+    /// <see cref="MaxWheelDeltaPerEvent"/> however large the driver made the event.
+    /// </summary>
+    public static double ComputeWheelChange(int mouseWheelDelta, bool isHorizontalWheel)
+    {
+        var delta = Math.Clamp(mouseWheelDelta, -MaxWheelDeltaPerEvent, MaxWheelDeltaPerEvent);
+        return (isHorizontalWheel ? delta : -delta) * OffsetPerWheelDelta;
+    }
+
+    /// <summary>
+    /// The offset one wheel event scrolls to: <paramref name="change"/> added to the offset still being animated to
+    /// (<paramref name="pending"/>, NaN once settled) or else the <paramref name="current"/> offset, with the result
+    /// kept within <see cref="MaxLeadInViewports"/> viewports (and never less than one step) of the current offset and
+    /// within 0..<paramref name="scrollable"/>.
+    /// </summary>
+    public static double ComputeWheelTarget(double current, double pending, double change, double viewport, double scrollable)
+    {
+        var from = double.IsNaN(pending) ? current : pending;
+        var lead = Math.Max(MaxLeadInViewports * Math.Max(viewport, 0), Math.Abs(change));
+        var to = Math.Clamp(from + change, current - lead, current + lead);
+        return Math.Clamp(to, 0, Math.Max(scrollable, 0));
     }
 
     private static void OnRoutesMouseWheelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -213,13 +255,23 @@ public static class WheelScrolling
 
         // Shift+wheel keeps the Windows convention of scrolling horizontally.
         var horizontal = properties.IsHorizontalMouseWheel || (e.KeyModifiers & VirtualKeyModifiers.Shift) != 0;
+        var source = e.OriginalSource as DependencyObject;
         if (!horizontal && owner.VerticalScrollMode != ScrollMode.Disabled)
         {
+            // A vertical list scrolls itself by the capped step rather than natively: the native wheel applies a
+            // driver-accelerated event in full, so a fast spin jumped several viewports or to the end. A scrollable
+            // inner scroller under the pointer keeps the wheel, and a list with nothing to scroll leaves it unhandled.
+            if (CanScroll(owner, Orientation.Vertical) && !IsOverInnerScroller(source, root, Orientation.Vertical))
+            {
+                e.Handled = true;
+                ScrollByWheel(owner, Orientation.Vertical, properties);
+            }
+
             return;
         }
 
         e.Handled = true;
-        if (FindTarget(e.OriginalSource as DependencyObject, root, owner, horizontal) is { } target)
+        if (FindTarget(source, root, owner, horizontal) is { } target)
         {
             ScrollByWheel(target.Scroller, target.Axis, properties);
         }
@@ -236,7 +288,9 @@ public static class WheelScrolling
             {
                 if (CanScroll(scroller, axis))
                 {
-                    return (scroller, axis);
+                    // A vertical scroller under the pointer owns the normal wheel (an opted-in list scrolls itself, any
+                    // other natively); scrolling it here as well would move it twice for one event.
+                    return horizontal ? (scroller, axis) : null;
                 }
 
                 // A vertical list too short to scroll still owns the normal wheel; it must not fall to the region.
@@ -269,6 +323,19 @@ public static class WheelScrolling
         }
 
         return null;
+    }
+
+    private static bool IsOverInnerScroller(DependencyObject? source, UIElement root, Orientation axis)
+    {
+        for (var current = source; current is not null && !ReferenceEquals(current, root); current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is ScrollViewer scroller && CanScroll(scroller, axis))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool CanScroll(ScrollViewer scroller, Orientation axis) => axis == Orientation.Horizontal

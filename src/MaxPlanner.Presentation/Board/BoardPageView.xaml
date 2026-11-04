@@ -9,28 +9,151 @@
     xmlns:local="using:MaxPlanner.Presentation.Board"
     IsTabStop="False">
     <UserControl.Resources>
-        <DataTemplate x:Key="TaskCardTemplate" x:DataType="local:BoardCardViewModel">
-            <!-- Design §4.2: a card being moved is dimmed and captioned "Moving" until the move is saved. -->
-            <Border
-                Margin="0,0,0,8"
-                Padding="12"
-                Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
-                Style="{StaticResource CardBorderStyle}">
-                <StackPanel Spacing="8">
-                    <Grid ColumnSpacing="4">
+        <!--
+            One template for both card kinds, each loading only its own anatomy (design §4.2). Two templates through a
+            selector made the virtualizing panel misestimate a long bucket while scrolling up, until it reached the first
+            card and snapped the offset back by thousands of epx (the bucket jumped to the top).
+        -->
+        <DataTemplate x:Key="CardTemplate" x:DataType="local:BoardCardViewModel">
+            <Grid>
+                <!-- Design §4.2: a card being moved is dimmed and captioned "Moving" until the move is saved. -->
+                <Border
+                    x:Name="TaskCard"
+                    x:Load="{x:Bind IsTask, Mode=OneWay}"
+                    Margin="0,0,0,8"
+                    Padding="12"
+                    Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
+                    Style="{StaticResource CardBorderStyle}">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnSpacing="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                MaxLines="3"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Title, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap"
+                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                            <Button
+                                Grid.Column="1"
+                                Padding="6,4"
+                                VerticalAlignment="Top"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
+                                AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="OnCardMenuButtonClick"
+                                IsTabStop="False"
+                                ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="&#xE712;" />
+                            </Button>
+                        </Grid>
+                        <TextBlock
+                            x:Uid="Board_MovingCaption"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
+                        <Border
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource AccentChipStyle}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
+                                <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                        <!-- Design §4.2 anatomy 3: the CR reference link opens the CR. -->
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
+                            AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
+                            Click="OnCardCrLinkClick"
+                            IsTabStop="False"
+                            ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon FontSize="12" Glyph="&#xE71B;" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
+                            </StackPanel>
+                        </HyperlinkButton>
+                        <Grid ColumnSpacing="6" RowSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <!-- Priority chip by configured rank (design §6.1); its text names the priority, so color is never the only cue. -->
+                            <Border
+                                AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
+                                Style="{x:Bind local:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
+                                    <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind PriorityText, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+                            <Border
+                                Grid.Column="1"
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource SquadChipStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE716;" Style="{StaticResource ChipGlyphStyle}" />
+                                    <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind SquadText, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+                            <StackPanel
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
+                                <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Spacing="4">
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ChecklistText, Mode=OneWay}" />
+                            <!-- B-07: a task without checklist items shows text only, never an empty or full bar. -->
+                            <ProgressBar
+                                AutomationProperties.Name="{x:Bind ChecklistText, Mode=OneWay}"
+                                Maximum="100"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasChecklist), Mode=OneWay}"
+                                Value="{x:Bind ChecklistPercent, Mode=OneWay}" />
+                        </StackPanel>
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskCards), Mode=OneWay}">
+                            <FontIcon FontSize="12" Glyph="&#xE8FD;" />
+                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind SubtaskCardsText, Mode=OneWay}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Design §4.2: a 3-epx left border and the Subtask glyph distinguish the kind without color. -->
+                <Border
+                    x:Name="SubtaskCard"
+                    x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
+                    Margin="0,0,0,8"
+                    Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
+                    Style="{StaticResource CardBorderStyle}">
+                    <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
-                            MaxLines="3"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind Title, Mode=OneWay}"
-                            TextTrimming="CharacterEllipsis"
-                            TextWrapping="Wrap"
-                            ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
                         <Button
-                            Grid.Column="1"
+                            Grid.Column="2"
+                            Margin="0,8,8,0"
                             Padding="6,4"
                             VerticalAlignment="Top"
                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
@@ -42,195 +165,76 @@
                             ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
                             <FontIcon FontSize="14" Glyph="&#xE712;" />
                         </Button>
-                    </Grid>
-                    <TextBlock
-                        x:Uid="Board_MovingCaption"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
-                    <Border
-                        HorizontalAlignment="Left"
-                        Style="{StaticResource AccentChipStyle}"
-                        Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
-                            <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
-                        </StackPanel>
-                    </Border>
-                    <!-- Design §4.2 anatomy 3: the CR reference link opens the CR. -->
-                    <HyperlinkButton
-                        Padding="0"
-                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
-                        AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
-                        Click="OnCardCrLinkClick"
-                        IsTabStop="False"
-                        ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
-                        Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon FontSize="12" Glyph="&#xE71B;" />
-                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
-                        </StackPanel>
-                    </HyperlinkButton>
-                    <Grid ColumnSpacing="6" RowSpacing="6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <!-- Priority chip by configured rank (design §6.1); its text names the priority, so color is never the only cue. -->
-                        <Border
-                            AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
-                            Style="{x:Bind local:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
-                                <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind PriorityText, Mode=OneWay}" />
-                            </StackPanel>
-                        </Border>
-                        <Border
+                        <Border Background="{ThemeResource SubtaskCardAccentBrush}" CornerRadius="8,0,0,8" />
+                        <StackPanel
                             Grid.Column="1"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource SquadChipStyle}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="&#xE716;" Style="{StaticResource ChipGlyphStyle}" />
-                                <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind SquadText, Mode=OneWay}" />
+                            Padding="12"
+                            Spacing="6">
+                            <!-- B-16.5: the "Subtask of" indicator opens the parent. -->
+                            <HyperlinkButton
+                                Padding="0"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
+                                AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                Click="OnCardParentLinkClick"
+                                IsTabStop="False">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon FontSize="12" Glyph="&#xE8FD;" />
+                                    <TextBlock
+                                        MaxLines="2"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </HyperlinkButton>
+                            <Border
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource AccentChipStyle}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
+                                    <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+                            <HyperlinkButton
+                                Padding="0"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
+                                AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
+                                Click="OnCardCrLinkClick"
+                                IsTabStop="False"
+                                ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
+                            </HyperlinkButton>
+                            <TextBlock
+                                MaxLines="3"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Title, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap"
+                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
+                                <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
                             </StackPanel>
-                        </Border>
-                        <StackPanel
-                            Grid.Row="1"
-                            Grid.ColumnSpan="2"
-                            Orientation="Horizontal"
-                            Spacing="6"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
-                            <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
-                            <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind DatesText, Mode=OneWay}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasDates), Mode=OneWay}" />
+                            <TextBlock
+                                x:Uid="Board_MovingCaption"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
-                    <StackPanel Spacing="4">
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ChecklistText, Mode=OneWay}" />
-                        <!-- B-07: a task without checklist items shows text only, never an empty or full bar. -->
-                        <ProgressBar
-                            AutomationProperties.Name="{x:Bind ChecklistText, Mode=OneWay}"
-                            Maximum="100"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasChecklist), Mode=OneWay}"
-                            Value="{x:Bind ChecklistPercent, Mode=OneWay}" />
-                    </StackPanel>
-                    <StackPanel
-                        Orientation="Horizontal"
-                        Spacing="6"
-                        Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskCards), Mode=OneWay}">
-                        <FontIcon FontSize="12" Glyph="&#xE8FD;" />
-                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind SubtaskCardsText, Mode=OneWay}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+                </Border>
+            </Grid>
         </DataTemplate>
-
-        <DataTemplate x:Key="SubtaskCardTemplate" x:DataType="local:BoardCardViewModel">
-            <!-- Design §4.2: a 3-epx left border and the Subtask glyph distinguish the kind without color. -->
-            <Border
-                Margin="0,0,0,8"
-                Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
-                Style="{StaticResource CardBorderStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="3" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Button
-                        Grid.Column="2"
-                        Margin="0,8,8,0"
-                        Padding="6,4"
-                        VerticalAlignment="Top"
-                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
-                        AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="OnCardMenuButtonClick"
-                        IsTabStop="False"
-                        ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE712;" />
-                    </Button>
-                    <Border Background="{ThemeResource SubtaskCardAccentBrush}" CornerRadius="8,0,0,8" />
-                    <StackPanel
-                        Grid.Column="1"
-                        Padding="12"
-                        Spacing="6">
-                        <!-- B-16.5: the "Subtask of" indicator opens the parent. -->
-                        <HyperlinkButton
-                            Padding="0"
-                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
-                            AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
-                            Click="OnCardParentLinkClick"
-                            IsTabStop="False">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon FontSize="12" Glyph="&#xE8FD;" />
-                                <TextBlock
-                                    MaxLines="2"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="{x:Bind SubtaskOfText, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis"
-                                    TextWrapping="Wrap" />
-                            </StackPanel>
-                        </HyperlinkButton>
-                        <Border
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource AccentChipStyle}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
-                                <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
-                            </StackPanel>
-                        </Border>
-                        <HyperlinkButton
-                            Padding="0"
-                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
-                            AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
-                            Click="OnCardCrLinkClick"
-                            IsTabStop="False"
-                            ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
-                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
-                        </HyperlinkButton>
-                        <TextBlock
-                            MaxLines="3"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind Title, Mode=OneWay}"
-                            TextTrimming="CharacterEllipsis"
-                            TextWrapping="Wrap"
-                            ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="6"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
-                            <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
-                            <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
-                        </StackPanel>
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind DatesText, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasDates), Mode=OneWay}" />
-                        <TextBlock
-                            x:Uid="Board_MovingCaption"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <local:BoardCardTemplateSelector
-            x:Key="CardTemplateSelector"
-            SubtaskTemplate="{StaticResource SubtaskCardTemplate}"
-            TaskTemplate="{StaticResource TaskCardTemplate}" />
 
         <DataTemplate x:Key="BucketTemplate" x:DataType="local:BoardBucketViewModel">
             <Border
@@ -303,7 +307,7 @@
                         DragOver="OnListDragOver"
                         Drop="OnListDrop"
                         IsItemClickEnabled="True"
-                        ItemTemplateSelector="{StaticResource CardTemplateSelector}"
+                        ItemTemplate="{StaticResource CardTemplate}"
                         ItemsSource="{x:Bind Cards, Mode=OneTime}"
                         Loaded="OnListLoaded"
                         PreviewKeyDown="OnListPreviewKeyDown"

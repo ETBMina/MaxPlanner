@@ -67,16 +67,3 @@ internal sealed partial class BoardCardAutomationPeer(BoardCardContainer owner) 
 
     private static readonly Lazy<Common.Services.ResourceStrings> HelpText = new(() => new Common.Services.ResourceStrings());
 }
-
-/// <summary>Chooses the task card or the Subtask card template (design §4.2 anatomies).</summary>
-public sealed partial class BoardCardTemplateSelector : DataTemplateSelector
-{
-    public DataTemplate? TaskTemplate { get; set; }
-
-    public DataTemplate? SubtaskTemplate { get; set; }
-
-    protected override DataTemplate? SelectTemplateCore(object item) =>
-        item is BoardCardViewModel { IsSubtaskCard: true } ? SubtaskTemplate : TaskTemplate;
-
-    protected override DataTemplate? SelectTemplateCore(object item, DependencyObject container) => SelectTemplateCore(item);
-}
