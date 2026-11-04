@@ -95,7 +95,7 @@ public sealed class RenameLookup
     }
 }
 
-/// <param name="Offset">-1 moves the value up (earlier in order), +1 down.</param>
+/// <param name="Offset">How many places the value moves: negative moves it up (earlier in order), positive down. Menu moves use -1/+1; a drag uses the distance to the drop slot.</param>
 /// <param name="ExpectedOrderStamp"><see cref="WorkflowStamps.Order"/> of the list the user saw.</param>
 public sealed record MoveLookupCommand(OperationId OperationId, LookupKind Kind, Guid Id, string ExpectedOrderStamp, int Offset);
 
@@ -114,7 +114,7 @@ public sealed class MoveLookup
     public Task<AppResult<CommandOutcome<long>>> ExecuteAsync(MoveLookupCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        if (!WorkflowLookups.IsOrdered(command.Kind) || command.Offset is not (-1 or 1))
+        if (!WorkflowLookups.IsOrdered(command.Kind) || command.Offset == 0)
         {
             return UseCaseResults.Failed<long>(new ValidationFailedError(new DomainError(DomainErrorCodes.ItemNotFound, "Order")));
         }
@@ -135,7 +135,8 @@ public sealed class MoveLookup
                 return TransactionGuards.Reject<long>(DomainErrorCodes.ItemNotFound, "Order");
             }
 
-            (ids[index], ids[target]) = (ids[target], ids[index]);
+            ids.RemoveAt(index);
+            ids.Insert(target, command.Id);
             return SettingsTransactions.Save(tx, WorkflowLookups.Reorder(workflow, command.Kind, ids));
         }, cancellationToken);
     }

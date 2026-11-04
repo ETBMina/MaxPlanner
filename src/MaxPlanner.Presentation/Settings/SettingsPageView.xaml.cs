@@ -17,6 +17,12 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 {
     private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
 
+    /// <summary>The row whose grip received the last pointer press; only that row may start a drag.</summary>
+    private LookupRowViewModel? _gripPressedRow;
+
+    /// <summary>The dragged row's index before the ListView moved it; -1 when no drag is in progress.</summary>
+    private int _dragFromIndex = -1;
+
     public SettingsPageView(SettingsPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -137,6 +143,53 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         if (await ViewModel.CommitRenameAsync(row).ConfigureAwait(true))
         {
             FocusMenuButton(box, row);
+        }
+    }
+
+    // ----- Drag reorder of ordered lookup rows (design 4.6, 9): native ListView reorder, grip-only. -----
+
+    /// <summary>Remembers whether the last press on a row landed on its grip; a drag from anywhere else is cancelled.</summary>
+    private void OnLookupRowPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _gripPressedRow = sender is FrameworkElement { DataContext: LookupRowViewModel row } && IsOnGrip(e.OriginalSource as DependencyObject, (DependencyObject)sender)
+            ? row
+            : null;
+    }
+
+    private static bool IsOnGrip(DependencyObject? element, DependencyObject row)
+    {
+        for (; element is not null && element != row; element = VisualTreeHelper.GetParent(element))
+        {
+            if (element is FrameworkElement { Name: "LookupDragGrip" })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void OnLookupDragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        if (e.Items is not [LookupRowViewModel { IsOrdered: true, IsBusy: false } row] || !ReferenceEquals(row, _gripPressedRow)
+            || sender is not ListView { ItemsSource: IList<LookupRowViewModel> rows })
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        _dragFromIndex = rows.IndexOf(row);
+    }
+
+    /// <summary>The ListView has already moved the row; commit that move (or restore the committed order on refusal).</summary>
+    private void OnLookupDragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        var from = _dragFromIndex;
+        _dragFromIndex = -1;
+        _gripPressedRow = null;
+        if (from >= 0 && args.Items is [LookupRowViewModel row])
+        {
+            _ = ViewModel.CommitDraggedRowAsync(row, from);
         }
     }
 

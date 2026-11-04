@@ -2327,6 +2327,10 @@
   <data name="Settings_MenuFlagBacklog" xml:space="preserve">
     <value>Backlog</value>
   </data>
+  <data name="Settings_RowDragHandleName" xml:space="preserve">
+    <value>Drag to reorder {0}</value>
+    <comment>Accessible name and tooltip of a Settings row's drag handle; {0} is the status, priority, or squad name.</comment>
+  </data>
   <data name="Settings_MenuMoveUp" xml:space="preserve">
     <value>Move up</value>
   </data>

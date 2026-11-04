@@ -305,6 +305,28 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
         return RunRowAsync(row, op => _services.UseCases.MoveLookup.ExecuteAsync(new MoveLookupCommand(op, row.Kind, row.Id, section.OrderStamp, offset), CancellationToken.None));
     }
 
+    /// <summary>
+    /// Commits a native ListView reorder (design 9). The list has already moved <paramref name="row"/> away from
+    /// <paramref name="fromIndex"/>; the move goes through the same use case as Move up/down. Afterwards the section is
+    /// synced to the committed workflow: after a commit the rows already match it (no moves, so focus and scroll stay,
+    /// ADR 0010); after a refusal or a busy row the committed order comes back.
+    /// </summary>
+    public async Task CommitDraggedRowAsync(LookupRowViewModel row, int fromIndex)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var section = SectionOf(row.Kind);
+        var offset = section.DragOffset(row, fromIndex);
+        if (offset != 0)
+        {
+            await MoveAsync(row, offset).ConfigureAwait(true);
+        }
+
+        if (_workflow is { } workflow)
+        {
+            SyncSection(section, workflow);
+        }
+    }
+
     /// <summary>Changes one semantic flag of a status (B-04). Completion and date automation follow flags, never labels.</summary>
     public Task SetFlagAsync(LookupRowViewModel row, StatusFlagKind flag, bool value)
     {
@@ -614,6 +636,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
         row.Flags = flags;
         row.MenuName = strings.Format("Settings_RowMenuName", row.Name);
+        row.DragHandleName = strings.Format("Settings_RowDragHandleName", row.Name);
         UpdateAccessibleName(row);
         return row;
 

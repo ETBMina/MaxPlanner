@@ -494,7 +494,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 
 **Proposed notes (Phase 10, pending owner review):**
 - The cards are a Presentation `SettingsCard` control (icon, header, description, action slot; the action wraps below at S) and the native `Expander` with a `SettingsExpanderStyle`, per ADR 0021.
-- Row actions are the ⋯ menu only (Rename inline, Set as default / Make default CR Owner, flag toggles, Move up/down, Remove…); the drag handle is not built. People and tags have no configured order and list by name.
+- Row actions live in the ⋯ menu (Rename inline, Set as default / Make default CR Owner, flag toggles, Move up/down, Remove…). Ordered lists (statuses, priorities, squads) also show a drag grip (a 2×3 dot vector); dragging by the grip reorders the row with the native ListView reorder animation, and the drop commits the same move as Move up/down. People and tags have no configured order and list by name.
 - Row usage counts come from the committed projections (display only); the removal dialog reads authoritative counts from the database.
 - Defaults: the Default CR Owner is a `ComboBox` with "None" plus every person (no add-new here). The "Move to backlog" status offers only statuses flagged Backlog, and that status cannot lose its Backlog flag (Calendar backlog consistency, B-08.3/B-08.11).
 - Custom fields: Key and Kind are fixed after the field is added. A field can be made required only while every record of its target has a value (no backfill step yet). A Lookup option that stored values use cannot be removed. People and Tags fields have no default value.
@@ -766,7 +766,7 @@ The Dashboard "Needs attention" badge uses Warning glyph + text in `SystemFillCo
 | Error | E783 | Errors | Completed | E930 | Completed |
 | CheckMark | E73E | Saved, chip checked | Sync | E895 | Resyncing |
 | People | E716 | Squad, people | Contact | E77B | Owner |
-| Tag | E8EC | Tags | GripperBarVertical | E784† | Drag handle |
+| Tag | E8EC | Tags | GripperBarVertical | E784† | Checklist drag handle. Settings rows draw a custom 2×3 dot vector instead (no Segoe Fluent glyph is a dot grid). |
 | Download / Upload | E896 / E898 | Export / Import | History | E81C | Restore/backups |
 | Repair | E90F† | Service chip | Archive | †  | Archive chip/command |
 | Remove | E738 | Priority mid | Cancel | E711 | Remove chip |

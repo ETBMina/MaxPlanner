@@ -33,21 +33,70 @@
 
         <!-- Design §4.6 workflow row: name, usage, flag chips as text, and the ⋯ menu. -->
         <DataTemplate x:Key="LookupRowTemplate" x:DataType="local:LookupRowViewModel">
+            <!--
+                Ordered values (statuses, priorities, squads) reorder by dragging the grip (design 4.6, 9); the row menu's
+                Move up/down is the keyboard equivalent. The grip column has a fixed width so names line up at 56 epx in
+                every section, with or without a grip.
+            -->
             <Grid
                 MinHeight="52"
-                Padding="56,8,16,8"
+                Padding="16,8,16,8"
                 AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
                 AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                Background="Transparent"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,0"
-                ColumnSpacing="12">
+                ColumnSpacing="12"
+                PointerPressed="OnLookupRowPointerPressed">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <!--
+                    Drag grip: a 2x3 dot vector (design 8.3; no Segoe Fluent glyph is a dot grid). A drag only starts when
+                    the pointer goes down on this element (OnLookupRowPointerPressed checks its name).
+                -->
+                <Border
+                    x:Name="LookupDragGrip"
+                    AutomationProperties.AutomationId="{x:Bind DragHandleAutomationId, Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind DragHandleName, Mode=OneWay}"
+                    Background="Transparent"
+                    ToolTipService.ToolTip="{x:Bind DragHandleName, Mode=OneWay}"
+                    Visibility="{x:Bind IsOrdered, Mode=OneTime}">
+                    <Grid
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AccessibilityView="Raw"
+                        ColumnSpacing="3"
+                        RowSpacing="3">
+                        <Grid.Resources>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Width" Value="3" />
+                                <Setter Property="Height" Value="3" />
+                                <Setter Property="Fill" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Ellipse />
+                        <Ellipse Grid.Column="1" />
+                        <Ellipse Grid.Row="1" />
+                        <Ellipse Grid.Row="1" Grid.Column="1" />
+                        <Ellipse Grid.Row="2" />
+                        <Ellipse Grid.Row="2" Grid.Column="1" />
+                    </Grid>
+                </Border>
                 <!-- People rows start with the person's avatar; it follows the committed name, not the rename draft. -->
-                <Grid>
+                <Grid Grid.Column="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -81,7 +130,7 @@
                     </StackPanel>
                 </Grid>
                 <ItemsRepeater
-                    Grid.Column="1"
+                    Grid.Column="2"
                     VerticalAlignment="Center"
                     ItemTemplate="{StaticResource FlagChipTemplate}"
                     ItemsSource="{x:Bind Flags, Mode=OneWay}">
@@ -90,7 +139,7 @@
                     </ItemsRepeater.Layout>
                 </ItemsRepeater>
                 <Button
-                    Grid.Column="2"
+                    Grid.Column="3"
                     VerticalAlignment="Center"
                     AutomationProperties.AutomationId="{x:Bind MenuAutomationId, Mode=OneTime}"
                     AutomationProperties.Name="{x:Bind MenuName, Mode=OneWay}"
@@ -127,10 +176,39 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
-                    <ItemsControl
+                    <!--
+                        Native ListView reorder (design 9, [gallery-listview-3]): the other rows make room with the platform
+                        animation while the dragged row follows the pointer. The drop commits through MoveLookup; a refusal
+                        restores the committed order. Chrome is neutralized so rows look like plain settings rows, and the
+                        rows' own buttons stay tab stops as before (items are not focusable, no selection).
+                    -->
+                    <ListView
+                        AllowDrop="{x:Bind IsOrdered, Mode=OneTime}"
+                        CanDragItems="{x:Bind IsOrdered, Mode=OneTime}"
+                        CanReorderItems="{x:Bind IsOrdered, Mode=OneTime}"
+                        DragItemsCompleted="OnLookupDragItemsCompleted"
+                        DragItemsStarting="OnLookupDragItemsStarting"
                         IsTabStop="False"
                         ItemTemplate="{StaticResource LookupRowTemplate}"
-                        ItemsSource="{x:Bind Rows, Mode=OneTime}" />
+                        ItemsSource="{x:Bind ListRows, Mode=OneTime}"
+                        ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                        ScrollViewer.VerticalScrollMode="Disabled"
+                        SelectionMode="None"
+                        TabNavigation="Local">
+                        <ListView.Resources>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
+                        </ListView.Resources>
+                        <ListView.ItemContainerStyle>
+                            <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="IsTabStop" Value="False" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
                     <!-- Design §4.6: the expander ends with "+ Add" (inline TextBox + Add). -->
                     <Grid
                         Padding="56,12,16,12"

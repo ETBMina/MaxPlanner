@@ -20,6 +20,7 @@ public sealed partial class LookupRowViewModel : ObservableObject
         AutomationId = $"Settings_{automationKey}Row_{id:N}";
         MenuAutomationId = $"Settings_{automationKey}RowMenu_{id:N}";
         RenameAutomationId = $"Settings_{automationKey}RenameBox_{id:N}";
+        DragHandleAutomationId = $"Settings_{automationKey}DragHandle_{id:N}";
     }
 
     public LookupKind Kind { get; }
@@ -34,6 +35,15 @@ public sealed partial class LookupRowViewModel : ObservableObject
     public string MenuAutomationId { get; }
 
     public string RenameAutomationId { get; }
+
+    public string DragHandleAutomationId { get; }
+
+    /// <summary>Statuses, priorities, and squads have a configured order, so their rows show a drag handle (design §4.6).</summary>
+    public bool IsOrdered => Application.Settings.WorkflowLookups.IsOrdered(Kind);
+
+    /// <summary>"Drag to reorder In Progress": the handle's accessible name and tooltip.</summary>
+    [ObservableProperty]
+    public partial string DragHandleName { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string Name { get; set; } = string.Empty;
@@ -142,6 +152,16 @@ public sealed partial class LookupSectionViewModel : ObservableObject
     public bool HasStatusFlags => Kind is LookupKind.TaskStatus or LookupKind.CrStatus;
 
     public ReadOnlyObservableCollection<LookupRowViewModel> Rows { get; }
+
+    /// <summary>
+    /// The rows as a mutable list for the native ListView reorder (design 9), which moves the dragged row itself.
+    /// The view model commits that move and resyncs, so the committed order always wins.
+    /// </summary>
+    public ObservableCollection<LookupRowViewModel> ListRows => MutableRows;
+
+    /// <summary>How far a dragged row moved: its current index minus <paramref name="fromIndex"/>; 0 when it is gone.</summary>
+    public int DragOffset(LookupRowViewModel row, int fromIndex) =>
+        MutableRows.IndexOf(row) is var to and >= 0 && fromIndex >= 0 ? to - fromIndex : 0;
 
     internal ObservableCollection<LookupRowViewModel> MutableRows { get; } = [];
 
