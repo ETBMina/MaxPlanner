@@ -23,8 +23,11 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private readonly HashSet<FrameworkElement> _buckets = [];
     private readonly Dictionary<BoardBucketViewModel, BoardCardList> _lists = [];
-    private double _bucketWidth = 300;
-    private bool _isSmall;
+    private BoardLayout? _layout;
+
+    // A breakpoint change that arrives while the navigation pane slides waits for the slide to end (OnPaneSlide).
+    private bool _isPaneSliding;
+    private double? _pendingWidth;
     private BoardCardViewModel? _dragged;
     private BoardBucketViewModel? _dragSource;
 
@@ -52,7 +55,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
             if (e.NewSize.Width > 0)
             {
-                ApplyBreakpoint(e.NewSize.Width);
+                OnWidthChanged(e.NewSize.Width);
             }
         };
         ViewModel.FocusRequested += OnFocusRequested;
@@ -129,7 +132,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement bucket && _buckets.Add(bucket))
         {
-            bucket.Width = _bucketWidth;
+            bucket.Width = BucketWidth;
         }
     }
 
@@ -157,23 +160,73 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
     }
 
-    private void ApplyBreakpoint(double width)
+    // L until the first layout is applied: buckets that load before it get the L width.
+    private double BucketWidth => _layout?.BucketWidth ?? BoardLayout.ForWidth(double.MaxValue).BucketWidth;
+
+    private bool IsSmall => _layout?.IsSmall ?? false;
+
+    /// <inheritdoc/>
+    public void OnPaneSlide(bool isSliding)
+    {
+        _isPaneSliding = isSliding;
+        if (!isSliding && _pendingWidth is { } width)
+        {
+            _pendingWidth = null;
+            ApplyBreakpoint(BoardLayout.ForWidth(width));
+        }
+    }
+
+    private void OnWidthChanged(double width)
+    {
+        // A breakpoint change relays out every bucket and its cards (about 100 ms with a few hundred cards). While
+        // the navigation pane slides, the width changes every frame, so a change waits for the end of the slide and
+        // the motion does not stall; otherwise it applies at once. Within a breakpoint nothing changes.
+        var layout = BoardLayout.ForWidth(width);
+        if (_isPaneSliding && _layout is { } current && layout != current)
+        {
+            _pendingWidth = width;
+            return;
+        }
+
+        _pendingWidth = null;
+        ApplyBreakpoint(layout);
+    }
+
+    private void ApplyBreakpoint(BoardLayout layout)
     {
         // Design §4.2: L 300 epx buckets, M 280, S one full readable bucket per viewport (no bucket shrinks
         // below a readable width; the bucket picker and the horizontal scroll reach the others).
-        var padding = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
-        _bucketWidth = width >= 1008 ? 300 : width >= 640 ? 280 : Math.Max(260, width - (2 * padding) - 12);
-        HeaderRoot.Padding = width >= 1008 ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
-
-        // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
-        BucketsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
-        _isSmall = width < 640;
-        ChipsBar.IsCompact = _isSmall;
-        BucketsScroller.HorizontalSnapPointsType = _isSmall ? SnapPointsType.MandatorySingle : SnapPointsType.None;
-        BucketPickerRow.Visibility = _isSmall ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var bucket in _buckets)
+        // Setting these properties invalidates the whole Board's layout even when the values are unchanged, so a
+        // width change within a breakpoint (a window resize, the navigation pane sliding) must not touch them.
+        var previous = _layout;
+        if (layout == previous)
         {
-            bucket.Width = _bucketWidth;
+            return;
+        }
+
+        _layout = layout;
+        if (layout.SidePadding != previous?.SidePadding || layout.HeaderTop != previous?.HeaderTop || layout.HeaderBottom != previous?.HeaderBottom)
+        {
+            var padding = layout.SidePadding;
+            HeaderRoot.Padding = new Thickness(padding, layout.HeaderTop, padding, layout.HeaderBottom);
+
+            // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
+            BucketsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
+        }
+
+        if (layout.IsSmall != previous?.IsSmall)
+        {
+            ChipsBar.IsCompact = layout.IsSmall;
+            BucketsScroller.HorizontalSnapPointsType = layout.IsSmall ? SnapPointsType.MandatorySingle : SnapPointsType.None;
+            BucketPickerRow.Visibility = layout.IsSmall ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        if (layout.BucketWidth != previous?.BucketWidth)
+        {
+            foreach (var bucket in _buckets)
+            {
+                bucket.Width = layout.BucketWidth;
+            }
         }
     }
 
@@ -189,7 +242,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             BucketPicker.SelectedItem = ViewModel.SelectedBucket;
         }
 
-        if (_isSmall && ViewModel.SelectedBucket is { } selected)
+        if (IsSmall && ViewModel.SelectedBucket is { } selected)
         {
             ScrollToBucket(selected);
         }
@@ -209,7 +262,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         if (index >= 0)
         {
             // Design §9: no scroll animation when Windows animations are turned off.
-            BucketsScroller.ChangeView(index * (_bucketWidth + 12), null, null, disableAnimation: !Common.Services.MotionSettings.AnimationsEnabled);
+            BucketsScroller.ChangeView(index * (BucketWidth + 12), null, null, disableAnimation: !Common.Services.MotionSettings.AnimationsEnabled);
         }
     }
 
@@ -385,7 +438,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             return;
         }
 
-        if (_isSmall)
+        if (IsSmall)
         {
             ViewModel.SelectedBucket = ViewModel.Buckets[target];
         }
@@ -402,7 +455,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private void OnFocusRequested(object? sender, BoardFocusRequest request)
     {
-        if (_isSmall)
+        if (IsSmall)
         {
             ViewModel.SelectedBucket = request.Bucket;
         }
@@ -700,7 +753,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         var moving = false;
         if (_horizontalDepth != 0)
         {
-            var scrolled = _isSmall ? PageBucket() : ScrollBy(BucketsScroller, _horizontalDepth * AutoScrollMaxStep, horizontal: true);
+            var scrolled = IsSmall ? PageBucket() : ScrollBy(BucketsScroller, _horizontalDepth * AutoScrollMaxStep, horizontal: true);
             if (scrolled)
             {
                 // The lists moved under the pointer; the next DragOver picks the list now under it.

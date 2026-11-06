@@ -58,6 +58,8 @@ public sealed partial class ShellView : UserControl
     private long _navigationStarted;
     private SaveStatusViewModel? _saveStatus;
     private bool _isSyncingSelection;
+    private NavigationPaneSlide? _paneSlide;
+    private IPageView? _slidingPage;
 
     public ShellView()
     {
@@ -69,6 +71,12 @@ public sealed partial class ShellView : UserControl
             if (Nav.SettingsItem is NavigationViewItem settings)
             {
                 AutomationProperties.SetAutomationId(settings, "Shell_NavSettingsItem");
+            }
+
+            if (_paneSlide is null && NavigationPaneSlide.TryAttach(Nav) is { } paneSlide)
+            {
+                _paneSlide = paneSlide;
+                paneSlide.SlidingChanged += OnPaneSlidingChanged;
             }
 
             SyncSelection();
@@ -640,6 +648,21 @@ public sealed partial class ShellView : UserControl
         {
             IsTitleBarPaneToggleVisible = minimal;
             TitleBarPaneToggleChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnPaneSlidingChanged(object? sender, bool isSliding)
+    {
+        // The page shown when the slide started gets both calls, so it never waits for an end that goes elsewhere.
+        if (isSliding)
+        {
+            _slidingPage = _currentSlot?.Page as IPageView;
+            _slidingPage?.OnPaneSlide(true);
+        }
+        else
+        {
+            _slidingPage?.OnPaneSlide(false);
+            _slidingPage = null;
         }
     }
 

@@ -39,4 +39,14 @@ public interface IPageView
     void OnHidden()
     {
     }
+
+    /// <summary>
+    /// Called with true when the navigation pane starts to slide while this page is shown, and with false when it
+    /// stops: in between the page's width changes every frame, so a costly width-driven relayout (a breakpoint
+    /// change) can wait for the end. The page that got true always gets the matching false, even if it was hidden
+    /// in between.
+    /// </summary>
+    void OnPaneSlide(bool isSliding)
+    {
+    }
 }
