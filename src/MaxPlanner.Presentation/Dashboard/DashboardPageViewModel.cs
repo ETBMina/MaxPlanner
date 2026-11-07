@@ -6,9 +6,11 @@ using System.Reactive.Subjects;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Dashboard;
+using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Scheduling;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
@@ -18,7 +20,7 @@ namespace MaxPlanner.Presentation.Dashboard;
 
 /// <summary>
 /// The Dashboard (B-15, AC-18–21, design §4.1): summary cards, three native bar charts, the Overdue CRs and Unlinked
-/// tasks lists, and the Squad/Priority/CR Owner filters. Every value comes from <see cref="DashboardCalculator"/> over
+/// tasks lists, and the Squad/Priority/CR Owner/Period filters. Every value comes from <see cref="DashboardCalculator"/> over
 /// one consistent store state and carries the drill-down that shows exactly what it counts. Use on the UI thread.
 /// </summary>
 public sealed partial class DashboardPageViewModel : ObservableObject, IPageViewModel
@@ -50,6 +52,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         OwnerOptions = new ReadOnlyObservableCollection<DashboardOption>(_owners);
         OverdueRows = new ReadOnlyObservableCollection<OverdueRowViewModel>(_overdue);
         UnlinkedRows = new ReadOnlyObservableCollection<UnlinkedRowViewModel>(_unlinked);
+        Period = new PeriodFieldViewModel(strings, _filter.Value.Period, PushFilter);
 
         ActiveTasks = Card("Dashboard_ActiveTasksCard", "Dashboard_ActiveTasks");
         CompletedTasks = Card("Dashboard_CompletedTasksCard", "Dashboard_CompletedTasks");
@@ -117,6 +120,9 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
 
     public ReadOnlyObservableCollection<DashboardOption> OwnerOptions { get; }
 
+    /// <summary>The Period filter: applied as soon as it is valid; an inverted custom range keeps the last valid one.</summary>
+    public PeriodFieldViewModel Period { get; }
+
     public ReadOnlyObservableCollection<OverdueRowViewModel> OverdueRows { get; }
 
     public ReadOnlyObservableCollection<UnlinkedRowViewModel> UnlinkedRows { get; }
@@ -131,8 +137,15 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     public partial DashboardOption? SelectedOwner { get; set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ClearFiltersCommand))]
     public partial bool IsFiltered { get; private set; }
+
+    /// <summary>
+    /// A filter narrows the results, or a box shows something other than its default (Period on Custom range without
+    /// dates, or an inverted range), so Clear filters has something to reset.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ClearFiltersCommand))]
+    public partial bool CanClearFilters { get; private set; }
 
     [ObservableProperty]
     public partial ViewState State { get; private set; } = ViewState.Loading;
@@ -193,13 +206,14 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         _filter.Dispose();
     }
 
-    [RelayCommand(CanExecute = nameof(IsFiltered))]
+    [RelayCommand(CanExecute = nameof(CanClearFilters))]
     private void ClearFilters()
     {
         _isSyncingOptions = true;
         SelectedSquad = _squads.FirstOrDefault();
         SelectedPriority = _priorities.FirstOrDefault();
         SelectedOwner = _owners.FirstOrDefault();
+        Period.Load(null);
         _isSyncingOptions = false;
         PushFilter();
     }
@@ -227,6 +241,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
             new DashboardInput([.. store.Tasks.Items], [.. store.SubtaskCards.Items], [.. store.ChangeRequests.Items], [.. store.ReviewItems.Items], workflow),
             filter,
             store.Today,
+            store.LocalTimeZone,
             labels);
 
     private static DashboardFilter LoadFilter(UiPreferences preferences)
@@ -238,7 +253,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         return new DashboardFilter(
             squad,
             Read("priority") is { } priority ? new PriorityId(priority) : null,
-            Read("owner") is { } owner ? new PersonId(owner) : null);
+            Read("owner") is { } owner ? new PersonId(owner) : null,
+            FilterPersistence.ParsePeriod(fields?.GetValueOrDefault(FilterPersistence.PeriodKey)));
     }
 
     private DashboardCardViewModel Card(string automationId, string labelKey) =>
@@ -249,10 +265,18 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     /// <summary>B-15.6, design §2.9: task metrics → Grid, Overdue CRs → Calendar › Records, reviews → Checklists › Reviews.</summary>
     private void DrillDown(DashboardDrillDown? drillDown, string label)
     {
-        if (drillDown is not null)
+        if (drillDown is null)
         {
-            _context.Navigator.RequestDrillDown(new DrillDownRequest(drillDown, label));
+            return;
         }
+
+        // A task or CR drill-down shows its Period as a chip; the Reviews page shows only this label, so it names it.
+        if (drillDown is ReviewDrillDown { Spec.Period: { IsSet: true } period })
+        {
+            label = _context.Strings.Format("Dashboard_DrillLabelWithPeriod", label, DraftFields.PeriodChip(_context.Strings, period).Label);
+        }
+
+        _context.Navigator.RequestDrillDown(new DrillDownRequest(drillDown, label));
     }
 
     private void PushFilter()
@@ -265,8 +289,10 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         var filter = new DashboardFilter(
             SelectedSquad is { IsAll: false } squad ? new DashboardSquad(squad.Id is { } id ? new SquadId(id) : null) : null,
             SelectedPriority is { Id: { } priority } ? new PriorityId(priority) : null,
-            SelectedOwner is { Id: { } owner } ? new PersonId(owner) : null);
+            SelectedOwner is { Id: { } owner } ? new PersonId(owner) : null,
+            Period.HasError ? _filter.Value.Period : Period.Filter);
         IsFiltered = filter.IsActive;
+        CanClearFilters = IsFiltered || Period.SelectedIndex != (int)PeriodPreset.AllTime;
         if (filter == _filter.Value)
         {
             return;
@@ -288,6 +314,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         {
             fields["owner"] = [o.Value.ToString("N", CultureInfo.InvariantCulture)];
         }
+
+        FilterPersistence.PutPeriod(fields, filter.Period);
 
         _context.Preferences.Update(prefs => prefs with
         {

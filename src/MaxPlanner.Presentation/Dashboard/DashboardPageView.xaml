@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Dashboard (design §4.1, B-15, AC-18–21): inline Squad/Priority/CR Owner filters [gallery-combobox-2], summary cards
+    Dashboard (design §4.1, B-15, AC-18–21): inline Squad/Priority/CR Owner/Period filters [gallery-combobox-2], summary cards
     in an ItemsRepeater + UniformGridLayout [gallery-itemsrepeater-1], three native bar charts (ADR 0011), and the
     Overdue CRs and Unlinked tasks lists. Every card, bar, and "View all" drills down with its own predicate.
 -->
@@ -240,12 +240,46 @@
                     ItemTemplate="{StaticResource OwnerOptionTemplate}"
                     ItemsSource="{x:Bind ViewModel.OwnerOptions, Mode=OneTime}"
                     SelectedItem="{x:Bind ViewModel.SelectedOwner, Mode=TwoWay}" />
+                <!-- Period: start date in the period; Custom range adds inclusive From/To pickers to the same row. -->
+                <ComboBox
+                    x:Uid="Dashboard_PeriodCombo"
+                    MinWidth="180"
+                    AutomationProperties.AutomationId="Dashboard_PeriodCombo"
+                    SelectedIndex="{x:Bind PeriodField.SelectedIndex, Mode=TwoWay}">
+                    <!-- Declared items (order matches PeriodPreset), as in the Filters flyout. -->
+                    <ComboBoxItem x:Uid="Period_AllTimeItem" AutomationProperties.AutomationId="Dashboard_PeriodAllTime" />
+                    <ComboBoxItem x:Uid="Period_Last7DaysItem" AutomationProperties.AutomationId="Dashboard_PeriodLast7Days" />
+                    <ComboBoxItem x:Uid="Period_Last30DaysItem" AutomationProperties.AutomationId="Dashboard_PeriodLast30Days" />
+                    <ComboBoxItem x:Uid="Period_CustomItem" AutomationProperties.AutomationId="Dashboard_PeriodCustom" />
+                </ComboBox>
+                <CalendarDatePicker
+                    x:Uid="Dashboard_PeriodFrom"
+                    MinWidth="160"
+                    AutomationProperties.AutomationId="Dashboard_PeriodFrom"
+                    Date="{x:Bind PeriodField.From, Mode=TwoWay}"
+                    FirstDayOfWeek="Sunday"
+                    Visibility="{x:Bind common:BindFunctions.Visible(PeriodField.IsCustom), Mode=OneWay}" />
+                <CalendarDatePicker
+                    x:Uid="Dashboard_PeriodTo"
+                    MinWidth="160"
+                    AutomationProperties.AutomationId="Dashboard_PeriodTo"
+                    Date="{x:Bind PeriodField.To, Mode=TwoWay}"
+                    FirstDayOfWeek="Sunday"
+                    Visibility="{x:Bind common:BindFunctions.Visible(PeriodField.IsCustom), Mode=OneWay}" />
+                <!-- The panel gives each child its line's height, so Bottom lines the link up with the boxes, not the headers. -->
                 <HyperlinkButton
                     x:Uid="Dashboard_ClearFiltersLink"
                     VerticalAlignment="Bottom"
                     AutomationProperties.AutomationId="Dashboard_ClearFiltersLink"
                     Command="{x:Bind ViewModel.ClearFiltersCommand}" />
             </controls:WrapPanel>
+            <TextBlock
+                AutomationProperties.LiveSetting="Assertive"
+                Foreground="{ThemeResource ErrorTextBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind PeriodField.Error, Mode=OneWay}"
+                TextWrapping="Wrap"
+                Visibility="{x:Bind common:BindFunctions.Visible(PeriodField.HasError), Mode=OneWay}" />
             <TextBlock
                 x:Uid="Dashboard_FilterScopeCaption"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"

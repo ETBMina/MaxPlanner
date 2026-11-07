@@ -77,6 +77,7 @@ public class WorkspaceBenchmarks : StoreBenchmark
             new DashboardInput([.. Store.Tasks.Items], [.. Store.SubtaskCards.Items], [.. Store.ChangeRequests.Items], [.. Store.ReviewItems.Items], Store.CurrentWorkflow!),
             DashboardFilter.None,
             Store.Today,
+            Store.LocalTimeZone,
             new DashboardLabels(ReadModelComposer.DefaultGeneralSquadLabel, "Unassigned"));
 
     // Active unlinked tasks: their own title and notes are editable through the Grid's UpdateTaskContent route.
@@ -128,7 +129,8 @@ public class FilterBenchmarks : StoreBenchmark
         var store = Store;
         var context = new TaskFilterContext(
             id => store.Tasks.Lookup(id) is { HasValue: true } task ? task.Value : null,
-            id => store.ChangeRequests.Lookup(id) is { HasValue: true } cr ? cr.Value : null);
+            id => store.ChangeRequests.Lookup(id) is { HasValue: true } cr ? cr.Value : null,
+            store.Today);
         var count = store.Tasks.Items.Count(t => !t.IsArchived && TaskFilterMatcher.Matches(spec, t, context));
         return count + store.SubtaskCards.Items.Count(c => TaskFilterMatcher.Matches(spec, c, context));
     }

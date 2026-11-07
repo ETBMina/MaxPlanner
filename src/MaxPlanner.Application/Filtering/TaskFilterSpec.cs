@@ -65,6 +65,9 @@ public sealed record TaskFilterSpec
 
     public DateRangeFilter? EndDate { get; init; }
 
+    /// <summary>The Period field: the record's own Start Date is in the period (the End Date is not considered).</summary>
+    public PeriodFilter? Period { get; init; }
+
     public IReadOnlyList<CustomFieldFilter> CustomFields { get; init; } = [];
 
     /// <summary>Set only by a Dashboard drill-down (never persisted).</summary>
@@ -75,6 +78,7 @@ public sealed record TaskFilterSpec
         Count(Statuses.Count > 0) + Count(Priorities.Count > 0) + Count(Squads.Count > 0) + Count(Owners.Count > 0)
         + Count(Designers.Count > 0) + Count(Developers.Count > 0) + Count(Tags.Count > 0) + Count(Cr.IsSet)
         + Count(!string.IsNullOrWhiteSpace(ServiceContains)) + Count(StartDate is { IsSet: true }) + Count(EndDate is { IsSet: true })
+        + Count(Period is { IsSet: true })
         + CustomFields.Count(f => f.IsSet);
 
     public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
@@ -91,9 +95,11 @@ public sealed record TaskFilterSpec
 /// <summary>Lookups the task predicate needs beyond the record itself, resolved from the current read models.</summary>
 /// <param name="FindTask">A Subtask card's parent; its priority, people, tags, service and custom values apply to the card.</param>
 /// <param name="FindChangeRequest">The linked CR, for the Unscheduled metric (CR planned range).</param>
+/// <param name="Today">The local day a rolling Period resolves against (the store's day).</param>
 public sealed record TaskFilterContext(
     Func<TaskId, TaskReadModel?> FindTask,
-    Func<ChangeRequestId, ChangeRequestReadModel?> FindChangeRequest);
+    Func<ChangeRequestId, ChangeRequestReadModel?> FindChangeRequest,
+    DateOnly Today);
 
 /// <summary>
 /// The one task predicate (B-10, B-15.6): Board, Grid, the Dashboard metrics, and their drill-downs all use it, so a
@@ -111,7 +117,7 @@ public static class TaskFilterMatcher
             return false;
         }
 
-        return MatchesFields(spec, task.Status.Id, task, task.Cr, task.StartDate, task.EndDate)
+        return MatchesFields(spec, task.Status.Id, task, task.Cr, task.StartDate, task.EndDate, context.Today)
             && (!spec.HasSearch || TaskSearch.Matches(task, spec.SearchText));
     }
 
@@ -131,7 +137,7 @@ public static class TaskFilterMatcher
         }
 
         var parent = context.FindTask(card.ParentTaskId);
-        return MatchesFields(spec, card.Status.Id, parent, card.Cr, card.StartDate, card.EndDate)
+        return MatchesFields(spec, card.Status.Id, parent, card.Cr, card.StartDate, card.EndDate, context.Today)
             && (!spec.HasSearch || TaskSearch.Matches(card, parent, spec.SearchText));
     }
 
@@ -170,7 +176,8 @@ public static class TaskFilterMatcher
         TaskReadModel? owner,
         InheritedCrValues cr,
         DateOnly? start,
-        DateOnly? end)
+        DateOnly? end,
+        DateOnly today)
     {
         if (spec.Statuses.Count > 0 && !spec.Statuses.Contains(status))
         {
@@ -220,6 +227,11 @@ public static class TaskFilterMatcher
         }
 
         if (spec.StartDate is { } startFilter && !startFilter.Matches(start))
+        {
+            return false;
+        }
+
+        if (spec.Period is { } period && !period.Matches(start, today))
         {
             return false;
         }

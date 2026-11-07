@@ -345,7 +345,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
 
     private bool Matches(ReviewItem review)
     {
-        if (_dashboard is { } dashboard && !ReviewFilterMatcher.Matches(dashboard, review, _context.Store.Today))
+        if (_dashboard is { } dashboard && !ReviewFilterMatcher.Matches(dashboard, review, _context.Store.Today, _context.Store.LocalTimeZone))
         {
             return false;
         }

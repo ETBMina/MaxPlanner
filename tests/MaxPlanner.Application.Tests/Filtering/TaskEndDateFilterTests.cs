@@ -14,7 +14,7 @@ namespace MaxPlanner.Application.Tests.Filtering;
 public sealed class TaskEndDateFilterTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 22, 9, 0, 0, TimeSpan.Zero);
-    private static readonly TaskFilterContext Context = new(_ => null, _ => null);
+    private static readonly TaskFilterContext Context = new(_ => null, _ => null, Today);
     private static readonly DateOnly From = Today.AddDays(5);
     private static readonly DateOnly To = Today.AddDays(20);
 

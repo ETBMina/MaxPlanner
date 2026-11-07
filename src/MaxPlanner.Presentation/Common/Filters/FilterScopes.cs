@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reactive.Linq;
 using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.ReadModels;
@@ -28,6 +29,7 @@ internal static class FilterKeys
     public const string StartDate = "StartDate";
     public const string EndDate = "EndDate";
     public const string Planned = "Planned";
+    public const string Period = "Period";
     public const string CustomPrefix = "Custom_";
 
     public static string Custom(FieldId id) => CustomPrefix + id.Value.ToString("N", CultureInfo.InvariantCulture);
@@ -135,7 +137,12 @@ internal static class DraftFields
         + (draft.CrField is { Selected.Filter.IsSet: true } ? 1 : 0)
         + draft.TextFields.Count(f => f.Text.Trim().Length > 0)
         + draft.DateFields.Count(f => f.Range.IsSet)
-        + draft.NumberFields.Count(f => f.Range.IsSet);
+        + draft.NumberFields.Count(f => f.Range.IsSet)
+        + (draft.Period?.Filter is not null ? 1 : 0);
+
+    /// <summary>"Period: Last 7 days" or "Period: Nov 1, 2026 – Nov 7, 2026".</summary>
+    public static (string Key, string Label) PeriodChip(ILocalizedStrings strings, PeriodFilter period) =>
+        (FilterKeys.Period, strings.Format("Filters_ChipLabel", strings.GetString("Filters_Period"), PeriodFieldViewModel.Text(strings, period)));
 
     public static IEnumerable<(string Key, string Label)> CustomChips(ILocalizedStrings strings, WorkflowSnapshot? workflow, IReadOnlyList<CustomFieldFilter> filters)
     {
@@ -163,9 +170,27 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
 {
     internal const string Key = "tasks";
 
+    private readonly IDisposable _commits;
+    private DateOnly _predicateDay;
+
     internal TaskFilterScopeViewModel(WorkspaceContext context)
         : base(context, Key)
     {
+        // A rolling Period ("Last 7 days") moves at midnight, on resume and on a time-zone change (AC-21). The new day
+        // can arrive with any commit (a day tick, or a snapshot after a resync that skipped the tick), so every commit
+        // whose day differs from the one the predicate was built for makes Board and Grid rebuild it. This also
+        // corrects a predicate built on the startup fallback day. The Calendar re-applies its CR predicate itself.
+        _commits = context.Store.Committed
+            .ObserveOn(context.UiScheduler)
+            .Subscribe(commit =>
+            {
+                if (commit.Today != _predicateDay && Spec.Period is { IsRolling: true })
+                {
+                    // Recorded here too, so a day change raises once even before a page has built a predicate.
+                    _predicateDay = commit.Today;
+                    RaiseChanged();
+                }
+            });
     }
 
     public override string ScopeTitle => Context.Strings.GetString("Filters_TaskScopeTitle");
@@ -181,15 +206,20 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
     public Func<WorkItemRecord, bool> Predicate()
     {
         var spec = Spec;
+        var store = Context.Store;
+
+        // Before the first batch the store has no day yet; the local clock stands in until a commit brings it.
+        var today = store.Today is { DayNumber: > 0 } day ? day : DateOnly.FromDateTime(DateTime.Now);
+        _predicateDay = today;
         if (!spec.IsActive)
         {
             return _ => true;
         }
 
-        var store = Context.Store;
         var context = new TaskFilterContext(
             id => store.Tasks.Lookup(id) is { HasValue: true } task ? task.Value : null,
-            id => store.ChangeRequests.Lookup(id) is { HasValue: true } cr ? cr.Value : null);
+            id => store.ChangeRequests.Lookup(id) is { HasValue: true } cr ? cr.Value : null,
+            today);
         return record => record.Task is { } task ? TaskFilterMatcher.Matches(spec, task, context) : TaskFilterMatcher.Matches(spec, record.Card!, context);
     }
 
@@ -211,6 +241,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
 
         draft.CrField = new FilterCrFieldViewModel(strings.GetString("Filters_Cr"), CrChoice(spec.Cr), SuggestCrs, draft.Changed);
         draft.TextFields.Add(new FilterTextFieldViewModel(FilterKeys.Service, strings.GetString("Filters_ServiceContains"), "Filters_ServiceBox", spec.ServiceContains, draft.Changed));
+        draft.Period = new PeriodFieldViewModel(strings, spec.Period, draft.Changed);
         var inverted = strings.GetString("Filters_InvertedRange");
         draft.DateFields.Add(new FilterDateFieldViewModel(FilterKeys.StartDate, strings.GetString("Filters_StartDate"), strings.GetString("Filters_IncludeWithoutStart"), "Filters_StartDate", spec.StartDate, inverted, draft.Changed));
         draft.DateFields.Add(new FilterDateFieldViewModel(FilterKeys.EndDate, strings.GetString("Filters_EndDate"), strings.GetString("Filters_IncludeWithoutEnd"), "Filters_EndDate", spec.EndDate, inverted, draft.Changed));
@@ -245,6 +276,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
             ServiceContains = string.IsNullOrEmpty(service) ? null : service,
             StartDate = start is { IsSet: true } ? start : null,
             EndDate = end is { IsSet: true } ? end : null,
+            Period = draft.Period?.Filter,
             CustomFields = DraftFields.ReadCustom(draft),
         };
     }
@@ -274,6 +306,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
         FilterKeys.Service => spec with { ServiceContains = null },
         FilterKeys.StartDate => spec with { StartDate = null },
         FilterKeys.EndDate => spec with { EndDate = null },
+        FilterKeys.Period => spec with { Period = null },
         _ when FilterKeys.ParseCustom(key) is { } field => spec with { CustomFields = [.. spec.CustomFields.Where(f => f.FieldId != field)] },
         _ => spec,
     };
@@ -338,10 +371,21 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
             yield return (FilterKeys.EndDate, Chip("Filters_EndDate", FilterText.Range(s, endDate is { From: not null, To: null } ? endDate with { IncludeUndated = true } : endDate)));
         }
 
+        if (spec.Period is { IsSet: true } period)
+        {
+            yield return DraftFields.PeriodChip(s, period);
+        }
+
         foreach (var chip in DraftFields.CustomChips(s, w, spec.CustomFields))
         {
             yield return chip;
         }
+    }
+
+    public override void Dispose()
+    {
+        _commits.Dispose();
+        base.Dispose();
     }
 
     private protected override (TaskFilterSpec Spec, IReadOnlyList<RemovedFilterKind> Removed) Clean(TaskFilterSpec spec, WorkflowSnapshot workflow) =>
@@ -445,6 +489,7 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
                 spec.Owners.Select(p => p.Value));
         }
 
+        draft.Period = new PeriodFieldViewModel(strings, spec.Period, draft.Changed);
         draft.DateFields.Add(new FilterDateFieldViewModel(
             FilterKeys.Planned, strings.GetString("Filters_Planned"), strings.GetString("Filters_IncludeUnscheduled"), "Filters_Planned", spec.Planned, strings.GetString("Filters_InvertedRange"), draft.Changed));
         if (Workflow is { } fields)
@@ -467,6 +512,7 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
             Squads = [.. Checked(FilterKeys.Squad).Select(id => id == Guid.Empty ? (SquadId?)null : new SquadId(id))],
             Owners = [.. Checked(FilterKeys.Owner).Select(id => new PersonId(id))],
             Planned = planned is { IsSet: true } ? planned : null,
+            Period = draft.Period?.Filter,
             CustomFields = DraftFields.ReadCustom(draft),
         };
     }
@@ -490,6 +536,7 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
         FilterKeys.Squad => spec with { Squads = [] },
         FilterKeys.Owner => spec with { Owners = [] },
         FilterKeys.Planned => spec with { Planned = null },
+        FilterKeys.Period => spec with { Period = null },
         _ when FilterKeys.ParseCustom(key) is { } field => spec with { CustomFields = [.. spec.CustomFields.Where(f => f.FieldId != field)] },
         _ => spec,
     };
@@ -522,6 +569,11 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
         if (spec.Planned is { IsSet: true } planned)
         {
             yield return (FilterKeys.Planned, Chip("Filters_Planned", FilterText.Range(s, planned)));
+        }
+
+        if (spec.Period is { IsSet: true } period)
+        {
+            yield return DraftFields.PeriodChip(s, period);
         }
 
         foreach (var chip in DraftFields.CustomChips(s, w, spec.CustomFields))

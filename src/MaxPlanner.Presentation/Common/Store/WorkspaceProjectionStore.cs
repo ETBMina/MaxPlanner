@@ -139,6 +139,9 @@ public sealed class WorkspaceProjectionStore : IDisposable
     /// </summary>
     public DateOnly Today => DateOnly.FromDayNumber(Volatile.Read(ref _todayDayNumber));
 
+    /// <summary>The time zone of <see cref="Today"/>: it places UTC instants (a review's creation) on a local day.</summary>
+    public TimeZoneInfo LocalTimeZone => _timeProvider.LocalTimeZone;
+
     /// <summary>Live subscriptions to the store's caches, for disposal and navigation-budget tests (T-11).</summary>
     public int ActiveCacheSubscriptions => _subscriptions.Count;
 

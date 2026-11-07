@@ -17,11 +17,13 @@ Option 2.
 - **Presentation `Common/Filters`:** `TaskFilterScopeViewModel` (shared by Board and Grid, key `tasks`) and `CrFilterScopeViewModel` (Calendar, key `calendar`) hold the applied spec, the draft flyout, chips, the badge count, the invalid-value notice, and the Dashboard context. Predicates run on the store scheduler over current read models (ADR 0010); a Subtask card reads its parent from the store there.
 - **`DrillDownNavigator`** keeps one entry per destination page whose context a drill-down replaced. Back (TitleBar, Alt+Left) and Return pop an entry, restore that page's previous filters, and show the Dashboard, whose retained ViewModel keeps its filters and scroll offset.
 
+- **Period (amendment, owner decision 2026-11-07):** `TaskFilterSpec`, `CrFilterSpec` and the Dashboard review predicate gain a period (All time, Last 7 days = [today−7, today], Last 30 days = [today−30, today], or a custom inclusive range). A record matches when its start date (task/Subtask card Start Date, CR planned start; review created date when open, completed date when done) is in the period; undated records are excluded. The presets are persisted as rolling values and evaluated against local today at match time; a custom range is persisted as ISO dates. A missing key in an older `configuration.json` means All time. The Dashboard saves its period under `ViewFilters["dashboard"]` with its other filters, and drill-down specs carry the period.
+
 ## Consequences
 - Board, Grid, Calendar, the Dashboard and its drill-downs share one implementation per rule; the earlier page-local search code was removed.
 - Because Board and Grid share the task scope, a task drill-down is visible on the Board too (with reordering off while active).
 - A future filter field needs a spec member, a matcher clause, a persistence key, a validation rule, a draft field, and a chip; all are in two files.
-- No new dependency and no schema or preferences-format change.
+- No new dependency and no schema change. The Period amendment adds optional preference keys; older files still load.
 
 ## Verification
 Deferred to Phase 19 (owner decision): Application tests for the matchers, persistence round trips, validation, and `DashboardCalculator` (AC-18, AC-19, AC-21 boundaries); Presentation tests for the scopes, the draft, chips, drill-down replacement and restore, and the navigator; UI checks of the flyout, chips, and Back/Return.

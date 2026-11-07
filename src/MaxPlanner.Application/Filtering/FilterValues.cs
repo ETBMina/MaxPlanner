@@ -40,6 +40,71 @@ public sealed record DateRangeFilter(DateOnly? From, DateOnly? To, bool IncludeU
     }
 }
 
+/// <summary>The Period choices of the Dashboard and the Filters flyout. <see cref="AllTime"/> is no filter.</summary>
+public enum PeriodPreset
+{
+    AllTime,
+
+    /// <summary>Today and the 7 days before it: [today − 7, today], 8 calendar days.</summary>
+    Last7Days,
+
+    /// <summary>Today and the 30 days before it: [today − 30, today].</summary>
+    Last30Days,
+
+    /// <summary>Fixed From/To dates, both inclusive; either may be open.</summary>
+    Custom,
+}
+
+/// <summary>
+/// The Period filter: a record is in the period when its start date (a task's or Subtask card's own Start Date, a
+/// CR's planned start) falls inside it, inclusive. The end date is never considered, and a record without a start
+/// date is outside every set period. Rolling presets are stored as presets and resolved against the local day each
+/// time they are matched, so they move at midnight.
+/// </summary>
+public sealed record PeriodFilter(PeriodPreset Preset, DateOnly? From = null, DateOnly? To = null)
+{
+    public static PeriodFilter AllTime { get; } = new(PeriodPreset.AllTime);
+
+    public static PeriodFilter Last7Days { get; } = new(PeriodPreset.Last7Days);
+
+    public static PeriodFilter Last30Days { get; } = new(PeriodPreset.Last30Days);
+
+    public static PeriodFilter Custom(DateOnly? from, DateOnly? to) => new(PeriodPreset.Custom, from, to);
+
+    public bool IsSet => IsRolling || (Preset == PeriodPreset.Custom && (From is not null || To is not null));
+
+    /// <summary>The period moves with the local day.</summary>
+    public bool IsRolling => Preset is PeriodPreset.Last7Days or PeriodPreset.Last30Days;
+
+    public bool IsInverted => Preset == PeriodPreset.Custom && From is { } from && To is { } to && from > to;
+
+    /// <summary>The inclusive bounds on <paramref name="today"/>; both null when the period is not set.</summary>
+    public (DateOnly? From, DateOnly? To) Resolve(DateOnly today) => Preset switch
+    {
+        PeriodPreset.Last7Days => (today.AddDays(-7), today),
+        PeriodPreset.Last30Days => (today.AddDays(-30), today),
+        PeriodPreset.Custom => (From, To),
+        _ => (null, null),
+    };
+
+    /// <summary>A start date against the period on <paramref name="today"/>; an undated record is outside a set period.</summary>
+    public bool Matches(DateOnly? start, DateOnly today)
+    {
+        if (!IsSet)
+        {
+            return true;
+        }
+
+        if (start is not { } day)
+        {
+            return false;
+        }
+
+        var (from, to) = Resolve(today);
+        return (from is null || day >= from) && (to is null || day <= to);
+    }
+}
+
 /// <summary>An inclusive number range for a Number custom field; a record without a value fails it.</summary>
 public sealed record NumberRangeFilter(decimal? Min, decimal? Max)
 {

@@ -55,6 +55,9 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 
     public DashboardPageViewModel ViewModel { get; }
 
+    /// <summary>The Period field; the ViewModel's for the view's lifetime, so a flat x:Bind source.</summary>
+    public Common.Filters.PeriodFieldViewModel PeriodField => ViewModel.Period;
+
     /// <inheritdoc/>
     public FrameworkElement HeaderElement => HeaderRoot;
 

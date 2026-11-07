@@ -2878,7 +2878,7 @@
     <value>Clear filters</value>
   </data>
   <data name="Dashboard_FilterScopeCaption.Text" xml:space="preserve">
-    <value>Filters apply to tasks, Subtask cards and CRs. Reviews are not filtered.</value>
+    <value>Squad, Priority and CR Owner apply to tasks, Subtask cards and CRs. Period matches each record's start date and also applies to open reviews.</value>
   </data>
   <data name="Dashboard_StateView.LoadingMessage" xml:space="preserve">
     <value>Loading the dashboard…</value>
@@ -4088,5 +4088,60 @@
   </data>
   <data name="ExpandingSearch_ClearButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Clear search (Esc)</value>
+  </data>
+  <data name="Filters_Period" xml:space="preserve">
+    <value>Period</value>
+  </data>
+  <data name="Filters_PeriodLast7Days" xml:space="preserve">
+    <value>Last 7 days</value>
+  </data>
+  <data name="Filters_PeriodLast30Days" xml:space="preserve">
+    <value>Last 30 days</value>
+  </data>
+  <data name="Filters_PeriodCombo.Header" xml:space="preserve">
+    <value>Period (start date)</value>
+  </data>
+  <data name="Filters_PeriodFrom.Header" xml:space="preserve">
+    <value>From (inclusive)</value>
+  </data>
+  <data name="Filters_PeriodFrom.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Period from (inclusive)</value>
+  </data>
+  <data name="Filters_PeriodTo.Header" xml:space="preserve">
+    <value>To (inclusive)</value>
+  </data>
+  <data name="Filters_PeriodTo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Period to (inclusive)</value>
+  </data>
+  <data name="Dashboard_PeriodCombo.Header" xml:space="preserve">
+    <value>Period</value>
+  </data>
+  <data name="Dashboard_PeriodFrom.Header" xml:space="preserve">
+    <value>From (inclusive)</value>
+  </data>
+  <data name="Dashboard_PeriodFrom.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Period from (inclusive)</value>
+  </data>
+  <data name="Dashboard_PeriodTo.Header" xml:space="preserve">
+    <value>To (inclusive)</value>
+  </data>
+  <data name="Dashboard_PeriodTo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Period to (inclusive)</value>
+  </data>
+  <data name="Dashboard_DrillLabelWithPeriod" xml:space="preserve">
+    <value>{0} · {1}</value>
+    <comment>A review drill-down label and its Period chip, e.g. "Open reviews · Period: Last 7 days".</comment>
+  </data>
+  <data name="Period_AllTimeItem.Content" xml:space="preserve">
+    <value>All time</value>
+  </data>
+  <data name="Period_Last7DaysItem.Content" xml:space="preserve">
+    <value>Last 7 days</value>
+  </data>
+  <data name="Period_Last30DaysItem.Content" xml:space="preserve">
+    <value>Last 30 days</value>
+  </data>
+  <data name="Period_CustomItem.Content" xml:space="preserve">
+    <value>Custom range</value>
   </data>
 </root>

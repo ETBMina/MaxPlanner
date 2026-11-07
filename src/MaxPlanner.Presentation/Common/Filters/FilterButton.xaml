@@ -115,6 +115,56 @@
             </StackPanel>
         </DataTemplate>
 
+        <!--
+            The Period field: start date in the period. A separate field from the date ranges above and below; Custom
+            range shows inclusive From/To pickers with the inverted-range error (B-10).
+        -->
+        <DataTemplate x:Key="PeriodTemplate" x:DataType="local:PeriodFieldViewModel">
+            <StackPanel Margin="0,0,0,16" Spacing="8">
+                <!--
+                    Items are declared here, not bound: the flyout reuses this template for each new draft, and a
+                    replaced ItemsSource resets SelectedIndex to -1, which the TwoWay binding would write into the
+                    new draft. Order matches PeriodPreset.
+                -->
+                <ComboBox
+                    x:Uid="Filters_PeriodCombo"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="Filters_PeriodCombo"
+                    SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}">
+                    <ComboBoxItem x:Uid="Period_AllTimeItem" AutomationProperties.AutomationId="Filters_PeriodAllTime" />
+                    <ComboBoxItem x:Uid="Period_Last7DaysItem" AutomationProperties.AutomationId="Filters_PeriodLast7Days" />
+                    <ComboBoxItem x:Uid="Period_Last30DaysItem" AutomationProperties.AutomationId="Filters_PeriodLast30Days" />
+                    <ComboBoxItem x:Uid="Period_CustomItem" AutomationProperties.AutomationId="Filters_PeriodCustom" />
+                </ComboBox>
+                <Grid ColumnSpacing="8" Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CalendarDatePicker
+                        x:Uid="Filters_PeriodFrom"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="Filters_PeriodFrom"
+                        Date="{x:Bind From, Mode=TwoWay}"
+                        FirstDayOfWeek="Sunday" />
+                    <CalendarDatePicker
+                        x:Uid="Filters_PeriodTo"
+                        Grid.Column="1"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="Filters_PeriodTo"
+                        Date="{x:Bind To, Mode=TwoWay}"
+                        FirstDayOfWeek="Sunday" />
+                </Grid>
+                <TextBlock
+                    AutomationProperties.LiveSetting="Assertive"
+                    Foreground="{ThemeResource ErrorTextBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind Error, Mode=OneWay}"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind common:BindFunctions.Visible(HasError), Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="NumberTemplate" x:DataType="local:FilterNumberFieldViewModel">
             <StackPanel Margin="0,0,0,16" Spacing="8">
                 <TextBlock
@@ -245,6 +295,11 @@
                                 IsTabStop="False"
                                 ItemTemplate="{StaticResource TextTemplate}"
                                 ItemsSource="{x:Bind Draft.TextFields, Mode=OneWay}" />
+                            <ContentControl
+                                HorizontalContentAlignment="Stretch"
+                                Content="{x:Bind Draft.Period, Mode=OneWay, FallbackValue={x:Null}}"
+                                ContentTemplate="{StaticResource PeriodTemplate}"
+                                IsTabStop="False" />
                             <ItemsControl
                                 IsTabStop="False"
                                 ItemTemplate="{StaticResource DateTemplate}"

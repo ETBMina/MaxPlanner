@@ -14,7 +14,7 @@ namespace MaxPlanner.Application.Tests.Filtering;
 public sealed class SingleDesignerDeveloperFilterTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 22, 9, 0, 0, TimeSpan.Zero);
-    private static readonly TaskFilterContext Context = new(_ => null, _ => null);
+    private static readonly TaskFilterContext Context = new(_ => null, _ => null, Today);
 
     [Fact]
     public void Several_selected_designers_match_a_task_whose_designer_is_any_of_them()

@@ -9,6 +9,7 @@ using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Domain.Values;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Infrastructure.Storage;
 using MaxPlanner.Presentation.Common.Scheduling;
@@ -195,6 +196,15 @@ internal sealed class WorkspaceHarness : IDisposable
                     new AddChecklistItemCommand(OperationId.New(), id, revision, new ChecklistItemId(Guid.NewGuid()), text), default));
             }
 
+            return id;
+        }
+
+        /// <summary>A task with its actual Start Date set (the Period filter matches it).</summary>
+        public async Task<TaskId> DatedTaskAsync(string title, DateOnly start)
+        {
+            var id = new TaskId(Guid.NewGuid());
+            Ok(await new CreateTask(dataset.Coordinator).ExecuteAsync(
+                new CreateTaskCommand(OperationId.New(), id, new TaskContentDraft(title, "Mobile Banking", null, null, [], null, CustomValue.NoValues), Start: DateIntent.Set(start)), default));
             return id;
         }
 

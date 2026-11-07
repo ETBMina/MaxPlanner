@@ -122,8 +122,8 @@ public sealed partial class FilterDateFieldViewModel : ObservableObject
         IncludeLabel = includeLabel;
         AutomationId = automationId;
         _invertedError = invertedError;
-        From = range?.From is { } from ? new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue)) : null;
-        To = range?.To is { } to ? new DateTimeOffset(to.ToDateTime(TimeOnly.MinValue)) : null;
+        From = Picker(range?.From);
+        To = Picker(range?.To);
         IncludeUndated = range?.IncludeUndated ?? false;
         _changed = changed;
     }
@@ -167,7 +167,112 @@ public sealed partial class FilterDateFieldViewModel : ObservableObject
     partial void OnIncludeUndatedChanged(bool value) => _changed?.Invoke();
 
     // CalendarDatePicker dates carry the local calendar day; the offset is never a business value (T-05).
-    private static DateOnly? Day(DateTimeOffset? value) => value is { } date ? DateOnly.FromDateTime(date.DateTime) : null;
+    internal static DateOnly? Day(DateTimeOffset? value) => value is { } date ? DateOnly.FromDateTime(date.DateTime) : null;
+
+    internal static DateTimeOffset? Picker(DateOnly? day) => day is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue)) : null;
+}
+
+/// <summary>
+/// The Period field of the Filters flyout and the Dashboard: All time, Last 7 days, Last 30 days, or a custom
+/// inclusive From/To range. An inverted custom range shows the inline error and is never applied (B-10).
+/// </summary>
+public sealed partial class PeriodFieldViewModel : ObservableObject
+{
+    private const int CustomIndex = (int)PeriodPreset.Custom;
+    private readonly Action? _changed;
+    private readonly string _invertedError;
+    private bool _isLoading;
+    private int _selectedIndex;
+
+    internal PeriodFieldViewModel(ILocalizedStrings strings, PeriodFilter? period, Action? changed)
+    {
+        ArgumentNullException.ThrowIfNull(strings);
+        _invertedError = strings.GetString("Filters_InvertedRange");
+        Load(period);
+        _changed = changed;
+    }
+
+    /// <summary>
+    /// The ComboBox index, in <see cref="PeriodPreset"/> order (the items are declared in XAML). A ComboBox reports
+    /// -1 while its items are replaced or not yet there; such a write is ignored, so it can never clear the period.
+    /// </summary>
+    public int SelectedIndex
+    {
+        get => _selectedIndex;
+        set
+        {
+            if (value is < 0 or > CustomIndex || !SetProperty(ref _selectedIndex, value))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(IsCustom));
+            OnPropertyChanged(nameof(Error));
+            OnPropertyChanged(nameof(HasError));
+            Notify();
+        }
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Error), nameof(HasError))]
+    public partial DateTimeOffset? From { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Error), nameof(HasError))]
+    public partial DateTimeOffset? To { get; set; }
+
+    /// <summary>Custom range is chosen: the From and To pickers are shown.</summary>
+    public bool IsCustom => SelectedIndex == CustomIndex;
+
+    /// <summary>The chosen period, or null for All time and a custom range without dates.</summary>
+    public PeriodFilter? Filter
+    {
+        get
+        {
+            var period = SelectedIndex switch
+            {
+                1 => PeriodFilter.Last7Days,
+                2 => PeriodFilter.Last30Days,
+                CustomIndex => PeriodFilter.Custom(FilterDateFieldViewModel.Day(From), FilterDateFieldViewModel.Day(To)),
+                _ => PeriodFilter.AllTime,
+            };
+            return period.IsSet ? period : null;
+        }
+    }
+
+    public bool HasError => Filter is { IsInverted: true };
+
+    public string Error => HasError ? _invertedError : string.Empty;
+
+    /// <summary>The visible text of a set period: the preset name, or the custom range.</summary>
+    internal static string Text(ILocalizedStrings strings, PeriodFilter period) => period.Preset switch
+    {
+        PeriodPreset.Last7Days => strings.GetString("Filters_PeriodLast7Days"),
+        PeriodPreset.Last30Days => strings.GetString("Filters_PeriodLast30Days"),
+        _ => FilterText.Range(strings, new DateRangeFilter(period.From, period.To, IncludeUndated: false)),
+    };
+
+    /// <summary>Shows <paramref name="period"/> without raising the change callback.</summary>
+    internal void Load(PeriodFilter? period)
+    {
+        _isLoading = true;
+        SelectedIndex = (int)(period?.Preset ?? PeriodPreset.AllTime);
+        From = FilterDateFieldViewModel.Picker(period?.From);
+        To = FilterDateFieldViewModel.Picker(period?.To);
+        _isLoading = false;
+    }
+
+    partial void OnFromChanged(DateTimeOffset? value) => Notify();
+
+    partial void OnToChanged(DateTimeOffset? value) => Notify();
+
+    private void Notify()
+    {
+        if (!_isLoading)
+        {
+            _changed?.Invoke();
+        }
+    }
 }
 
 /// <summary>Min/Max for a Number custom field (NumberBox uses NaN for empty).</summary>
@@ -301,6 +406,9 @@ public sealed partial class FilterDraftViewModel : ObservableObject
 
     public List<FilterDateFieldViewModel> DateFields { get; } = [];
 
+    /// <summary>The Period field (start date in the period); separate from the date range fields.</summary>
+    public PeriodFieldViewModel? Period { get; internal set; }
+
     public List<FilterNumberFieldViewModel> NumberFields { get; } = [];
 
     /// <summary>"Filter tasks — Board and Grid · 3 fields set".</summary>
@@ -352,6 +460,8 @@ public sealed partial class FilterDraftViewModel : ObservableObject
             field.Clear();
         }
 
+        Period?.Load(null);
+
         foreach (var field in NumberFields)
         {
             field.Clear();
@@ -370,6 +480,6 @@ public sealed partial class FilterDraftViewModel : ObservableObject
 
         var count = _countFields(this);
         HeaderText = _strings.Format(count == 1 ? "Filters_HeaderOne" : "Filters_Header", _scopeTitle, count);
-        CanApply = DateFields.All(f => !f.HasError) && NumberFields.All(f => !f.HasError);
+        CanApply = DateFields.All(f => !f.HasError) && NumberFields.All(f => !f.HasError) && Period is not { HasError: true };
     }
 }

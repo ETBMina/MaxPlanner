@@ -23,15 +23,20 @@ public sealed record ReviewDrillDown(ReviewFilterSpec Spec) : DashboardDrillDown
 public sealed record DashboardSquad(SquadId? Id);
 
 /// <summary>
-/// The Dashboard's own filters (B-15): each null means "all". They apply to task metrics (inherited squad and owner,
-/// task priority), to Subtask card metrics (through the parent), and to CR metrics (the CR's own values); never to
-/// review metrics.
+/// The Dashboard's own filters (B-15): each null means "all". Squad, Priority and CR Owner apply to task metrics
+/// (inherited squad and owner, task priority), to Subtask card metrics (through the parent), and to CR metrics (the
+/// CR's own values), never to reviews. <paramref name="Period"/> narrows tasks and Subtask cards by their own Start
+/// Date, CRs by planned start, and open reviews (created) and their developer chart; the "done this week/month"
+/// review counts keep their own periods.
 /// </summary>
-public sealed record DashboardFilter(DashboardSquad? Squad, PriorityId? Priority, PersonId? Owner)
+public sealed record DashboardFilter(DashboardSquad? Squad, PriorityId? Priority, PersonId? Owner, PeriodFilter? Period = null)
 {
     public static DashboardFilter None { get; } = new(null, null, null);
 
-    public bool IsActive => Squad is not null || Priority is not null || Owner is not null;
+    public bool IsActive => Squad is not null || Priority is not null || Owner is not null || Period is { IsSet: true };
+
+    /// <summary>The Period when it narrows anything; All time and an empty custom range are null.</summary>
+    public PeriodFilter? EffectivePeriod => Period is { IsSet: true } period ? period : null;
 }
 
 /// <summary>A count with the drill-down that shows exactly the records it counts.</summary>
@@ -95,15 +100,17 @@ public static class DashboardCalculator
 {
     public const int PreviewRows = 10;
 
-    public static DashboardResult Calculate(DashboardInput input, DashboardFilter filter, DateOnly today, DashboardLabels labels)
+    /// <param name="localZone">The zone of <paramref name="today"/>; it places a review's creation on a local day.</param>
+    public static DashboardResult Calculate(DashboardInput input, DashboardFilter filter, DateOnly today, TimeZoneInfo localZone, DashboardLabels labels)
     {
         ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(localZone);
         ArgumentNullException.ThrowIfNull(filter);
         ArgumentNullException.ThrowIfNull(labels);
 
         var tasksById = input.Tasks.ToDictionary(t => t.Id);
         var crsById = input.ChangeRequests.ToDictionary(c => c.Id);
-        var context = new TaskFilterContext(id => tasksById.GetValueOrDefault(id), id => crsById.GetValueOrDefault(id));
+        var context = new TaskFilterContext(id => tasksById.GetValueOrDefault(id), id => crsById.GetValueOrDefault(id), today);
         var taskBase = TaskScope(filter);
         var crBase = CrScope(filter);
 
@@ -138,10 +145,10 @@ public static class DashboardCalculator
             new DashboardMetric(overdue.Count, new CrDrillDown(overdueSpec)),
             new DashboardMetric(activeCards, new TaskDrillDown(cardSpec)),
             scoped.Count,
-            Reviews(input.Reviews, today),
+            Reviews(input.Reviews, filter.EffectivePeriod, today, localZone),
             StatusChart(input.Workflow, scoped, taskBase),
             SquadChart(input.Workflow, scoped, taskBase, labels.General),
-            ReviewChart(input.Workflow, input.Reviews, labels.Unassigned),
+            ReviewChart(input.Workflow, input.Reviews, filter.EffectivePeriod, today, localZone, labels.Unassigned),
             new DashboardList<OverdueCrRow>([.. overdue.Take(PreviewRows)], overdue.Count, new CrDrillDown(overdueSpec)),
             new DashboardList<TaskReadModel>([.. unlinked.Take(PreviewRows)], unlinked.Count, new TaskDrillDown(unlinkedSpec)),
             input.Tasks.Count == 0 && input.ChangeRequests.Count == 0);
@@ -156,6 +163,7 @@ public static class DashboardCalculator
             Squads = filter.Squad is { } squad ? [squad.Id] : [],
             Priorities = filter.Priority is { } priority ? [priority] : [],
             Owners = filter.Owner is { } owner ? [owner] : [],
+            Period = filter.EffectivePeriod,
         };
     }
 
@@ -167,18 +175,20 @@ public static class DashboardCalculator
             Squads = filter.Squad is { } squad ? [squad.Id] : [],
             Priorities = filter.Priority is { } priority ? [priority] : [],
             Owners = filter.Owner is { } owner ? [owner] : [],
+            Period = filter.EffectivePeriod,
         };
     }
 
-    private static DashboardReviewSummary Reviews(IReadOnlyCollection<ReviewItem> reviews, DateOnly today)
+    /// <summary>The Period narrows open reviews; the done-this-week/month counts keep their own fixed periods.</summary>
+    private static DashboardReviewSummary Reviews(IReadOnlyCollection<ReviewItem> reviews, PeriodFilter? period, DateOnly today, TimeZoneInfo localZone)
     {
-        DashboardMetric Metric(ReviewMetric metric)
+        DashboardMetric Metric(ReviewMetric metric, PeriodFilter? within)
         {
-            var spec = new ReviewFilterSpec(metric, false, null);
-            return new DashboardMetric(reviews.Count(r => ReviewFilterMatcher.Matches(spec, r, today)), new ReviewDrillDown(spec));
+            var spec = new ReviewFilterSpec(metric, false, null, within);
+            return new DashboardMetric(reviews.Count(r => ReviewFilterMatcher.Matches(spec, r, today, localZone)), new ReviewDrillDown(spec));
         }
 
-        return new DashboardReviewSummary(Metric(ReviewMetric.Open), Metric(ReviewMetric.DoneThisWeek), Metric(ReviewMetric.DoneThisMonth));
+        return new DashboardReviewSummary(Metric(ReviewMetric.Open, period), Metric(ReviewMetric.DoneThisWeek, null), Metric(ReviewMetric.DoneThisMonth, null));
     }
 
     /// <summary>B-15.1: configured status order, zero-count statuses included.</summary>
@@ -220,16 +230,18 @@ public static class DashboardCalculator
     }
 
     /// <summary>B-15.3: open reviews by developer, "Unassigned" for none; count descending, then name.</summary>
-    private static DashboardChart ReviewChart(WorkflowSnapshot workflow, IReadOnlyCollection<ReviewItem> reviews, string unassigned)
+    private static DashboardChart ReviewChart(
+        WorkflowSnapshot workflow, IReadOnlyCollection<ReviewItem> reviews, PeriodFilter? period, DateOnly today, TimeZoneInfo localZone, string unassigned)
     {
-        var open = reviews.Where(r => !r.IsDone).ToList();
+        var openSpec = new ReviewFilterSpec(ReviewMetric.Open, false, null, period);
+        var open = reviews.Where(r => ReviewFilterMatcher.Matches(openSpec, r, today, localZone)).ToList();
         var bars = open
             .GroupBy(r => r.Content.DeveloperId)
             .Select(g => new DashboardBar(
                 g.Key is { } id ? Key(id.Value) : "Unassigned",
                 g.Key is { } person ? workflow.FindPerson(person)?.Name.Display ?? unassigned : unassigned,
                 g.Count(),
-                new ReviewDrillDown(new ReviewFilterSpec(ReviewMetric.Open, true, g.Key))))
+                new ReviewDrillDown(openSpec with { ByDeveloper = true, DeveloperId = g.Key })))
             .OrderByDescending(b => b.Count)
             .ThenBy(b => b.Label, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(b => b.Key, StringComparer.Ordinal)

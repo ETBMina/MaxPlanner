@@ -18,6 +18,9 @@ public static class FilterPersistence
     private const string NoCr = "none";
     private const string CustomPrefix = "custom:";
 
+    /// <summary>The Period key: <c>["last7"]</c>, <c>["last30"]</c>, or <c>["custom", from, to]</c> (ISO, either may be empty).</summary>
+    public const string PeriodKey = "period";
+
     public static ViewFilterPreference ToPreference(TaskFilterSpec spec)
     {
         ArgumentNullException.ThrowIfNull(spec);
@@ -50,6 +53,7 @@ public static class FilterPersistence
 
         PutDate(fields, "start", spec.StartDate);
         PutDate(fields, "end", spec.EndDate);
+        PutPeriod(fields, spec.Period);
         PutCustom(fields, spec.CustomFields);
         return new ViewFilterPreference(spec.HasSearch ? spec.SearchText.Trim() : null, fields);
     }
@@ -77,6 +81,7 @@ public static class FilterPersistence
             ServiceContains = Values(f, "service") is [var service, ..] ? service : null,
             StartDate = Date(f, "start"),
             EndDate = Date(f, "end"),
+            Period = ParsePeriod(Values(f, PeriodKey)),
             CustomFields = Custom(f),
         };
     }
@@ -90,6 +95,7 @@ public static class FilterPersistence
         Put(fields, "squad", spec.Squads.Select(Squad));
         Put(fields, "owner", spec.Owners.Select(i => Id(i.Value)));
         PutDate(fields, "planned", spec.Planned);
+        PutPeriod(fields, spec.Period);
         PutCustom(fields, spec.CustomFields);
         return new ViewFilterPreference(spec.HasSearch ? spec.SearchText.Trim() : null, fields);
     }
@@ -110,8 +116,48 @@ public static class FilterPersistence
             Squads = Squads(f),
             Owners = [.. Ids(f, "owner").Select(g => new PersonId(g))],
             Planned = Date(f, "planned"),
+            Period = ParsePeriod(Values(f, PeriodKey)),
             CustomFields = Custom(f),
         };
+    }
+
+    /// <summary>
+    /// Writes a set Period under <see cref="PeriodKey"/>. Rolling presets are stored as presets (never as dates), so a
+    /// saved "Last 7 days" still means the last 7 days on a later day.
+    /// </summary>
+    public static void PutPeriod(IDictionary<string, IReadOnlyList<string>> fields, PeriodFilter? period)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+        switch (period)
+        {
+            case { IsSet: false } or null:
+                return;
+            case { Preset: PeriodPreset.Last7Days }:
+                fields[PeriodKey] = ["last7"];
+                break;
+            case { Preset: PeriodPreset.Last30Days }:
+                fields[PeriodKey] = ["last30"];
+                break;
+            default:
+                fields[PeriodKey] = ["custom", IsoDate(period.From), IsoDate(period.To)];
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Reads a saved Period. A missing key (an older <c>configuration.json</c>), an unknown preset, an unreadable or
+    /// inverted custom range all mean All time (null): unreadable values are dropped, never guessed.
+    /// </summary>
+    public static PeriodFilter? ParsePeriod(IReadOnlyList<string>? parts)
+    {
+        PeriodFilter? period = parts switch
+        {
+            ["last7", ..] => PeriodFilter.Last7Days,
+            ["last30", ..] => PeriodFilter.Last30Days,
+            ["custom", var from, var to, ..] => PeriodFilter.Custom(ParseIso(from), ParseIso(to)),
+            _ => null,
+        };
+        return period is { IsSet: true, IsInverted: false } ? period : null;
     }
 
     private static string Id(Guid id) => id.ToString("N", CultureInfo.InvariantCulture);

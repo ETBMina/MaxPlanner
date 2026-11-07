@@ -7,6 +7,8 @@ namespace MaxPlanner.Presentation.Common.Controls;
 /// <summary>
 /// Lays children left to right and wraps them onto new lines (filter chips, design §2.6). ADR 0021 keeps the
 /// Community Toolkit out of release 1, so this replaces its WrapPanel. Not virtualized: use it for short lists only.
+/// Each child gets a slot as tall as the tallest child on its line, so its <see cref="FrameworkElement.VerticalAlignment"/>
+/// places it within the line (Bottom lines a link up with headed ComboBoxes). Collapsed children take no space.
 /// </summary>
 public sealed partial class WrapPanel : Panel
 {
@@ -23,6 +25,8 @@ public sealed partial class WrapPanel : Panel
     // tolerance the last child of an exactly-fitting line would wrap onto a new line.
     private const double WrapTolerance = 0.5;
 
+    // Reused by every arrange pass; it holds the children of the line being placed.
+    private readonly List<UIElement> _line = [];
     private bool _isSingleLine;
 
     public double Spacing
@@ -60,6 +64,11 @@ public sealed partial class WrapPanel : Panel
         foreach (var child in Children)
         {
             child.Measure(new Size(width, double.PositiveInfinity));
+            if (child.Visibility == Visibility.Collapsed)
+            {
+                continue;
+            }
+
             var size = child.DesiredSize;
             singleLineWidth += (singleLineWidth > 0 ? Spacing : 0) + size.Width;
             singleLineHeight = Math.Max(singleLineHeight, size.Height);
@@ -93,20 +102,42 @@ public sealed partial class WrapPanel : Panel
         double x = 0, y = 0, lineHeight = 0;
         foreach (var child in Children)
         {
+            if (child.Visibility == Visibility.Collapsed)
+            {
+                child.Arrange(default);
+                continue;
+            }
+
             var size = child.DesiredSize;
             if (x > 0 && x + size.Width > wrapWidth + WrapTolerance)
             {
+                ArrangeLine(y, lineHeight, finalSize.Width);
                 x = 0;
                 y += lineHeight + Spacing;
                 lineHeight = 0;
             }
 
-            child.Arrange(new Rect(x, y, Math.Min(size.Width, finalSize.Width), size.Height));
+            _line.Add(child);
             x += size.Width + Spacing;
             lineHeight = Math.Max(lineHeight, size.Height);
         }
 
+        ArrangeLine(y, lineHeight, finalSize.Width);
         return finalSize;
+    }
+
+    /// <summary>Arranges one line in slots of the line's height; each child's VerticalAlignment applies within its slot.</summary>
+    private void ArrangeLine(double y, double lineHeight, double maxWidth)
+    {
+        double x = 0;
+        foreach (var child in _line)
+        {
+            var width = child.DesiredSize.Width;
+            child.Arrange(new Rect(x, y, Math.Min(width, maxWidth), lineHeight));
+            x += width + Spacing;
+        }
+
+        _line.Clear();
     }
 }
 
