@@ -203,6 +203,8 @@
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                     <Setter Property="Padding" Value="0" />
                                     <Setter Property="MinHeight" Value="44" />
+                                    <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                                    <Setter Property="BorderThickness" Value="0,0,0,1" />
                                     <Setter Property="IsTabStop" Value="False" />
                                 </Style>
                             </local:GridTable.ItemContainerStyle>
