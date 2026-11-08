@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI.Core;
+using MaxPlanner.Presentation.Common;
 
 namespace MaxPlanner.Presentation.Board;
 
@@ -88,13 +89,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }];
 
     /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
-    public static string PriorityGlyph(PriorityLevel level) => level switch
-    {
-        PriorityLevel.Level1 => "\uE8C9",
-        PriorityLevel.Level2 => "\uE70E",
-        PriorityLevel.Lowest => "\uE70D",
-        _ => "\uE738",
-    };
+    public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
 
     /// <summary>Design §4.2: 60% opacity while the card is being moved; the "Moving" caption says it in text.</summary>
     public static double MovingOpacity(bool isMoving) => isMoving ? 0.6 : 1.0;

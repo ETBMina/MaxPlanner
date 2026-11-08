@@ -25,9 +25,10 @@ public sealed record DashboardSquad(SquadId? Id);
 /// <summary>
 /// The Dashboard's own filters (B-15): each null means "all". Squad, Priority and CR Owner apply to task metrics
 /// (inherited squad and owner, task priority), to Subtask card metrics (through the parent), and to CR metrics (the
-/// CR's own values), never to reviews. <paramref name="Period"/> narrows tasks and Subtask cards by their own Start
-/// Date, CRs by planned start, and open reviews (created) and their developer chart; the "done this week/month"
-/// review counts keep their own periods.
+/// CR's own values), never to reviews. <paramref name="Period"/> is the Active date: it keeps records that were active
+/// during the range (their active span overlaps it): tasks and Subtask cards by Start Date → End Date, CRs by planned
+/// start → planned end, and open reviews (created, still active) and their developer chart. A missing end is
+/// open-ended; a record without a start is excluded. The "done this week/month" review counts keep their own periods.
 /// </summary>
 public sealed record DashboardFilter(DashboardSquad? Squad, PriorityId? Priority, PersonId? Owner, PeriodFilter? Period = null)
 {
@@ -35,7 +36,7 @@ public sealed record DashboardFilter(DashboardSquad? Squad, PriorityId? Priority
 
     public bool IsActive => Squad is not null || Priority is not null || Owner is not null || Period is { IsSet: true };
 
-    /// <summary>The Period when it narrows anything; All time and an empty custom range are null.</summary>
+    /// <summary>The Active date when it narrows anything; All time and an empty custom range are null.</summary>
     public PeriodFilter? EffectivePeriod => Period is { IsSet: true } period ? period : null;
 }
 

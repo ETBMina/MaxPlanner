@@ -13,6 +13,7 @@ using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
+using MaxPlanner.Presentation.Common;
 
 namespace MaxPlanner.Presentation.Calendar;
 
@@ -516,17 +517,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        var ordered = workflow.Priorities.OrderBy(p => p.Order).ToList();
-        var levels = new Dictionary<PriorityId, PriorityLevel>();
-        for (var i = 0; i < ordered.Count; i++)
-        {
-            levels[ordered[i].Id] = i == 0 ? PriorityLevel.Level1
-                : ordered.Count >= 3 && i == ordered.Count - 1 ? PriorityLevel.Lowest
-                : i == 1 ? PriorityLevel.Level2
-                : PriorityLevel.Mid;
-        }
-
-        _priorityLevels = levels;
+        _priorityLevels = PriorityLevels.Of(workflow.Priorities);
     }
 
     private void Refresh()

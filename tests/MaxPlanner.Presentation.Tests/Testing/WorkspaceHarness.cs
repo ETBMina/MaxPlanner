@@ -199,12 +199,12 @@ internal sealed class WorkspaceHarness : IDisposable
             return id;
         }
 
-        /// <summary>A task with its actual Start Date set (the Period filter matches it).</summary>
-        public async Task<TaskId> DatedTaskAsync(string title, DateOnly start)
+        /// <summary>A task with its actual Start Date (and optionally End Date) set, for the date and Active date filters.</summary>
+        public async Task<TaskId> DatedTaskAsync(string title, DateOnly start, DateOnly? end = null)
         {
             var id = new TaskId(Guid.NewGuid());
             Ok(await new CreateTask(dataset.Coordinator).ExecuteAsync(
-                new CreateTaskCommand(OperationId.New(), id, new TaskContentDraft(title, "Mobile Banking", null, null, [], null, CustomValue.NoValues), Start: DateIntent.Set(start)), default));
+                new CreateTaskCommand(OperationId.New(), id, new TaskContentDraft(title, "Mobile Banking", null, null, [], null, CustomValue.NoValues), Start: DateIntent.Set(start), End: end is { } e ? DateIntent.Set(e) : DateIntent.Unchanged), default));
             return id;
         }
 

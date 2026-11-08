@@ -15,6 +15,7 @@ using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
+using MaxPlanner.Presentation.Common;
 
 namespace MaxPlanner.Presentation.Board;
 
@@ -109,7 +110,7 @@ public sealed partial class BoardBucketViewModel : ObservableObject, IDisposable
     internal void Update(TaskStatusDefinition status)
     {
         Name = status.Name.Display;
-        Glyph = status.IsCompleted ? "\uE930" : status.SetsStartDate ? "\uE768" : status.IsBacklog ? "\uEA3A" : string.Empty;
+        Glyph = WorkflowGlyphs.TaskStatus(status);
     }
 
     /// <summary>Applies the shared task filter (B-10) to this bucket; hidden cards keep their ranks (B-07).</summary>
@@ -467,7 +468,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     /// </summary>
     private void OnWorkflow(WorkflowSnapshot workflow)
     {
-        _priorityLevels = PriorityLevels(workflow.Priorities);
+        _priorityLevels = PriorityLevels.Of(workflow.Priorities);
         var statuses = workflow.TaskStatuses.OrderBy(s => s.Order).ToList();
         var removed = _buckets.Where(c => statuses.All(s => s.Id != c.StatusId)).ToList();
         KeyedCollectionSync.Sync(
@@ -514,21 +515,6 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private PriorityLevel LevelOf(WorkItemRecord record) =>
         record.Task is { } task && _priorityLevels.TryGetValue(task.Priority.Id, out var level) ? level : PriorityLevel.Mid;
 
-    /// <summary>Design §6.1: highest rank Level1, second Level2, lowest (with three or more) Lowest, the rest Mid.</summary>
-    private static Dictionary<PriorityId, PriorityLevel> PriorityLevels(IReadOnlyList<PriorityDefinition> priorities)
-    {
-        var ordered = priorities.OrderBy(p => p.Order).ToList();
-        var levels = new Dictionary<PriorityId, PriorityLevel>();
-        for (var i = 0; i < ordered.Count; i++)
-        {
-            levels[ordered[i].Id] = i == 0 ? PriorityLevel.Level1
-                : ordered.Count >= 3 && i == ordered.Count - 1 ? PriorityLevel.Lowest
-                : i == 1 ? PriorityLevel.Level2
-                : PriorityLevel.Mid;
-        }
-
-        return levels;
-    }
 
     private void UpdateState()
     {

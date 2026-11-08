@@ -13,12 +13,13 @@ using static MaxPlanner.Application.Tests.TestWorkspace;
 namespace MaxPlanner.Application.Tests.Filtering;
 
 /// <summary>
-/// The Period filter: a record is in the period when its own start date (a CR's planned start) is inside it,
-/// inclusive; the end date is never considered and undated records are excluded. Rolling presets resolve against the
-/// day they are matched on.
+/// The Active date filter (was "Period", owner decision 2026-11-07): a record matches when its active span overlaps
+/// the range, inclusive. The span is Start Date → End Date (a CR's planned start → end, a review's creation → completion);
+/// a missing end is open-ended, a missing start never matches. Rolling presets resolve against the day they are
+/// matched on.
 /// </summary>
 [Trait("Req", "B-10")]
-public sealed class PeriodFilterTests
+public sealed class ActiveDateFilterTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 22, 9, 0, 0, TimeSpan.Zero);
     private static readonly ReadModelComposer Composer = new();
@@ -31,7 +32,8 @@ public sealed class PeriodFilterTests
     [InlineData(1, false)]
     public void Last_7_days_is_today_and_the_7_days_before_it(int offset, bool expected)
     {
-        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(offset))).Should().Be(expected);
+        var day = Today.AddDays(offset);
+        Matches(PeriodFilter.Last7Days, Task(start: day, end: day)).Should().Be(expected);
     }
 
     [Theory]
@@ -41,16 +43,27 @@ public sealed class PeriodFilterTests
     [InlineData(1, false)]
     public void Last_30_days_is_today_and_the_30_days_before_it(int offset, bool expected)
     {
-        Matches(PeriodFilter.Last30Days, Task(start: Today.AddDays(offset))).Should().Be(expected);
+        var day = Today.AddDays(offset);
+        Matches(PeriodFilter.Last30Days, Task(start: day, end: day)).Should().Be(expected);
     }
 
     [Fact]
-    public void Only_the_start_date_counts()
+    public void A_record_matches_when_its_active_span_overlaps_the_range()
     {
-        Matches(PeriodFilter.Last7Days, Task(start: null)).Should().BeFalse("a record without a start date is outside a set period");
-        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-20), end: Today)).Should().BeFalse("the end date is not considered");
-        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-2), end: Today.AddDays(40))).Should().BeTrue();
+        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-20), end: Today.AddDays(-7))).Should().BeTrue("it ended on the first day of the range");
+        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-20), end: Today.AddDays(-8))).Should().BeFalse("it ended before the range");
+        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-20), end: Today.AddDays(30))).Should().BeTrue("it spans the whole range");
+        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-2), end: Today.AddDays(40))).Should().BeTrue("it started in the range");
+        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(1))).Should().BeFalse("it starts after the range");
+    }
+
+    [Fact]
+    public void A_missing_end_is_still_active_and_a_missing_start_never_matches()
+    {
+        Matches(PeriodFilter.Last7Days, Task(start: Today.AddDays(-400))).Should().BeTrue("a record without an end is still in progress");
+        Matches(PeriodFilter.Last7Days, Task(start: null)).Should().BeFalse("a record without a start is excluded");
         Matches(PeriodFilter.AllTime, Task(start: null)).Should().BeTrue("All time is no filter");
+        PeriodFilter.Last7Days.Matches(null, Today, Today).Should().BeFalse("an end alone is not a span");
     }
 
     [Fact]
@@ -59,11 +72,12 @@ public sealed class PeriodFilterTests
         var from = Today.AddDays(-10);
         var to = Today.AddDays(-4);
 
-        Matches(PeriodFilter.Custom(from, to), Task(start: from)).Should().BeTrue();
-        Matches(PeriodFilter.Custom(from, to), Task(start: to)).Should().BeTrue();
-        Matches(PeriodFilter.Custom(from, to), Task(start: to.AddDays(1))).Should().BeFalse();
-        Matches(PeriodFilter.Custom(from, null), Task(start: Today.AddDays(100))).Should().BeTrue();
-        Matches(PeriodFilter.Custom(null, to), Task(start: Today.AddDays(-400))).Should().BeTrue();
+        Matches(PeriodFilter.Custom(from, to), Task(start: to, end: to)).Should().BeTrue();
+        Matches(PeriodFilter.Custom(from, to), Task(start: from.AddDays(-5), end: from)).Should().BeTrue();
+        Matches(PeriodFilter.Custom(from, to), Task(start: to.AddDays(1), end: to.AddDays(2))).Should().BeFalse();
+        Matches(PeriodFilter.Custom(from, to), Task(start: from.AddDays(-5), end: from.AddDays(-1))).Should().BeFalse();
+        Matches(PeriodFilter.Custom(from, null), Task(start: Today.AddDays(100), end: Today.AddDays(101))).Should().BeTrue();
+        Matches(PeriodFilter.Custom(null, to), Task(start: Today.AddDays(-400), end: Today.AddDays(-399))).Should().BeTrue();
         PeriodFilter.Custom(to, from).IsInverted.Should().BeTrue();
         PeriodFilter.Custom(null, null).IsSet.Should().BeFalse();
     }
@@ -72,71 +86,74 @@ public sealed class PeriodFilterTests
     public void A_rolling_preset_resolves_against_the_day_it_is_matched_on()
     {
         var spec = new TaskFilterSpec { Period = PeriodFilter.Last7Days };
-        var task = Task(start: Today.AddDays(-7));
+        var task = Task(start: Today.AddDays(-9), end: Today.AddDays(-7));
 
         TaskFilterMatcher.Matches(spec, task, Context(Today)).Should().BeTrue();
         TaskFilterMatcher.Matches(spec, task, Context(Today.AddDays(1))).Should().BeFalse("the window moved at midnight");
         TaskFilterMatcher.Matches(spec with { Period = PeriodFilter.Custom(Today.AddDays(-7), Today) }, task, Context(Today.AddDays(1)))
             .Should().BeTrue("a custom range is fixed");
+        spec.IsRolling.Should().BeTrue();
+        (spec with { Period = PeriodFilter.Custom(Today, Today) }).IsRolling.Should().BeFalse();
     }
 
     [Fact]
-    public void A_subtask_card_uses_its_own_start_date()
+    public void A_subtask_card_uses_its_own_dates()
     {
         var parent = Task(start: Today.AddDays(-60));
-        var inside = Card(parent, Today.AddDays(-1));
-        var outside = Card(parent, Today.AddDays(-9));
+        var ongoing = Card(parent, Today.AddDays(-30));
+        var finished = Card(parent, Today.AddDays(-12), Today.AddDays(-9));
         var spec = new TaskFilterSpec { Period = PeriodFilter.Last7Days };
         var context = new TaskFilterContext(_ => parent, _ => null, Today);
 
-        TaskFilterMatcher.Matches(spec, inside, context).Should().BeTrue();
-        TaskFilterMatcher.Matches(spec, outside, context).Should().BeFalse();
+        TaskFilterMatcher.Matches(spec, ongoing, context).Should().BeTrue("it has no end yet");
+        TaskFilterMatcher.Matches(spec, finished, context).Should().BeFalse("it ended before the range");
     }
 
     [Fact]
-    public void A_cr_is_in_the_period_by_its_planned_start()
+    public void A_cr_matches_when_its_planned_range_overlaps()
     {
         var spec = new CrFilterSpec { Period = PeriodFilter.Last7Days };
 
         CrFilterMatcher.Matches(spec, Cr(Today.AddDays(-7), Today.AddDays(30)), Today).Should().BeTrue();
-        CrFilterMatcher.Matches(spec, Cr(Today.AddDays(-8), Today), Today).Should().BeFalse("the planned end is not considered");
+        CrFilterMatcher.Matches(spec, Cr(Today.AddDays(-30), Today.AddDays(-3)), Today).Should().BeTrue("the planned end is in the range");
+        CrFilterMatcher.Matches(spec, Cr(Today.AddDays(-30), Today.AddDays(-8)), Today).Should().BeFalse("planned to end before the range");
         CrFilterMatcher.Matches(spec, Cr(null, null), Today).Should().BeFalse("an unscheduled CR has no start");
         spec.FieldCount.Should().Be(1);
     }
 
     [Fact]
-    public void An_open_review_counts_by_its_creation_day_and_a_done_one_by_its_completion_day()
+    public void A_review_is_active_from_its_creation_until_it_is_done()
     {
-        var period = PeriodFilter.Last7Days;
-        var open = new ReviewFilterSpec(ReviewMetric.Open, false, null, period);
+        var range = PeriodFilter.Custom(Today.AddDays(-15), Today.AddDays(-10));
+        var open = new ReviewFilterSpec(ReviewMetric.Open, false, null, range);
 
-        ReviewFilterMatcher.Matches(open, Review(createdDaysAgo: 7), Today, TimeZoneInfo.Utc).Should().BeTrue();
-        ReviewFilterMatcher.Matches(open, Review(createdDaysAgo: 8), Today, TimeZoneInfo.Utc).Should().BeFalse();
-        ReviewFilterMatcher.Matches(open with { Period = null }, Review(createdDaysAgo: 8), Today, TimeZoneInfo.Utc).Should().BeTrue();
+        ReviewFilterMatcher.Matches(open, Review(createdDaysAgo: 30), Today, TimeZoneInfo.Utc).Should().BeTrue("an open review is still active");
+        ReviewFilterMatcher.Matches(open, Review(createdDaysAgo: 9), Today, TimeZoneInfo.Utc).Should().BeFalse("created after the range");
+        ReviewFilterMatcher.Matches(open with { Period = null }, Review(createdDaysAgo: 9), Today, TimeZoneInfo.Utc).Should().BeTrue();
 
-        var doneThisMonth = new ReviewFilterSpec(ReviewMetric.DoneThisMonth, false, null, period);
-        ReviewFilterMatcher.Matches(doneThisMonth, Review(createdDaysAgo: 60, completedDaysAgo: 2), Today, TimeZoneInfo.Utc).Should().BeTrue("created long ago, completed in the period");
-        ReviewFilterMatcher.Matches(doneThisMonth, Review(createdDaysAgo: 3, completedDaysAgo: 9), Today, TimeZoneInfo.Utc).Should().BeFalse("completed before the period");
+        var doneThisMonth = new ReviewFilterSpec(ReviewMetric.DoneThisMonth, false, null, PeriodFilter.Last7Days);
+        ReviewFilterMatcher.Matches(doneThisMonth, Review(createdDaysAgo: 60, completedDaysAgo: 2), Today, TimeZoneInfo.Utc).Should().BeTrue("created long ago, done in the range");
+        ReviewFilterMatcher.Matches(doneThisMonth, Review(createdDaysAgo: 12, completedDaysAgo: 9), Today, TimeZoneInfo.Utc).Should().BeFalse("done before the range");
     }
 
     [Fact]
     public void A_review_creation_instant_is_placed_on_the_local_day_of_the_given_zone()
     {
-        // Created at 12:00 UTC eight days ago: still eight days ago in UTC, but already seven days ago at UTC+13.
-        var review = Review(createdDaysAgo: 8);
-        var open = new ReviewFilterSpec(ReviewMetric.Open, false, null, PeriodFilter.Last7Days);
+        // Created at 12:00 UTC on day −1: still day −1 in UTC, but already today at UTC+13. A range of "today" only.
+        var review = Review(createdDaysAgo: 1, completedDaysAgo: 1);
+        var done = new ReviewFilterSpec(ReviewMetric.DoneThisMonth, false, null, PeriodFilter.Custom(Today, Today));
         var plus13 = TimeZoneInfo.CreateCustomTimeZone("Test+13", TimeSpan.FromHours(13), "Test+13", "Test+13");
         var minus12 = TimeZoneInfo.CreateCustomTimeZone("Test-12", TimeSpan.FromHours(-12), "Test-12", "Test-12");
 
-        ReviewFilterMatcher.PeriodDay(review, TimeZoneInfo.Utc).Should().Be(Today.AddDays(-8));
-        ReviewFilterMatcher.PeriodDay(review, plus13).Should().Be(Today.AddDays(-7));
-        ReviewFilterMatcher.PeriodDay(review, minus12).Should().Be(Today.AddDays(-8));
-        ReviewFilterMatcher.Matches(open, review, Today, TimeZoneInfo.Utc).Should().BeFalse();
-        ReviewFilterMatcher.Matches(open, review, Today, plus13).Should().BeTrue();
+        ReviewFilterMatcher.CreatedDay(Review(createdDaysAgo: 8), TimeZoneInfo.Utc).Should().Be(Today.AddDays(-8));
+        ReviewFilterMatcher.CreatedDay(Review(createdDaysAgo: 8), plus13).Should().Be(Today.AddDays(-7));
+        ReviewFilterMatcher.CreatedDay(Review(createdDaysAgo: 8), minus12).Should().Be(Today.AddDays(-8));
+        ReviewFilterMatcher.Matches(done, review, Today, TimeZoneInfo.Utc).Should().BeFalse("done on day −1");
+        ReviewFilterMatcher.Matches(done with { Period = PeriodFilter.Custom(Today.AddDays(-1), Today.AddDays(-1)) }, review, Today, TimeZoneInfo.Utc).Should().BeTrue();
     }
 
     [Fact]
-    public void The_period_counts_as_one_field_and_shares_the_and_of_the_other_fields()
+    public void The_active_date_counts_as_one_field_and_shares_the_and_of_the_other_fields()
     {
         var spec = new TaskFilterSpec { Period = PeriodFilter.Last7Days, Priorities = [High.Id] };
 
@@ -162,10 +179,12 @@ public sealed class PeriodFilterTests
     }
 
     [Fact]
-    public void Older_and_unreadable_saved_periods_load_as_all_time()
+    public void A_period_saved_by_an_older_version_loads_as_the_active_date()
     {
         Load().Should().BeNull("a configuration.json from before the Period field has no key");
         Load("last7").Should().Be(PeriodFilter.Last7Days);
+        Load("last30").Should().Be(PeriodFilter.Last30Days);
+        Load("custom", "2026-11-01", "2026-11-07").Should().Be(PeriodFilter.Custom(new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 7)));
         Load("last14").Should().BeNull("an unknown preset is dropped");
         Load("custom", "2026-11-08", "2026-11-01").Should().BeNull("an inverted range is dropped");
         Load("custom", "not a date", "").Should().BeNull();
@@ -183,11 +202,7 @@ public sealed class PeriodFilterTests
         }
     }
 
-    private static TaskFilterContext Context(DateOnly today) => new(_ => null, _ => null, today);
-
-    private static bool Matches(PeriodFilter period, TaskReadModel task) => Matches(new TaskFilterSpec { Period = period }, task);
-
-    private static bool Matches(TaskFilterSpec spec, TaskReadModel task) => TaskFilterMatcher.Matches(spec, task, Context(Today));
+    internal static TaskFilterContext Context(DateOnly today) => new(_ => null, _ => null, today);
 
     internal static TaskReadModel Task(DateOnly? start, DateOnly? end = null, ChangeRequest? cr = null)
     {
@@ -219,14 +234,18 @@ public sealed class PeriodFilterTests
         return completedDaysAgo is { } days ? review.SetDone(true, Today.AddDays(-days), Now) : review;
     }
 
-    private static SubtaskCardReadModel Card(TaskReadModel parent, DateOnly start)
+    internal static SubtaskCardReadModel Card(TaskReadModel parent, DateOnly start, DateOnly? end = null)
     {
         var parentTask = TaskItem.Create(
             parent.Id, new TaskContent(TitleText.Create("Release").Value, null, null, null, [], null, CustomValue.NoValues),
             Backlog, Medium.Id, DateIntent.Unchanged, DateIntent.Unchanged, null, 1, Today, Now).Value;
         var card = SubtaskCard.Create(
             new SubtaskCardId(Guid.NewGuid()), parent.Id, SubtitleText.Create("API").Value, null, Backlog,
-            DateIntent.Set(start), DateIntent.Unchanged, 1, Today, Now).Value;
+            DateIntent.Set(start), end is { } e ? DateIntent.Set(e) : DateIntent.Unchanged, 1, Today, Now).Value;
         return Composer.ComposeSubtaskCard(card, parentTask, null, SeedWorkflow);
     }
+
+    private static bool Matches(PeriodFilter period, TaskReadModel task) => Matches(new TaskFilterSpec { Period = period }, task);
+
+    private static bool Matches(TaskFilterSpec spec, TaskReadModel task) => TaskFilterMatcher.Matches(spec, task, Context(Today));
 }

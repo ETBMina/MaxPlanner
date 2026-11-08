@@ -9,12 +9,14 @@ using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Shell;
-using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Common.Filters;
 
-/// <summary>Field keys shared by the drafts, chips, and AutomationIds (<c>{Page}_FilterChip_{Key}</c>).</summary>
+/// <summary>
+/// Field keys shared by the menu rows, chips, and AutomationIds (<c>Filters_Row_{Key}</c>, <c>Filters_{Key}_{Value}</c>,
+/// <c>{Page}_FilterChip_{Key}</c>).
+/// </summary>
 internal static class FilterKeys
 {
     public const string Status = "Status";
@@ -29,7 +31,7 @@ internal static class FilterKeys
     public const string StartDate = "StartDate";
     public const string EndDate = "EndDate";
     public const string Planned = "Planned";
-    public const string Period = "Period";
+    public const string ActiveDate = "ActiveDate";
     public const string CustomPrefix = "Custom_";
 
     public static string Custom(FieldId id) => CustomPrefix + id.Value.ToString("N", CultureInfo.InvariantCulture);
@@ -43,16 +45,31 @@ internal static class FilterText
 {
     public static string Date(DateOnly day) => day.ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
 
-    public static string Range(ILocalizedStrings strings, DateRangeFilter range)
+    /// <summary>An inclusive range: "Nov 1, 2026 – Nov 7, 2026", "from …", "until …", or empty.</summary>
+    public static string Range(ILocalizedStrings strings, DateOnly? from, DateOnly? to) => (from, to) switch
     {
-        var text = (range.From, range.To) switch
+        ({ } f, { } t) when f == t => Date(f),
+        ({ } f, { } t) => strings.Format("Filters_RangeBoth", Date(f), Date(t)),
+        ({ } f, null) => strings.Format("Filters_RangeFrom", Date(f)),
+        (null, { } t) => strings.Format("Filters_RangeTo", Date(t)),
+        _ => string.Empty,
+    };
+
+    /// <summary>The selected presets, the custom range, and No date, in menu order: "Today, This week, No date".</summary>
+    public static string Dates(ILocalizedStrings strings, DateRangeFilter filter)
+    {
+        var parts = DatePresetRanges.All.Where(p => filter.Presets.HasFlag(p)).Select(p => strings.GetString("Filters_Date" + p)).ToList();
+        if (filter.HasCustomRange)
         {
-            ({ } from, { } to) => strings.Format("Filters_RangeBoth", Date(from), Date(to)),
-            ({ } from, null) => strings.Format("Filters_RangeFrom", Date(from)),
-            (null, { } to) => strings.Format("Filters_RangeTo", Date(to)),
-            _ => string.Empty,
-        };
-        return range.IncludeUndated ? strings.Format("Filters_RangeOrNone", text) : text;
+            parts.Add(Range(strings, filter.From, filter.To));
+        }
+
+        if (filter.IncludeUndated)
+        {
+            parts.Add(strings.GetString("Filters_DateNoDate"));
+        }
+
+        return string.Join(", ", parts);
     }
 
     public static string Number(ILocalizedStrings strings, NumberRangeFilter range) => (range.Min, range.Max) switch
@@ -64,22 +81,79 @@ internal static class FilterText
     };
 }
 
-/// <summary>Builds the draft fields both scopes share: lookup chips and the custom-field editors.</summary>
-internal static class DraftFields
+/// <summary>Builds and reads the menu rows both scopes share: lookups, dates, Active date, and custom fields.</summary>
+internal static class MenuFields
 {
+    // Row icons (Segoe Fluent Icons).
+    public const string PriorityGlyph = "";
+    public const string StatusGlyph = "";
+    public const string DateGlyph = "";
+    public const string ActiveDateGlyph = "";
+    public const string SquadGlyph = "";
+    public const string PersonGlyph = "";
+    public const string TagGlyph = "";
+    public const string CrGlyph = "";
+    public const string TextGlyph = "";
+    public const string NumberGlyph = "";
+    public const string ListGlyph = "";
+
+    /// <summary>A choice for each option; checked when its ID is selected.</summary>
     public static FilterChoiceGroupViewModel Choices(
-        FilterDraftViewModel draft, string key, string header, IEnumerable<(Guid Id, string Label)> options, IEnumerable<Guid> selected)
+        FilterMenuViewModel menu,
+        string key,
+        IEnumerable<(Guid Id, string Label, string Glyph, FilterGlyphTone Tone)> options,
+        IEnumerable<Guid> selected,
+        bool showsMatchMode = false,
+        bool matchAll = false)
     {
         var chosen = selected.ToHashSet();
+        var isPerson = key is FilterKeys.Owner or FilterKeys.Designers or FilterKeys.Developers;
         var list = options
-            .Select(o => new FilterChoiceViewModel(o.Id, o.Label, "Filters_Chip_" + key + "_" + (o.Id == Guid.Empty ? "General" : o.Id.ToString("N", CultureInfo.InvariantCulture)), chosen.Contains(o.Id), draft.Changed))
+            .Select(o => new FilterChoiceViewModel(o.Id, o.Label, ChoiceId(key, o.Id), chosen.Contains(o.Id), o.Glyph, o.Tone) { IsPerson = isPerson })
             .ToList();
-        var group = new FilterChoiceGroupViewModel(key, header, list);
-        draft.ChoiceGroups.Add(group);
-        return group;
+        return new FilterChoiceGroupViewModel(key, list, menu.Changed, showsMatchMode, matchAll);
     }
 
-    public static void Custom(FilterDraftViewModel draft, ILocalizedStrings strings, IEnumerable<FieldDefinition> fields, IReadOnlyList<CustomFieldFilter> current)
+    public static IEnumerable<(Guid, string, string, FilterGlyphTone)> Plain(IEnumerable<(Guid Id, string Label)> options) =>
+        options.Select(o => (o.Id, o.Label, string.Empty, FilterGlyphTone.Default));
+
+    /// <summary>Priorities in rank order with the chip glyph and colour of their rank (design §6.1).</summary>
+    public static IEnumerable<(Guid, string, string, FilterGlyphTone)> Priorities(WorkflowSnapshot workflow)
+    {
+        var levels = PriorityLevels.Of(workflow.Priorities);
+        return workflow.Priorities.OrderBy(p => p.Order).Select(p =>
+        {
+            var level = levels.GetValueOrDefault(p.Id, PriorityLevel.Mid);
+            var tone = level switch
+            {
+                PriorityLevel.Level1 => FilterGlyphTone.Critical,
+                PriorityLevel.Level2 => FilterGlyphTone.Caution,
+                _ => FilterGlyphTone.Default,
+            };
+            return (p.Id.Value, p.Name.Display, WorkflowGlyphs.Priority(level), tone);
+        });
+    }
+
+    public static FilterGlyphTone StatusTone(bool isCompleted) => isCompleted ? FilterGlyphTone.Success : FilterGlyphTone.Default;
+
+    /// <summary>The checked IDs of a choice row, or the current values when the menu has no such row.</summary>
+    public static IReadOnlyList<T> Checked<T>(FilterMenuViewModel menu, string key, IReadOnlyList<T> current, Func<Guid, T> map) =>
+        menu.Find<FilterChoiceGroupViewModel>(key) is { } group ? [.. group.CheckedIds.Select(map)] : current;
+
+    public static DateRangeFilter? Date(FilterMenuViewModel menu, string key, DateRangeFilter? current) =>
+        menu.Find<FilterDateFieldViewModel>(key) is { } field ? field.Filter is { IsSet: true } filter ? filter : null : current;
+
+    public static PeriodFilter? ActiveDate(FilterMenuViewModel menu, PeriodFilter? current) =>
+        menu.Find<ActiveDateFieldViewModel>(FilterKeys.ActiveDate) is { } field ? field.Filter : current;
+
+    public static void AddDates(FilterMenuViewModel menu, ILocalizedStrings strings, string key, string label, DateRangeFilter? current, DateOnly today) =>
+        menu.Add(new FilterDateFieldViewModel(key, current, today, strings, menu.Changed), strings.GetString(label), DateGlyph);
+
+    public static void AddActiveDate(FilterMenuViewModel menu, ILocalizedStrings strings, PeriodFilter? current, DateOnly today) =>
+        menu.Add(new ActiveDateFieldViewModel(current, today, strings, menu.Changed), strings.GetString("Filters_ActiveDate"), ActiveDateGlyph);
+
+    public static void AddCustom(
+        FilterMenuViewModel menu, ILocalizedStrings strings, IEnumerable<FieldDefinition> fields, IReadOnlyList<CustomFieldFilter> current, DateOnly today)
     {
         var inverted = strings.GetString("Filters_InvertedRange");
         foreach (var field in fields.Where(f => f.IsActive && CustomFieldFilter.IsFilterable(f.Kind)).OrderBy(f => f.DisplayOrder).ThenBy(f => f.Id.Value))
@@ -90,59 +164,62 @@ internal static class DraftFields
             switch (field.Kind)
             {
                 case FieldKind.Number:
-                    draft.NumberFields.Add(new FilterNumberFieldViewModel(key, label, "Filters_Number_" + key, filter?.Number, inverted, draft.Changed));
+                    menu.Add(new FilterNumberFieldViewModel(key, filter?.Number, inverted, menu.Changed), label, NumberGlyph);
                     break;
                 case FieldKind.Date:
-                    draft.DateFields.Add(new FilterDateFieldViewModel(key, label, strings.Format("Filters_IncludeWithout", label), "Filters_Date_" + key, filter?.Date, inverted, draft.Changed));
+                    menu.Add(new FilterDateFieldViewModel(key, filter?.Date, today, strings, menu.Changed), label, DateGlyph);
                     break;
                 case FieldKind.Lookup:
-                    Choices(draft, key, label, field.Options.OrderBy(o => o.Order).Select(o => (o.Id.Value, o.Label.Display)), filter?.Options.Select(o => o.Value) ?? []);
+                    menu.Add(
+                        Choices(menu, key, Plain(field.Options.OrderBy(o => o.Order).Select(o => (o.Id.Value, o.Label.Display))), filter?.Options.Select(o => o.Value) ?? []),
+                        label,
+                        ListGlyph);
                     break;
                 default:
-                    draft.TextFields.Add(new FilterTextFieldViewModel(key, strings.Format("Filters_Contains", label), "Filters_Text_" + key, filter?.TextContains, draft.Changed));
+                    menu.Add(new FilterTextFieldViewModel(key, filter?.TextContains, menu.Changed), label, TextGlyph);
                     break;
             }
         }
     }
 
-    public static List<CustomFieldFilter> ReadCustom(FilterDraftViewModel draft)
+    /// <summary>
+    /// The custom field filters of the menu, in row order. An inverted number range is not applied: the field keeps
+    /// the filter the scope already had (B-10). Filters on fields the menu has no row for (it opened before the workflow
+    /// arrived) are kept as they are.
+    /// </summary>
+    public static List<CustomFieldFilter> ReadCustom(FilterMenuViewModel menu, IReadOnlyList<CustomFieldFilter> current)
     {
         var result = new List<CustomFieldFilter>();
-        foreach (var field in draft.TextFields.Where(f => f.Key.StartsWith(FilterKeys.CustomPrefix, StringComparison.Ordinal) && f.Text.Trim().Length > 0))
+        foreach (var row in menu.Rows)
         {
-            result.Add(new CustomFieldFilter(FilterKeys.ParseCustom(field.Key)!.Value, field.Text.Trim(), null, null, []));
+            if (FilterKeys.ParseCustom(row.Key) is not { } id)
+            {
+                continue;
+            }
+
+            CustomFieldFilter? filter = row.Editor switch
+            {
+                FilterTextFieldViewModel { IsSet: true } text => new CustomFieldFilter(id, text.CommittedText, null, null, []),
+                FilterNumberFieldViewModel { HasError: true } => current.FirstOrDefault(f => f.FieldId == id),
+                FilterNumberFieldViewModel { Range.IsSet: true } number => new CustomFieldFilter(id, null, number.Range, null, []),
+                FilterDateFieldViewModel { IsSet: true } date => new CustomFieldFilter(id, null, null, date.Filter, []),
+                FilterChoiceGroupViewModel { IsSet: true } group => new CustomFieldFilter(id, null, null, null, [.. group.CheckedIds.Select(o => new FieldOptionId(o))]),
+                _ => null,
+            };
+            if (filter is not null)
+            {
+                result.Add(filter);
+            }
         }
 
-        foreach (var field in draft.NumberFields.Where(f => f.Range.IsSet))
-        {
-            result.Add(new CustomFieldFilter(FilterKeys.ParseCustom(field.Key)!.Value, null, field.Range, null, []));
-        }
-
-        foreach (var field in draft.DateFields.Where(f => f.Key.StartsWith(FilterKeys.CustomPrefix, StringComparison.Ordinal) && f.Range.IsSet))
-        {
-            result.Add(new CustomFieldFilter(FilterKeys.ParseCustom(field.Key)!.Value, null, null, field.Range, []));
-        }
-
-        foreach (var group in draft.ChoiceGroups.Where(g => g.Key.StartsWith(FilterKeys.CustomPrefix, StringComparison.Ordinal) && g.CheckedIds.Count > 0))
-        {
-            result.Add(new CustomFieldFilter(FilterKeys.ParseCustom(group.Key)!.Value, null, null, null, [.. group.CheckedIds.Select(id => new FieldOptionId(id))]));
-        }
-
+        var rows = menu.Rows.Select(r => FilterKeys.ParseCustom(r.Key)).OfType<FieldId>().ToHashSet();
+        result.AddRange(current.Where(f => !rows.Contains(f.FieldId)));
         return result;
     }
 
-    public static int Count(FilterDraftViewModel draft) =>
-        draft.ChoiceGroups.Count(g => g.Choices.Any(c => c.IsChecked))
-        + draft.PickerFields.Count(f => f.Picker.Tokens.Count > 0)
-        + (draft.CrField is { Selected.Filter.IsSet: true } ? 1 : 0)
-        + draft.TextFields.Count(f => f.Text.Trim().Length > 0)
-        + draft.DateFields.Count(f => f.Range.IsSet)
-        + draft.NumberFields.Count(f => f.Range.IsSet)
-        + (draft.Period?.Filter is not null ? 1 : 0);
-
-    /// <summary>"Period: Last 7 days" or "Period: Nov 1, 2026 – Nov 7, 2026".</summary>
-    public static (string Key, string Label) PeriodChip(ILocalizedStrings strings, PeriodFilter period) =>
-        (FilterKeys.Period, strings.Format("Filters_ChipLabel", strings.GetString("Filters_Period"), PeriodFieldViewModel.Text(strings, period)));
+    /// <summary>"Active date: Last 7 days" or "Active date: Nov 1, 2026 – Nov 7, 2026".</summary>
+    public static (string Key, string Label) ActiveDateChip(ILocalizedStrings strings, PeriodFilter period) =>
+        (FilterKeys.ActiveDate, strings.Format("Filters_ChipLabel", strings.GetString("Filters_ActiveDate"), PeriodFieldViewModel.Text(strings, period)));
 
     public static IEnumerable<(string Key, string Label)> CustomChips(ILocalizedStrings strings, WorkflowSnapshot? workflow, IReadOnlyList<CustomFieldFilter> filters)
     {
@@ -154,12 +231,15 @@ internal static class DraftFields
             {
                 { TextContains: { Length: > 0 } text } => strings.Format("Filters_ContainsValue", text),
                 { Number: { IsSet: true } number } => FilterText.Number(strings, number),
-                { Date: { IsSet: true } date } => FilterText.Range(strings, date),
+                { Date: { IsSet: true } date } => FilterText.Dates(strings, date),
                 _ => string.Join(", ", filter.Options.Select(o => field?.Options.FirstOrDefault(fo => fo.Id == o)?.Label.Display ?? strings.GetString("Filters_Unknown"))),
             };
             yield return (FilterKeys.Custom(filter.FieldId), strings.Format("Filters_ChipLabel", label, value));
         }
     }
+
+    private static string ChoiceId(string key, Guid id) =>
+        "Filters_" + key + "_" + (id == Guid.Empty ? "General" : id.ToString("N", CultureInfo.InvariantCulture));
 }
 
 /// <summary>
@@ -176,15 +256,16 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
     internal TaskFilterScopeViewModel(WorkspaceContext context)
         : base(context, Key)
     {
-        // A rolling Period ("Last 7 days") moves at midnight, on resume and on a time-zone change (AC-21). The new day
-        // can arrive with any commit (a day tick, or a snapshot after a resync that skipped the tick), so every commit
-        // whose day differs from the one the predicate was built for makes Board and Grid rebuild it. This also
-        // corrects a predicate built on the startup fallback day. The Calendar re-applies its CR predicate itself.
+        // Rolling dates (Active date "Last 7 days", date presets such as "This week") move at midnight, on resume and
+        // on a time-zone change (AC-21). The new day can arrive with any commit (a day tick, or a snapshot after a
+        // resync that skipped the tick), so every commit whose day differs from the one the predicate was built for
+        // makes Board and Grid rebuild it. This also corrects a predicate built on the startup fallback day. The
+        // Calendar re-applies its CR predicate itself.
         _commits = context.Store.Committed
             .ObserveOn(context.UiScheduler)
             .Subscribe(commit =>
             {
-                if (commit.Today != _predicateDay && Spec.Period is { IsRolling: true })
+                if (commit.Today != _predicateDay && Spec.IsRolling)
                 {
                     // Recorded here too, so a day change raises once even before a page has built a predicate.
                     _predicateDay = commit.Today;
@@ -207,9 +288,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
     {
         var spec = Spec;
         var store = Context.Store;
-
-        // Before the first batch the store has no day yet; the local clock stands in until a commit brings it.
-        var today = store.Today is { DayNumber: > 0 } day ? day : DateOnly.FromDateTime(DateTime.Now);
+        var today = Today;
         _predicateDay = today;
         if (!spec.IsActive)
         {
@@ -223,61 +302,79 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
         return record => record.Task is { } task ? TaskFilterMatcher.Matches(spec, task, context) : TaskFilterMatcher.Matches(spec, record.Card!, context);
     }
 
-    public override FilterDraftViewModel CreateDraft()
+    /// <summary>Rows in design §2.6 order: Priority, Status, Start date, End date, Active date, Squad, CR Owner, people, Tags, CR, Service, custom fields.</summary>
+    public override FilterMenuViewModel CreateMenu()
     {
-        var strings = Context.Strings;
+        var s = Context.Strings;
         var spec = Spec;
-        var draft = new FilterDraftViewModel(strings, ScopeTitle, DraftFields.Count);
-        if (Workflow is { } workflow)
+        var today = Today;
+        var workflow = Workflow;
+        var menu = OpenMenu();
+        if (workflow is not null)
         {
-            DraftFields.Choices(draft, FilterKeys.Status, strings.GetString("Filters_Status"), workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => (s.Id.Value, s.Name.Display)), spec.Statuses.Select(s => s.Value));
-            DraftFields.Choices(draft, FilterKeys.Priority, strings.GetString("Filters_Priority"), workflow.Priorities.OrderBy(p => p.Order).Select(p => (p.Id.Value, p.Name.Display)), spec.Priorities.Select(p => p.Value));
-            DraftFields.Choices(draft, FilterKeys.Squad, strings.GetString("Filters_Squad"), Squads(workflow), spec.Squads.Select(s => s?.Value ?? Guid.Empty));
-            DraftFields.Choices(draft, FilterKeys.Owner, strings.GetString("Filters_Owner"), Owners(workflow, spec.Owners), spec.Owners.Select(p => p.Value));
-            draft.PickerFields.Add(Picker(FilterKeys.Designers, "Filters_Designers", People(workflow), spec.Designers.Select(p => p.Value), workflow, false, false));
-            draft.PickerFields.Add(Picker(FilterKeys.Developers, "Filters_Developers", People(workflow), spec.Developers.Select(p => p.Value), workflow, false, false));
-            draft.PickerFields.Add(Picker(FilterKeys.Tags, "Filters_Tags", () => workflow.Tags.Select(t => (t.Id.Value, t.Name.Display)), spec.Tags.Select(t => t.Value), workflow, true, spec.TagMode == TagMatchMode.All));
+            menu.Add(MenuFields.Choices(menu, FilterKeys.Priority, MenuFields.Priorities(workflow), spec.Priorities.Select(p => p.Value)), s.GetString("Filters_Priority"), MenuFields.PriorityGlyph);
+            menu.Add(
+                MenuFields.Choices(
+                    menu,
+                    FilterKeys.Status,
+                    workflow.TaskStatuses.OrderBy(t => t.Order).Select(t => (t.Id.Value, t.Name.Display, WorkflowGlyphs.TaskStatus(t), MenuFields.StatusTone(t.IsCompleted))),
+                    spec.Statuses.Select(t => t.Value)),
+                s.GetString("Filters_Status"),
+                MenuFields.StatusGlyph);
         }
 
-        draft.CrField = new FilterCrFieldViewModel(strings.GetString("Filters_Cr"), CrChoice(spec.Cr), SuggestCrs, draft.Changed);
-        draft.TextFields.Add(new FilterTextFieldViewModel(FilterKeys.Service, strings.GetString("Filters_ServiceContains"), "Filters_ServiceBox", spec.ServiceContains, draft.Changed));
-        draft.Period = new PeriodFieldViewModel(strings, spec.Period, draft.Changed);
-        var inverted = strings.GetString("Filters_InvertedRange");
-        draft.DateFields.Add(new FilterDateFieldViewModel(FilterKeys.StartDate, strings.GetString("Filters_StartDate"), strings.GetString("Filters_IncludeWithoutStart"), "Filters_StartDate", spec.StartDate, inverted, draft.Changed));
-        draft.DateFields.Add(new FilterDateFieldViewModel(FilterKeys.EndDate, strings.GetString("Filters_EndDate"), strings.GetString("Filters_IncludeWithoutEnd"), "Filters_EndDate", spec.EndDate, inverted, draft.Changed));
-        if (Workflow is { } fields)
+        MenuFields.AddDates(menu, s, FilterKeys.StartDate, "Filters_StartDate", spec.StartDate, today);
+        MenuFields.AddDates(menu, s, FilterKeys.EndDate, "Filters_EndDate", spec.EndDate, today);
+        MenuFields.AddActiveDate(menu, s, spec.Period, today);
+        if (workflow is not null)
         {
-            DraftFields.Custom(draft, strings, fields.FieldsFor(FieldTarget.Task), spec.CustomFields);
+            menu.Add(MenuFields.Choices(menu, FilterKeys.Squad, MenuFields.Plain(Squads(workflow)), spec.Squads.Select(q => q?.Value ?? Guid.Empty)), s.GetString("Filters_Squad"), MenuFields.SquadGlyph);
+            menu.Add(MenuFields.Choices(menu, FilterKeys.Owner, MenuFields.Plain(Owners(workflow, spec.Owners)), spec.Owners.Select(p => p.Value)), s.GetString("Filters_Owner"), MenuFields.PersonGlyph);
+            menu.Add(MenuFields.Choices(menu, FilterKeys.Designers, MenuFields.Plain(People(workflow)), spec.Designers.Select(p => p.Value)), s.GetString("Filters_Designers"), MenuFields.PersonGlyph);
+            menu.Add(MenuFields.Choices(menu, FilterKeys.Developers, MenuFields.Plain(People(workflow)), spec.Developers.Select(p => p.Value)), s.GetString("Filters_Developers"), MenuFields.PersonGlyph);
+            menu.Add(
+                MenuFields.Choices(
+                    menu,
+                    FilterKeys.Tags,
+                    MenuFields.Plain(workflow.Tags.OrderBy(t => t.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(t => (t.Id.Value, t.Name.Display))),
+                    spec.Tags.Select(t => t.Value),
+                    showsMatchMode: true,
+                    matchAll: spec.TagMode == TagMatchMode.All),
+                s.GetString("Filters_Tags"),
+                MenuFields.TagGlyph);
         }
 
-        draft.EndBuild();
-        return draft;
+        menu.Add(new FilterCrFieldViewModel(CrChoice(spec.Cr), s.GetString("Filters_AnyCr"), s.GetString("Filters_NoCr"), SuggestCrs, menu.Changed), s.GetString("Filters_Cr"), MenuFields.CrGlyph);
+        menu.Add(new FilterTextFieldViewModel(FilterKeys.Service, spec.ServiceContains, menu.Changed), s.GetString("Filters_Service"), MenuFields.TextGlyph);
+        if (workflow is not null)
+        {
+            MenuFields.AddCustom(menu, s, workflow.FieldsFor(FieldTarget.Task), spec.CustomFields, today);
+        }
+
+        menu.EndBuild();
+        return menu;
     }
 
-    private protected override TaskFilterSpec FromDraft(FilterDraftViewModel draft, TaskFilterSpec current)
+    private protected override TaskFilterSpec FromMenu(FilterMenuViewModel menu, TaskFilterSpec current)
     {
-        IReadOnlyList<Guid> Checked(string key) => draft.ChoiceGroups.FirstOrDefault(g => g.Key == key)?.CheckedIds ?? [];
-        IReadOnlyList<Guid> Picked(string key) => draft.PickerFields.FirstOrDefault(f => f.Key == key)?.Picker.Ids ?? [];
-        var tags = draft.PickerFields.FirstOrDefault(f => f.Key == FilterKeys.Tags);
-        var service = draft.TextFields.FirstOrDefault(f => f.Key == FilterKeys.Service)?.Text.Trim();
-        var start = draft.DateFields.FirstOrDefault(f => f.Key == FilterKeys.StartDate)?.Range;
-        var end = draft.DateFields.FirstOrDefault(f => f.Key == FilterKeys.EndDate)?.Range;
+        var tags = menu.Find<FilterChoiceGroupViewModel>(FilterKeys.Tags);
+        var service = menu.Find<FilterTextFieldViewModel>(FilterKeys.Service);
         return current with
         {
-            Statuses = [.. Checked(FilterKeys.Status).Select(id => new TaskStatusId(id))],
-            Priorities = [.. Checked(FilterKeys.Priority).Select(id => new PriorityId(id))],
-            Squads = [.. Checked(FilterKeys.Squad).Select(id => id == Guid.Empty ? (SquadId?)null : new SquadId(id))],
-            Owners = [.. Checked(FilterKeys.Owner).Select(id => new PersonId(id))],
-            Designers = [.. Picked(FilterKeys.Designers).Select(id => new PersonId(id))],
-            Developers = [.. Picked(FilterKeys.Developers).Select(id => new PersonId(id))],
-            Tags = [.. Picked(FilterKeys.Tags).Select(id => new TagId(id))],
-            TagMode = tags?.MatchModeIndex == 1 ? TagMatchMode.All : TagMatchMode.Any,
-            Cr = draft.CrField?.Selected.Filter ?? CrLinkFilter.Any,
-            ServiceContains = string.IsNullOrEmpty(service) ? null : service,
-            StartDate = start is { IsSet: true } ? start : null,
-            EndDate = end is { IsSet: true } ? end : null,
-            Period = draft.Period?.Filter,
-            CustomFields = DraftFields.ReadCustom(draft),
+            Statuses = MenuFields.Checked(menu, FilterKeys.Status, current.Statuses, id => new TaskStatusId(id)),
+            Priorities = MenuFields.Checked(menu, FilterKeys.Priority, current.Priorities, id => new PriorityId(id)),
+            Squads = MenuFields.Checked(menu, FilterKeys.Squad, current.Squads, id => id == Guid.Empty ? (SquadId?)null : new SquadId(id)),
+            Owners = MenuFields.Checked(menu, FilterKeys.Owner, current.Owners, id => new PersonId(id)),
+            Designers = MenuFields.Checked(menu, FilterKeys.Designers, current.Designers, id => new PersonId(id)),
+            Developers = MenuFields.Checked(menu, FilterKeys.Developers, current.Developers, id => new PersonId(id)),
+            Tags = MenuFields.Checked(menu, FilterKeys.Tags, current.Tags, id => new TagId(id)),
+            TagMode = tags is null ? current.TagMode : tags.IsSet && tags.MatchAll ? TagMatchMode.All : TagMatchMode.Any,
+            Cr = menu.Find<FilterCrFieldViewModel>(FilterKeys.Cr)?.Selected.Filter ?? current.Cr,
+            ServiceContains = service is null ? current.ServiceContains : service.IsSet ? service.CommittedText : null,
+            StartDate = MenuFields.Date(menu, FilterKeys.StartDate, current.StartDate),
+            EndDate = MenuFields.Date(menu, FilterKeys.EndDate, current.EndDate),
+            Period = MenuFields.ActiveDate(menu, current.Period),
+            CustomFields = MenuFields.ReadCustom(menu, current.CustomFields),
         };
     }
 
@@ -306,7 +403,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
         FilterKeys.Service => spec with { ServiceContains = null },
         FilterKeys.StartDate => spec with { StartDate = null },
         FilterKeys.EndDate => spec with { EndDate = null },
-        FilterKeys.Period => spec with { Period = null },
+        FilterKeys.ActiveDate => spec with { Period = null },
         _ when FilterKeys.ParseCustom(key) is { } field => spec with { CustomFields = [.. spec.CustomFields.Where(f => f.FieldId != field)] },
         _ => spec,
     };
@@ -363,20 +460,20 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
 
         if (spec.StartDate is { IsSet: true } startDate)
         {
-            yield return (FilterKeys.StartDate, Chip("Filters_StartDate", FilterText.Range(s, startDate)));
+            yield return (FilterKeys.StartDate, Chip("Filters_StartDate", FilterText.Dates(s, startDate)));
         }
 
         if (spec.EndDate is { IsSet: true } endDate)
         {
-            yield return (FilterKeys.EndDate, Chip("Filters_EndDate", FilterText.Range(s, endDate is { From: not null, To: null } ? endDate with { IncludeUndated = true } : endDate)));
+            yield return (FilterKeys.EndDate, Chip("Filters_EndDate", FilterText.Dates(s, endDate)));
         }
 
         if (spec.Period is { IsSet: true } period)
         {
-            yield return DraftFields.PeriodChip(s, period);
+            yield return MenuFields.ActiveDateChip(s, period);
         }
 
-        foreach (var chip in DraftFields.CustomChips(s, w, spec.CustomFields))
+        foreach (var chip in MenuFields.CustomChips(s, w, spec.CustomFields))
         {
             yield return chip;
         }
@@ -393,25 +490,17 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
         // completed (sequence 0) a CR is assumed to exist, so a saved CR filter is never cleared by that race.
         FilterValidation.Clean(spec, workflow, id => Context.Store.Sequence == 0 || Context.Store.ChangeRequests.Lookup(id).HasValue);
 
-    private IEnumerable<(Guid Id, string Label)> Squads(WorkflowSnapshot workflow) =>
-        workflow.Squads.OrderBy(s => s.Order).Select(s => (s.Id.Value, s.Name.Display)).Append((Guid.Empty, Context.Strings.GetString("Squad_General")));
+    private static IEnumerable<(Guid Id, string Label)> People(WorkflowSnapshot workflow) =>
+        workflow.People.OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(p => (p.Id.Value, p.Name.Display));
 
-    /// <summary>CR Owners are the people who own a CR now, plus any already selected (design §2.6 lookup chips).</summary>
+    private IEnumerable<(Guid Id, string Label)> Squads(WorkflowSnapshot workflow) =>
+        workflow.Squads.OrderBy(q => q.Order).Select(q => (q.Id.Value, q.Name.Display)).Append((Guid.Empty, Context.Strings.GetString("Squad_General")));
+
+    /// <summary>CR Owners are the people who own a CR now, plus any already selected (design §2.6).</summary>
     private IEnumerable<(Guid Id, string Label)> Owners(WorkflowSnapshot workflow, IReadOnlyList<PersonId> selected)
     {
         var owners = Context.Store.ChangeRequests.Items.Select(c => c.Owner.Id).Concat(selected).ToHashSet();
         return workflow.People.Where(p => owners.Contains(p.Id)).OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(p => (p.Id.Value, p.Name.Display));
-    }
-
-    private static Func<IEnumerable<(Guid Id, string Name)>> People(WorkflowSnapshot workflow) =>
-        () => workflow.People.Select(p => (p.Id.Value, p.Name.Display));
-
-    private FilterPickerFieldViewModel Picker(
-        string key, string header, Func<IEnumerable<(Guid Id, string Name)>> existing, IEnumerable<Guid> selected, WorkflowSnapshot workflow, bool isTags, bool matchAll)
-    {
-        var picker = new TokenPickerViewModel(Context.Strings, existing, new NewNameRegistry()) { AllowNew = false, IsPeople = !isTags, IsTags = isTags };
-        picker.Load(selected.Select(id => (id, (isTags ? workflow.FindTag(new TagId(id))?.Name.Display : workflow.FindPerson(new PersonId(id))?.Name.Display) ?? string.Empty, false)));
-        return new FilterPickerFieldViewModel(key, Context.Strings.GetString(header), "Filters_" + key + "Picker", picker, isTags, matchAll);
     }
 
     private FilterCrChoice CrChoice(CrLinkFilter filter) => filter.Mode switch
@@ -422,20 +511,15 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
         _ => new FilterCrChoice(CrLinkFilter.Any, Context.Strings.GetString("Filters_AnyCr")),
     };
 
+    /// <summary>The CR search box: matching CRs by number (Any CR and No CR are items above the box).</summary>
     private List<FilterCrChoice> SuggestCrs(string query)
     {
         var q = query.Trim();
-        var list = new List<FilterCrChoice>
-        {
-            new(CrLinkFilter.Any, Context.Strings.GetString("Filters_AnyCr")),
-            new(CrLinkFilter.NoCr, Context.Strings.GetString("Filters_NoCr")),
-        };
-        list.AddRange(Context.Store.ChangeRequests.Items
+        return [.. Context.Store.ChangeRequests.Items
             .Where(c => q.Length == 0 || CrFilterMatcher.Search(c, q))
             .OrderBy(c => c.Number, StringComparer.CurrentCultureIgnoreCase)
             .Take(20)
-            .Select(c => new FilterCrChoice(CrLinkFilter.For(c.Id), c.Number + " · " + c.Title)));
-        return list;
+            .Select(c => new FilterCrChoice(CrLinkFilter.For(c.Id), c.Number + " · " + c.Title))];
     }
 }
 
@@ -465,57 +549,65 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
         return spec.IsActive ? cr => CrFilterMatcher.Matches(spec, cr, today) : _ => true;
     }
 
-    public override FilterDraftViewModel CreateDraft()
+    /// <summary>Rows in design §2.6 order: Priority, Status, Planned dates, Active date, Squad, CR Owner, custom fields.</summary>
+    public override FilterMenuViewModel CreateMenu()
     {
-        var strings = Context.Strings;
+        var s = Context.Strings;
         var spec = Spec;
-        var draft = new FilterDraftViewModel(strings, ScopeTitle, DraftFields.Count);
-        if (Workflow is { } workflow)
+        var today = Today;
+        var workflow = Workflow;
+        var menu = OpenMenu();
+        if (workflow is not null)
         {
-            DraftFields.Choices(draft, FilterKeys.Status, strings.GetString("Filters_Status"), workflow.CrStatuses.OrderBy(s => s.Order).Select(s => (s.Id.Value, s.Name.Display)), spec.Statuses.Select(s => s.Value));
-            DraftFields.Choices(draft, FilterKeys.Priority, strings.GetString("Filters_Priority"), workflow.Priorities.OrderBy(p => p.Order).Select(p => (p.Id.Value, p.Name.Display)), spec.Priorities.Select(p => p.Value));
-            DraftFields.Choices(
-                draft,
-                FilterKeys.Squad,
-                strings.GetString("Filters_Squad"),
-                workflow.Squads.OrderBy(s => s.Order).Select(s => (s.Id.Value, s.Name.Display)).Append((Guid.Empty, strings.GetString("Squad_General"))),
-                spec.Squads.Select(s => s?.Value ?? Guid.Empty));
+            menu.Add(MenuFields.Choices(menu, FilterKeys.Priority, MenuFields.Priorities(workflow), spec.Priorities.Select(p => p.Value)), s.GetString("Filters_Priority"), MenuFields.PriorityGlyph);
+            menu.Add(
+                MenuFields.Choices(
+                    menu,
+                    FilterKeys.Status,
+                    workflow.CrStatuses.OrderBy(t => t.Order).Select(t => (t.Id.Value, t.Name.Display, WorkflowGlyphs.CrStatus(t), MenuFields.StatusTone(t.IsCompleted))),
+                    spec.Statuses.Select(t => t.Value)),
+                s.GetString("Filters_Status"),
+                MenuFields.StatusGlyph);
+        }
+
+        MenuFields.AddDates(menu, s, FilterKeys.Planned, "Filters_Planned", spec.Planned, today);
+        MenuFields.AddActiveDate(menu, s, spec.Period, today);
+        if (workflow is not null)
+        {
+            menu.Add(
+                MenuFields.Choices(
+                    menu,
+                    FilterKeys.Squad,
+                    MenuFields.Plain(workflow.Squads.OrderBy(q => q.Order).Select(q => (q.Id.Value, q.Name.Display)).Append((Guid.Empty, s.GetString("Squad_General")))),
+                    spec.Squads.Select(q => q?.Value ?? Guid.Empty)),
+                s.GetString("Filters_Squad"),
+                MenuFields.SquadGlyph);
             var owners = Context.Store.ChangeRequests.Items.Select(c => c.Owner.Id).Concat(spec.Owners).ToHashSet();
-            DraftFields.Choices(
-                draft,
-                FilterKeys.Owner,
-                strings.GetString("Filters_Owner"),
-                workflow.People.Where(p => owners.Contains(p.Id)).OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(p => (p.Id.Value, p.Name.Display)),
-                spec.Owners.Select(p => p.Value));
+            menu.Add(
+                MenuFields.Choices(
+                    menu,
+                    FilterKeys.Owner,
+                    MenuFields.Plain(workflow.People.Where(p => owners.Contains(p.Id)).OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(p => (p.Id.Value, p.Name.Display))),
+                    spec.Owners.Select(p => p.Value)),
+                s.GetString("Filters_Owner"),
+                MenuFields.PersonGlyph);
+            MenuFields.AddCustom(menu, s, workflow.FieldsFor(FieldTarget.ChangeRequest), spec.CustomFields, today);
         }
 
-        draft.Period = new PeriodFieldViewModel(strings, spec.Period, draft.Changed);
-        draft.DateFields.Add(new FilterDateFieldViewModel(
-            FilterKeys.Planned, strings.GetString("Filters_Planned"), strings.GetString("Filters_IncludeUnscheduled"), "Filters_Planned", spec.Planned, strings.GetString("Filters_InvertedRange"), draft.Changed));
-        if (Workflow is { } fields)
-        {
-            DraftFields.Custom(draft, strings, fields.FieldsFor(FieldTarget.ChangeRequest), spec.CustomFields);
-        }
-
-        draft.EndBuild();
-        return draft;
+        menu.EndBuild();
+        return menu;
     }
 
-    private protected override CrFilterSpec FromDraft(FilterDraftViewModel draft, CrFilterSpec current)
+    private protected override CrFilterSpec FromMenu(FilterMenuViewModel menu, CrFilterSpec current) => current with
     {
-        IReadOnlyList<Guid> Checked(string key) => draft.ChoiceGroups.FirstOrDefault(g => g.Key == key)?.CheckedIds ?? [];
-        var planned = draft.DateFields.FirstOrDefault(f => f.Key == FilterKeys.Planned)?.Range;
-        return current with
-        {
-            Statuses = [.. Checked(FilterKeys.Status).Select(id => new CrStatusId(id))],
-            Priorities = [.. Checked(FilterKeys.Priority).Select(id => new PriorityId(id))],
-            Squads = [.. Checked(FilterKeys.Squad).Select(id => id == Guid.Empty ? (SquadId?)null : new SquadId(id))],
-            Owners = [.. Checked(FilterKeys.Owner).Select(id => new PersonId(id))],
-            Planned = planned is { IsSet: true } ? planned : null,
-            Period = draft.Period?.Filter,
-            CustomFields = DraftFields.ReadCustom(draft),
-        };
-    }
+        Statuses = MenuFields.Checked(menu, FilterKeys.Status, current.Statuses, id => new CrStatusId(id)),
+        Priorities = MenuFields.Checked(menu, FilterKeys.Priority, current.Priorities, id => new PriorityId(id)),
+        Squads = MenuFields.Checked(menu, FilterKeys.Squad, current.Squads, id => id == Guid.Empty ? (SquadId?)null : new SquadId(id)),
+        Owners = MenuFields.Checked(menu, FilterKeys.Owner, current.Owners, id => new PersonId(id)),
+        Planned = MenuFields.Date(menu, FilterKeys.Planned, current.Planned),
+        Period = MenuFields.ActiveDate(menu, current.Period),
+        CustomFields = MenuFields.ReadCustom(menu, current.CustomFields),
+    };
 
     private protected override CrFilterSpec Load(ViewFilterPreference? preference) => FilterPersistence.ToCrSpec(preference);
 
@@ -536,7 +628,7 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
         FilterKeys.Squad => spec with { Squads = [] },
         FilterKeys.Owner => spec with { Owners = [] },
         FilterKeys.Planned => spec with { Planned = null },
-        FilterKeys.Period => spec with { Period = null },
+        FilterKeys.ActiveDate => spec with { Period = null },
         _ when FilterKeys.ParseCustom(key) is { } field => spec with { CustomFields = [.. spec.CustomFields.Where(f => f.FieldId != field)] },
         _ => spec,
     };
@@ -568,15 +660,15 @@ public sealed class CrFilterScopeViewModel : FilterScopeViewModel<CrFilterSpec>
 
         if (spec.Planned is { IsSet: true } planned)
         {
-            yield return (FilterKeys.Planned, Chip("Filters_Planned", FilterText.Range(s, planned)));
+            yield return (FilterKeys.Planned, Chip("Filters_Planned", FilterText.Dates(s, planned)));
         }
 
         if (spec.Period is { IsSet: true } period)
         {
-            yield return DraftFields.PeriodChip(s, period);
+            yield return MenuFields.ActiveDateChip(s, period);
         }
 
-        foreach (var chip in DraftFields.CustomChips(s, w, spec.CustomFields))
+        foreach (var chip in MenuFields.CustomChips(s, w, spec.CustomFields))
         {
             yield return chip;
         }

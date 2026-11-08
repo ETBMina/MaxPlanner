@@ -39,7 +39,7 @@ public sealed class FilterChipViewModel
 }
 
 /// <summary>
-/// The page-facing part of one filter scope (B-10): search text, chips, the Filters badge count, the draft flyout,
+/// The page-facing part of one filter scope (B-10): search text, chips, the Filters badge count, the filter menu,
 /// Clear all, the invalid-saved-filter notice, and the Dashboard drill-down context (design §2.6, §2.9). The
 /// shared controls bind to it. Use on the UI thread.
 /// </summary>
@@ -75,7 +75,7 @@ public abstract partial class FilterScopeViewModel : ObservableObject, IDisposab
 
     public bool HasChips => IsFiltered;
 
-    /// <summary>The page search box: applied immediately (outside the draft) and persisted with the scope.</summary>
+    /// <summary>The page search box: applied immediately (outside the filter menu) and persisted with the scope.</summary>
     [ObservableProperty]
     public partial string SearchText { get; set; } = string.Empty;
 
@@ -93,7 +93,7 @@ public abstract partial class FilterScopeViewModel : ObservableObject, IDisposab
     [ObservableProperty]
     public partial string DashboardMessage { get; private set; } = string.Empty;
 
-    /// <summary>"Filter tasks — Board and Grid" or "Filter CRs — Calendar" (the flyout header).</summary>
+    /// <summary>"Filter tasks — Board and Grid" or "Filter CRs — Calendar" (the filter menu's accessible name).</summary>
     public abstract string ScopeTitle { get; }
 
     /// <summary>The page a drill-down into this scope lands on (Grid or Calendar).</summary>
@@ -103,11 +103,14 @@ public abstract partial class FilterScopeViewModel : ObservableObject, IDisposab
 
     private protected ObservableCollection<FilterChipViewModel> ChipList { get; } = [];
 
-    /// <summary>A fresh draft from the applied filter (Filters flyout opening).</summary>
-    public abstract FilterDraftViewModel CreateDraft();
+    /// <summary>A filter menu showing the applied filter (the Filters menu is opening); its changes apply at once.</summary>
+    public abstract FilterMenuViewModel CreateMenu();
 
-    /// <summary>Apply: the draft becomes the applied filter; the search text and Dashboard context are kept.</summary>
-    public abstract void Apply(FilterDraftViewModel draft);
+    /// <summary>The menu's fields become the applied filter; the search text and Dashboard context are kept.</summary>
+    public abstract void Apply(FilterMenuViewModel menu);
+
+    /// <summary>The menu closed: the scope lets it go, and any late change from it is ignored.</summary>
+    public abstract void ReleaseMenu(FilterMenuViewModel menu);
 
     /// <summary>Removing the "From Dashboard" chip, or Return/Back: the page's previous filters come back.</summary>
     public abstract void EndDashboardContext();
@@ -160,6 +163,8 @@ public abstract class FilterScopeViewModel<TSpec> : FilterScopeViewModel
     private TSpec? _beforeDashboard;
     private string _dashboardLabel = string.Empty;
     private bool _isSettingSearch;
+    private FilterMenuViewModel? _openMenu;
+    private bool _isApplyingMenu;
 
     private protected FilterScopeViewModel(WorkspaceContext context, string preferenceKey)
         : base(context)
@@ -179,6 +184,9 @@ public abstract class FilterScopeViewModel<TSpec> : FilterScopeViewModel
     protected string PreferenceKey { get; }
 
     protected WorkflowSnapshot? Workflow { get; private set; }
+
+    /// <summary>The store's local day; before the first batch the local clock stands in until a commit brings it.</summary>
+    private protected DateOnly Today => Context.Store.Today is { DayNumber: > 0 } day ? day : DateOnly.FromDateTime(DateTime.Now);
 
     /// <summary>
     /// B-10, design §2.9: a Dashboard drill-down replaces the filters (never intersects them with hidden old ones). The
@@ -220,15 +228,35 @@ public abstract class FilterScopeViewModel<TSpec> : FilterScopeViewModel
         SetSpec(Empty);
     }
 
-    public override void Apply(FilterDraftViewModel draft)
+    /// <summary>
+    /// Design §2.6: every menu change commits here at once and is persisted. The toggled control announces its own
+    /// state and the page's summary carries the counts, so nothing extra is announced per change.
+    /// </summary>
+    public override void Apply(FilterMenuViewModel menu)
     {
-        ArgumentNullException.ThrowIfNull(draft);
-        if (draft.CanApply)
+        ArgumentNullException.ThrowIfNull(menu);
+        if (!ReferenceEquals(menu, _openMenu))
         {
-            SetSpec(FromDraft(draft, Spec));
+            // A stale menu: the scope changed from elsewhere after it opened.
+            return;
+        }
 
-            // Design §8.3: "Filters applied"; the page's own summary carries the counts.
-            Context.Announce(Context.Strings.GetString("Filters_Applied"));
+        _isApplyingMenu = true;
+        try
+        {
+            SetSpec(FromMenu(menu, Spec));
+        }
+        finally
+        {
+            _isApplyingMenu = false;
+        }
+    }
+
+    public override void ReleaseMenu(FilterMenuViewModel menu)
+    {
+        if (ReferenceEquals(menu, _openMenu))
+        {
+            _openMenu = null;
         }
     }
 
@@ -258,12 +286,29 @@ public abstract class FilterScopeViewModel<TSpec> : FilterScopeViewModel
     /// <summary>Field chips in display order as (key, label) pairs; search and Dashboard chips are added here.</summary>
     private protected abstract IEnumerable<(string Key, string Label)> FieldChips(TSpec spec);
 
-    private protected abstract TSpec FromDraft(FilterDraftViewModel draft, TSpec current);
+    /// <summary>The applied spec with the menu's fields; fields the menu has no row for keep their current value.</summary>
+    private protected abstract TSpec FromMenu(FilterMenuViewModel menu, TSpec current);
 
     private protected abstract (TSpec Spec, IReadOnlyList<RemovedFilterKind> Removed) Clean(TSpec spec, WorkflowSnapshot workflow);
 
+    /// <summary>A new menu over the applied filter; a menu opened earlier is detached (only one shows the scope).</summary>
+    private protected FilterMenuViewModel OpenMenu()
+    {
+        _openMenu?.Detach();
+        _openMenu = new FilterMenuViewModel(Context.Strings, Apply);
+        return _openMenu;
+    }
+
     private protected void SetSpec(TSpec spec)
     {
+        // A change from outside the open menu (Clear all filters, a chip, a drill-down, a removed lookup) makes it
+        // stale: it is detached and closes, so it cannot write its old fields back (ADR 0010: one current state).
+        if (!_isApplyingMenu && _openMenu is { } open)
+        {
+            _openMenu = null;
+            open.Detach();
+        }
+
         Spec = spec;
         _isSettingSearch = true;
         SearchText = SearchOf(spec);
@@ -309,7 +354,7 @@ public abstract class FilterScopeViewModel<TSpec> : FilterScopeViewModel
         }
     }
 
-    /// <summary>The search box applies immediately (B-10: the draft covers the flyout fields only).</summary>
+    /// <summary>The search box applies immediately, like the filter menu (B-10).</summary>
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);

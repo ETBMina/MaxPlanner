@@ -24,10 +24,13 @@ public sealed record CrFilterSpec
 
     public IReadOnlyList<PersonId> Owners { get; init; } = [];
 
-    /// <summary>Overlap with the planned range; <see cref="DateRangeFilter.IncludeUndated"/> keeps unscheduled CRs.</summary>
+    /// <summary>
+    /// The planned range overlaps a selected preset or the custom range; <see cref="DateRangeFilter.IncludeUndated"/>
+    /// ("No date") keeps unscheduled CRs.
+    /// </summary>
     public DateRangeFilter? Planned { get; init; }
 
-    /// <summary>The Period field: the CR's planned start is in the period (the planned end is not considered).</summary>
+    /// <summary>The Active date field: the CR's planned start → planned end overlaps the range.</summary>
     public PeriodFilter? Period { get; init; }
 
     public IReadOnlyList<CustomFieldFilter> CustomFields { get; init; } = [];
@@ -47,7 +50,7 @@ public sealed record CrFilterSpec
 /// <summary>The one CR predicate shared by Calendar, Records, the Dashboard, and the Overdue drill-down (B-15).</summary>
 public static class CrFilterMatcher
 {
-    /// <param name="today">The local day of the overdue rule and of a rolling Period (the store's day, B-15).</param>
+    /// <param name="today">The local day of the overdue rule and of rolling dates (the store's day, B-15).</param>
     public static bool Matches(CrFilterSpec spec, ChangeRequestReadModel cr, DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(spec);
@@ -61,9 +64,9 @@ public static class CrFilterMatcher
             && (spec.Priorities.Count == 0 || spec.Priorities.Contains(cr.Priority.Id))
             && (spec.Squads.Count == 0 || spec.Squads.Contains(cr.SquadId))
             && (spec.Owners.Count == 0 || spec.Owners.Contains(cr.Owner.Id))
-            && (spec.Planned is not { } planned || planned.MatchesOverlap(cr.PlannedStart, cr.PlannedEnd))
-            && (spec.Period is not { } period || period.Matches(cr.PlannedStart, today))
-            && spec.CustomFields.All(f => !f.IsSet || f.Matches(cr.CustomValues))
+            && (spec.Planned is not { } planned || planned.MatchesOverlap(cr.PlannedStart, cr.PlannedEnd, today))
+            && (spec.Period is not { } period || period.Matches(cr.PlannedStart, cr.PlannedEnd, today))
+            && spec.CustomFields.All(f => !f.IsSet || f.Matches(cr.CustomValues, today))
             && (!spec.HasSearch || Search(cr, spec.SearchText.Trim()));
     }
 
@@ -95,18 +98,19 @@ public enum ReviewMetric
 }
 
 /// <summary>
-/// A review drill-down (B-15.3): the metric, optionally one developer bucket, and the Dashboard Period. Reviews are
-/// never filtered by the Dashboard Squad/Priority/Owner fields.
+/// A review drill-down (B-15.3): the metric, optionally one developer bucket, and the Dashboard Active date. Reviews
+/// are never filtered by the Dashboard Squad/Priority/Owner fields.
 /// </summary>
 /// <param name="ByDeveloper">True for a developer bar; then a null <paramref name="DeveloperId"/> is "Unassigned".</param>
 /// <param name="Period">
-/// An open review is in the period when it was created in it (local day); a done review when its CompletedOn is.
+/// The Active date: a review matches when its local creation day → CompletedOn span overlaps the range; an open
+/// review is still active (open-ended).
 /// </param>
 public sealed record ReviewFilterSpec(ReviewMetric Metric, bool ByDeveloper, PersonId? DeveloperId, PeriodFilter? Period = null);
 
 public static class ReviewFilterMatcher
 {
-    /// <param name="today">The store's local day (week, month, and a rolling Period).</param>
+    /// <param name="today">The store's local day (week, month, and a rolling Active date).</param>
     /// <param name="localZone">The zone of that day, which places a review's creation instant on a local day.</param>
     public static bool Matches(ReviewFilterSpec spec, ReviewItem review, DateOnly today, TimeZoneInfo localZone)
     {
@@ -121,15 +125,16 @@ public static class ReviewFilterMatcher
         };
         return inMetric
             && (!spec.ByDeveloper || review.Content.DeveloperId == spec.DeveloperId)
-            && (spec.Period is not { IsSet: true } period || period.Matches(PeriodDay(review, localZone), today));
+            && (spec.Period is not { IsSet: true } period
+                || period.Matches(CreatedDay(review, localZone), review.IsDone ? review.CompletedOn : null, today));
     }
 
-    /// <summary>The day a review is placed in a Period: CompletedOn when done, otherwise its local creation day.</summary>
-    public static DateOnly? PeriodDay(ReviewItem review, TimeZoneInfo localZone)
+    /// <summary>The local day a review was created on: the start of its active span.</summary>
+    public static DateOnly CreatedDay(ReviewItem review, TimeZoneInfo localZone)
     {
         ArgumentNullException.ThrowIfNull(review);
         ArgumentNullException.ThrowIfNull(localZone);
-        return review.IsDone ? review.CompletedOn : DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(review.CreatedAtUtc, localZone).DateTime);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(review.CreatedAtUtc, localZone).DateTime);
     }
 }
 

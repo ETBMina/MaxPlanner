@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The Filters button and its draft flyout (design §2.6, B-10) [gallery-flyout-1, gallery-togglebutton-1,
-    gallery-calendardatepicker-1, gallery-numberbox-2, gallery-radiobutton-1]. Opening builds a fresh draft; Apply
-    commits it; Cancel, Esc and light dismiss discard it.
+    The Filters button and its cascading "Filter by" menu (design §2.6, owner decision 2026-11-07)
+    [gallery-flyout-1, gallery-menuflyout-2, gallery-togglebutton-1, gallery-numberbox-2, gallery-autosuggestbox-1].
+    A MenuFlyout cannot host the header link, text boxes or the range calendar, and a checked item would close it, so
+    the menu is a Flyout of menu-styled rows; each row opens its submenu as a nested Flyout to the right. Every change
+    applies at once; Esc and light dismiss only close.
 -->
 <UserControl
     x:Class="MaxPlanner.Presentation.Common.Filters.FilterButton"
@@ -13,164 +15,418 @@
     xmlns:local="using:MaxPlanner.Presentation.Common.Filters"
     IsTabStop="False">
     <UserControl.Resources>
-        <DataTemplate x:Key="ChoiceTemplate" x:DataType="local:FilterChoiceViewModel">
-            <!-- Design §2.6: a checked chip shows a CheckMark glyph as well as its fill, so state is never color alone. -->
+        <!--
+            Menu item look for Button and ToggleButton rows: the MenuFlyoutItem lightweight brushes, which every theme
+            (High Contrast included) defines, and the system focus visual. A ToggleButton's checked state is shown by
+            the item's CheckMark glyph, so the Checked states look like the unchecked ones.
+        -->
+        <Style x:Key="FilterMenuItemButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{ThemeResource MenuFlyoutItemBackground}" />
+            <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="11,8,11,8" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+            <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="FocusVisualMargin" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid
+                            x:Name="LayoutRoot"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundDisabled}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter
+                                x:Name="ContentPresenter"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                AutomationProperties.AccessibilityView="Raw"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Foreground="{TemplateBinding Foreground}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilterMenuItemToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="{ThemeResource MenuFlyoutItemBackground}" />
+            <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="11,8,11,8" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+            <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="FocusVisualMargin" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid
+                            x:Name="LayoutRoot"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="Checked" />
+                                    <VisualState x:Name="Indeterminate" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedPointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminatePointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedPressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminatePressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedDisabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminateDisabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter
+                                x:Name="ContentPresenter"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                AutomationProperties.AccessibilityView="Raw"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Foreground="{TemplateBinding Foreground}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Menu and submenu surfaces: menu padding, room for the two-month calendar, no presenter scrolling (lists scroll themselves). -->
+        <Style
+            x:Key="FilterMenuPresenterStyle"
+            BasedOn="{StaticResource DefaultFlyoutPresenterStyle}"
+            TargetType="FlyoutPresenter">
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="MaxWidth" Value="640" />
+            <Setter Property="ScrollViewer.VerticalScrollMode" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Disabled" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+
+        <Style x:Key="FilterMenuSeparatorStyle" TargetType="Border">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Margin" Value="-4,4" />
+            <Setter Property="Background" Value="{ThemeResource MenuFlyoutSeparatorBackground}" />
+        </Style>
+
+        <!-- A checkable item: CheckMark (state is never colour alone), the value's own glyph and colour, the label. -->
+        <DataTemplate x:Key="ChoiceItemTemplate" x:DataType="local:FilterChoiceViewModel">
             <ToggleButton
-                Padding="10,4"
                 AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
                 AutomationProperties.Name="{x:Bind Label, Mode=OneTime}"
-                IsChecked="{x:Bind IsChecked, Mode=TwoWay}">
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                IsChecked="{x:Bind IsChecked, Mode=TwoWay}"
+                PointerEntered="OnSubmenuItemPointerEntered"
+                PointerExited="OnHoverPointerExited"
+                Style="{StaticResource FilterMenuItemToggleStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <FontIcon
+                        HorizontalAlignment="Left"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="14"
                         Glyph="&#xE73E;"
                         Visibility="{x:Bind common:BindFunctions.Visible(IsChecked), Mode=OneWay}" />
-                    <TextBlock Text="{x:Bind Label, Mode=OneTime}" />
-                </StackPanel>
+                    <FontIcon
+                        Grid.Column="1"
+                        Margin="0,0,12,0"
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="16"
+                        Glyph="{x:Bind Glyph, Mode=OneTime}"
+                        Style="{x:Bind local:FilterButton.GlyphStyle(Tone), Mode=OneTime}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(HasGlyph), Mode=OneTime}" />
+                    <!-- People show their avatar (initials circle), as on the Board card; it is decorative next to the name. -->
+                    <controls:PersonAvatar
+                        Grid.Column="1"
+                        Margin="0,0,12,0"
+                        Diameter="20"
+                        DisplayName="{x:Bind Label, Mode=OneTime}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(IsPerson), Mode=OneTime}" />
+                    <TextBlock
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Text="{x:Bind Label, Mode=OneTime}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
             </ToggleButton>
         </DataTemplate>
 
-        <DataTemplate x:Key="ChoiceGroupTemplate" x:DataType="local:FilterChoiceGroupViewModel">
-            <StackPanel Margin="0,0,0,16" Spacing="8">
+        <!-- Status, Priority, Squad, CR Owner, Designer, Developer, Tags, Lookup custom fields: multi-select items. -->
+        <DataTemplate x:Key="ChoiceEditorTemplate" x:DataType="local:FilterChoiceGroupViewModel">
+            <StackPanel
+                MinWidth="220"
+                MaxWidth="320"
+                XYFocusKeyboardNavigation="Enabled">
                 <TextBlock
-                    AutomationProperties.HeadingLevel="Level3"
-                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="{x:Bind Header, Mode=OneTime}" />
+                    x:Uid="Filters_NoValues"
+                    Margin="12,8"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind common:BindFunctions.Visible(IsEmpty), Mode=OneTime}" />
+                <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl
+                        IsTabStop="False"
+                        ItemTemplate="{StaticResource ChoiceItemTemplate}"
+                        ItemsSource="{x:Bind Choices, Mode=OneTime}" />
+                </ScrollViewer>
+                <StackPanel Visibility="{x:Bind common:BindFunctions.Visible(ShowsMatchMode), Mode=OneTime}">
+                    <Border Style="{StaticResource FilterMenuSeparatorStyle}" />
+                    <RadioButtons
+                        x:Uid="Filters_TagModeRadio"
+                        Margin="12,0,12,4"
+                        AutomationProperties.AutomationId="Filters_Tags_MatchMode"
+                        SelectedIndex="{x:Bind MatchModeIndex, Mode=TwoWay}">
+                        <RadioButton x:Uid="Filters_TagModeAny" AutomationProperties.AutomationId="Filters_Tags_MatchAny" />
+                        <RadioButton x:Uid="Filters_TagModeAll" AutomationProperties.AutomationId="Filters_Tags_MatchAll" />
+                    </RadioButtons>
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Start date, End date, Planned dates, Date custom fields: presets and No date (multi-select), then Customised ›. -->
+        <DataTemplate x:Key="DateEditorTemplate" x:DataType="local:FilterDateFieldViewModel">
+            <StackPanel MinWidth="220" XYFocusKeyboardNavigation="Enabled">
                 <ItemsControl
                     IsTabStop="False"
-                    ItemTemplate="{StaticResource ChoiceTemplate}"
-                    ItemsSource="{x:Bind Choices, Mode=OneTime}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <controls:WrapPanel Spacing="6" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                    ItemTemplate="{StaticResource ChoiceItemTemplate}"
+                    ItemsSource="{x:Bind Presets, Mode=OneTime}" />
+                <Button
+                    AutomationProperties.AutomationId="{x:Bind CustomisedAutomationId, Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind CustomisedName, Mode=OneWay}"
+                    Click="OnCustomisedClick"
+                    KeyDown="OnCustomisedKeyDown"
+                    PointerEntered="OnCustomisedPointerEntered"
+                    PointerExited="OnHoverPointerExited"
+                    Style="{StaticResource FilterMenuItemButtonStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="28" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            HorizontalAlignment="Left"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="14"
+                            Glyph="&#xE73E;"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}" />
+                        <FontIcon
+                            Grid.Column="1"
+                            Margin="0,0,12,0"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="16"
+                            Glyph="&#xE787;" />
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <TextBlock x:Uid="Filters_DateCustomisedText" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind CustomText, Mode=OneWay}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}" />
+                        </StackPanel>
+                        <FontIcon
+                            Grid.Column="3"
+                            Margin="12,0,0,0"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="12"
+                            Glyph="&#xE76C;" />
+                    </Grid>
+                </Button>
             </StackPanel>
         </DataTemplate>
 
-        <DataTemplate x:Key="PickerTemplate" x:DataType="local:FilterPickerFieldViewModel">
-            <StackPanel Margin="0,0,0,16" Spacing="8">
-                <controls:TokenPicker
-                    BoxAutomationId="{x:Bind AutomationId, Mode=OneTime}"
-                    Header="{x:Bind Header, Mode=OneTime}"
-                    ViewModel="{x:Bind Picker, Mode=OneTime}" />
-                <RadioButtons
-                    x:Uid="Filters_TagModeRadio"
-                    AutomationProperties.AutomationId="Filters_TagModeRadio"
-                    MaxColumns="2"
-                    SelectedIndex="{x:Bind MatchModeIndex, Mode=TwoWay}"
-                    Visibility="{x:Bind common:BindFunctions.Visible(ShowsMatchMode), Mode=OneTime}">
-                    <RadioButton x:Uid="Filters_TagModeAny" AutomationProperties.AutomationId="Filters_TagModeAny" />
-                    <RadioButton x:Uid="Filters_TagModeAll" AutomationProperties.AutomationId="Filters_TagModeAll" />
-                </RadioButtons>
+        <!-- Active date: Last 7 days, Last 30 days, Customised ›, one at a time; none is All time. -->
+        <DataTemplate x:Key="ActiveDateEditorTemplate" x:DataType="local:ActiveDateFieldViewModel">
+            <StackPanel MinWidth="220" XYFocusKeyboardNavigation="Enabled">
+                <ItemsControl
+                    IsTabStop="False"
+                    ItemTemplate="{StaticResource ChoiceItemTemplate}"
+                    ItemsSource="{x:Bind Choices, Mode=OneTime}" />
+                <Button
+                    AutomationProperties.AutomationId="Filters_ActiveDate_Customised"
+                    AutomationProperties.Name="{x:Bind CustomisedName, Mode=OneWay}"
+                    Click="OnCustomisedClick"
+                    KeyDown="OnCustomisedKeyDown"
+                    PointerEntered="OnCustomisedPointerEntered"
+                    PointerExited="OnHoverPointerExited"
+                    Style="{StaticResource FilterMenuItemButtonStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="28" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            HorizontalAlignment="Left"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="14"
+                            Glyph="&#xE73E;"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}" />
+                        <FontIcon
+                            Grid.Column="1"
+                            Margin="0,0,12,0"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="16"
+                            Glyph="&#xE787;" />
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <TextBlock x:Uid="Filters_DateCustomisedText" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind CustomText, Mode=OneWay}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}" />
+                        </StackPanel>
+                        <FontIcon
+                            Grid.Column="3"
+                            Margin="12,0,0,0"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="12"
+                            Glyph="&#xE76C;" />
+                    </Grid>
+                </Button>
             </StackPanel>
         </DataTemplate>
 
-        <DataTemplate x:Key="TextTemplate" x:DataType="local:FilterTextFieldViewModel">
-            <TextBox
-                Margin="0,0,0,16"
-                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
-                Header="{x:Bind Header, Mode=OneTime}"
-                Text="{x:Bind Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <!-- CR: Any CR / No CR, then a search box over the current CRs. -->
+        <DataTemplate x:Key="CrEditorTemplate" x:DataType="local:FilterCrFieldViewModel">
+            <StackPanel Width="300" XYFocusKeyboardNavigation="Enabled">
+                <ContentControl
+                    HorizontalContentAlignment="Stretch"
+                    Content="{x:Bind AnyChoice, Mode=OneTime}"
+                    ContentTemplate="{StaticResource ChoiceItemTemplate}"
+                    IsTabStop="False" />
+                <ContentControl
+                    HorizontalContentAlignment="Stretch"
+                    Content="{x:Bind NoneChoice, Mode=OneTime}"
+                    ContentTemplate="{StaticResource ChoiceItemTemplate}"
+                    IsTabStop="False" />
+                <Border Style="{StaticResource FilterMenuSeparatorStyle}" />
+                <AutoSuggestBox
+                    x:Uid="Filters_CrSearchBox"
+                    Margin="8,4,8,8"
+                    AutomationProperties.AutomationId="Filters_Cr_SearchBox"
+                    GotFocus="OnCrBoxGotFocus"
+                    ItemsSource="{x:Bind Suggestions, Mode=OneTime}"
+                    QueryIcon="Find"
+                    QuerySubmitted="OnCrQuerySubmitted"
+                    SuggestionChosen="OnCrSuggestionChosen"
+                    Text="{x:Bind Text, Mode=OneWay}"
+                    TextChanged="OnCrTextChanged" />
+            </StackPanel>
         </DataTemplate>
 
-        <DataTemplate x:Key="DateTemplate" x:DataType="local:FilterDateFieldViewModel">
-            <StackPanel Margin="0,0,0,16" Spacing="8">
+        <!-- Service and Text/Multiline/URL custom fields: applies on Enter or when the box loses focus. -->
+        <DataTemplate x:Key="TextEditorTemplate" x:DataType="local:FilterTextFieldViewModel">
+            <StackPanel
+                Width="280"
+                Padding="8"
+                Spacing="4">
+                <TextBox
+                    x:Uid="Filters_ContainsBox"
+                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                    KeyDown="OnContainsKeyDown"
+                    LostFocus="OnContainsLostFocus"
+                    Text="{x:Bind Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <TextBlock
-                    AutomationProperties.HeadingLevel="Level3"
-                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="{x:Bind Header, Mode=OneTime}" />
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CalendarDatePicker
-                        x:Uid="Filters_FromDate"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="{x:Bind local:FilterButton.Suffix(AutomationId, 'From'), Mode=OneTime}"
-                        Date="{x:Bind From, Mode=TwoWay}"
-                        FirstDayOfWeek="Sunday" />
-                    <CalendarDatePicker
-                        x:Uid="Filters_ToDate"
-                        Grid.Column="1"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="{x:Bind local:FilterButton.Suffix(AutomationId, 'To'), Mode=OneTime}"
-                        Date="{x:Bind To, Mode=TwoWay}"
-                        FirstDayOfWeek="Sunday" />
-                </Grid>
-                <CheckBox
-                    AutomationProperties.AutomationId="{x:Bind local:FilterButton.Suffix(AutomationId, 'IncludeCheck'), Mode=OneTime}"
-                    Content="{x:Bind IncludeLabel, Mode=OneTime}"
-                    IsChecked="{x:Bind IncludeUndated, Mode=TwoWay}" />
-                <TextBlock
-                    AutomationProperties.LiveSetting="Assertive"
-                    Foreground="{ThemeResource ErrorTextBrush}"
+                    x:Uid="Filters_ContainsHint"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind Error, Mode=OneWay}"
-                    TextWrapping="Wrap"
-                    Visibility="{x:Bind common:BindFunctions.Visible(HasError), Mode=OneWay}" />
+                    TextWrapping="Wrap" />
             </StackPanel>
         </DataTemplate>
 
-        <!--
-            The Period field: start date in the period. A separate field from the date ranges above and below; Custom
-            range shows inclusive From/To pickers with the inverted-range error (B-10).
-        -->
-        <DataTemplate x:Key="PeriodTemplate" x:DataType="local:PeriodFieldViewModel">
-            <StackPanel Margin="0,0,0,16" Spacing="8">
-                <!--
-                    Items are declared here, not bound: the flyout reuses this template for each new draft, and a
-                    replaced ItemsSource resets SelectedIndex to -1, which the TwoWay binding would write into the
-                    new draft. Order matches PeriodPreset.
-                -->
-                <ComboBox
-                    x:Uid="Filters_PeriodCombo"
-                    HorizontalAlignment="Stretch"
-                    AutomationProperties.AutomationId="Filters_PeriodCombo"
-                    SelectedIndex="{x:Bind SelectedIndex, Mode=TwoWay}">
-                    <ComboBoxItem x:Uid="Period_AllTimeItem" AutomationProperties.AutomationId="Filters_PeriodAllTime" />
-                    <ComboBoxItem x:Uid="Period_Last7DaysItem" AutomationProperties.AutomationId="Filters_PeriodLast7Days" />
-                    <ComboBoxItem x:Uid="Period_Last30DaysItem" AutomationProperties.AutomationId="Filters_PeriodLast30Days" />
-                    <ComboBoxItem x:Uid="Period_CustomItem" AutomationProperties.AutomationId="Filters_PeriodCustom" />
-                </ComboBox>
-                <Grid ColumnSpacing="8" Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CalendarDatePicker
-                        x:Uid="Filters_PeriodFrom"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="Filters_PeriodFrom"
-                        Date="{x:Bind From, Mode=TwoWay}"
-                        FirstDayOfWeek="Sunday" />
-                    <CalendarDatePicker
-                        x:Uid="Filters_PeriodTo"
-                        Grid.Column="1"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="Filters_PeriodTo"
-                        Date="{x:Bind To, Mode=TwoWay}"
-                        FirstDayOfWeek="Sunday" />
-                </Grid>
-                <TextBlock
-                    AutomationProperties.LiveSetting="Assertive"
-                    Foreground="{ThemeResource ErrorTextBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind Error, Mode=OneWay}"
-                    TextWrapping="Wrap"
-                    Visibility="{x:Bind common:BindFunctions.Visible(HasError), Mode=OneWay}" />
-            </StackPanel>
-        </DataTemplate>
-
-        <DataTemplate x:Key="NumberTemplate" x:DataType="local:FilterNumberFieldViewModel">
-            <StackPanel Margin="0,0,0,16" Spacing="8">
-                <TextBlock
-                    AutomationProperties.HeadingLevel="Level3"
-                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="{x:Bind Header, Mode=OneTime}" />
+        <!-- Number custom fields: inclusive Min/Max; an inverted range shows the error and is not applied. -->
+        <DataTemplate x:Key="NumberEditorTemplate" x:DataType="local:FilterNumberFieldViewModel">
+            <StackPanel
+                Width="280"
+                Padding="8"
+                Spacing="8">
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -178,17 +434,18 @@
                     </Grid.ColumnDefinitions>
                     <NumberBox
                         x:Uid="Filters_MinNumber"
-                        AutomationProperties.AutomationId="{x:Bind local:FilterButton.Suffix(AutomationId, 'Min'), Mode=OneTime}"
+                        AutomationProperties.AutomationId="{x:Bind MinAutomationId, Mode=OneTime}"
                         SpinButtonPlacementMode="Hidden"
                         Value="{x:Bind Min, Mode=TwoWay}" />
                     <NumberBox
                         x:Uid="Filters_MaxNumber"
                         Grid.Column="1"
-                        AutomationProperties.AutomationId="{x:Bind local:FilterButton.Suffix(AutomationId, 'Max'), Mode=OneTime}"
+                        AutomationProperties.AutomationId="{x:Bind MaxAutomationId, Mode=OneTime}"
                         SpinButtonPlacementMode="Hidden"
                         Value="{x:Bind Max, Mode=TwoWay}" />
                 </Grid>
                 <TextBlock
+                    AutomationProperties.LiveSetting="Assertive"
                     Foreground="{ThemeResource ErrorTextBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind Error, Mode=OneWay}"
@@ -196,6 +453,276 @@
                     Visibility="{x:Bind common:BindFunctions.Visible(HasError), Mode=OneWay}" />
             </StackPanel>
         </DataTemplate>
+
+        <local:FilterEditorTemplateSelector
+            x:Key="EditorTemplateSelector"
+            ActiveDateTemplate="{StaticResource ActiveDateEditorTemplate}"
+            ChoiceTemplate="{StaticResource ChoiceEditorTemplate}"
+            CrTemplate="{StaticResource CrEditorTemplate}"
+            DateTemplate="{StaticResource DateEditorTemplate}"
+            NumberTemplate="{StaticResource NumberEditorTemplate}"
+            TextTemplate="{StaticResource TextEditorTemplate}" />
+
+        <!--
+            One day of the range calendar (the reference design): days in the range sit on the accent band, which runs
+            across the cells; the first and last day are light rounded squares; today keeps its accent circle. Days of
+            the neighbouring months keep the cell empty, so each day exists once across the two months. Hover and
+            keyboard focus preview the range while its end is being picked.
+        -->
+        <DataTemplate x:Key="CalendarDayTemplate" x:DataType="local:CalendarDayViewModel">
+            <Grid Width="36" Height="36">
+                <Border
+                    Background="{ThemeResource FilterRangeBandBrush}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ShowsBand), Mode=OneWay}" />
+                <Button
+                    Width="36"
+                    Height="36"
+                    Padding="0"
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind Name, Mode=OneWay}"
+                    Command="{x:Bind PickCommand, Mode=OneTime}"
+                    GotFocus="OnDayGotFocus"
+                    PointerEntered="OnDayPointerEntered"
+                    Style="{StaticResource FilterMenuItemButtonStyle}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(IsInMonth), Mode=OneTime}">
+                    <Grid Width="32" Height="32">
+                        <Border
+                            Margin="1"
+                            Background="{ThemeResource FilterRangeEndBrush}"
+                            CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsRangeEnd), Mode=OneWay}" />
+                        <Ellipse
+                            Margin="2"
+                            Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsToday), Mode=OneTime}" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Text="{x:Bind Text, Mode=OneTime}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(ShowsPlainText), Mode=OneWay}" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource FilterRangeBandForegroundBrush}"
+                            Text="{x:Bind Text, Mode=OneTime}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(ShowsBandText), Mode=OneWay}" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource FilterRangeEndForegroundBrush}"
+                            Text="{x:Bind Text, Mode=OneTime}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(ShowsEndText), Mode=OneWay}" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                            Text="{x:Bind Text, Mode=OneTime}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(IsToday), Mode=OneTime}" />
+                    </Grid>
+                </Button>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="DayNameTemplate" x:DataType="x:String">
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                AutomationProperties.AccessibilityView="Raw"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind}" />
+        </DataTemplate>
+
+        <DataTemplate x:Key="CalendarMonthTemplate" x:DataType="local:CalendarMonthViewModel">
+            <StackPanel Width="252" Spacing="4">
+                <TextBlock
+                    Height="32"
+                    Padding="0,6,0,0"
+                    HorizontalAlignment="Center"
+                    AutomationProperties.HeadingLevel="Level3"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind Title, Mode=OneTime}" />
+                <ItemsControl
+                    IsTabStop="False"
+                    ItemTemplate="{StaticResource DayNameTemplate}"
+                    ItemsSource="{x:Bind DayNames, Mode=OneTime}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VariableSizedWrapGrid
+                                ItemHeight="28"
+                                ItemWidth="36"
+                                MaximumRowsOrColumns="7"
+                                Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <!-- One tab stop per month; the arrow keys move between days. -->
+                <ItemsControl
+                    IsTabStop="False"
+                    ItemTemplate="{StaticResource CalendarDayTemplate}"
+                    ItemsSource="{x:Bind Days, Mode=OneTime}"
+                    PointerExited="OnDaysPointerExited"
+                    TabFocusNavigation="Once"
+                    XYFocusKeyboardNavigation="Enabled">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VariableSizedWrapGrid
+                                ItemHeight="36"
+                                ItemWidth="36"
+                                MaximumRowsOrColumns="7"
+                                Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Customised: two months side by side with previous/next month, Clear range and Go to today. -->
+        <DataTemplate x:Key="DateRangeTemplate" x:DataType="local:DateRangePickerViewModel">
+            <Grid
+                Padding="8,4,8,4"
+                RowSpacing="4"
+                XYFocusKeyboardNavigation="Enabled">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ItemsControl
+                    IsTabStop="False"
+                    ItemTemplate="{StaticResource CalendarMonthTemplate}"
+                    ItemsSource="{x:Bind Months, Mode=OneWay}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="24" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <Button
+                    x:Uid="Filters_DateRangePrevMonth"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Filters_DateRange_PrevMonth"
+                    Command="{x:Bind PreviousMonthCommand, Mode=OneTime}"
+                    Style="{StaticResource FilterMenuItemButtonStyle}">
+                    <FontIcon
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="12"
+                        Glyph="&#xE76B;" />
+                </Button>
+                <Button
+                    x:Uid="Filters_DateRangeNextMonth"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Filters_DateRange_NextMonth"
+                    Command="{x:Bind NextMonthCommand, Mode=OneTime}"
+                    Style="{StaticResource FilterMenuItemButtonStyle}">
+                    <FontIcon
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="12"
+                        Glyph="&#xE76C;" />
+                </Button>
+                <Grid Grid.Row="1" ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <!-- "03/11/2026 – Select an end date" while picking, "03/11/2026 – 13/11/2026" once chosen. -->
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Filters_DateRange_Selection"
+                        AutomationProperties.LiveSetting="Polite"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind SelectionText, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis" />
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="4">
+                        <HyperlinkButton
+                            x:Uid="Filters_DateRangeClear"
+                            AutomationProperties.AutomationId="Filters_DateRange_Clear"
+                            Command="{x:Bind ClearRangeCommand, Mode=OneTime}" />
+                        <HyperlinkButton
+                            x:Uid="Filters_DateRangeGoToToday"
+                            AutomationProperties.AutomationId="Filters_DateRange_GoToToday"
+                            Command="{x:Bind GoToTodayCommand, Mode=OneTime}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
+        <!-- A top-level row: icon, label, an accent dot when the field is set, and the submenu chevron. -->
+        <DataTemplate x:Key="RowTemplate" x:DataType="local:FilterMenuRowViewModel">
+            <Button
+                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                Click="OnRowClick"
+                KeyDown="OnRowKeyDown"
+                PointerEntered="OnRowPointerEntered"
+                PointerExited="OnHoverPointerExited"
+                Style="{StaticResource FilterMenuItemButtonStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon
+                        HorizontalAlignment="Left"
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="16"
+                        Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                    <TextBlock
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Text="{x:Bind Label, Mode=OneTime}"
+                        TextTrimming="CharacterEllipsis" />
+                    <Ellipse
+                        Grid.Column="2"
+                        Width="6"
+                        Height="6"
+                        Margin="8,0,8,0"
+                        Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(IsSet), Mode=OneWay}" />
+                    <FontIcon
+                        Grid.Column="3"
+                        Margin="8,0,0,0"
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="12"
+                        Glyph="&#xE76C;" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+
+        <!-- The submenu and the range picker: nested flyouts placed to the right of the item that opened them. -->
+        <Flyout
+            x:Key="SubmenuFlyout"
+            FlyoutPresenterStyle="{StaticResource FilterMenuPresenterStyle}"
+            Placement="RightEdgeAlignedTop"
+            ShouldConstrainToRootBounds="True">
+            <ContentControl
+                HorizontalContentAlignment="Stretch"
+                ContentTemplateSelector="{StaticResource EditorTemplateSelector}"
+                IsTabStop="False" />
+        </Flyout>
+        <Flyout
+            x:Key="RangeFlyout"
+            FlyoutPresenterStyle="{StaticResource FilterMenuPresenterStyle}"
+            Placement="RightEdgeAlignedTop"
+            ShouldConstrainToRootBounds="True">
+            <ContentControl ContentTemplate="{StaticResource DateRangeTemplate}" IsTabStop="False" />
+        </Flyout>
     </UserControl.Resources>
 
     <Button
@@ -203,7 +730,7 @@
         AutomationProperties.Name="{x:Bind Scope.FiltersButtonName, Mode=OneWay}"
         ToolTipService.ToolTip="{x:Bind Scope.FiltersButtonName, Mode=OneWay}">
         <Button.KeyboardAccelerators>
-            <!-- Design §7.1: Ctrl+Shift+F opens the Filters flyout of the visible page. -->
+            <!-- Design §7.1: Ctrl+Shift+F opens the filter menu of the visible page. -->
             <KeyboardAccelerator
                 Key="F"
                 Invoked="OnOpenAcceleratorInvoked"
@@ -233,129 +760,35 @@
             <Flyout
                 x:Name="FiltersFlyout"
                 Closed="OnFlyoutClosed"
+                FlyoutPresenterStyle="{StaticResource FilterMenuPresenterStyle}"
+                Opened="OnFlyoutOpened"
                 Opening="OnFlyoutOpening"
                 Placement="BottomEdgeAlignedLeft"
                 ShouldConstrainToRootBounds="True">
-                <!--
-                    The presenter's own ScrollViewer would otherwise give the Grid unbounded height, so the whole panel
-                    scrolled and the footer could scroll away. With it disabled, only FieldsScroller scrolls.
-                -->
-                <Flyout.FlyoutPresenterStyle>
-                    <Style BasedOn="{StaticResource DefaultFlyoutPresenterStyle}" TargetType="FlyoutPresenter">
-                        <Setter Property="ScrollViewer.VerticalScrollMode" Value="Disabled" />
-                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
-                    </Style>
-                </Flyout.FlyoutPresenterStyle>
-                <Grid
-                    x:Name="FlyoutRoot"
-                    Width="400"
-                    MaxWidth="400"
-                    MaxHeight="640"
-                    RowSpacing="12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <TextBlock
-                        AutomationProperties.HeadingLevel="Level2"
-                        Style="{StaticResource SubtitleTextBlockStyle}"
-                        Text="{x:Bind Draft.HeaderText, Mode=OneWay}"
-                        TextWrapping="Wrap" />
-
-                    <!-- The fields scroll; header and footer stay pinned (design §2.6). -->
-                    <ScrollViewer
-                        x:Name="FieldsScroller"
-                        Grid.Row="1"
-                        Padding="0,0,16,0"
-                        VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <ItemsControl
-                                IsTabStop="False"
-                                ItemTemplate="{StaticResource ChoiceGroupTemplate}"
-                                ItemsSource="{x:Bind Draft.ChoiceGroups, Mode=OneWay}" />
-                            <ItemsControl
-                                IsTabStop="False"
-                                ItemTemplate="{StaticResource PickerTemplate}"
-                                ItemsSource="{x:Bind Draft.PickerFields, Mode=OneWay}" />
-                            <AutoSuggestBox
-                                x:Name="CrBox"
-                                Margin="0,0,0,16"
-                                AutomationProperties.AutomationId="Filters_CrPicker"
-                                GotFocus="OnCrBoxGotFocus"
-                                Header="{x:Bind Draft.CrField.Header, Mode=OneWay, FallbackValue=''}"
-                                ItemsSource="{x:Bind Draft.CrField.Suggestions, Mode=OneWay, FallbackValue={x:Null}}"
-                                QueryIcon="Find"
-                                QuerySubmitted="OnCrQuerySubmitted"
-                                SuggestionChosen="OnCrSuggestionChosen"
-                                Text="{x:Bind Draft.CrField.Text, Mode=OneWay, FallbackValue=''}"
-                                TextChanged="OnCrTextChanged"
-                                Visibility="{x:Bind common:BindFunctions.Visible(Draft.HasCrField), Mode=OneWay}" />
-                            <ItemsControl
-                                IsTabStop="False"
-                                ItemTemplate="{StaticResource TextTemplate}"
-                                ItemsSource="{x:Bind Draft.TextFields, Mode=OneWay}" />
-                            <ContentControl
-                                HorizontalContentAlignment="Stretch"
-                                Content="{x:Bind Draft.Period, Mode=OneWay, FallbackValue={x:Null}}"
-                                ContentTemplate="{StaticResource PeriodTemplate}"
-                                IsTabStop="False" />
-                            <ItemsControl
-                                IsTabStop="False"
-                                ItemTemplate="{StaticResource DateTemplate}"
-                                ItemsSource="{x:Bind Draft.DateFields, Mode=OneWay}" />
-                            <ItemsControl
-                                IsTabStop="False"
-                                ItemTemplate="{StaticResource NumberTemplate}"
-                                ItemsSource="{x:Bind Draft.NumberFields, Mode=OneWay}" />
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <Grid
-                        Grid.Row="2"
-                        ColumnSpacing="8"
-                        RowSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                <StackPanel Width="300" AutomationProperties.Name="{x:Bind Scope.ScopeTitle, Mode=OneWay}">
+                    <Grid Padding="11,4,0,4">
                         <TextBlock
-                            x:Uid="Filters_Hint"
-                            Grid.ColumnSpan="4"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            TextWrapping="Wrap" />
-                        <Button
-                            x:Name="ClearButton"
-                            x:Uid="Filters_ClearButton"
-                            Grid.Row="1"
-                            Command="{x:Bind Draft.ClearCommand, Mode=OneWay}" />
-                        <Button
-                            x:Name="CancelButton"
-                            x:Uid="Filters_CancelButton"
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Click="OnCancelClick" />
-                        <Button
-                            x:Name="ApplyButton"
-                            x:Uid="Filters_ApplyButton"
-                            Grid.Row="1"
-                            Grid.Column="3"
-                            Click="OnApplyClick"
-                            IsEnabled="{x:Bind Draft.CanApply, Mode=OneWay}"
-                            Style="{StaticResource AccentButtonStyle}">
-                            <Button.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="Enter" Modifiers="Control" />
-                            </Button.KeyboardAccelerators>
-                        </Button>
+                            x:Uid="Filters_MenuTitle"
+                            VerticalAlignment="Center"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <HyperlinkButton
+                            x:Uid="Filters_MenuClearAll"
+                            HorizontalAlignment="Right"
+                            AutomationProperties.AutomationId="Filters_ClearAllLink"
+                            Command="{x:Bind Menu.ClearAllCommand, Mode=OneWay, FallbackValue={x:Null}}"
+                            IsEnabled="{x:Bind Menu.CanClearAll, Mode=OneWay, FallbackValue=False}" />
                     </Grid>
-                </Grid>
+                    <ScrollViewer x:Name="RowsScroller" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl
+                            x:Name="RowsList"
+                            IsTabStop="False"
+                            ItemTemplate="{StaticResource RowTemplate}"
+                            ItemsSource="{x:Bind Menu.Rows, Mode=OneWay, FallbackValue={x:Null}}"
+                            TabFocusNavigation="Once"
+                            XYFocusKeyboardNavigation="Enabled" />
+                    </ScrollViewer>
+                </StackPanel>
             </Flyout>
         </Button.Flyout>
     </Button>

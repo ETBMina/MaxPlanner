@@ -60,12 +60,12 @@ public sealed record TaskFilterSpec
 
     public string? ServiceContains { get; init; }
 
-    /// <summary>Actual start date (B-10: actual dates, never CR planned dates).</summary>
+    /// <summary>Actual start date (B-10: actual dates, never CR planned dates): presets, a custom range, No date.</summary>
     public DateRangeFilter? StartDate { get; init; }
 
     public DateRangeFilter? EndDate { get; init; }
 
-    /// <summary>The Period field: the record's own Start Date is in the period (the End Date is not considered).</summary>
+    /// <summary>The Active date field: the record's own Start Date → End Date span overlaps the range.</summary>
     public PeriodFilter? Period { get; init; }
 
     public IReadOnlyList<CustomFieldFilter> CustomFields { get; init; } = [];
@@ -83,6 +83,11 @@ public sealed record TaskFilterSpec
 
     public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
 
+    /// <summary>A set field resolves against the local day, so a new day can change the matches.</summary>
+    public bool IsRolling =>
+        Period is { IsRolling: true } || StartDate is { IsRolling: true } || EndDate is { IsRolling: true }
+        || CustomFields.Any(f => f.Date is { IsRolling: true });
+
     /// <summary>True when any search, field, or Dashboard context narrows the records.</summary>
     public bool IsActive => HasSearch || FieldCount > 0 || Dashboard is not null;
 
@@ -95,7 +100,7 @@ public sealed record TaskFilterSpec
 /// <summary>Lookups the task predicate needs beyond the record itself, resolved from the current read models.</summary>
 /// <param name="FindTask">A Subtask card's parent; its priority, people, tags, service and custom values apply to the card.</param>
 /// <param name="FindChangeRequest">The linked CR, for the Unscheduled metric (CR planned range).</param>
-/// <param name="Today">The local day a rolling Period resolves against (the store's day).</param>
+/// <param name="Today">The local day rolling Active date and date presets resolve against (the store's day).</param>
 public sealed record TaskFilterContext(
     Func<TaskId, TaskReadModel?> FindTask,
     Func<ChangeRequestId, ChangeRequestReadModel?> FindChangeRequest,
@@ -226,25 +231,22 @@ public static class TaskFilterMatcher
             return false;
         }
 
-        if (spec.StartDate is { } startFilter && !startFilter.Matches(start))
+        if (spec.StartDate is { } startFilter && !startFilter.Matches(start, today))
         {
             return false;
         }
 
-        if (spec.Period is { } period && !period.Matches(start, today))
+        if (spec.Period is { } period && !period.Matches(start, end, today))
         {
             return false;
         }
 
-        // An End Date range open at the top (From only) also keeps records that have not ended yet (no end date).
-        if (spec.EndDate is { } endFilter
-            && !(end is null && endFilter is { From: not null, To: null })
-            && !endFilter.Matches(end))
+        if (spec.EndDate is { } endFilter && !endFilter.Matches(end, today))
         {
             return false;
         }
 
-        return spec.CustomFields.All(f => !f.IsSet || f.Matches(owner?.CustomValues));
+        return spec.CustomFields.All(f => !f.IsSet || f.Matches(owner?.CustomValues, today));
     }
 
     private static bool MatchesTags(TaskFilterSpec spec, TaskReadModel? owner)

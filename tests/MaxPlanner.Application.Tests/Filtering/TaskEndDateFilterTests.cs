@@ -9,7 +9,10 @@ using static MaxPlanner.Application.Tests.TestWorkspace;
 
 namespace MaxPlanner.Application.Tests.Filtering;
 
-/// <summary>An End Date filter with From only also keeps tasks that have no end date yet.</summary>
+/// <summary>
+/// End Date ranges. An older saved From-only range meant "ended on or after From, or not ended yet"; it now loads with
+/// No date set, so the matcher has no hidden rule and matches the same tasks as before.
+/// </summary>
 [Trait("Req", "B-10")]
 public sealed class TaskEndDateFilterTests
 {
@@ -19,11 +22,28 @@ public sealed class TaskEndDateFilterTests
     private static readonly DateOnly To = Today.AddDays(20);
 
     [Fact]
-    public void From_only_includes_tasks_without_an_end_date()
+    public void An_older_from_only_end_range_loads_with_no_date_and_keeps_tasks_without_an_end_date()
+    {
+        var saved = new Application.Preferences.ViewFilterPreference(null, new Dictionary<string, IReadOnlyList<string>>
+        {
+            ["end"] = ["2026-11-01", "", ""],
+        });
+
+        var spec = FilterPersistence.ToTaskSpec(saved);
+
+        spec.EndDate.Should().Be(new DateRangeFilter(new DateOnly(2026, 11, 1), null, IncludeUndated: true));
+        Matches(spec, Compose(null)).Should().BeTrue("not ended yet");
+        Matches(spec, Compose(new DateOnly(2026, 11, 1))).Should().BeTrue();
+        Matches(spec, Compose(new DateOnly(2026, 10, 31))).Should().BeFalse();
+        FilterPersistence.ToPreference(spec).Fields["end"].Should().Equal("2026-11-01", string.Empty, "undated");
+    }
+
+    [Fact]
+    public void A_from_only_end_range_without_no_date_now_means_what_it_shows()
     {
         var spec = new TaskFilterSpec { EndDate = new DateRangeFilter(From, null, IncludeUndated: false) };
 
-        Matches(spec, Compose(null)).Should().BeTrue();
+        Matches(spec, Compose(null)).Should().BeFalse("No date is not selected");
         Matches(spec, Compose(From)).Should().BeTrue();
         Matches(spec, Compose(From.AddDays(-1))).Should().BeFalse();
     }

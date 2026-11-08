@@ -2643,27 +2643,6 @@
   <data name="Filters_CrScopeTitle" xml:space="preserve">
     <value>Filter CRs — Calendar</value>
   </data>
-  <data name="Filters_Header" xml:space="preserve">
-    <value>{0} · {1} fields set</value>
-  </data>
-  <data name="Filters_HeaderOne" xml:space="preserve">
-    <value>{0} · 1 field set</value>
-  </data>
-  <data name="Filters_Hint.Text" xml:space="preserve">
-    <value>Nothing changes until you apply.</value>
-  </data>
-  <data name="Filters_ClearButton.Content" xml:space="preserve">
-    <value>Clear</value>
-  </data>
-  <data name="Filters_CancelButton.Content" xml:space="preserve">
-    <value>Cancel</value>
-  </data>
-  <data name="Filters_ApplyButton.Content" xml:space="preserve">
-    <value>Apply</value>
-  </data>
-  <data name="Filters_ApplyButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Apply (Ctrl+Enter)</value>
-  </data>
   <data name="Filters_Status" xml:space="preserve">
     <value>Status</value>
   </data>
@@ -2709,12 +2688,6 @@
   <data name="Filters_Service" xml:space="preserve">
     <value>Service</value>
   </data>
-  <data name="Filters_ServiceContains" xml:space="preserve">
-    <value>Service contains</value>
-  </data>
-  <data name="Filters_Contains" xml:space="preserve">
-    <value>{0} contains</value>
-  </data>
   <data name="Filters_ContainsValue" xml:space="preserve">
     <value>contains “{0}”</value>
   </data>
@@ -2725,25 +2698,7 @@
     <value>End date</value>
   </data>
   <data name="Filters_Planned" xml:space="preserve">
-    <value>Planned range (overlaps)</value>
-  </data>
-  <data name="Filters_IncludeWithoutStart" xml:space="preserve">
-    <value>Include records without a start date</value>
-  </data>
-  <data name="Filters_IncludeWithoutEnd" xml:space="preserve">
-    <value>Include records without an end date</value>
-  </data>
-  <data name="Filters_IncludeWithout" xml:space="preserve">
-    <value>Include records without a {0}</value>
-  </data>
-  <data name="Filters_IncludeUnscheduled" xml:space="preserve">
-    <value>Include unscheduled CRs</value>
-  </data>
-  <data name="Filters_FromDate.Header" xml:space="preserve">
-    <value>From (inclusive)</value>
-  </data>
-  <data name="Filters_ToDate.Header" xml:space="preserve">
-    <value>To (inclusive)</value>
+    <value>Planned dates</value>
   </data>
   <data name="Filters_MinNumber.Header" xml:space="preserve">
     <value>Min</value>
@@ -2762,9 +2717,6 @@
   </data>
   <data name="Filters_RangeTo" xml:space="preserve">
     <value>until {0}</value>
-  </data>
-  <data name="Filters_RangeOrNone" xml:space="preserve">
-    <value>{0}, or none</value>
   </data>
   <data name="Filters_NumberMin" xml:space="preserve">
     <value>at least {0}</value>
@@ -2790,7 +2742,7 @@
   <data name="Filters_ClearAllLink.Content" xml:space="preserve">
     <value>Clear all filters</value>
   </data>
-  <data name="Filters_ClearAllLink.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="Filters_ClearAllLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Clear all filters (Ctrl+Shift+L)</value>
   </data>
   <data name="Filters_ClearAllAction" xml:space="preserve">
@@ -2878,7 +2830,7 @@
     <value>Clear filters</value>
   </data>
   <data name="Dashboard_FilterScopeCaption.Text" xml:space="preserve">
-    <value>Squad, Priority and CR Owner apply to tasks, Subtask cards and CRs. Period matches each record's start date and also applies to open reviews.</value>
+    <value>Squad, Priority and CR Owner apply to tasks, Subtask cards and CRs. Active date keeps the records active during the range (from their start date to their end date, or still open) and also applies to open reviews.</value>
   </data>
   <data name="Dashboard_StateView.LoadingMessage" xml:space="preserve">
     <value>Loading the dashboard…</value>
@@ -3059,9 +3011,6 @@
   </data>
   <data name="Dashboard_Summary" xml:space="preserve">
     <value>{0} of {1} tasks active · {2} overdue CRs · {3} open reviews</value>
-  </data>
-  <data name="Filters_Applied" xml:space="preserve">
-    <value>Filters applied</value>
   </data>
   <data name="Data_BreadcrumbSettings" xml:space="preserve">
     <value>Settings</value>
@@ -4089,44 +4038,26 @@
   <data name="ExpandingSearch_ClearButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Clear search (Esc)</value>
   </data>
-  <data name="Filters_Period" xml:space="preserve">
-    <value>Period</value>
-  </data>
   <data name="Filters_PeriodLast7Days" xml:space="preserve">
     <value>Last 7 days</value>
   </data>
   <data name="Filters_PeriodLast30Days" xml:space="preserve">
     <value>Last 30 days</value>
   </data>
-  <data name="Filters_PeriodCombo.Header" xml:space="preserve">
-    <value>Period (start date)</value>
-  </data>
-  <data name="Filters_PeriodFrom.Header" xml:space="preserve">
-    <value>From (inclusive)</value>
-  </data>
-  <data name="Filters_PeriodFrom.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Period from (inclusive)</value>
-  </data>
-  <data name="Filters_PeriodTo.Header" xml:space="preserve">
-    <value>To (inclusive)</value>
-  </data>
-  <data name="Filters_PeriodTo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Period to (inclusive)</value>
-  </data>
   <data name="Dashboard_PeriodCombo.Header" xml:space="preserve">
-    <value>Period</value>
+    <value>Active date</value>
   </data>
   <data name="Dashboard_PeriodFrom.Header" xml:space="preserve">
     <value>From (inclusive)</value>
   </data>
   <data name="Dashboard_PeriodFrom.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Period from (inclusive)</value>
+    <value>Active date from (inclusive)</value>
   </data>
   <data name="Dashboard_PeriodTo.Header" xml:space="preserve">
     <value>To (inclusive)</value>
   </data>
   <data name="Dashboard_PeriodTo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Period to (inclusive)</value>
+    <value>Active date to (inclusive)</value>
   </data>
   <data name="Dashboard_DrillLabelWithPeriod" xml:space="preserve">
     <value>{0} · {1}</value>
@@ -4143,5 +4074,102 @@
   </data>
   <data name="Period_CustomItem.Content" xml:space="preserve">
     <value>Custom range</value>
+  </data>
+  <data name="Filters_MenuTitle.Text" xml:space="preserve">
+    <value>Filter by</value>
+  </data>
+  <data name="Filters_MenuClearAll.Content" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
+  <data name="Filters_MenuClearAll.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear every filter in this menu</value>
+  </data>
+  <data name="Filters_RowSetName" xml:space="preserve">
+    <value>{0}, filter set</value>
+    <comment>A filter menu row whose field narrows the records, e.g. "Priority, filter set".</comment>
+  </data>
+  <data name="Filters_NoValues.Text" xml:space="preserve">
+    <value>Nothing to filter by yet.</value>
+  </data>
+  <data name="Filters_ActiveDate" xml:space="preserve">
+    <value>Active date</value>
+    <comment>Was "Period": records active during the range (their start-to-end span overlaps it).</comment>
+  </data>
+  <data name="Filters_DatePast" xml:space="preserve">
+    <value>Past</value>
+  </data>
+  <data name="Filters_DateToday" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Filters_DateTomorrow" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="Filters_DateThisWeek" xml:space="preserve">
+    <value>This week</value>
+  </data>
+  <data name="Filters_DateNextWeek" xml:space="preserve">
+    <value>Next week</value>
+  </data>
+  <data name="Filters_DateFuture" xml:space="preserve">
+    <value>Future</value>
+  </data>
+  <data name="Filters_DateNoDate" xml:space="preserve">
+    <value>No date</value>
+  </data>
+  <data name="Filters_DateCustomised" xml:space="preserve">
+    <value>Customised</value>
+  </data>
+  <data name="Filters_DateCustomisedText.Text" xml:space="preserve">
+    <value>Customised</value>
+  </data>
+  <data name="Filters_CustomisedName" xml:space="preserve">
+    <value>Customised, {0}</value>
+    <comment>The Customised item with its chosen range, e.g. "Customised, Nov 1, 2026 – Nov 7, 2026".</comment>
+  </data>
+  <data name="Filters_DayTodayState" xml:space="preserve">
+    <value>today</value>
+    <comment>Part of a calendar day name: "Saturday, November 7, 2026, today".</comment>
+  </data>
+  <data name="Filters_DaySelectedState" xml:space="preserve">
+    <value>selected</value>
+    <comment>Part of a calendar day name: the day is inside the chosen range.</comment>
+  </data>
+  <data name="Filters_DateRangePrevMonth.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="Filters_DateRangePrevMonth.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="Filters_DateRangeNextMonth.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next month</value>
+  </data>
+  <data name="Filters_DateRangeNextMonth.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next month</value>
+  </data>
+  <data name="Filters_DateRangeGoToToday.Content" xml:space="preserve">
+    <value>Go to today</value>
+  </data>
+  <data name="Filters_DateRangeClear.Content" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Filters_CrSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Find a CR</value>
+  </data>
+  <data name="Filters_CrSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Find a CR</value>
+  </data>
+  <data name="Filters_ContainsBox.Header" xml:space="preserve">
+    <value>Contains</value>
+  </data>
+  <data name="Filters_ContainsHint.Text" xml:space="preserve">
+    <value>Press Enter to apply.</value>
+  </data>
+  <data name="Filters_RangeSelectEnd" xml:space="preserve">
+    <value>{0} – Select an end date</value>
+    <comment>The range picker footer after the first day is picked, e.g. "03/11/2026 – Select an end date" (short date).</comment>
+  </data>
+  <data name="Filters_RangeSelection" xml:space="preserve">
+    <value>{0} – {1}</value>
+    <comment>The range picker footer for a chosen range, e.g. "03/11/2026 – 13/11/2026" (short dates).</comment>
   </data>
 </root>

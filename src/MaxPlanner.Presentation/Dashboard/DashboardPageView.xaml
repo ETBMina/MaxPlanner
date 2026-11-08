@@ -240,13 +240,13 @@
                     ItemTemplate="{StaticResource OwnerOptionTemplate}"
                     ItemsSource="{x:Bind ViewModel.OwnerOptions, Mode=OneTime}"
                     SelectedItem="{x:Bind ViewModel.SelectedOwner, Mode=TwoWay}" />
-                <!-- Period: start date in the period; Custom range adds inclusive From/To pickers to the same row. -->
+                <!-- Active date (was Period): records active during the range; Custom range adds inclusive From/To pickers to the same row. -->
                 <ComboBox
                     x:Uid="Dashboard_PeriodCombo"
                     MinWidth="180"
                     AutomationProperties.AutomationId="Dashboard_PeriodCombo"
                     SelectedIndex="{x:Bind PeriodField.SelectedIndex, Mode=TwoWay}">
-                    <!-- Declared items (order matches PeriodPreset), as in the Filters flyout. -->
+                    <!-- Declared items (order matches PeriodPreset). -->
                     <ComboBoxItem x:Uid="Period_AllTimeItem" AutomationProperties.AutomationId="Dashboard_PeriodAllTime" />
                     <ComboBoxItem x:Uid="Period_Last7DaysItem" AutomationProperties.AutomationId="Dashboard_PeriodLast7Days" />
                     <ComboBoxItem x:Uid="Period_Last30DaysItem" AutomationProperties.AutomationId="Dashboard_PeriodLast30Days" />

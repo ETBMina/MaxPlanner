@@ -18,7 +18,10 @@ public static class FilterPersistence
     private const string NoCr = "none";
     private const string CustomPrefix = "custom:";
 
-    /// <summary>The Period key: <c>["last7"]</c>, <c>["last30"]</c>, or <c>["custom", from, to]</c> (ISO, either may be empty).</summary>
+    /// <summary>
+    /// The Active date key (named for the earlier "Period" field, so older files keep their value):
+    /// <c>["last7"]</c>, <c>["last30"]</c>, or <c>["custom", from, to]</c> (ISO, either may be empty).
+    /// </summary>
     public const string PeriodKey = "period";
 
     public static ViewFilterPreference ToPreference(TaskFilterSpec spec)
@@ -80,7 +83,7 @@ public static class FilterPersistence
             Cr = Values(f, "cr") is [var cr] ? cr == NoCr ? CrLinkFilter.NoCr : Guid.TryParse(cr, out var crId) ? CrLinkFilter.For(new ChangeRequestId(crId)) : CrLinkFilter.Any : CrLinkFilter.Any,
             ServiceContains = Values(f, "service") is [var service, ..] ? service : null,
             StartDate = Date(f, "start"),
-            EndDate = Date(f, "end"),
+            EndDate = OlderEndDate(Date(f, "end")),
             Period = ParsePeriod(Values(f, PeriodKey)),
             CustomFields = Custom(f),
         };
@@ -181,8 +184,36 @@ public static class FilterPersistence
         }
     }
 
+    /// <summary>
+    /// <c>[from, to, "undated" or "", preset…]</c>: the first three parts are the shape older versions wrote and read,
+    /// so an older file loads as Customised plus No date with the same meaning. Presets follow as names, never as
+    /// resolved dates, so a saved "This week" still means this week on a later day.
+    /// </summary>
     private static string[] DateParts(DateRangeFilter range) =>
-        [IsoDate(range.From), IsoDate(range.To), range.IncludeUndated ? "undated" : string.Empty];
+        [IsoDate(range.From), IsoDate(range.To), range.IncludeUndated ? "undated" : string.Empty,
+            .. DatePresetRanges.All.Where(p => range.Presets.HasFlag(p)).Select(PresetName)];
+
+    private static string PresetName(DatePresets preset) => preset switch
+    {
+        DatePresets.Past => "past",
+        DatePresets.Today => "today",
+        DatePresets.Tomorrow => "tomorrow",
+        DatePresets.ThisWeek => "thisWeek",
+        DatePresets.NextWeek => "nextWeek",
+        _ => "future",
+    };
+
+    /// <summary>The presets saved after the third part; unknown names are dropped, never guessed.</summary>
+    private static DatePresets ParsePresets(IEnumerable<string> names)
+    {
+        var presets = DatePresets.None;
+        foreach (var name in names)
+        {
+            presets |= DatePresetRanges.All.FirstOrDefault(p => PresetName(p) == name);
+        }
+
+        return presets;
+    }
 
     private static void PutCustom(Dictionary<string, IReadOnlyList<string>> fields, IReadOnlyList<CustomFieldFilter> filters)
     {
@@ -227,6 +258,13 @@ public static class FilterPersistence
     private static DateRangeFilter? Date(IReadOnlyDictionary<string, IReadOnlyList<string>> fields, string key) =>
         ParseDate(Values(fields, key));
 
+    /// <summary>
+    /// Older versions matched an End Date range with From only (no To) as "ended on or after From, or not ended yet".
+    /// That meaning is now explicit: such a saved range loads with No date (<see cref="DateRangeFilter.IncludeUndated"/>).
+    /// </summary>
+    private static DateRangeFilter? OlderEndDate(DateRangeFilter? range) =>
+        range is { From: not null, To: null, IncludeUndated: false, Presets: DatePresets.None } ? range with { IncludeUndated = true } : range;
+
     private static DateRangeFilter? ParseDate(IReadOnlyList<string> parts)
     {
         if (parts.Count < 2)
@@ -234,7 +272,7 @@ public static class FilterPersistence
             return null;
         }
 
-        var range = new DateRangeFilter(ParseIso(parts[0]), ParseIso(parts[1]), parts.Count > 2 && parts[2] == "undated");
+        var range = new DateRangeFilter(ParseIso(parts[0]), ParseIso(parts[1]), parts.Count > 2 && parts[2] == "undated", ParsePresets(parts.Skip(3)));
         return range.IsSet && !range.IsInverted ? range : null;
     }
 

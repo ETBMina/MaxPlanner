@@ -2,17 +2,9 @@ using System.Globalization;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.Common;
 
 namespace MaxPlanner.Presentation.Board;
-
-/// <summary>Chip tokens assigned by configured priority rank, never by name (design §6.1).</summary>
-public enum PriorityLevel
-{
-    Level1,
-    Level2,
-    Mid,
-    Lowest,
-}
 
 /// <summary>
 /// A Board card for a task or a Subtask card (B-07, B-16, design §4.2 anatomy). Moves and menu commands are

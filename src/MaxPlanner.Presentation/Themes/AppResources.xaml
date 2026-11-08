@@ -25,6 +25,11 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <!-- Filter range picker (design §2.6): the accent band and its light/strong end squares. -->
+            <SolidColorBrush x:Key="FilterRangeBandBrush" Color="{ThemeResource SystemAccentColorLight3}" />
+            <StaticResource x:Key="FilterRangeBandForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <SolidColorBrush x:Key="FilterRangeEndBrush" Color="{ThemeResource SystemAccentColorDark1}" />
+            <StaticResource x:Key="FilterRangeEndForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
             <StaticResource x:Key="CalendarBarBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
@@ -112,6 +117,11 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <!-- Filter range picker (design §2.6): a dark accent band with light end squares. -->
+            <SolidColorBrush x:Key="FilterRangeBandBrush" Color="{ThemeResource SystemAccentColorDark2}" />
+            <StaticResource x:Key="FilterRangeBandForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <SolidColorBrush x:Key="FilterRangeEndBrush" Color="{ThemeResource SystemAccentColorLight3}" />
+            <StaticResource x:Key="FilterRangeEndForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
             <StaticResource x:Key="CalendarBarBackgroundBrush" ResourceKey="SystemFillColorAttentionBackgroundBrush" />
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
@@ -201,6 +211,11 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <!-- Filter range picker: Highlight band with HighlightText; ButtonFace end squares with ButtonText. -->
+            <StaticResource x:Key="FilterRangeBandBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="FilterRangeBandForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="FilterRangeEndBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="FilterRangeEndForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <!-- Design §6.3 HC: bars are ButtonFace with a ButtonText border; the glyph and text carry the state. -->
             <StaticResource x:Key="CalendarBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="SystemColorButtonTextColorBrush" />
@@ -327,6 +342,20 @@
     </Style>
     <Style x:Key="PriorityLowestChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource PriorityLowestChipBackgroundBrush}" />
+    </Style>
+    <!--
+        Filter menu item glyphs (design §2.6): the priority-rank and completed-status colours, resolved per element
+        theme like the chip styles. In High Contrast FilterButton.GlyphStyle applies none, so the glyph keeps the
+        item's own foreground, which follows its hover and pressed states.
+    -->
+    <Style x:Key="FilterMenuCriticalGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource PriorityLevel1GlyphBrush}" />
+    </Style>
+    <Style x:Key="FilterMenuCautionGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource PriorityLevel2GlyphBrush}" />
+    </Style>
+    <Style x:Key="FilterMenuSuccessGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource CompletedGlyphBrush}" />
     </Style>
     <Style x:Key="FlagChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FlagChipBackgroundBrush}" />

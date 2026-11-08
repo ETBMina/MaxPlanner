@@ -20,7 +20,7 @@ namespace MaxPlanner.Presentation.Dashboard;
 
 /// <summary>
 /// The Dashboard (B-15, AC-18–21, design §4.1): summary cards, three native bar charts, the Overdue CRs and Unlinked
-/// tasks lists, and the Squad/Priority/CR Owner/Period filters. Every value comes from <see cref="DashboardCalculator"/> over
+/// tasks lists, and the Squad/Priority/CR Owner/Active date filters. Every value comes from <see cref="DashboardCalculator"/> over
 /// one consistent store state and carries the drill-down that shows exactly what it counts. Use on the UI thread.
 /// </summary>
 public sealed partial class DashboardPageViewModel : ObservableObject, IPageViewModel
@@ -120,7 +120,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
 
     public ReadOnlyObservableCollection<DashboardOption> OwnerOptions { get; }
 
-    /// <summary>The Period filter: applied as soon as it is valid; an inverted custom range keeps the last valid one.</summary>
+    /// <summary>The Active date filter: applied as soon as it is valid; an inverted custom range keeps the last valid one.</summary>
     public PeriodFieldViewModel Period { get; }
 
     public ReadOnlyObservableCollection<OverdueRowViewModel> OverdueRows { get; }
@@ -140,7 +140,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     public partial bool IsFiltered { get; private set; }
 
     /// <summary>
-    /// A filter narrows the results, or a box shows something other than its default (Period on Custom range without
+    /// A filter narrows the results, or a box shows something other than its default (Active date on Custom range without
     /// dates, or an inverted range), so Clear filters has something to reset.
     /// </summary>
     [ObservableProperty]
@@ -270,10 +270,10 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
             return;
         }
 
-        // A task or CR drill-down shows its Period as a chip; the Reviews page shows only this label, so it names it.
+        // A task or CR drill-down shows its Active date as a chip; the Reviews page shows only this label, so it names it.
         if (drillDown is ReviewDrillDown { Spec.Period: { IsSet: true } period })
         {
-            label = _context.Strings.Format("Dashboard_DrillLabelWithPeriod", label, DraftFields.PeriodChip(_context.Strings, period).Label);
+            label = _context.Strings.Format("Dashboard_DrillLabelWithPeriod", label, MenuFields.ActiveDateChip(_context.Strings, period).Label);
         }
 
         _context.Navigator.RequestDrillDown(new DrillDownRequest(drillDown, label));
