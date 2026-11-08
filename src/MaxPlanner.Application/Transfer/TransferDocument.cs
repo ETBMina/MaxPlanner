@@ -115,13 +115,15 @@ public sealed record TransferFieldDefinition(
 /// <param name="Ids">People or Tags values (person or tag IDs).</param>
 public sealed record TransferValue(string Kind, string? Text = null, decimal? Number = null, DateOnly? Date = null, Guid? Option = null, IReadOnlyList<Guid>? Ids = null);
 
+/// <param name="CopyIdFormat">Design §4.6; absent in files from earlier versions, which import the default format.</param>
 public sealed record TransferDefaults(
     Guid DefaultTaskStatusId,
     Guid DefaultCrStatusId,
     Guid DefaultPriorityId,
     Guid? DefaultCrOwnerId,
     Guid CalendarSchedulingStatusId,
-    Guid CrBacklogStatusId);
+    Guid CrBacklogStatusId,
+    string? CopyIdFormat = null);
 
 /// <summary>Content kept but never shown: the pre-link title (ADR 0005), unselected CR references (B-13.6), unknown fields.</summary>
 public sealed record TransferPreserved(string? PreLinkTitle, IReadOnlyList<string>? UnselectedCrReferences, string? LegacyJson);

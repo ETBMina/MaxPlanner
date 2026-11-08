@@ -1,5 +1,6 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Checklists;
@@ -534,7 +535,8 @@ internal sealed class SqliteLookupStore(SqliteWriteTransaction tx) : ILookupStor
         var metadata = tx.Command(
             """
             UPDATE app_metadata SET default_task_status_id = $task_status, default_cr_status_id = $cr_status, default_priority_id = $priority,
-                default_cr_owner_id = $owner, calendar_scheduling_status_id = $scheduling, cr_backlog_status_id = $backlog
+                default_cr_owner_id = $owner, calendar_scheduling_status_id = $scheduling, cr_backlog_status_id = $backlog,
+                copy_id_format = $copy_id
             WHERE id = 1;
             """);
         metadata.Add("$task_status", defaults.DefaultTaskStatusId.Value);
@@ -543,6 +545,7 @@ internal sealed class SqliteLookupStore(SqliteWriteTransaction tx) : ILookupStor
         metadata.Add("$owner", defaults.DefaultCrOwnerId?.Value);
         metadata.Add("$scheduling", defaults.CalendarSchedulingStatusId.Value);
         metadata.Add("$backlog", defaults.CrBacklogStatusId.Value);
+        metadata.Add("$copy_id", defaults.CopyIdFormat == CopyIdFormatter.Default ? null : defaults.CopyIdFormat);
         RevisionGuard.EnsureOneRow(tx.Execute(metadata), "workspace defaults", Guid.Empty, "Update");
 
         foreach (var (table, id) in deletes)

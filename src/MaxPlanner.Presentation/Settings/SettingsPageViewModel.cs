@@ -42,6 +42,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     private WorkflowSnapshot? _workflow;
     private bool _isSyncing;
     private string _defaultsStamp = string.Empty;
+    private readonly CopyIdFormatDraft _copyIdDraft = new();
 
     public SettingsPageViewModel(WorkspaceContext context, SettingsServices services)
     {
@@ -128,6 +129,10 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
     [ObservableProperty]
     public partial int BacklogStatusIndex { get; set; } = -1;
+
+    /// <summary>Design §4.6: the Copy ID format as typed; saved by <see cref="CommitCopyIdFormat"/>.</summary>
+    [ObservableProperty]
+    public partial string CopyIdFormat { get; set; } = string.Empty;
 
     /// <summary>A page-level failure (settings changed elsewhere, storage); shown in the page InfoBar.</summary>
     [ObservableProperty]
@@ -405,6 +410,40 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
     partial void OnBacklogStatusIndexChanged(int value) => OnDefaultChanged(value);
 
+    /// <summary>Leaving the Copy ID format box or pressing Enter saves it; a blank format saves the default.</summary>
+    public void CommitCopyIdFormat()
+    {
+        if (_workflow is not { } workflow)
+        {
+            return;
+        }
+
+        if (_copyIdDraft.Commit(CopyIdFormat, workflow.Defaults.CopyIdFormat) is { } format)
+        {
+            _ = SaveCopyIdFormatAsync(workflow.Defaults with { CopyIdFormat = format });
+        }
+        else if (!_copyIdDraft.IsSaving)
+        {
+            CopyIdFormat = CopyIdFormatter.Normalize(CopyIdFormat);
+        }
+    }
+
+    private async Task SaveCopyIdFormatAsync(WorkflowDefaults defaults)
+    {
+        var sentStamp = _defaultsStamp;
+        var succeeded = await SaveDefaultsAsync(defaults).ConfigureAwait(true);
+        _copyIdDraft.SaveEnded(succeeded, refreshed: _defaultsStamp != sentStamp);
+        SavePendingCopyIdFormat();
+    }
+
+    private void SavePendingCopyIdFormat()
+    {
+        if (_workflow is { } workflow && _copyIdDraft.TakePending(workflow.Defaults.CopyIdFormat) is { } format)
+        {
+            _ = SaveCopyIdFormatAsync(workflow.Defaults with { CopyIdFormat = format });
+        }
+    }
+
     // ----- Custom fields -----
 
     /// <summary>Add field… (design §4.6): the field dialog creates the definition.</summary>
@@ -491,7 +530,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
         }
     }
 
-    private async Task SaveDefaultsAsync(WorkflowDefaults defaults)
+    private async Task<bool> SaveDefaultsAsync(WorkflowDefaults defaults)
     {
         var error = await RunAsync(op => _services.UseCases.UpdateWorkflowDefaults.ExecuteAsync(
             new UpdateWorkflowDefaultsCommand(
@@ -502,7 +541,8 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
                 defaults.DefaultPriorityId,
                 defaults.DefaultCrOwnerId,
                 defaults.CalendarSchedulingStatusId,
-                defaults.CrBacklogStatusId),
+                defaults.CrBacklogStatusId,
+                defaults.CopyIdFormat),
             CancellationToken.None)).ConfigureAwait(true);
         if (error is not null)
         {
@@ -514,6 +554,8 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
                 SyncDefaults(workflow);
             }
         }
+
+        return error is null;
     }
 
     private async Task RunRowAsync(LookupRowViewModel row, Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command)
@@ -568,6 +610,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
         SyncFields(CrFields, workflow);
         SyncDefaults(workflow);
         RefreshUsage();
+        SavePendingCopyIdFormat();
     }
 
     private void SyncSection(LookupSectionViewModel section, WorkflowSnapshot workflow)
@@ -710,6 +753,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             DefaultCrOwnerIndex = IndexOf(OwnerChoices, d.DefaultCrOwnerId?.Value);
             SchedulingStatusIndex = IndexOf(CrStatusChoices, d.CalendarSchedulingStatusId.Value);
             BacklogStatusIndex = IndexOf(CrBacklogChoices, d.CrBacklogStatusId.Value);
+            CopyIdFormat = _copyIdDraft.Sync(CopyIdFormat, d.CopyIdFormat);
         }
         finally
         {

@@ -231,6 +231,7 @@
                     x:Uid="Dashboard_PriorityCombo"
                     MinWidth="180"
                     AutomationProperties.AutomationId="Dashboard_PriorityCombo"
+                    ItemTemplate="{StaticResource PriorityChoiceTemplate}"
                     ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneTime}"
                     SelectedItem="{x:Bind ViewModel.SelectedPriority, Mode=TwoWay}" />
                 <ComboBox

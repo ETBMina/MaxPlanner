@@ -9,6 +9,27 @@
     xmlns:local="using:MaxPlanner.Presentation.Board"
     IsTabStop="False">
     <UserControl.Resources>
+        <!-- Design §4.2 item 9: card people footer avatars sit side by side with a small gap, never overlapping. -->
+        <StackLayout x:Key="CardPeopleLayout" Orientation="Horizontal" Spacing="4" />
+        <DataTemplate x:Key="CardPersonTemplate" x:DataType="local:BoardCardPerson">
+            <!-- Each avatar is its own tooltip target: the name, then the roles in secondary text (design §2.10). -->
+            <controls:PersonAvatar
+                AccessibleName="{x:Bind AccessibleName, Mode=OneTime}"
+                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                Diameter="20"
+                DisplayName="{x:Bind Name, Mode=OneTime}"
+                IsDecorative="False">
+                <controls:PersonAvatar.ToolTipContent>
+                    <StackPanel>
+                        <TextBlock Text="{x:Bind Name, Mode=OneTime}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind RolesText, Mode=OneTime}" />
+                    </StackPanel>
+                </controls:PersonAvatar.ToolTipContent>
+            </controls:PersonAvatar>
+        </DataTemplate>
         <!--
             One template for both card kinds, each loading only its own anatomy (design §4.2). Two templates through a
             selector made the virtualizing panel misestimate a long bucket while scrolling up, until it reached the first
@@ -61,7 +82,7 @@
                             Style="{StaticResource AccentChipStyle}"
                             Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
+                                <controls:ServiceIcon Foreground="{ThemeResource AccentChipForegroundBrush}" />
                                 <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                             </StackPanel>
                         </Border>
@@ -79,23 +100,29 @@
                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
                             </StackPanel>
                         </HyperlinkButton>
-                        <Grid ColumnSpacing="6" RowSpacing="6">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <!-- Priority chip by configured rank (design §6.1); its text names the priority, so color is never the only cue. -->
+                            <!--
+                                Design §4.2 item 4: an icon-only priority chip in the priority colour. Each level has its own
+                                glyph, so colour is never the only cue, and the tooltip names it. It stretches to the Squad
+                                chip height and is at least as wide, so it stays square-ish.
+                            -->
                             <Border
+                                MinWidth="22"
+                                Padding="4,0"
+                                VerticalAlignment="Stretch"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardPriority_', Key), Mode=OneTime}"
                                 AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
-                                Style="{x:Bind local:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <FontIcon Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
-                                    <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind PriorityText, Mode=OneWay}" />
-                                </StackPanel>
+                                Style="{x:Bind local:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}"
+                                ToolTipService.ToolTip="{x:Bind PriorityName, Mode=OneWay}">
+                                <FontIcon
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}"
+                                    Style="{StaticResource ChipGlyphStyle}" />
                             </Border>
                             <Border
                                 Grid.Column="1"
@@ -106,15 +133,6 @@
                                     <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind SquadText, Mode=OneWay}" />
                                 </StackPanel>
                             </Border>
-                            <StackPanel
-                                Grid.Row="1"
-                                Grid.ColumnSpan="2"
-                                Orientation="Horizontal"
-                                Spacing="6"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
-                                <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
-                                <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
-                            </StackPanel>
                         </Grid>
                         <StackPanel Spacing="4">
                             <TextBlock
@@ -128,13 +146,26 @@
                                 Visibility="{x:Bind common:BindFunctions.Visible(HasChecklist), Mode=OneWay}"
                                 Value="{x:Bind ChecklistPercent, Mode=OneWay}" />
                         </StackPanel>
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="6"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskCards), Mode=OneWay}">
-                            <FontIcon FontSize="12" Glyph="&#xE8FD;" />
-                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind SubtaskCardsText, Mode=OneWay}" />
-                        </StackPanel>
+                        <!-- Design §4.2 items 7 and 9: the Subtask cards count on the left, the people footer on the right. -->
+                        <Grid ColumnSpacing="8" Visibility="{x:Bind common:BindFunctions.Visible(HasTaskFooter), Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskCards), Mode=OneWay}">
+                                <FontIcon FontSize="12" Glyph="&#xE8FD;" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind SubtaskCardsText, Mode=OneWay}" />
+                            </StackPanel>
+                            <ItemsRepeater
+                                Grid.Column="1"
+                                ItemTemplate="{StaticResource CardPersonTemplate}"
+                                ItemsSource="{x:Bind People, Mode=OneWay}"
+                                Layout="{StaticResource CardPeopleLayout}" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 
@@ -192,7 +223,7 @@
                                 Style="{StaticResource AccentChipStyle}"
                                 Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <FontIcon Glyph="&#xE90F;" Style="{StaticResource AccentChipGlyphStyle}" />
+                                    <controls:ServiceIcon Foreground="{ThemeResource AccentChipForegroundBrush}" />
                                     <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                                 </StackPanel>
                             </Border>
@@ -213,23 +244,29 @@
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="Wrap"
                                 ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
-                            <StackPanel
-                                Orientation="Horizontal"
-                                Spacing="6"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasOwner), Mode=OneWay}">
-                                <controls:PersonAvatar Diameter="20" DisplayName="{x:Bind OwnerText, Mode=OneWay}" />
-                                <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind OwnerText, Mode=OneWay}" />
-                            </StackPanel>
-                            <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind DatesText, Mode=OneWay}"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasDates), Mode=OneWay}" />
                             <TextBlock
                                 x:Uid="Board_MovingCaption"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
                                 Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
+                            <!-- Design §4.2: dates on the left, the people footer (inherited CR Owner) on the right. -->
+                            <Grid ColumnSpacing="8" Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskFooter), Mode=OneWay}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind DatesText, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
+                                <ItemsRepeater
+                                    Grid.Column="1"
+                                    ItemTemplate="{StaticResource CardPersonTemplate}"
+                                    ItemsSource="{x:Bind People, Mode=OneWay}"
+                                    Layout="{StaticResource CardPeopleLayout}" />
+                            </Grid>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -257,11 +294,6 @@
                         Padding="4,0"
                         Orientation="Horizontal"
                         Spacing="8">
-                        <FontIcon
-                            AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
-                            Glyph="{x:Bind Glyph, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasGlyph), Mode=OneWay}" />
                         <TextBlock
                             AutomationProperties.HeadingLevel="Level2"
                             Style="{StaticResource BodyStrongTextBlockStyle}"

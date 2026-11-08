@@ -463,6 +463,30 @@
     <value>{0} · Task {1}</value>
     <comment>{0} = CR number, {1} = task number.</comment>
   </data>
+  <data name="Board_PersonRoleCrOwner" xml:space="preserve">
+    <value>CR Owner</value>
+    <comment>A person's role on a Board card; Designer and Developer reuse Field_Designer and Field_Developer.</comment>
+  </data>
+  <data name="Board_PersonRoles2" xml:space="preserve">
+    <value>{0} · {1}</value>
+    <comment>Board card avatar tooltip, second line. {0}, {1} = role names in order CR Owner, Designer, Developer.</comment>
+  </data>
+  <data name="Board_PersonRoles3" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+    <comment>Board card avatar tooltip, second line. {0}-{2} = role names in order CR Owner, Designer, Developer.</comment>
+  </data>
+  <data name="Board_PersonName1" xml:space="preserve">
+    <value>{0}, {1}</value>
+    <comment>Board card avatar accessible name. {0} = person name, {1} = role.</comment>
+  </data>
+  <data name="Board_PersonName2" xml:space="preserve">
+    <value>{0}, {1}, {2}</value>
+    <comment>Board card avatar accessible name. {0} = person name, {1}, {2} = roles.</comment>
+  </data>
+  <data name="Board_PersonName3" xml:space="preserve">
+    <value>{0}, {1}, {2}, {3}</value>
+    <comment>Board card avatar accessible name. {0} = person name, {1}-{3} = roles.</comment>
+  </data>
   <data name="Board_PriorityName" xml:space="preserve">
     <value>Priority: {0}</value>
   </data>
@@ -638,6 +662,9 @@
   </data>
   <data name="Board_MenuCopy" xml:space="preserve">
     <value>Copy…</value>
+  </data>
+  <data name="Board_MenuCopyId" xml:space="preserve">
+    <value>Copy ID</value>
   </data>
   <data name="Board_MenuAddSubtaskCard" xml:space="preserve">
     <value>Add Subtask card</value>
@@ -2411,6 +2438,18 @@
   </data>
   <data name="Settings_BacklogStatusCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Move to backlog status</value>
+  </data>
+  <data name="Settings_CopyIdFormatCard.Header" xml:space="preserve">
+    <value>Copy ID format</value>
+  </data>
+  <data name="Settings_CopyIdFormatCard.Description" xml:space="preserve">
+    <value>The text Copy ID puts on the clipboard. Placeholders: {CRNum}, {TaskNum}, {Title}, {Service}, {Squad}. Empty values and the separators next to them are left out.</value>
+  </data>
+  <data name="Settings_CopyIdFormatBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Copy ID format</value>
+  </data>
+  <data name="Settings_CopyIdFormatBox.PlaceholderText" xml:space="preserve">
+    <value>{CRNum} - {TaskNum}</value>
   </data>
   <data name="Settings_WorkweekCard.Header" xml:space="preserve">
     <value>Calendar workweek</value>

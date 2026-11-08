@@ -16,6 +16,7 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Projections;
@@ -26,8 +27,20 @@ using MaxPlanner.Presentation.Workspace;
 namespace MaxPlanner.Presentation.Tasks;
 
 /// <summary>A priority offered by the editors' Priority box.</summary>
-public sealed record PriorityOption(PriorityId Id, string Name)
+public sealed record PriorityOption(PriorityId Id, string Name, PriorityLevel Level = PriorityLevel.Mid) : IPriorityChoice
 {
+    string IPriorityChoice.DisplayName => Name;
+
+    PriorityLevel? IPriorityChoice.Level => Level;
+
+    /// <summary>The configured priorities in rank order, each with the glyph level of its rank (design §6.1).</summary>
+    public static IReadOnlyList<PriorityOption> From(WorkflowSnapshot workflow)
+    {
+        ArgumentNullException.ThrowIfNull(workflow);
+        var levels = PriorityLevels.Of(workflow.Priorities);
+        return [.. workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display, levels.GetValueOrDefault(p.Id, PriorityLevel.Mid)))];
+    }
+
     public override string ToString() => Name;
 }
 
@@ -91,7 +104,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         IsNew = taskId is null;
         _taskId = taskId ?? new TaskId(Guid.NewGuid());
         StatusOptions = [.. _workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
-        PriorityOptions = [.. _workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display))];
+        PriorityOptions = PriorityOption.From(_workflow);
         // ADR 0024, design §5.0: Designer and Developer are single-person pickers with suggestions and add-new on Save.
         Designer = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsSingleSelection = true, IsPeople = true };
         Developer = new TokenPickerViewModel(context.Strings, People, _newPeople) { IsSingleSelection = true, IsPeople = true };

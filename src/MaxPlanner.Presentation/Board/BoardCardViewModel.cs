@@ -21,6 +21,7 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
     {
         _strings = strings ?? throw new ArgumentNullException(nameof(strings));
         _priorityLevel = priorityLevel ?? throw new ArgumentNullException(nameof(priorityLevel));
+        People = BoardCardPerson.From(model, strings);
     }
 
     public override Guid Key => Model.Id;
@@ -68,9 +69,19 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
     /// <summary>D15: the inherited squad, "General" when there is none.</summary>
     public string SquadText => Model.Cr.SquadName;
 
-    public string OwnerText => Model.Cr.OwnerName ?? string.Empty;
+    /// <summary>
+    /// The people footer (design §4.2 item 9): each assigned person once, in role order CR Owner, Designer,
+    /// Developer. Replaced only when the people or their roles change, so other updates leave the avatars alone.
+    /// </summary>
+    public IReadOnlyList<BoardCardPerson> People { get; private set; }
 
-    public bool HasOwner => OwnerText.Length > 0;
+    public bool HasPeople => People.Count > 0;
+
+    /// <summary>The task card's last row shows when it has the Subtask cards count or avatars.</summary>
+    public bool HasTaskFooter => HasSubtaskCards || HasPeople;
+
+    /// <summary>The Subtask card's last row shows when it has dates or the inherited CR Owner.</summary>
+    public bool HasSubtaskFooter => HasDates || HasPeople;
 
     public bool HasChecklist => Model.Task is { ChecklistTotal: > 0 };
 
@@ -127,17 +138,31 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(PriorityLevel));
         OnPropertyChanged(nameof(PriorityName));
         OnPropertyChanged(nameof(SquadText));
-        OnPropertyChanged(nameof(OwnerText));
-        OnPropertyChanged(nameof(HasOwner));
+        UpdatePeople();
         OnPropertyChanged(nameof(HasChecklist));
         OnPropertyChanged(nameof(ChecklistText));
         OnPropertyChanged(nameof(ChecklistPercent));
         OnPropertyChanged(nameof(HasSubtaskCards));
         OnPropertyChanged(nameof(SubtaskCardsText));
+        OnPropertyChanged(nameof(HasTaskFooter));
         OnPropertyChanged(nameof(DatesText));
         OnPropertyChanged(nameof(HasDates));
+        OnPropertyChanged(nameof(HasSubtaskFooter));
         OnPropertyChanged(nameof(AccessibleName));
         OnPropertyChanged(nameof(MenuButtonName));
+    }
+
+    private void UpdatePeople()
+    {
+        var people = BoardCardPerson.From(Model, _strings);
+        if (people.SequenceEqual(People))
+        {
+            return;
+        }
+
+        People = people;
+        OnPropertyChanged(nameof(People));
+        OnPropertyChanged(nameof(HasPeople));
     }
 
     private static string Format(DateOnly date) => date.ToString("d", CultureInfo.CurrentCulture);

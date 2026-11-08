@@ -61,6 +61,7 @@ public sealed partial class ExpandingSearchBox : UserControl
     private double _arrangedOffset = double.NaN;
     private double _arrangedParentWidth = double.NaN;
     private double _collapsedWidth;
+    private double _collapsedHeight;
     private double _boxLeft;
     private double _boxWidth;
     private int _transitionVersion;
@@ -130,13 +131,18 @@ public sealed partial class ExpandingSearchBox : UserControl
         if (!_isExpanded)
         {
             Root.Measure(availableSize);
+            _collapsedHeight = Root.DesiredSize.Height;
             return Root.DesiredSize;
         }
 
-        // The footprint never exceeds the slot, so a wider box (overlay) cannot reflow the row.
+        // The footprint never exceeds the slot, so a wider box (overlay) cannot reflow the row. Its height stays the
+        // Search button's: the text box is a fraction of an epx taller, and reporting that would grow the command row
+        // and move everything below it on every expand and collapse. The box is centred on the slot instead
+        // (ArrangeOverride). A search that starts expanded has no button measure yet and uses the button's MinHeight.
         var width = double.IsInfinity(availableSize.Width) ? ExpandedWidth : Math.Min(ExpandedWidth, availableSize.Width);
-        Root.Measure(new Size(width, availableSize.Height));
-        return new Size(width, Root.DesiredSize.Height);
+        Root.Measure(new Size(width, double.PositiveInfinity));
+        var height = _collapsedHeight > 0 ? _collapsedHeight : Math.Min(Root.DesiredSize.Height, SearchButton.MinHeight);
+        return new Size(width, height);
     }
 
     protected override Size ArrangeOverride(Size finalSize)
@@ -155,10 +161,12 @@ public sealed partial class ExpandingSearchBox : UserControl
             boxWidth = Math.Min(Math.Max(ExpandedWidth, finalSize.Width), finalSize.Width + roomLeft + roomRight);
             left = Math.Min(roomLeft, boxWidth - finalSize.Width);
             overlay = boxWidth > finalSize.Width;
-            Root.Measure(new Size(boxWidth, finalSize.Height));
+            Root.Measure(new Size(boxWidth, double.PositiveInfinity));
         }
 
-        Root.Arrange(new Rect(-left, 0, boxWidth, finalSize.Height));
+        // Expanded, the box keeps its own height centred on the slot, overhanging it by the fraction it is taller.
+        var height = _isExpanded ? Math.Max(finalSize.Height, Root.DesiredSize.Height) : finalSize.Height;
+        Root.Arrange(new Rect(-left, (finalSize.Height - height) / 2, boxWidth, height));
         SetOverlay(overlay);
         _boxLeft = left;
         _boxWidth = boxWidth;
@@ -246,9 +254,39 @@ public sealed partial class ExpandingSearchBox : UserControl
 
         if (focusBox)
         {
-            // The box becomes visible in this layout pass; focus it once it can take focus.
-            DispatcherQueue.TryEnqueue(() => Box.Focus(FocusState.Keyboard));
+            FocusBoxWhenReady();
         }
+    }
+
+    /// <summary>
+    /// Moves keyboard focus into the box once it can take it. The box starts inside the collapsed surface, so on the
+    /// first expand its template (and the inner TextBox that takes focus) is applied only by the next layout pass; a
+    /// focus attempt before that fails. So focus is tried after pending layout work and, if it still fails, once more
+    /// after the box's next layout pass. A collapse or newer expand in between cancels it.
+    /// </summary>
+    private void FocusBoxWhenReady()
+    {
+        var version = _transitionVersion;
+        bool StillWanted() => _isExpanded && !_isCollapsing && version == _transitionVersion;
+
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!StillWanted() || Box.Focus(FocusState.Keyboard))
+            {
+                return;
+            }
+
+            void OnLayoutUpdated(object? sender, object args)
+            {
+                Box.LayoutUpdated -= OnLayoutUpdated;
+                if (StillWanted())
+                {
+                    Box.Focus(FocusState.Keyboard);
+                }
+            }
+
+            Box.LayoutUpdated += OnLayoutUpdated;
+        });
     }
 
     /// <summary>

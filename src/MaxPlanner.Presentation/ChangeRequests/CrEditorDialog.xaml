@@ -239,6 +239,7 @@
                             x:Uid="CrEditor_PriorityCombo"
                             HorizontalAlignment="Stretch"
                             AutomationProperties.AutomationId="CrEditor_PriorityCombo"
+                            ItemTemplate="{StaticResource PriorityChoiceTemplate}"
                             AutomationProperties.IsRequiredForForm="True"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"
@@ -416,7 +417,7 @@
                                     </Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource ServiceChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneTime}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <FontIcon Glyph="&#xE90F;" Style="{StaticResource ChipGlyphStyle}" />
+                                            <controls:ServiceIcon Foreground="{ThemeResource ChipForegroundBrush}" />
                                             <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneTime}" />
                                         </StackPanel>
                                     </Border>

@@ -448,6 +448,15 @@
                             ItemsSource="{x:Bind ViewModel.CrBacklogChoices, Mode=OneWay}"
                             SelectedIndex="{x:Bind ViewModel.BacklogStatusIndex, Mode=TwoWay}" />
                     </local:SettingsCard>
+                    <local:SettingsCard x:Uid="Settings_CopyIdFormatCard" Glyph="&#xE8C8;">
+                        <TextBox
+                            x:Uid="Settings_CopyIdFormatBox"
+                            MinWidth="200"
+                            AutomationProperties.AutomationId="Settings_CopyIdFormatBox"
+                            KeyDown="OnCopyIdFormatKeyDown"
+                            LostFocus="OnCopyIdFormatLostFocus"
+                            Text="{x:Bind ViewModel.CopyIdFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </local:SettingsCard>
                     <local:SettingsCard x:Uid="Settings_WorkweekCard" AutomationProperties.AutomationId="Settings_WorkweekCard" Glyph="&#xE787;" />
 
                     <!-- Custom fields (B-11): typed definitions per target; removal deactivates and keeps values. -->

@@ -66,10 +66,18 @@ public sealed partial class CalendarMonthView : UserControl
     private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
     private readonly Windows.UI.ViewManagement.AccessibilitySettings _accessibility = new();
     private readonly Dictionary<string, Control> _focusables = [];
+    private readonly List<WinGrid> _weekRows = [];
+
+    // Decorative preview pieces of a bar edge drag in the other week rows (B-08.8); never part of the rendered surface.
+    private readonly List<UIElement> _previewPieces = [];
+
+    // Each bar piece shown, by CR and week row: a bar edge drag moves the CR's pieces in every row (B-08.8).
+    private readonly Dictionary<(Guid Cr, DateOnly WeekStart), (WinGrid Host, CalendarBar Bar)> _barHosts = [];
     private readonly Dictionary<Guid, (DateOnly Start, DateOnly End)> _pendingKeyboard = [];
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _keyboardTimer;
     private CalendarSurface _surface = CalendarSurface.Empty;
     private string? _focusKey;
+    private int _renderVersion;
     private string? _paletteTheme;
     private CalendarBarPalette? _palette;
 
@@ -114,7 +122,12 @@ public sealed partial class CalendarMonthView : UserControl
 
         var hadFocus = _focusKey is not null && _focusables.TryGetValue(_focusKey, out var focused) && focused.FocusState != FocusState.Unfocused;
         _surface = surface;
+        // A drag still running belongs to the old tree; its handlers check the version and stop adding pieces.
+        _renderVersion++;
+        ClearPreviewPieces();
+        _barHosts.Clear();
         _focusables.Clear();
+        _weekRows.Clear();
         _root.Children.Clear();
         _root.RowDefinitions.Clear();
         var scale = _uiSettings.TextScaleFactor;
@@ -127,6 +140,7 @@ public sealed partial class CalendarMonthView : UserControl
             var row = WeekRow(viewModel, week, surface.IsWeekMode, surface.MaxLanes, scale);
             WinGrid.SetRow(row, _root.RowDefinitions.Count - 1);
             _root.Children.Add(row);
+            _weekRows.Add(row);
         }
 
         if (hadFocus && _focusKey is not null && _focusables.TryGetValue(_focusKey, out var again))
@@ -372,14 +386,15 @@ public sealed partial class CalendarMonthView : UserControl
         // on top of it, sending clicks past its first day to the day flyout; ZIndex lifts the bar without
         // changing the tab order.
         Canvas.SetZIndex(host, 1);
+        _barHosts[(cr.Id.Value, week.Row.WeekStart)] = (host, bar);
         if (bar.ShowStartHandle)
         {
-            host.Children.Add(Handle(viewModel, week, bar, host, isStart: true));
+            host.Children.Add(Handle(viewModel, bar, body, isStart: true));
         }
 
         if (bar.ShowEndHandle)
         {
-            host.Children.Add(Handle(viewModel, week, bar, host, isStart: false));
+            host.Children.Add(Handle(viewModel, bar, body, isStart: false));
         }
 
         return host;
@@ -412,48 +427,195 @@ public sealed partial class CalendarMonthView : UserControl
     private static FontIcon Glyph(string glyph) =>
         new FontIcon { Glyph = glyph, FontSize = 12, VerticalAlignment = VerticalAlignment.Center }.Hidden();
 
-    private static CalendarResizeHandle Handle(CalendarPageViewModel viewModel, CalendarWeek week, CalendarBar bar, WinGrid host, bool isStart)
+    /// <summary>
+    /// A bar edge handle (B-08.8): dragging it moves one endpoint to the visible workday under the pointer, in this
+    /// week row or any other row of the surface. While dragging, the bar follows the pointer across weeks: each of
+    /// the CR's bar pieces spans the new range in its row (dimmed in a row the range leaves), and a covered row
+    /// without a piece shows a translucent preview piece. A tooltip names the date. A drag that would invert the range
+    /// shows the committed bar and changes nothing.
+    /// </summary>
+    private CalendarResizeHandle Handle(CalendarPageViewModel viewModel, CalendarBar bar, Button body, bool isStart)
     {
         var handle = new CalendarResizeHandle { HorizontalAlignment = isStart ? HorizontalAlignment.Left : HorizontalAlignment.Right };
         var thumb = handle.Thumb;
+        var cr = bar.Cr;
         WinGrid.SetColumn(handle, isStart ? 0 : 2);
-        AutomationProperties.SetAutomationId(thumb, (isStart ? "Calendar_BarStartThumb_" : "Calendar_BarEndThumb_") + bar.Cr.Id.Value.ToString("N"));
-        AutomationProperties.SetName(thumb, viewModel.Format(isStart ? "Calendar_StartHandleName" : "Calendar_EndHandleName", bar.Cr.Number));
-        double total = 0;
-        var shift = 0;
-        thumb.DragStarted += (_, _) =>
+        AutomationProperties.SetAutomationId(thumb, (isStart ? "Calendar_BarStartThumb_" : "Calendar_BarEndThumb_") + cr.Id.Value.ToString("N"));
+        AutomationProperties.SetName(thumb, viewModel.Format(isStart ? "Calendar_StartHandleName" : "Calendar_EndHandleName", cr.Number));
+        if (cr.PlannedStart is not { } start || cr.PlannedEnd is not { } end)
         {
-            total = 0;
-            shift = 0;
-        };
-        thumb.DragDelta += (_, e) =>
-        {
-            total += e.HorizontalChange;
-            var columnWidth = Math.Max(1, (((host.Parent as FrameworkElement)?.ActualWidth ?? 0) - StubWidth) / Workweek.VisibleDays.Count);
-            var next = (int)Math.Round(total / columnWidth);
+            return handle;
+        }
 
-            // The ghost stays within this row; other weeks use the keyboard or Edit dates route (B-08.8).
-            var start = isStart ? Math.Clamp(bar.StartColumn + next, 0, bar.EndColumn) : bar.StartColumn;
-            var end = isStart ? bar.EndColumn : Math.Clamp(bar.EndColumn + next, bar.StartColumn, Workweek.VisibleDays.Count - 1);
-            shift = isStart ? start - bar.StartColumn : end - bar.EndColumn;
-            WinGrid.SetColumn(host, start);
-            WinGrid.SetColumnSpan(host, end - start + 1);
-            var day = week.Row.VisibleDays[isStart ? start : end];
-            ToolTipService.SetToolTip(thumb, day.ToString("D", CultureInfo.CurrentCulture));
-        };
-        thumb.DragCompleted += (_, _) =>
+        var record = viewModel.ViewModelFor(cr);
+        var label = record.Number + " " + record.Title;
+        var tip = new ToolTip { PlacementTarget = thumb, Placement = PlacementMode.Top };
+        var version = _renderVersion;
+        var surface = CalendarSurface.Empty;
+        WinGrid[] rows = [];
+        double[] rowTops = [];
+        (DateOnly Start, DateOnly End)? proposed = null;
+        (DateOnly Start, DateOnly End)? shown = null;
+
+        // The CR's committed pieces in each row (this one included), read when the drag starts.
+        (WinGrid Host, CalendarBar Bar)?[] committed = [];
+
+        // While dragged, a piece sits above the other bars (ZIndex 2), so a neighbour on its lane cannot hide its
+        // new span; the committed layout uses ZIndex 1 (see Bar).
+        static void Place(WinGrid piece, int first, int last, double opacity, int zIndex = 2)
         {
-            if (shift == 0)
+            WinGrid.SetColumn(piece, first);
+            WinGrid.SetColumnSpan(piece, last - first + 1);
+            piece.Opacity = opacity;
+            Canvas.SetZIndex(piece, zIndex);
+        }
+
+        void ShowCommitted()
+        {
+            foreach (var piece in committed)
             {
-                WinGrid.SetColumn(host, bar.StartColumn);
-                WinGrid.SetColumnSpan(host, bar.EndColumn - bar.StartColumn + 1);
+                if (piece is { } p)
+                {
+                    Place(p.Host, p.Bar.StartColumn, p.Bar.EndColumn, 1, zIndex: 1);
+                }
+            }
+        }
+
+        void ShowRange((DateOnly Start, DateOnly End)? range)
+        {
+            if (range == shown)
+            {
                 return;
             }
 
-            var day = week.Row.VisibleDays[(isStart ? bar.StartColumn : bar.EndColumn) + shift];
-            _ = viewModel.ResizeAsync(bar.Cr.Id.Value, isStart ? day : null, isStart ? null : day);
+            shown = range;
+            ClearPreviewPieces();
+            if (range is not { } value)
+            {
+                ShowCommitted();
+                return;
+            }
+
+            for (var i = 0; i < rows.Length; i++)
+            {
+                var row = surface.Weeks[i];
+                var covered = CalendarResizeTarget.CoveredColumns(row.Row.VisibleDays, value.Start, value.End);
+                if (committed[i] is { } piece)
+                {
+                    // A row with a committed piece of this CR moves that piece; a row the range leaves dims it.
+                    if (covered is { } own)
+                    {
+                        Place(piece.Host, own.First, own.Last, 1);
+                    }
+                    else
+                    {
+                        Place(piece.Host, piece.Bar.StartColumn, piece.Bar.EndColumn, 0.4);
+                    }
+                }
+                else if (covered is { } columns)
+                {
+                    var others = row.Bars.Where(b => b.Cr.Id != cr.Id).Select(b => (b.Lane, b.StartColumn, b.EndColumn));
+                    var (lane, overlays) = CalendarResizeTarget.PreviewLane(others, columns.First, columns.Last, surface.MaxLanes, bar.Lane);
+                    var preview = PreviewPiece(body, label, columns.First, columns.Last, lane, overlays);
+                    rows[i].Children.Add(preview);
+                    _previewPieces.Add(preview);
+                }
+            }
+        }
+
+        thumb.DragStarted += (_, _) =>
+        {
+            // Row geometry does not change during a drag (the pieces only change column spans), so it is read once.
+            surface = _surface;
+            rows = [.. _weekRows];
+            rowTops = rows.Length > 0 && rows.Length == surface.Weeks.Count
+                ? [.. rows.Select(row => row.TransformToVisual(_root).TransformPoint(default).Y)]
+                : [];
+            committed = [.. surface.Weeks.Select(row => _barHosts.TryGetValue((cr.Id.Value, row.Row.WeekStart), out var piece) ? piece : ((WinGrid, CalendarBar)?)null)];
+            proposed = null;
+            shown = null;
+            ToolTipService.SetToolTip(thumb, tip);
+        };
+
+        // The thumb captures the pointer for the drag, so its moves arrive here wherever the pointer goes.
+        thumb.AddHandler(PointerMovedEvent, new PointerEventHandler((_, e) =>
+        {
+            if (!thumb.IsDragging || rowTops.Length == 0 || version != _renderVersion)
+            {
+                return;
+            }
+
+            var point = e.GetCurrentPoint(_root).Position;
+            var (weekIndex, column) = CalendarResizeTarget.CellAt(point.X, point.Y, rowTops, _root.ActualWidth, StubWidth);
+            var target = surface.Weeks[weekIndex].Row.VisibleDays[column];
+            proposed = CalendarResizeTarget.Range(start, end, isStart, target);
+            ShowRange(proposed);
+            tip.Content = target.ToString("D", CultureInfo.CurrentCulture);
+            tip.IsOpen = proposed is not null;
+        }), handledEventsToo: true);
+
+        thumb.DragCompleted += (_, e) =>
+        {
+            tip.IsOpen = false;
+            ToolTipService.SetToolTip(thumb, null);
+            var range = proposed;
+            proposed = null;
+            shown = null;
+            if (version != _renderVersion)
+            {
+                // The surface was rebuilt during the drag (Render removed the pieces); this bar is no longer shown.
+                return;
+            }
+
+            ClearPreviewPieces();
+            if (e.Canceled || range is not { } changed || changed == (start, end))
+            {
+                ShowCommitted();
+                return;
+            }
+
+            // A refused or failed resize renders the committed dates again (CalendarPageViewModel.ResizeAsync).
+            _ = viewModel.ResizeAsync(cr.Id.Value, isStart ? changed.Start : null, isStart ? null : changed.End);
         };
         return handle;
+    }
+
+    /// <summary>
+    /// A copy of a bar for one week row of a drag preview: the bar's style and colors and its number and title, taking
+    /// no input and hidden from UI Automation (decorative; the tooltip and the result carry the meaning). It is
+    /// translucent on a free lane and opaque when it overlays another bar, so the two texts never mix.
+    /// </summary>
+    private static Button PreviewPiece(Button body, string label, int first, int last, int lane, bool overlays)
+    {
+        var piece = new Button
+        {
+            Style = body.Style,
+            Background = body.Background,
+            BorderBrush = body.BorderBrush,
+            Content = new TextBlock { Text = label, Style = StyleOf("CaptionTextBlockStyle"), MaxLines = 1, TextTrimming = TextTrimming.CharacterEllipsis },
+            Margin = new Thickness(2, LaneGap / 2, 2, LaneGap / 2),
+            Opacity = overlays ? 1 : 0.6,
+            IsHitTestVisible = false,
+            IsTabStop = false,
+        }.Hidden();
+        WinGrid.SetColumn(piece, first);
+        WinGrid.SetColumnSpan(piece, last - first + 1);
+        WinGrid.SetRow(piece, 1 + lane);
+        Canvas.SetZIndex(piece, 2);
+        return piece;
+    }
+
+    private void ClearPreviewPieces()
+    {
+        foreach (var piece in _previewPieces)
+        {
+            if (VisualTreeHelper.GetParent(piece) is Panel panel)
+            {
+                panel.Children.Remove(piece);
+            }
+        }
+
+        _previewPieces.Clear();
     }
 
     private HyperlinkButton MoreLink(CalendarPageViewModel viewModel, CalendarDayCell day, int maxLanes)

@@ -229,7 +229,8 @@ public sealed record UpdateWorkflowDefaultsCommand(
     PriorityId DefaultPriorityId,
     PersonId? DefaultCrOwnerId,
     CrStatusId CalendarSchedulingStatusId,
-    CrStatusId CrBacklogStatusId);
+    CrStatusId CrBacklogStatusId,
+    string? CopyIdFormat = null);
 
 /// <summary>
 /// Saves the workspace defaults (B-04, B-11): new-task status and priority, new-CR status, the default CR
@@ -273,7 +274,8 @@ public sealed class UpdateWorkflowDefaults
                 command.DefaultPriorityId,
                 command.DefaultCrOwnerId,
                 command.CalendarSchedulingStatusId,
-                command.CrBacklogStatusId);
+                command.CrBacklogStatusId,
+                command.CopyIdFormat is null ? workflow.Defaults.CopyIdFormat : CopyIdFormatter.Normalize(command.CopyIdFormat));
             return SettingsTransactions.Save(tx, workflow with { Defaults = defaults });
         }, cancellationToken);
     }

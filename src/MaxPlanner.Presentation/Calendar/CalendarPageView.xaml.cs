@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -217,8 +218,9 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     private void ApplyBreakpoint(double width)
     {
         var wide = width >= 1008;
-        var padding = wide ? 32 : width >= 640 ? 24 : 16;
-        HeaderRoot.Padding = wide ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
+        var window = PagePadding.WindowWidth(this, width);
+        var padding = PagePadding.Side(window);
+        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= 640 ? 12 : 8);
         _gutter = padding;
         ViewModel.SetCompact(width < 640);
         ChipsBar.IsCompact = width < 640;

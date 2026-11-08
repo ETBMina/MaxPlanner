@@ -1,3 +1,4 @@
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.ChangeRequests;
 using MaxPlanner.Domain.Checklists;
@@ -343,7 +344,7 @@ internal sealed class RecordLoader(SqliteConnection connection, SqliteTransactio
         var defaults = ReadRows(
             """
             SELECT default_task_status_id, default_cr_status_id, default_priority_id, default_cr_owner_id,
-                   calendar_scheduling_status_id, cr_backlog_status_id
+                   calendar_scheduling_status_id, cr_backlog_status_id, copy_id_format
             FROM app_metadata WHERE id = 1
             """,
             r => new WorkflowDefaults(
@@ -352,7 +353,8 @@ internal sealed class RecordLoader(SqliteConnection connection, SqliteTransactio
                 new PriorityId(r.GetGuid(2, "app_metadata", "default_priority_id")),
                 r.GetNullableGuid(3, "app_metadata", "default_cr_owner_id") is { } owner ? new PersonId(owner) : null,
                 new CrStatusId(r.GetGuid(4, "app_metadata", "calendar_scheduling_status_id")),
-                new CrStatusId(r.GetGuid(5, "app_metadata", "cr_backlog_status_id"))));
+                new CrStatusId(r.GetGuid(5, "app_metadata", "cr_backlog_status_id")),
+                CopyIdFormatter.Normalize(r.GetNullableString(6))));
 
         return new WorkflowSnapshot(
             [.. taskStatuses.OrderBy(s => s.Order).ThenBy(s => s.Id.Value)],

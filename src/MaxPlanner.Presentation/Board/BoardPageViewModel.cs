@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Application.Workflow;
@@ -72,13 +73,6 @@ public sealed partial class BoardBucketViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(AccessibleName), nameof(AddButtonName), nameof(PickerText), nameof(DropCaption), nameof(TopCaption))]
     public partial string Name { get; private set; } = string.Empty;
 
-    /// <summary>Segoe Fluent Icons from the status flags (design §6.2); empty when no flag applies.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasGlyph))]
-    public partial string Glyph { get; private set; } = string.Empty;
-
-    public bool HasGlyph => !string.IsNullOrEmpty(Glyph);
-
     /// <summary>"6", or "4 of 6" while the Board is filtered: visible / total active (B-07).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AccessibleName), nameof(PickerText))]
@@ -110,7 +104,6 @@ public sealed partial class BoardBucketViewModel : ObservableObject, IDisposable
     internal void Update(TaskStatusDefinition status)
     {
         Name = status.Name.Display;
-        Glyph = WorkflowGlyphs.TaskStatus(status);
     }
 
     /// <summary>Applies the shared task filter (B-10) to this bucket; hidden cards keep their ranks (B-07).</summary>
@@ -328,6 +321,13 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     /// <summary>Accent New task (default status) or a bucket's + (that status, B-02.1).</summary>
     public Task NewTaskAsync(BoardBucketViewModel? bucket = null) => _context.Tasks.NewAsync(bucket?.StatusId);
+
+    /// <summary>Card ⋯ › Copy ID (design §4.2): the card's ID text from the Settings › Defaults format.</summary>
+    public string CopyIdText(BoardCardViewModel card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        return CopyIdFormatter.Apply(_context.Store.CurrentWorkflow?.Defaults.CopyIdFormat, card.Model.CopyIdValues);
+    }
 
     public Task CopyAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
 

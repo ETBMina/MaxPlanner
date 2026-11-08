@@ -582,7 +582,8 @@ public static partial class ImportPlanner
             }
 
             var defaults = new WorkflowDefaults(new TaskStatusId(taskStatus.Value), new CrStatusId(crStatus.Value), new PriorityId(priority.Value),
-                owner is { } o ? new PersonId(o) : null, new CrStatusId(scheduling.Value), new CrStatusId(backlog.Value));
+                owner is { } o ? new PersonId(o) : null, new CrStatusId(scheduling.Value), new CrStatusId(backlog.Value),
+                CopyIdFormatter.Normalize(source.CopyIdFormat));
             if (!DefaultsResolve(defaults))
             {
                 Add(ImportSeverity.Error, ImportEntity.File, string.Empty, ImportFindingCodes.DefaultsInvalid);

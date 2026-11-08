@@ -2,6 +2,7 @@ using System.Reactive.Linq;
 using DynamicData;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Store;
 
@@ -37,6 +38,9 @@ public sealed record WorkItemRecord
     public DateTimeOffset CreatedAtUtc => Task?.CreatedAtUtc ?? Card!.CreatedAtUtc;
 
     public InheritedCrValues Cr => Task?.Cr ?? Card!.Cr;
+
+    /// <summary>The values the Copy ID format names (design §4.6); a Subtask card's come from its parent.</summary>
+    public CopyIdValues CopyIdValues => Task is { } task ? CopyIdValues.From(task) : CopyIdValues.From(Card!);
 
     /// <summary>B-05, B-16.6: archived tasks and the cards of archived parents are hidden from active views.</summary>
     public bool IsActive => Task is { } task ? !task.IsArchived : !Card!.IsParentArchived;

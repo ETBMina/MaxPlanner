@@ -24,8 +24,13 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
+        <!--
+            MinHeight matches the text box and the neighbouring text buttons (Filters, the accent button), so the row
+            is as tall collapsed as expanded and toggling the search never moves the content below it.
+        -->
         <Button
             x:Name="SearchButton"
+            MinHeight="{ThemeResource TextControlThemeMinHeight}"
             HorizontalAlignment="Left"
             VerticalAlignment="Stretch"
             Click="OnSearchButtonClick">

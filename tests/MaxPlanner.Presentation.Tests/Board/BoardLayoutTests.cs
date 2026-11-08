@@ -29,6 +29,33 @@ public sealed class BoardLayoutTests
         BoardLayout.ForWidth(narrower).Should().Be(BoardLayout.ForWidth(wider));
     }
 
+    [Theory]
+    [InlineData(1100)]
+    [InlineData(1400)]
+    public void Opening_or_closing_the_Left_pane_never_moves_the_page_edges(double window)
+    {
+        // The open pane (320 epx) or the closed one (48 epx) narrows the page across the L/M page breakpoint; the
+        // padding follows the window, so the header and the buckets keep their insets and only the buckets resize.
+        var open = BoardLayout.ForWidth(window - 320, window);
+        var closed = BoardLayout.ForWidth(window - 48, window);
+
+        open.HeaderTop.Should().Be(closed.HeaderTop).And.Be(24);
+        open.HeaderBottom.Should().Be(closed.HeaderBottom);
+        open.SidePadding.Should().Be(closed.SidePadding).And.Be(32);
+    }
+
+    [Fact]
+    public void The_S_bucket_uses_the_window_side_padding()
+    {
+        // A 660-epx window (M) beside the compact pane leaves a 600-epx page (S): one bucket fills the page less
+        // the window's M side padding.
+        var layout = BoardLayout.ForWidth(600, 660);
+
+        layout.IsSmall.Should().BeTrue();
+        layout.SidePadding.Should().Be(24);
+        layout.BucketWidth.Should().Be(600 - 48 - 12);
+    }
+
     [Fact]
     public void The_S_bucket_follows_the_viewport_width()
     {

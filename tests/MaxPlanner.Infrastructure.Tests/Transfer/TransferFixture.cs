@@ -3,6 +3,7 @@ using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Reviews;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Application.Transfer;
@@ -44,6 +45,9 @@ internal sealed record TransferFixture(
     public const string Notes = "Line 1\r\nLïne 2 — ✓ 🚀\rLine 3";
 
     /// <summary><see cref="Notes"/> as stored: LF line breaks only (ADR 0025).</summary>
+    /// <summary>A non-default Copy ID format with a value containing a separator character.</summary>
+    public const string CopyIdFormat = "{Squad} / {CRNum}-{TaskNum}";
+
     public const string StoredNotes = "Line 1\nLïne 2 — ✓ 🚀\nLine 3";
 
     public static async Task<TransferFixture> PopulateAsync(TestDataset db)
@@ -108,6 +112,13 @@ internal sealed record TransferFixture(
         var done = new GeneralTodoId(Guid.NewGuid());
         Succeeded(await new AddGeneralTodo(db.Coordinator).ExecuteAsync(new AddGeneralTodoCommand(OperationId.New(), done, "Renew card"), Ct));
         Succeeded(await new SetGeneralTodoCompleted(db.Coordinator).ExecuteAsync(new SetGeneralTodoCompletedCommand(OperationId.New(), done, 1, true), Ct));
+
+        // Design §4.6: a non-default Copy ID format, so every round trip carries it (ADR 0026).
+        var defaults = (await db.SnapshotAsync()).Workflow;
+        Succeeded(await new UpdateWorkflowDefaults(db.Coordinator).ExecuteAsync(new UpdateWorkflowDefaultsCommand(
+            OperationId.New(), WorkflowStamps.Defaults(defaults), defaults.Defaults.DefaultTaskStatusId, defaults.Defaults.DefaultCrStatusId,
+            defaults.Defaults.DefaultPriorityId, defaults.Defaults.DefaultCrOwnerId, defaults.Defaults.CalendarSchedulingStatusId,
+            defaults.Defaults.CrBacklogStatusId, CopyIdFormat), Ct));
 
         // No use case writes legacy content; an external import would. Stored directly, as the storage tests do.
         db.Execute("UPDATE tasks SET preserved_json = $p WHERE id = $id;",
@@ -243,6 +254,7 @@ internal sealed record TransferFixture(
                 Owner = w.Defaults.DefaultCrOwnerId,
                 Scheduling = Name(w.Defaults.CalendarSchedulingStatusId.Value),
                 Backlog = Name(w.Defaults.CrBacklogStatusId.Value),
+                w.Defaults.CopyIdFormat,
             },
         };
     }

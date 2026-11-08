@@ -5,7 +5,8 @@
 -->
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MaxPlanner.Presentation.Common.Controls">
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
             <StaticResource x:Key="ChipStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
@@ -389,6 +390,10 @@
     <Style x:Key="AccentChipTextStyle" BasedOn="{StaticResource ChipTextStyle}" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource AccentChipForegroundBrush}" />
     </Style>
+    <!-- Priority box items (design §6.1): the priority glyph in its rank colour before the name. -->
+    <DataTemplate x:Key="PriorityChoiceTemplate">
+        <controls:PriorityLabel />
+    </DataTemplate>
     <Style x:Key="AccentChipGlyphStyle" BasedOn="{StaticResource ChipGlyphStyle}" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource AccentChipForegroundBrush}" />
     </Style>

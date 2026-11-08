@@ -85,6 +85,7 @@
                         Grid.Column="1"
                         HorizontalAlignment="Stretch"
                         AutomationProperties.AutomationId="CopyTask_PriorityCombo"
+                        ItemTemplate="{StaticResource PriorityChoiceTemplate}"
                         ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"
                         SelectionChanged="OnPrioritySelectionChanged" />
                 </Grid>

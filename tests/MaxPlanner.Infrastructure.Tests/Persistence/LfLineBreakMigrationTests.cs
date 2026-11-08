@@ -51,13 +51,14 @@ public sealed class LfLineBreakMigrationTests
         Set(db, "field_definitions", "default_value_json", defaulted.Value, JsonSerializer.Serialize(new { Kind = "MultilineText", Text = "Default\r\ntext" }));
         db.Execute(
             """
-            UPDATE app_metadata SET schema_version = 2, migration_history_json = json_remove(migration_history_json, '$[2]');
+            UPDATE app_metadata SET schema_version = 2, migration_history_json = json_remove(migration_history_json, '$[3]', '$[2]');
+            ALTER TABLE app_metadata DROP COLUMN copy_id_format;
             PRAGMA user_version = 2;
             """);
 
         await db.ReopenAsync();
 
-        db.Dataset.SchemaVersion.Should().Be(3);
+        db.Dataset.SchemaVersion.Should().Be(4);
         Get(db, "tasks", "notes", fixture.LinkedOwnTitle.Value).Should().Be(Normalized);
         Get(db, "subtask_cards", "notes", fixture.Card.Value).Should().Be(Normalized);
         Get(db, "change_requests", "description", fixture.Cr.Value).Should().Be(Normalized);
@@ -87,13 +88,14 @@ public sealed class LfLineBreakMigrationTests
         var before = Dump(db);
         db.Execute(
             """
-            UPDATE app_metadata SET schema_version = 2, migration_history_json = json_remove(migration_history_json, '$[2]');
+            UPDATE app_metadata SET schema_version = 2, migration_history_json = json_remove(migration_history_json, '$[3]', '$[2]');
+            ALTER TABLE app_metadata DROP COLUMN copy_id_format;
             PRAGMA user_version = 2;
             """);
 
         await db.ReopenAsync();
 
-        db.Dataset.SchemaVersion.Should().Be(3);
+        db.Dataset.SchemaVersion.Should().Be(4);
         Dump(db).Should().Equal(before);
         (await db.SnapshotAsync()).Tasks.Single(t => t.Id == fixture.LinkedOwnTitle).Notes!.Value.Should().Be(TransferFixture.StoredNotes);
     }
@@ -150,7 +152,8 @@ public sealed class LfLineBreakMigrationTests
 
     private static void Downgrade(TestDataset db) => db.Execute(
         """
-        UPDATE app_metadata SET schema_version = 2, migration_history_json = json_remove(migration_history_json, '$[2]');
+        UPDATE app_metadata SET schema_version = 2, migration_history_json = json_remove(migration_history_json, '$[3]', '$[2]');
+        ALTER TABLE app_metadata DROP COLUMN copy_id_format;
         PRAGMA user_version = 2;
         """);
 

@@ -62,7 +62,7 @@ public static class WorkflowStamps
     {
         ArgumentNullException.ThrowIfNull(workflow);
         var d = workflow.Defaults;
-        return Join(d.DefaultTaskStatusId.Value, d.DefaultCrStatusId.Value, d.DefaultPriorityId.Value, d.DefaultCrOwnerId?.Value, d.CalendarSchedulingStatusId.Value, d.CrBacklogStatusId.Value);
+        return Join(d.DefaultTaskStatusId.Value, d.DefaultCrStatusId.Value, d.DefaultPriorityId.Value, d.DefaultCrOwnerId?.Value, d.CalendarSchedulingStatusId.Value, d.CrBacklogStatusId.Value) + "|" + d.CopyIdFormat;
     }
 
     private static string Describe(CustomValue? value) => value switch

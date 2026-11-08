@@ -1,3 +1,4 @@
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -57,9 +58,10 @@ public sealed partial class DataPageView : UserControl
     private void ApplyBreakpoint(double width)
     {
         // Design §4.6: the step list sits on the left at L; M/S show "Step 2 of 5 · …" instead.
-        var padding = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
+        var window = PagePadding.WindowWidth(this, width);
+        var padding = PagePadding.Side(window);
         var isLarge = width >= 1008;
-        HeaderRoot.Padding = new Thickness(padding, isLarge ? 24 : 16, padding, 8);
+        HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 8);
         _import.SetLayout(isLarge, padding);
         _export.SetLayout(isLarge, padding);
         _restore.SetLayout(isLarge, padding);

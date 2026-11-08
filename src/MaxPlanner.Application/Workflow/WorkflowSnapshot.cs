@@ -8,13 +8,15 @@ namespace MaxPlanner.Application.Workflow;
 /// <param name="DefaultCrOwnerId">Null until the user chooses one (B-04); prefilled into new CRs.</param>
 /// <param name="CalendarSchedulingStatusId">B-08.5: the CR status set when a backlog CR is scheduled.</param>
 /// <param name="CrBacklogStatusId">B-08.11: the CR status set by "Move to backlog".</param>
+/// <param name="CopyIdFormat">Design §4.6: the Copy ID text format; blank means <see cref="Settings.CopyIdFormatter.Default"/>.</param>
 public sealed record WorkflowDefaults(
     TaskStatusId DefaultTaskStatusId,
     CrStatusId DefaultCrStatusId,
     PriorityId DefaultPriorityId,
     PersonId? DefaultCrOwnerId,
     CrStatusId CalendarSchedulingStatusId,
-    CrStatusId CrBacklogStatusId);
+    CrStatusId CrBacklogStatusId,
+    string CopyIdFormat = Settings.CopyIdFormatter.Default);
 
 /// <summary>
 /// All configurable lookups, field definitions, and defaults at one point in time. Small enough to

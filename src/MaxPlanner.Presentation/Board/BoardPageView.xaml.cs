@@ -167,7 +167,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         if (!isSliding && _pendingWidth is { } width)
         {
             _pendingWidth = null;
-            ApplyBreakpoint(BoardLayout.ForWidth(width));
+            ApplyBreakpoint(LayoutFor(width));
         }
     }
 
@@ -176,7 +176,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         // A breakpoint change relays out every bucket and its cards (about 100 ms with a few hundred cards). While
         // the navigation pane slides, the width changes every frame, so a change waits for the end of the slide and
         // the motion does not stall; otherwise it applies at once. Within a breakpoint nothing changes.
-        var layout = BoardLayout.ForWidth(width);
+        var layout = LayoutFor(width);
         if (_isPaneSliding && _layout is { } current && layout != current)
         {
             _pendingWidth = width;
@@ -186,6 +186,8 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         _pendingWidth = null;
         ApplyBreakpoint(layout);
     }
+
+    private BoardLayout LayoutFor(double width) => BoardLayout.ForWidth(width, PagePadding.WindowWidth(this, width));
 
     private void ApplyBreakpoint(BoardLayout layout)
     {
@@ -331,10 +333,15 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         menu.Items.Add(moveTo);
         menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, -1), ViewModel.CanMoveUp(card)));
         menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, 1), ViewModel.CanMoveDown(card)));
+        menu.Items.Add(new MenuFlyoutSeparator());
         if (card.IsTask)
         {
-            menu.Items.Add(new MenuFlyoutSeparator());
             menu.Items.Add(Item("Board_MenuCopy", "Board_MenuCopyItem", "", () => _ = ViewModel.CopyAsync(card)));
+        }
+
+        menu.Items.Add(Item("Board_MenuCopyId", "Board_MenuCopyIdItem", "", () => ClipboardText.Set(ViewModel.CopyIdText(card))));
+        if (card.IsTask)
+        {
             menu.Items.Add(Item("Board_MenuAddSubtaskCard", "Board_MenuAddSubtaskCardItem", "", () => _ = ViewModel.AddSubtaskCardAsync(card)));
             menu.Items.Add(Item("Board_MenuArchive", "Board_MenuArchiveItem", "", () => _ = ViewModel.ArchiveAsync(card)));
         }

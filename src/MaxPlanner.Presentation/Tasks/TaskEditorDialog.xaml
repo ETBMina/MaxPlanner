@@ -294,6 +294,7 @@
                                 Grid.Column="1"
                                 HorizontalAlignment="Stretch"
                                 AutomationProperties.AutomationId="TaskEditor_PriorityCombo"
+                                ItemTemplate="{StaticResource PriorityChoiceTemplate}"
                                 AutomationProperties.IsRequiredForForm="True"
                                 IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                                 ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"

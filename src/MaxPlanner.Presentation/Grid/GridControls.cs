@@ -665,6 +665,7 @@ internal static class GridCellContent
                 break;
             case GridEditorKind.Priority:
                 var priority = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Center };
+                priority.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Application.Current.Resources["PriorityChoiceTemplate"];
                 priority.ItemsSource = page.PriorityOptions;
                 priority.SelectedItem = row.DraftPriority;
                 priority.SelectionChanged += (_, _) =>

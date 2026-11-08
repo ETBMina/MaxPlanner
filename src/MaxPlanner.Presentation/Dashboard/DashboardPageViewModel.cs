@@ -336,7 +336,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         var current = _filter.Value;
         _isSyncingOptions = true;
         Replace(_squads, [new DashboardOption(null, strings.GetString("Dashboard_AllSquads")), .. workflow.Squads.OrderBy(s => s.Order).Select(s => new DashboardOption(s.Id.Value, s.Name.Display)), new DashboardOption(null, strings.GetString("Squad_General"), IsGeneral: true)]);
-        Replace(_priorities, [new DashboardOption(null, strings.GetString("Dashboard_AllPriorities")), .. workflow.Priorities.OrderBy(p => p.Order).Select(p => new DashboardOption(p.Id.Value, p.Name.Display))]);
+        Replace(_priorities, [new DashboardOption(null, strings.GetString("Dashboard_AllPriorities")), .. Tasks.PriorityOption.From(workflow).Select(p => new DashboardOption(p.Id.Value, p.Name, Level: p.Level))]);
         Replace(_owners, [new DashboardOption(null, strings.GetString("Dashboard_AllOwners")), .. workflow.People.OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(p => new DashboardOption(p.Id.Value, p.Name.Display))]);
         SelectedSquad = current.Squad is { } squad
             ? _squads.FirstOrDefault(o => squad.Id is { } id ? o.Id == id.Value : o.IsGeneral) ?? _squads[0]

@@ -124,15 +124,17 @@ internal static class MenuFields
         return workflow.Priorities.OrderBy(p => p.Order).Select(p =>
         {
             var level = levels.GetValueOrDefault(p.Id, PriorityLevel.Mid);
-            var tone = level switch
-            {
-                PriorityLevel.Level1 => FilterGlyphTone.Critical,
-                PriorityLevel.Level2 => FilterGlyphTone.Caution,
-                _ => FilterGlyphTone.Default,
-            };
-            return (p.Id.Value, p.Name.Display, WorkflowGlyphs.Priority(level), tone);
+            return (p.Id.Value, p.Name.Display, WorkflowGlyphs.Priority(level), PriorityTone(level));
         });
     }
+
+    /// <summary>The glyph colour of a priority rank (design §6.1), shared by the filter menu and the Priority boxes.</summary>
+    public static FilterGlyphTone PriorityTone(PriorityLevel level) => level switch
+    {
+        PriorityLevel.Level1 => FilterGlyphTone.Critical,
+        PriorityLevel.Level2 => FilterGlyphTone.Caution,
+        _ => FilterGlyphTone.Default,
+    };
 
     public static FilterGlyphTone StatusTone(bool isCompleted) => isCompleted ? FilterGlyphTone.Success : FilterGlyphTone.Default;
 
@@ -317,7 +319,7 @@ public sealed class TaskFilterScopeViewModel : FilterScopeViewModel<TaskFilterSp
                 MenuFields.Choices(
                     menu,
                     FilterKeys.Status,
-                    workflow.TaskStatuses.OrderBy(t => t.Order).Select(t => (t.Id.Value, t.Name.Display, WorkflowGlyphs.TaskStatus(t), MenuFields.StatusTone(t.IsCompleted))),
+                    MenuFields.Plain(workflow.TaskStatuses.OrderBy(t => t.Order).Select(t => (t.Id.Value, t.Name.Display))),
                     spec.Statuses.Select(t => t.Value)),
                 s.GetString("Filters_Status"),
                 MenuFields.StatusGlyph);

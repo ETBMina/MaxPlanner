@@ -1,3 +1,4 @@
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -135,8 +136,9 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     private void ApplyBreakpoint(double width)
     {
         // T-08.1 page padding: L 32/24, M 24/16, S 16/12 (design §2.3).
-        var inset = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
-        HeaderRoot.Padding = width >= 1008 ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
+        var window = PagePadding.WindowWidth(this, width);
+        var inset = PagePadding.Side(window);
+        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= 640 ? 12 : 8);
         ContentRoot.Padding = new Thickness(inset, 0, inset, 24);
 
         // Design §4.1: cards 3–6 per row at L, 2 columns at M, 1 at S.

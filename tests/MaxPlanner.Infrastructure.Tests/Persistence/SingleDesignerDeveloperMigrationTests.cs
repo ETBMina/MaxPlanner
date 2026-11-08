@@ -31,7 +31,8 @@ public sealed class SingleDesignerDeveloperMigrationTests
         db.Execute(
             """
             DROP INDEX ux_task_people_task_role;
-            UPDATE app_metadata SET schema_version = 1, migration_history_json = json_remove(migration_history_json, '$[2]', '$[1]');
+            UPDATE app_metadata SET schema_version = 1, migration_history_json = json_remove(migration_history_json, '$[3]', '$[2]', '$[1]');
+            ALTER TABLE app_metadata DROP COLUMN copy_id_format;
             PRAGMA user_version = 1;
             """);
         AddPerson(db, first, bob, "Designer", 1);

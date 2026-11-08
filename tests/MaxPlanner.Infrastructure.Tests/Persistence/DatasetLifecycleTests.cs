@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Infrastructure.Persistence.Mapping;
 using MaxPlanner.Infrastructure.Persistence.Migrations;
@@ -41,16 +42,17 @@ public sealed class DatasetLifecycleTests
         workflow.FindCrStatus(defaults.CalendarSchedulingStatusId)!.Name.Display.Should().Be("In Progress");
         workflow.FindCrStatus(defaults.CrBacklogStatusId)!.Name.Display.Should().Be("Backlog");
         defaults.DefaultCrOwnerId.Should().BeNull();
+        defaults.CopyIdFormat.Should().Be(CopyIdFormatter.Default);
 
         snapshot.CommitSequence.Should().Be(0);
         snapshot.Tasks.Should().BeEmpty();
         snapshot.ChangeRequests.Should().BeEmpty();
         db.Dataset.Id.Value.Should().NotBeEmpty();
-        db.Dataset.SchemaVersion.Should().Be(3);
-        db.Scalar("PRAGMA user_version;").Should().Be(3);
-        db.Scalar("SELECT schema_version FROM app_metadata;").Should().Be(3);
+        db.Dataset.SchemaVersion.Should().Be(4);
+        db.Scalar("PRAGMA user_version;").Should().Be(4);
+        db.Scalar("SELECT schema_version FROM app_metadata;").Should().Be(4);
         StorageJson.ReadHistory(Text(db, "SELECT migration_history_json FROM app_metadata;"))
-            .Select(h => (h.Version, h.Name)).Should().Equal((1, "M0001_initial"), (2, "M0002_single_designer_developer"), (3, "M0003_lf_line_breaks"));
+            .Select(h => (h.Version, h.Name)).Should().Equal((1, "M0001_initial"), (2, "M0002_single_designer_developer"), (3, "M0003_lf_line_breaks"), (4, "M0004_copy_id_format"));
         Text(db, "PRAGMA journal_mode;").Should().Be("wal");
     }
 

@@ -16,7 +16,8 @@ namespace MaxPlanner.Presentation.Common.Controls;
 /// <remarks>
 /// <para>
 /// Next to the visible name the avatar is decorative and hidden from UI Automation (<see cref="IsDecorative"/>, the
-/// default). Shown alone, it is an Image named after the person, with the name as its tooltip.
+/// default). Shown alone, it is an Image named after the person, with the name as its tooltip; a Board card's people
+/// footer replaces both with <see cref="AccessibleName"/> and <see cref="ToolTipContent"/> to add the person's roles.
 /// </para>
 /// <para>
 /// High Contrast (design §3 rule 3) drops the custom palette: the local fill is cleared so <c>PersonAvatarStyle</c>
@@ -37,6 +38,12 @@ public sealed partial class PersonAvatar : WinGrid
 
     public static readonly DependencyProperty IsDecorativeProperty = DependencyProperty.Register(
         nameof(IsDecorative), typeof(bool), typeof(PersonAvatar), new PropertyMetadata(true, (d, _) => ((PersonAvatar)d).UpdateAccessibility()));
+
+    public static readonly DependencyProperty AccessibleNameProperty = DependencyProperty.Register(
+        nameof(AccessibleName), typeof(string), typeof(PersonAvatar), new PropertyMetadata(string.Empty, (d, _) => ((PersonAvatar)d).UpdateAccessibility()));
+
+    public static readonly DependencyProperty ToolTipContentProperty = DependencyProperty.Register(
+        nameof(ToolTipContent), typeof(object), typeof(PersonAvatar), new PropertyMetadata(null, (d, _) => ((PersonAvatar)d).UpdateAccessibility()));
 
     private const string PersonGlyph = "";
 
@@ -93,6 +100,23 @@ public sealed partial class PersonAvatar : WinGrid
         set => SetValue(IsDecorativeProperty, value);
     }
 
+    /// <summary>
+    /// The UI Automation name when the avatar is not decorative and needs more than the person's name (a Board card
+    /// adds their roles); empty (the default) uses <see cref="DisplayName"/>.
+    /// </summary>
+    public string AccessibleName
+    {
+        get => (string)GetValue(AccessibleNameProperty);
+        set => SetValue(AccessibleNameProperty, value);
+    }
+
+    /// <summary>The tooltip when the avatar is not decorative; null (the default) shows <see cref="DisplayName"/>.</summary>
+    public object? ToolTipContent
+    {
+        get => GetValue(ToolTipContentProperty);
+        set => SetValue(ToolTipContentProperty, value);
+    }
+
     protected override AutomationPeer OnCreateAutomationPeer() => new PersonAvatarAutomationPeer(this);
 
     private void UpdateSize()
@@ -139,9 +163,10 @@ public sealed partial class PersonAvatar : WinGrid
     private void UpdateAccessibility()
     {
         var name = IsDecorative ? null : DisplayName;
+        var accessibleName = string.IsNullOrEmpty(AccessibleName) ? name : AccessibleName;
         AutomationProperties.SetAccessibilityView(this, IsDecorative ? AccessibilityView.Raw : AccessibilityView.Content);
-        AutomationProperties.SetName(this, name ?? string.Empty);
-        ToolTipService.SetToolTip(this, string.IsNullOrEmpty(name) ? null : name);
+        AutomationProperties.SetName(this, IsDecorative ? string.Empty : accessibleName ?? string.Empty);
+        ToolTipService.SetToolTip(this, IsDecorative || string.IsNullOrEmpty(name) ? null : ToolTipContent ?? name);
     }
 
     private sealed partial class PersonAvatarAutomationPeer(PersonAvatar owner) : FrameworkElementAutomationPeer(owner)

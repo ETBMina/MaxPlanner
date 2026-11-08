@@ -1,4 +1,5 @@
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -76,8 +77,9 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         // T-08.1/design §4.6: L caps cards at 1000 epx aligned left; M and S use the full width, and at S the
         // card's action wraps below its text.
-        var padding = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
-        HeaderRoot.Padding = new Thickness(padding, width >= 1008 ? 24 : 16, padding, 12);
+        var window = PagePadding.WindowWidth(this, width);
+        var padding = PagePadding.Side(window);
+        HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
         CapWrapper.Padding = new Thickness(padding, 0, padding, 32);
         ErrorBar.Margin = new Thickness(padding, 0, padding, 8);
         CardsPanel.HorizontalAlignment = width >= 1008 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
@@ -105,6 +107,17 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             _ = ViewModel.AddAsync(section);
         }
     }
+
+    private void OnCopyIdFormatKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Enter)
+        {
+            e.Handled = true;
+            ViewModel.CommitCopyIdFormat();
+        }
+    }
+
+    private void OnCopyIdFormatLostFocus(object sender, RoutedEventArgs e) => ViewModel.CommitCopyIdFormat();
 
     private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {

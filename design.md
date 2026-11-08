@@ -90,7 +90,7 @@ Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to 
 
 | Field kind | Submenu |
 |---|---|
-| Lookup (Priority, Status, Squad incl. "General", CR Owner, lookup custom fields) | Multi-select checkable items. Priority items show the priority's icon and colour (for example Urgent bell, Important !, Medium dot, Low ↓); Status items show the status glyph (§6.2). A checked item shows a CheckMark, so state is never colour alone. |
+| Lookup (Priority, Status, Squad incl. "General", CR Owner, lookup custom fields) | Multi-select checkable items. Priority items show the priority's icon and colour (for example Urgent bell, Important !, Medium dot, Low ↓); Task status items show no glyph (§6.2). A checked item shows a CheckMark, so state is never colour alone. |
 | People (Designer, Developer) and Tags | Multi-select list of existing names (no add-new in a filter). Tags add an Any selected / All selected choice. |
 | CR | Any CR, No CR, and a CR search picker. |
 | Service, text custom fields | "Contains" `TextBox`. |
@@ -161,7 +161,7 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
 - Wherever a person is named, a filled circle with their initials (`PersonAvatar`) comes before the name. It is 20 epx in dense rows, cards and chips, 24 epx by default, and 32 epx in Settings › People. Initials are the first letter or digit of the first and last word ("Wingtip Toys" → "WT"); a single word gives one letter.
 - The color comes from a fixed hash of the display name into an 11-color palette. White initials meet WCAG AA on every color, which is the same in Light and Dark. Nothing is stored, so renaming a person changes their initials and color. High Contrast uses system colors.
 - Several people in one compact field (Grid People fields; Dashboard unlinked rows) use an overlapping group (`PersonAvatarGroup`) of at most 3 circles, the last becoming "+N". The names stay as text.
-- The avatar is decorative and hidden from UI Automation when the name is visible next to it; shown alone, it is an image named after the person, with the name as its tooltip.
+- The avatar is decorative and hidden from UI Automation when the name is visible next to it; shown alone, it is an image named after the person, with the name as its tooltip. Board card people footers (§4.2) add the person's roles to the tooltip and name.
 - Not shown: Calendar Month/Week bars (owner is in the tooltip only), joined text lines such as linked-CR secondary text, the import fallback-owner and lookup-replacement combos, and chart labels.
 
 ## 3. Theme and materials
@@ -250,7 +250,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 |---|---|
 | Header | Title "Board". Filters, then the expanding Search icon (task scope, §2.3.1). Filters share the Board/Grid scope (B-10). Accent **New task** (opens the editor with the default status). CommandBar: New Subtask card… (task picker), Clear all filters; overflow: Board help. |
 | Surface | A horizontal `ScrollViewer` (`HorizontalScrollMode=Enabled`, vertical disabled) hosting a non-virtualized `ItemsRepeater` of **buckets**, because there are ≤ ~20 statuses. Each bucket is a fixed-width card (`CardBackgroundFillColorSecondaryBrush`) with a header and a **virtualized `ListView`** in a bounded height (the bucket fills the viewport height) `[gallery-listview-3]`. The scroll axes do not conflict: the page scrolls horizontally and each bucket scrolls vertically. |
-| Bucket header | Status name (`BodyStrongTextBlockStyle`, HeadingLevel 2), a count chip ("6", or "4 of 6" when filtered: visible / total active, B-07), status flag glyph (§6.2), **+** button ("New task in In Progress"), and **⋯** `MenuFlyout` (Collapse bucket, Workflow settings…). |
+| Bucket header | Status name (`BodyStrongTextBlockStyle`, HeadingLevel 2), a count chip ("6", or "4 of 6" when filtered: visible / total active, B-07), **+** button ("New task in In Progress"), and **⋯** `MenuFlyout` (Collapse bucket, Workflow settings…). |
 | Task card | Anatomy listed after this table. |
 | Subtask card | Anatomy listed after this table. |
 | Card menu | `MenuFlyout` from right-click, Shift+F10, the Application key or the **⋯** button `[gallery-listview-8, gallery-menuflyout-6]`. Items listed after this table. |
@@ -258,21 +258,23 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 
 **Task card anatomy:**
 1. Effective Title (`BodyStrongTextBlockStyle`, max 3 lines, full text in a tooltip).
-2. Service chip.
+2. Service chip, with the custom Service icon (owner request, Nov 2026: a rounded square holding a 2×2 grid of rounded squares, outline style; replaces the Repair/wrench glyph wherever the Service chip appears).
 3. CR reference link "CR-1067 · Task 00512", which opens the CR.
-4. Chip row: Priority chip, Squad chip ("General" when there is none), Owner (Contact glyph + name) when linked.
+4. Chip row: Priority chip, Squad chip ("General" when there is none). **Priority chip is icon-only** (owner request, Nov 2026): a small chip in the priority color with only the priority glyph (each level has its own glyph, so color is not the only cue). Its tooltip and accessible name are "Priority: High".
 5. Checklist progress "Checklist 1/3" with a determinate `ProgressBar` `[gallery-progressbar-2]`. When there are no items the card shows "No checklist items" text with no bar (B-07).
 6. Up to 3 incomplete checklist items as `CheckBox`es, plus a **Show all n** `HyperlinkButton`.
 7. Subtask cards count (glyph + "2 Subtask cards").
 8. "Archived" never appears on the Board, because the Board shows active tasks only.
+9. **People footer** (owner request, Nov 2026; replaces the Owner line under the chips): at the bottom right of the card, one 20-epx `PersonAvatar` per assigned person, side by side (not overlapping), in the order CR Owner, Designer, Developer. A person who holds several roles appears once. Each avatar is a separate tooltip target with two lines: the name, then the roles in secondary text joined by " · " ("Mina Hakim" / "CR Owner · Designer"). Its accessible name is "Mina Hakim, CR Owner, Designer". No people → no footer avatars.
 
-**Subtask card anatomy:** a "Subtask of {parent title}" `HyperlinkButton` (opens the parent), the parent Service chip, the inherited CR reference, the Subtitle (`BodyStrongTextBlockStyle`), Owner, and dates when set. There is no priority, because Subtask cards have none. A 3-epx left border in `ControlStrongStrokeColorDefaultBrush` and the "Subtask" glyph give a non-color cue.
+**Subtask card anatomy:** a "Subtask of {parent title}" `HyperlinkButton` (opens the parent), the parent Service chip, the inherited CR reference, the Subtitle (`BodyStrongTextBlockStyle`), dates when set, and the same people footer as task cards (only the inherited CR Owner). There is no priority, because Subtask cards have none. A 3-epx left border in `ControlStrongStrokeColorDefaultBrush` and the "Subtask" glyph give a non-color cue.
 
 **Card menu items:**
 - Open (Enter)
 - Move to ▸ (every status, with Top/Bottom of bucket; while filtered both address the full bucket and the card's own bucket is disabled)
 - Move up / Move down
 - Copy… (tasks only)
+- **Copy ID** (owner request, Nov 2026; task and Subtask cards): copies the card's ID text, built from the Settings › Defaults **Copy ID format**, to the clipboard. See §4.6.
 - Add Subtask card (tasks only)
 - Archive (tasks only)
 - Delete…
@@ -308,7 +310,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 | Header | Title "Grid". Filters (shared with Board), then the expanding Search icon (§2.3.1). Tasks and Subtask cards always appear together; the Kind column identifies each row, and there is no Kind filter (B-07, owner decision). Accent **New task** (opens the task editor with the default status, same as the Board). CommandBar: **Show archived** (`AppBarToggleButton`, persisted, B-05), **Columns** (flyout), **Export…** (current view → Data page export with the scope preset), Clear all filters, overflow: Reset column layout. |
 | Chips row | Active filters plus "From Dashboard" (§2.9) |
 | Table | Virtualized rows with sticky column headers. Header buttons sort (Ascending → Descending → default), and their names are "Sort by Title, currently ascending". Columns can be resized (pointer, or Alt+Left/Right on a focused header) and reordered (drag or header menu "Move left/right"). The column chooser is a `Flyout` with a `CheckBox` per column plus Reset. Widths are clamped to 48–800 on restore. |
-| Row | **No bulk-selection checkbox column**, since there are no bulk commands in release 1. Row header ⋯ `MenuFlyout`: Open, Copy…, Link to CR… (unlinked tasks only), Add Subtask card, Archive/Restore, Delete…. Archived rows use secondary text, an "Archived" chip in the Archived column, and are read-only except Link to CR… (B-05). |
+| Row | **No bulk-selection checkbox column**, since there are no bulk commands in release 1. Row header ⋯ `MenuFlyout`: Open, Copy…, Copy ID (§4.2), Link to CR… (unlinked tasks only), Add Subtask card, Archive/Restore, Delete…. Archived rows use secondary text, an "Archived" chip in the Archived column, and are read-only except Link to CR… (B-05). |
 | Footer | The status bar summary (§2.8). |
 
 | Column (default order) | Editor | Editable when | Read-only display / navigation |
@@ -321,7 +323,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 | Title | `TextBox` | unlinked task, not archived | Linked: a lock glyph + tooltip "Inherited from CR-1042", and the cell opens the CR. Subtask card: parent title, read-only |
 | Subtitle | `TextBox` | Subtask card | Blank for tasks |
 | Service | `TextBox` | task (required if linked) | Subtask card: parent service, read-only |
-| Status | `ComboBox` | task, Subtask card | Status text + flag glyph |
+| Status | `ComboBox` | task, Subtask card | Status text (no glyph, §6.2) |
 | Priority | `ComboBox` | task | Priority chip |
 | Designer / Developer | Single-person picker (§5.0) in a `Flyout` | task | Avatar + name, or blank (ADR 0024) |
 | Tags (and custom Tags fields) | Tag picker in a `Flyout` | task | One row of tag pills (§6.1) that fits the cell, then "+n"; tooltip and accessible name keep the comma-joined names |
@@ -381,7 +383,7 @@ States: Loading, Empty, Filtered-empty (distinct from Empty; when only archived 
 
 **Interactions:**
 - **Schedule** (B-08.5): drop a backlog CR on day D, or use the Schedule on… date flyout. The result is PlannedStart = PlannedEnd = D, and the status becomes the scheduling status. If the CR already has dates, an inline confirmation inside the flyout says "Replace Oct 4–Oct 9 with Oct 13?".
-- **Resize** (B-08.8): changes one endpoint only. During a drag the bar shows a ghost and a date tooltip. An inverted range is rejected and the bar snaps back.
+- **Resize** (B-08.8): changes one endpoint only. In Month mode the handle can be dragged into any week row: the endpoint moves to the visible workday under the pointer (the Fri–Sat stub snaps to that row's Thursday; above, below or beside the grid snaps to the nearest row and column). During a drag the bar follows the pointer across weeks: each of the CR's bar pieces spans the new range in its row (dimmed in a row the range leaves), a covered row without a piece shows a decorative preview piece (translucent on a free lane, opaque over another bar), and a tooltip names the date. An inverted range is rejected and the bar snaps back.
 - **Move to backlog** (B-08.11): in the menu and the CR editor.
 - **Failure** restores the prior dates (B-08.8).
 
@@ -465,7 +467,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | Workflow | `SettingsExpander`s, one for each of **Task statuses**, **Change request statuses**, **Priorities** and **Squads**. The row layout and actions are described after this table. |
 | People and tags | Expanders for People and Tags. The rows are the same as the workflow rows. Person rows show the CR Owner count. |
 | Custom fields | Expanders for Task fields and CR fields. Rows: label, kind, required/default chips, ⋯ (Edit…, Move up/down, Deactivate…). **Add field…** opens the field dialog: Label*, Key* (proposed from the label, editable until first save), Kind* `ComboBox`, Required `ToggleSwitch` (if records exist, shows a backfill preview step), Default, Lookup source. Built-in fields are not listed (B-11). |
-| Defaults | Default task status, Default CR status, Default priority, **Default CR Owner** (person picker with "None"), CR scheduling status, and Calendar workweek (read-only "Sunday–Thursday", §11 Q5). |
+| Defaults | Default task status, Default CR status, Default priority, **Default CR Owner** (person picker with "None"), CR scheduling status, and Calendar workweek (read-only "Sunday–Thursday", §11 Q5). **Copy ID format** (owner request, Nov 2026): a `TextBox`, default `{CRNum} - {TaskNum}`, with the placeholders listed in its description: `{CRNum}`, `{TaskNum}`, `{Title}`, `{Service}`, `{Squad}`. Matching is case-insensitive, and unknown placeholders are left as typed. Gaps are trimmed on the format's literal text only, never inside values: a placeholder with an empty value is dropped, and a literal between two placeholders is kept only when values remain on both sides of it ("{CRNum} - {TaskNum} {Title}" gives "View Zain Products" for an unlinked task, not " -  View Zain Products"; Squad is empty when unlinked, never "General"; when every placeholder in the format is empty nothing is copied; a format with only literal text copies that text). Copy ID shows no confirmation. A configuration replace from a file that predates this setting resets it to the default.. Text before the first placeholder and after the last one is kept only when the placeholder next to it has a value. The result is then trimmed of whitespace. A Subtask card uses the CR values inherited through its parent, and the parent's title and service. The format is a dataset setting and is included in export and import (ADR 0026). An empty format falls back to the default. |
 | Views | Restore default UI preferences (Grid layout, filters, window). The confirmation states that business data is unaffected (B-11). |
 | Data | A **SettingsCard** "Data location" with the path, `IsTextSelectionEnabled`, and an **Open folder** button. **Backups**: last backup time, **Back up now**, a **Manage backups…** link. **Import, export and restore** (a card whose full-width `Button` shows a chevron) → the Data page. |
 | About | Version, schema version, dataset ID (copyable), Third-party notices (opens the bundled text file). |
@@ -562,7 +564,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | | | **Service** | Marked * when linked or a link is pending. Helper when linked: "Tells this task apart from the other 2 tasks on CR-1042." |
 | 2 | Change request | Link card | **Unlinked:** the text "Not linked to a CR" + a **Link to CR…** button (inline step §5.6). **Pending:** a CR summary card + an InfoBar (Warning) "This link is permanent. When you save, the title becomes 'Card limits API' and the task number, squad and owner come from CR-1042." + **Choose a different CR** (allowed only while pending). **Linked:** a read-only card with the CR number link, title, CR status, Owner and "3 linked tasks". There is **no Unlink and no Change** (B-03.7). |
 | | | Task number · Squad · Owner | Read-only text, side by side at L. Helper: "From CR-1042. Edit them on the CR." Unlinked: Squad "General", no task number, "No owner". |
-| 3 | Workflow | **Status***, **Priority*** | `ComboBox`es. The creation route preselects the bucket status (B-02.1). |
+| 3 | Workflow | **Status***, **Priority*** | `ComboBox`es. Priority items, and the selected value, show the priority icon in its colour before the name (owner request, Nov 2026). The creation route preselects the bucket status (B-02.1). |
 | 4 | People and tags | Designer, Developer, Tags | Single-person pickers for Designer and Developer (ADR 0024); token picker for Tags |
 | 5 | Dates | Start date, End date | Helpers come from the flags: "Set automatically when moved to In Progress" / "Filled when the task is completed". A range error appears under End date. |
 | 6 | Custom fields | Per definition order | Typed |
@@ -707,9 +709,9 @@ Anatomy: a `Border` with `CornerRadius` 4, padding 6×2, the `CaptionTextBlockSt
 | `PriorityLevelMid` | Middle ranks ("Medium") | `SystemFillColorNeutralBackgroundBrush` | Text primary | Remove (dash) | Same |
 | `PriorityLevelLowest` | Lowest, when ≥3 priorities ("Low") | `SubtleFillColorSecondaryBrush` | Text secondary | ChevronDown | Same |
 | `SquadChip` | Squad / "General" | `ControlFillColorSecondaryBrush` + `ControlStrokeColorDefaultBrush` | Text primary | People | Same |
-| `ServiceChip` | Service (Board cards use `AccentChip`) | `SystemFillColorAttentionBackgroundBrush` | Text primary | Repair | Same |
+| `ServiceChip` | Service (Board cards use `AccentChip`) | `SystemFillColorAttentionBackgroundBrush` | Text primary | Service icon (custom vector) | Same |
 | `ArchivedChip` | Archived | `SystemFillColorNeutralBackgroundBrush` | Text secondary | Archive† | Same |
-| `AccentChip` | Board bucket counts and Board card service | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Repair (service only) | Highlight/HighlightText |
+| `AccentChip` | Board bucket counts and Board card service | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Service icon (service only) | Highlight/HighlightText |
 | `FlagChip` | Settings flags | `SubtleFillColorSecondaryBrush` + stroke | Text secondary | per flag | Same |
 
 Priority tokens are assigned by **configured rank**, never by name, because priorities are editable lookups (B-04). A chip's name is "Priority: Urgent".
@@ -728,7 +730,7 @@ Priority tokens are assigned by **configured rank**, never by name, because prio
 Like the calendar palette, these tag colors are custom color literals, an exception to §3 rule 2.
 
 ### 6.2 Status presentation
-Statuses are configurable, so status text is always shown. The glyph comes from the flags:
+Statuses are configurable, so status text is always shown. **Task statuses show no glyph anywhere** (owner request, Nov 2026), except the Completed check on Calendar items. CR statuses keep the flag glyphs below:
 
 | Flag | Glyph |
 |---|---|
@@ -772,7 +774,7 @@ The Dashboard "Needs attention" badge uses Warning glyph + text in `SystemFillCo
 | People | E716 | Squad, people | Contact | E77B | Owner |
 | Tag | E8EC | Tags | GripperBarVertical | E784† | Checklist drag handle. Settings rows draw a custom 2×3 dot vector instead (no Segoe Fluent glyph is a dot grid). |
 | Download / Upload | E896 / E898 | Export / Import | History | E81C | Restore/backups |
-| Repair | E90F† | Service chip | Archive | †  | Archive chip/command |
+| Service (custom vector, §4.2) | — | Service chip (was Repair E90F) | Archive | †  | Archive chip/command |
 | Remove | E738 | Priority mid | Cancel | E711 | Remove chip |
 
 ## 7. Keyboard map and focus

@@ -201,7 +201,7 @@
                         Style="{StaticResource ServiceChipStyle}"
                         Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <FontIcon Glyph="&#xE90F;" Style="{StaticResource ChipGlyphStyle}" />
+                            <controls:ServiceIcon Foreground="{ThemeResource ChipForegroundBrush}" />
                             <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
                         </StackPanel>
                     </Border>

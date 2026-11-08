@@ -124,7 +124,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         IsNew = changeRequestId is null;
         _id = changeRequestId ?? new ChangeRequestId(Guid.NewGuid());
         StatusOptions = [.. _workflow.CrStatuses.OrderBy(s => s.Order).Select(s => new CrStatusOption(s.Id, s.Name.Display))];
-        PriorityOptions = [.. _workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display))];
+        PriorityOptions = PriorityOption.From(_workflow);
         SquadOptions =
         [
             new SquadOption(null, context.Strings.GetString("CrEditor_SquadGeneral")),

@@ -40,7 +40,7 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         _source = source ?? throw new ArgumentNullException(nameof(source));
         var workflow = context.Store.CurrentWorkflow ?? throw new InvalidOperationException("The workflow is not loaded.");
         StatusOptions = [.. workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
-        PriorityOptions = [.. workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display))];
+        PriorityOptions = PriorityOption.From(workflow);
         _sourceStatus = StatusOptions.FirstOrDefault(o => o.Id == source.Status.Id);
         _defaultStatus = StatusOptions.FirstOrDefault(o => o.Id == workflow.Defaults.DefaultTaskStatusId);
         CrPicker = new CrPickerViewModel(context.Store, context.Strings);

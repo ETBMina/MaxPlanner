@@ -9,6 +9,7 @@ using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Application.Workflow;
@@ -356,6 +357,13 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     public Task OpenCrAsync(GridRowViewModel row) =>
         row?.Model.Cr.ChangeRequestId is { } id ? _context.ChangeRequests.OpenAsync(id) : Task.CompletedTask;
 
+    /// <summary>Row ⋯ › Copy ID (design §4.3): the row's ID text from the Settings › Defaults format.</summary>
+    public string CopyIdText(GridRowViewModel row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return CopyIdFormatter.Apply(_context.Store.CurrentWorkflow?.Defaults.CopyIdFormat, row.Model.CopyIdValues);
+    }
+
     /// <summary>Row ⋯ › Copy… (tasks only, B-06).</summary>
     public Task CopyRowAsync(GridRowViewModel row) =>
         row?.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
@@ -576,9 +584,9 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             option => option,
             (_, _) => { });
         _priorityOptions.Clear();
-        foreach (var priority in workflow.Priorities.OrderBy(p => p.Order))
+        foreach (var priority in PriorityOption.From(workflow))
         {
-            _priorityOptions.Add(new PriorityOption(priority.Id, priority.Name.Display));
+            _priorityOptions.Add(priority);
         }
 
         // The first workflow brings the custom fields, so the saved layout is applied again with their saved positions.

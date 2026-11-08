@@ -545,7 +545,8 @@ public static class TransferDocumentBuilder
                 [.. f.Options.Select(o => new TransferFieldOption(o.Id.Value, o.Label.Display, o.Order))], f.IsActive))],
             Defaults = new TransferDefaults(
                 w.Defaults.DefaultTaskStatusId.Value, w.Defaults.DefaultCrStatusId.Value, w.Defaults.DefaultPriorityId.Value,
-                w.Defaults.DefaultCrOwnerId?.Value, w.Defaults.CalendarSchedulingStatusId.Value, w.Defaults.CrBacklogStatusId.Value),
+                w.Defaults.DefaultCrOwnerId?.Value, w.Defaults.CalendarSchedulingStatusId.Value, w.Defaults.CrBacklogStatusId.Value,
+                w.Defaults.CopyIdFormat),
             Tasks = [.. taskList.Select(t => new TransferTask
             {
                 Id = t.Id.Value,

@@ -5,14 +5,17 @@ using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Dashboard;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 
 namespace MaxPlanner.Presentation.Dashboard;
 
 /// <summary>A Dashboard filter choice: "All squads", a configured value, or "General" (a null <see cref="Id"/> with <see cref="IsGeneral"/>).</summary>
-public sealed record DashboardOption(Guid? Id, string Label, bool IsGeneral = false)
+public sealed record DashboardOption(Guid? Id, string Label, bool IsGeneral = false, PriorityLevel? Level = null) : IPriorityChoice
 {
+    string IPriorityChoice.DisplayName => Label;
+
     public bool IsAll => Id is null && !IsGeneral;
 
     /// <summary>A person in the CR Owner filter (not "All owners"); its item shows the avatar.</summary>

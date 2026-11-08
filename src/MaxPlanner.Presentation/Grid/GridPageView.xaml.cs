@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
 using MaxPlanner.Domain.Fields;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Services;
@@ -1302,11 +1303,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private void ApplyBreakpoint(double width)
     {
-        // T-08.1 page padding: L 32/24, M 24/16, S 16/12 (design §2.3).
-        HeaderRoot.Padding = width >= 1008 ? new Thickness(32, 24, 32, 12) : width >= 640 ? new Thickness(24, 16, 24, 12) : new Thickness(16, 12, 16, 8);
-
-        // The header and the rows share one inset so every header sits above its column's cells.
-        var inset = width >= 1008 ? 32 : width >= 640 ? 24 : 16;
+        // T-08.1 page padding: L 32/24, M 24/16, S 16/12 (design §2.3). The header and the rows share one inset so
+        // every header sits above its column's cells.
+        var window = PagePadding.WindowWidth(this, width);
+        var inset = PagePadding.Side(window);
+        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= 640 ? 12 : 8);
         HeaderBorder.Padding = new Thickness(inset, 0, 0, 0);
         Table.Padding = new Thickness(inset, 0, 0, 0);
 
@@ -1424,9 +1425,14 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             Item("Board_MenuOpenCr", "Grid_RowMenuOpenCrItem", () => _ = ViewModel.OpenCrAsync(row));
         }
 
-        if (row.Model.Task is { } task)
+        if (row.Model.Task is not null)
         {
             Item("Board_MenuCopy", "Grid_RowMenuCopyItem", () => _ = ViewModel.CopyRowAsync(row));
+        }
+
+        Item("Board_MenuCopyId", "Grid_RowMenuCopyIdItem", () => ClipboardText.Set(ViewModel.CopyIdText(row)));
+        if (row.Model.Task is { } task)
+        {
 
             // B-03.6/B-05: Link to CR… is offered for every unlinked task, archived ones included.
             if (task.Cr.ChangeRequestId is null)

@@ -261,6 +261,7 @@ internal static class TransferTables
             yield return ["defaultCrOwnerId", G(d.DefaultCrOwnerId)];
             yield return ["calendarSchedulingStatusId", G(d.CalendarSchedulingStatusId)];
             yield return ["crBacklogStatusId", G(d.CrBacklogStatusId)];
+            yield return ["copyIdFormat", d.CopyIdFormat];
         }
     }
 
@@ -572,7 +573,8 @@ internal static class TransferTables
             && Parse(values, "defaultPriorityId") is { } priority && Parse(values, "calendarSchedulingStatusId") is { } scheduling
             && Parse(values, "crBacklogStatusId") is { } backlog)
         {
-            defaults = new TransferDefaults(taskStatus, crStatus, priority, Parse(values, "defaultCrOwnerId"), scheduling, backlog);
+            defaults = new TransferDefaults(taskStatus, crStatus, priority, Parse(values, "defaultCrOwnerId"), scheduling, backlog,
+                values.GetValueOrDefault("copyIdFormat"));
         }
 
         return new TransferDocument
