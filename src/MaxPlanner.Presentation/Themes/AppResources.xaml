@@ -91,6 +91,11 @@
             <StaticResource x:Key="BoardInsertionLineBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
+            <!-- Grid picker affordance (chevron or calendar in a choice cell): subtle square with an accent glyph on hover. -->
+            <StaticResource x:Key="GridAffordanceForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="GridAffordancePointerOverForegroundBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <StaticResource x:Key="GridAffordancePointerOverBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="GridAffordancePressedBackgroundBrush" ResourceKey="SubtleFillColorTertiaryBrush" />
             <!-- Person avatars: the per-person fill is set in code (PersonAvatarIdentity.Palette); these are the parts around it. -->
             <SolidColorBrush x:Key="PersonAvatarForegroundBrush" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="PersonAvatarBackgroundBrush" Color="Transparent" />
@@ -183,6 +188,11 @@
             <StaticResource x:Key="BoardInsertionLineBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemFillColorNeutralBackgroundBrush" />
+            <!-- Grid picker affordance (chevron or calendar in a choice cell): subtle square with an accent glyph on hover. -->
+            <StaticResource x:Key="GridAffordanceForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="GridAffordancePointerOverForegroundBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <StaticResource x:Key="GridAffordancePointerOverBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <StaticResource x:Key="GridAffordancePressedBackgroundBrush" ResourceKey="SubtleFillColorTertiaryBrush" />
             <!-- Person avatars: the per-person fill is set in code (PersonAvatarIdentity.Palette); these are the parts around it. -->
             <SolidColorBrush x:Key="PersonAvatarForegroundBrush" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="PersonAvatarBackgroundBrush" Color="Transparent" />
@@ -278,6 +288,10 @@
             <StaticResource x:Key="BoardInsertionLineBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <StaticResource x:Key="FlagChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="ArchivedChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="GridAffordanceForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="GridAffordancePointerOverForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="GridAffordancePointerOverBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="GridAffordancePressedBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <!-- Design §3 rule 3: no avatar palette in High Contrast; ButtonFace circles with ButtonText border and initials. -->
             <StaticResource x:Key="PersonAvatarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="PersonAvatarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
@@ -594,11 +608,33 @@
     <Style x:Key="GridCellSecondaryTextStyle" BasedOn="{StaticResource GridCellTextStyle}" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
     </Style>
-    <!-- The chevron or calendar glyph that makes a choice cell look like its ComboBox or date picker at rest. -->
+    <!--
+        The chevron or calendar of an editable choice cell (design §4.3): hidden at rest, shown in a 28-epx rounded
+        square while the pointer is over the cell or the cell has keyboard focus. Over the square itself it gets a
+        subtle fill and an accent glyph. GridCellContent swaps these styles in code.
+    -->
+    <Style x:Key="GridCellAffordanceStyle" TargetType="Border">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style x:Key="GridCellAffordancePointerOverStyle" BasedOn="{StaticResource GridCellAffordanceStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource GridAffordancePointerOverBackgroundBrush}" />
+    </Style>
+    <Style x:Key="GridCellAffordancePressedStyle" BasedOn="{StaticResource GridCellAffordanceStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource GridAffordancePressedBackgroundBrush}" />
+    </Style>
     <Style x:Key="GridCellAffordanceGlyphStyle" TargetType="FontIcon">
         <Setter Property="FontSize" Value="12" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Foreground" Value="{ThemeResource GridAffordanceForegroundBrush}" />
+    </Style>
+    <Style x:Key="GridCellAffordanceGlyphPointerOverStyle" BasedOn="{StaticResource GridCellAffordanceGlyphStyle}" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource GridAffordancePointerOverForegroundBrush}" />
     </Style>
     <!-- A transparent background makes the whole cell hit-testable, so one click anywhere in it reaches the cell. -->
     <Style x:Key="GridCellStyle" TargetType="ContentControl">

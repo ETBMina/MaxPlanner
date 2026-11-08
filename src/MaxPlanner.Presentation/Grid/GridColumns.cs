@@ -85,6 +85,14 @@ public enum GridEditorKind
     Custom,
 }
 
+/// <summary>The picker a choice cell looks like at rest (design §4.3): a drop-down chevron, a calendar, or none.</summary>
+public enum GridPickerKind
+{
+    None,
+    DropDown,
+    Calendar,
+}
+
 /// <summary>Sort state of a column header: Ascending → Descending → default (design §4.3).</summary>
 public enum GridSortDirection
 {
@@ -130,6 +138,19 @@ public sealed partial class GridColumnViewModel : ObservableObject
     /// <summary>Editors that open in a flyout (design §4.3: notes, people and tag pickers, multiline and list custom fields).</summary>
     public bool UsesFlyout => EditorKind is GridEditorKind.Notes or GridEditorKind.People or GridEditorKind.Tags
         || Field?.Kind is FieldKind.MultilineText or FieldKind.People or FieldKind.Tags;
+
+    /// <summary>
+    /// The picker affordance of the column's editable cells: Status, Priority, and Lookup fields open a drop-down;
+    /// Start, Due, and Date fields open a calendar.
+    /// </summary>
+    public GridPickerKind PickerKind => EditorKind switch
+    {
+        GridEditorKind.Status or GridEditorKind.Priority => GridPickerKind.DropDown,
+        GridEditorKind.Date => GridPickerKind.Calendar,
+        GridEditorKind.Custom when Field?.Kind == FieldKind.Lookup => GridPickerKind.DropDown,
+        GridEditorKind.Custom when Field?.Kind == FieldKind.Date => GridPickerKind.Calendar,
+        _ => GridPickerKind.None,
+    };
 
     [ObservableProperty]
     public partial string Header { get; set; }

@@ -51,6 +51,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private readonly List<GridHeaderCell> _headerCells = [];
     private readonly List<GridColumnViewModel> _headerColumns = [];
+    private readonly GridHoverTracker _hoverTracker;
     private List<GridColumnViewModel> _displayColumns = [];
     private bool _isSmall;
     private double _frozenOffset;
@@ -68,6 +69,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         Table.Host = this;
+        _hoverTracker = new GridHoverTracker(Table);
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();
         ((INotifyCollectionChanged)ViewModel.Rows).CollectionChanged += OnRowsChanged;
         SizeChanged += (_, e) =>
@@ -80,7 +82,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         };
 
         // Runs when the dataset closes and the view is dropped; a page switch only hides the view (OnHidden).
-        Unloaded += (_, _) => CellPopup.IsOpen = false;
+        Unloaded += (_, _) =>
+        {
+            CellPopup.IsOpen = false;
+            _hoverTracker.Clear();
+        };
         RefreshLayout();
     }
 
@@ -188,6 +194,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         _isShown = false;
         CellPopup.IsOpen = false;
+        _hoverTracker.Clear();
         if (_editorFlyout is { IsOpen: true } open && _editorFlyoutTarget is { } target)
         {
             _hiddenFlyoutTarget = target;
@@ -437,7 +444,12 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
         // The page owns both the list and its template scroller, so these handlers share the page's lifetime.
         _rowScroller = scroller;
-        scroller.ViewChanged += (_, _) => SyncRowScrollBar();
+        scroller.ViewChanged += (_, _) =>
+        {
+            // Rows move under a still pointer while scrolling; the hover returns on the next pointer move.
+            _hoverTracker.Clear();
+            SyncRowScrollBar();
+        };
         scroller.RegisterPropertyChangedCallback(ScrollViewer.ScrollableHeightProperty, (_, _) => SyncRowScrollBar());
         scroller.RegisterPropertyChangedCallback(ScrollViewer.ViewportHeightProperty, (_, _) => SyncRowScrollBar());
         HeaderBorder.SizeChanged += (_, args) => RowScrollBar.Margin = new Thickness(0, args.NewSize.Height, 0, 0);
@@ -497,6 +509,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private void OnHorizontalViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
+        _hoverTracker.Clear();
         var offset = IsFrozen ? HorizontalScroller.HorizontalOffset : 0;
         if (Math.Abs(offset - _frozenOffset) < 0.5)
         {

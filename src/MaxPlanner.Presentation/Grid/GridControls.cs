@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using MaxPlanner.Domain.Fields;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Services;
@@ -68,6 +67,9 @@ public sealed partial class GridCell : ContentControl
     public static readonly DependencyProperty ColumnProperty = DependencyProperty.Register(
         nameof(Column), typeof(string), typeof(GridCell), new PropertyMetadata(string.Empty));
 
+    private Border? _pickerAffordance;
+    private bool _isPointerOver;
+
     public GridCell()
     {
         IsTabStop = true;
@@ -78,6 +80,10 @@ public sealed partial class GridCell : ContentControl
 
         // The row container handles pointer input for focus, so listen even when it marked the tap handled.
         AddHandler(TappedEvent, new TappedEventHandler((_, _) => Host?.OnCellTapped(this)), handledEventsToo: true);
+
+        // A recycled or unloaded cell starts without hover; the page's tracker marks it again on the next pointer move.
+        DataContextChanged += (_, _) => SetPointerOver(false);
+        Unloaded += (_, _) => SetPointerOver(false);
     }
 
     /// <summary>The column key (<see cref="GridColumns"/>).</summary>
@@ -124,6 +130,56 @@ public sealed partial class GridCell : ContentControl
     {
         Host?.OnCellDoubleTapped(this);
         e.Handled = true;
+    }
+
+    protected override void OnContentChanged(object oldContent, object newContent)
+    {
+        base.OnContentChanged(oldContent, newContent);
+        _pickerAffordance = GridCellContent.FindPickerAffordance(newContent as FrameworkElement);
+        UpdatePickerAffordance();
+    }
+
+    protected override void OnGotFocus(RoutedEventArgs e)
+    {
+        base.OnGotFocus(e);
+        UpdatePickerAffordance();
+    }
+
+    protected override void OnLostFocus(RoutedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        UpdatePickerAffordance();
+    }
+
+    /// <summary>Whether the page's hover tracker currently marks this cell as the one under the pointer.</summary>
+    internal bool IsPointerOverCell => _isPointerOver;
+
+    /// <summary>
+    /// Set only by the page's single hover tracker, so at most one cell is hovered at a time; per-cell pointer exit
+    /// events are not relied on.
+    /// </summary>
+    internal void SetPointerOver(bool isPointerOver)
+    {
+        if (_isPointerOver != isPointerOver)
+        {
+            _isPointerOver = isPointerOver;
+            UpdatePickerAffordance();
+        }
+    }
+
+    private void UpdatePickerAffordance()
+    {
+        if (_pickerAffordance is not { } affordance)
+        {
+            return;
+        }
+
+        affordance.Opacity = GridCellContent.IsPickerAffordanceShown(_isPointerOver, FocusState) ? 1 : 0;
+        if (!_isPointerOver)
+        {
+            // The square's own pointer-over or pressed look never outlives the cell's hover.
+            GridCellContent.ResetPickerAffordance(affordance);
+        }
     }
 }
 
@@ -424,6 +480,12 @@ internal static class GridCellContent
 
     private const string ChevronDownGlyph = "";
     private const string CalendarGlyph = "";
+    private const string PickerAffordanceTag = "GridPickerAffordance";
+    private const string AffordanceStyle = "GridCellAffordanceStyle";
+    private const string AffordancePointerOverStyle = "GridCellAffordancePointerOverStyle";
+    private const string AffordancePressedStyle = "GridCellAffordancePressedStyle";
+    private const string AffordanceGlyphStyle = "GridCellAffordanceGlyphStyle";
+    private const string AffordanceGlyphPointerOverStyle = "GridCellAffordanceGlyphPointerOverStyle";
 
     private static Style CellText => (Style)Microsoft.UI.Xaml.Application.Current.Resources["GridCellTextStyle"];
 
@@ -466,33 +528,90 @@ internal static class GridCellContent
     }
 
     /// <summary>
-    /// The glyph that makes a cell look like its ComboBox (chevron) or date picker (calendar) at rest, or null for
-    /// other columns. A look-alike display is used instead of a real control per row to keep virtualization cheap (T-08).
+    /// The glyph that makes a cell look like its ComboBox (chevron) or date picker (calendar), or null for other
+    /// columns. A look-alike display is used instead of a real control per row to keep virtualization cheap (T-08).
     /// </summary>
-    private static string? PickerGlyph(GridColumnViewModel column) => column.EditorKind switch
+    private static string? PickerGlyph(GridColumnViewModel column) => column.PickerKind switch
     {
-        GridEditorKind.Status or GridEditorKind.Priority => ChevronDownGlyph,
-        GridEditorKind.Date => CalendarGlyph,
-        GridEditorKind.Custom when column.Field?.Kind == FieldKind.Lookup => ChevronDownGlyph,
-        GridEditorKind.Custom when column.Field?.Kind == FieldKind.Date => CalendarGlyph,
+        GridPickerKind.DropDown => ChevronDownGlyph,
+        GridPickerKind.Calendar => CalendarGlyph,
         _ => null,
     };
 
     /// <summary>Whether one tap opens the column's editor: a drop-down, a calendar, or a flyout (the caller checks editability).</summary>
-    public static bool OpensOnTap(GridColumnViewModel column) => column.UsesFlyout || PickerGlyph(column) is not null;
+    public static bool OpensOnTap(GridColumnViewModel column) => column.UsesFlyout || column.PickerKind != GridPickerKind.None;
 
+    /// <summary>
+    /// Whether a choice cell shows its picker affordance: while the pointer is over it, or while it has keyboard
+    /// focus, so keyboard users get the same cue (hover is never the only one). Pointer and programmatic focus (the
+    /// page refocusing a cell after a flyout) do not count, so glyphs never stay on cells the user is not at.
+    /// </summary>
+    public static bool IsPickerAffordanceShown(bool isPointerOver, FocusState focusState) =>
+        isPointerOver || focusState == FocusState.Keyboard;
+
+    /// <summary>The picker affordance square inside a display built by <see cref="CreateDisplay"/>, or null.</summary>
+    public static Border? FindPickerAffordance(FrameworkElement? content)
+    {
+        if (content is Border { Tag: PickerAffordanceTag } affordance)
+        {
+            return affordance;
+        }
+
+        if (content is WinGrid grid)
+        {
+            foreach (var child in grid.Children)
+            {
+                if (FindPickerAffordance(child as FrameworkElement) is { } found)
+                {
+                    return found;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The value with a reserved 28-epx affordance column, so showing the glyph never moves or re-trims the text.
+    /// The square starts hidden (the cell shows it, see <see cref="GridCell"/>) and tracks its own pointer-over and
+    /// pressed looks; it never handles input, so a click or tap still reaches the cell and opens the editor.
+    /// </summary>
     private static WinGrid PickerCell(TextBlock text, string glyph)
     {
-        var grid = new WinGrid { ColumnSpacing = 8 };
+        var grid = new WinGrid { ColumnSpacing = 4 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var icon = new FontIcon { Glyph = glyph, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["GridCellAffordanceGlyphStyle"] };
+        var icon = new FontIcon { Glyph = glyph, Style = Resource<Style>(AffordanceGlyphStyle) };
+        var affordance = new Border { Tag = PickerAffordanceTag, Opacity = 0, Style = Resource<Style>(AffordanceStyle), Child = icon };
+        AutomationProperties.SetAccessibilityView(affordance, AccessibilityView.Raw);
         AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
-        WinGrid.SetColumn(icon, 1);
+        affordance.PointerEntered += (_, _) => SetAffordanceLook(affordance, AffordancePointerOverStyle, isAccent: true);
+        affordance.PointerPressed += (_, _) => SetAffordanceLook(affordance, AffordancePressedStyle, isAccent: true);
+        affordance.PointerReleased += (_, _) => SetAffordanceLook(affordance, AffordancePointerOverStyle, isAccent: true);
+        affordance.PointerExited += (_, _) => ResetPickerAffordance(affordance);
+        affordance.PointerCanceled += (_, _) => ResetPickerAffordance(affordance);
+        affordance.PointerCaptureLost += (_, _) => ResetPickerAffordance(affordance);
+        WinGrid.SetColumn(affordance, 1);
         grid.Children.Add(text);
-        grid.Children.Add(icon);
+        grid.Children.Add(affordance);
         return grid;
     }
+
+    /// <summary>Puts the affordance square back to its rest look (no fill, secondary glyph).</summary>
+    public static void ResetPickerAffordance(Border affordance) => SetAffordanceLook(affordance, AffordanceStyle, isAccent: false);
+
+    // Styles, not brushes, are swapped: a style's ThemeResource setters resolve per element, so the looks follow
+    // the window's Light/Dark choice and High Contrast.
+    private static void SetAffordanceLook(Border affordance, string styleKey, bool isAccent)
+    {
+        affordance.Style = Resource<Style>(styleKey);
+        if (affordance.Child is FontIcon icon)
+        {
+            icon.Style = Resource<Style>(isAccent ? AffordanceGlyphPointerOverStyle : AffordanceGlyphStyle);
+        }
+    }
+
+    private static T Resource<T>(string key) => (T)Microsoft.UI.Xaml.Application.Current.Resources[key];
 
     /// <summary>
     /// Owner, Designer, Developer, and People fields: one avatar, or an overlapping stack for several people, before
