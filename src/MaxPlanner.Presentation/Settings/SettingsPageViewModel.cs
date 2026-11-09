@@ -73,6 +73,20 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     [ObservableProperty]
     public partial int ThemeIndex { get; set; }
 
+    /// <summary>Show tags on Board cards (design §4.6): a UI preference that applies to every open Board card at once.</summary>
+    public bool ShowBoardCardTags
+    {
+        get => _context.ShowBoardCardTags;
+        set
+        {
+            if (value != _context.ShowBoardCardTags)
+            {
+                _context.ShowBoardCardTags = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public LookupSectionViewModel TaskStatuses { get; }
 
     public LookupSectionViewModel CrStatuses { get; }

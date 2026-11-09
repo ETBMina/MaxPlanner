@@ -98,6 +98,20 @@ public sealed class ReadModelComposerTests
         act.Should().Throw<ArgumentException>();
     }
 
+    [Fact]
+    [Trait("Req", "B-07")]
+    public void A_subtask_card_carries_its_parents_tags_with_their_current_names()
+    {
+        var task = Unlinked().UpdateContent(
+            new TaskContent(TitleText.Create("Card freeze").Value, null, null, null, [Mobile.Id], null, CustomValue.NoValues), Now).Value;
+        var card = SubtaskCard.Create(new SubtaskCardId(Guid.NewGuid()), task.Id, SubtitleText.Create("Copy fix").Value, null, Backlog,
+            DateIntent.Unchanged, DateIntent.Unchanged, 1, Today, Now).Value;
+
+        var model = _composer.ComposeSubtaskCard(card, task, null, SeedWorkflow);
+
+        model.ParentTags.Should().Equal(new LookupRef<TagId>(Mobile.Id, "Mobile"));
+    }
+
     private static TaskItem Unlinked() =>
         TaskItem.Create(new TaskId(Guid.NewGuid()),
             new TaskContent(TitleText.Create("Card freeze").Value, ServiceText.CreateOptional("Mobile Banking").Value, null, null, [], null, CustomValue.NoValues),

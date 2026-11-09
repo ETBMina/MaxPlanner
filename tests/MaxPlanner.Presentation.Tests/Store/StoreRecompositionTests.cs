@@ -160,6 +160,22 @@ public sealed class StoreRecompositionTests
     }
 
     [Fact]
+    [Trait("Req", "B-07")]
+    public void A_parent_tag_edit_recomposes_its_subtask_cards_parent_tags()
+    {
+        var task = Task();
+        var card = Card(task);
+        using var h = new StoreHarness().StartWith(Snapshot(1, [task], [card]));
+        h.Card(card.Id).ParentTags.Should().BeEmpty();
+        var tag = new MaxPlanner.Domain.Identifiers.TagId(Guid.NewGuid());
+        var content = new MaxPlanner.Domain.Tasks.TaskContent(task.OwnTitle, task.Service, null, null, [tag], null, MaxPlanner.Domain.Fields.CustomValue.NoValues);
+
+        h.Publish(Change(2) with { UpsertedTasks = [task.UpdateContent(content, Now).Value] });
+
+        h.Card(card.Id).ParentTags.Select(t => t.Id).Should().Equal(tag);
+    }
+
+    [Fact]
     [Trait("Req", "AC-17")]
     public void Each_change_set_raises_exactly_one_commit_after_every_cache_is_updated()
     {

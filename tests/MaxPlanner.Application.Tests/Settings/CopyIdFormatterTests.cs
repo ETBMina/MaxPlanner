@@ -71,7 +71,7 @@ public sealed class CopyIdFormatterTests
         var cr = new InheritedCrValues(new ChangeRequestId(Guid.NewGuid()), "CR-1067", "INT-7541", new SquadId(Guid.NewGuid()), "Retail Cards", null, null);
         var status = new LookupRef<TaskStatusId>(new TaskStatusId(Guid.NewGuid()), "Backlog");
         var card = new SubtaskCardReadModel(
-            new SubtaskCardId(Guid.NewGuid()), BoardCardKind.SubtaskCard, new TaskId(Guid.NewGuid()), "Subtitle", "Parent title", "Cards API",
+            new SubtaskCardId(Guid.NewGuid()), BoardCardKind.SubtaskCard, new TaskId(Guid.NewGuid()), "Subtitle", "Parent title", "Cards API", [],
             false, status, 0, false, cr, null, null, null, 0, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch, 1);
 
         var values = CopyIdValues.From(card);
@@ -86,7 +86,7 @@ public sealed class CopyIdFormatterTests
         var cr = new InheritedCrValues(null, null, null, null, "General", null, null);
         var status = new LookupRef<TaskStatusId>(new TaskStatusId(Guid.NewGuid()), "Backlog");
         var card = new SubtaskCardReadModel(
-            new SubtaskCardId(Guid.NewGuid()), BoardCardKind.SubtaskCard, new TaskId(Guid.NewGuid()), "Subtitle", "Parent", null,
+            new SubtaskCardId(Guid.NewGuid()), BoardCardKind.SubtaskCard, new TaskId(Guid.NewGuid()), "Subtitle", "Parent", null, [],
             false, status, 0, false, cr, null, null, null, 0, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch, 1);
 
         CopyIdValues.From(card).Squad.Should().BeNull();

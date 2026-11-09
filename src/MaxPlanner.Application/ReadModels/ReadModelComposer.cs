@@ -52,7 +52,7 @@ public sealed class ReadModelComposer
             Inherit(linkedCr, workflow),
             Person(task.DesignerId, workflow),
             Person(task.DeveloperId, workflow),
-            [.. task.TagIds.Select(id => new LookupRef<TagId>(id, workflow.FindTag(id)?.Name.Display ?? string.Empty))],
+            Tags(task, workflow),
             task.Notes?.Value,
             task.Dates.Start,
             task.Dates.End,
@@ -91,6 +91,7 @@ public sealed class ReadModelComposer
             card.Subtitle.Value,
             InheritancePolicy.EffectiveTitle(parent.OwnTitle, parentCr?.Title).Value,
             parent.Service?.Value,
+            Tags(parent, workflow),
             parent.IsArchived,
             new LookupRef<TaskStatusId>(card.StatusId, status?.Name.Display ?? string.Empty),
             status?.Order ?? 0,
@@ -150,6 +151,9 @@ public sealed class ReadModelComposer
             throw new ArgumentException("The CR passed is not the one the task is linked to.", nameof(linkedCr));
         }
     }
+
+    private static LookupRef<TagId>[] Tags(TaskItem task, WorkflowSnapshot workflow) =>
+        [.. task.TagIds.Select(id => new LookupRef<TagId>(id, workflow.FindTag(id)?.Name.Display ?? string.Empty))];
 
     private static LookupRef<PersonId>? Person(PersonId? id, WorkflowSnapshot workflow) =>
         id is { } person ? new LookupRef<PersonId>(person, workflow.FindPerson(person)?.Name.Display ?? string.Empty) : null;

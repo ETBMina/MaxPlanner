@@ -497,11 +497,31 @@
   <data name="Board_NoChecklistItems" xml:space="preserve">
     <value>No checklist items</value>
   </data>
-  <data name="Board_SubtaskCardCount" xml:space="preserve">
-    <value>{0} Subtask cards</value>
+  <data name="Board_ChecklistCount" xml:space="preserve">
+    <value>{0}/{1}</value>
+    <comment>Board card checklist count beside the glyph. {0} = done, {1} = total.</comment>
   </data>
-  <data name="Board_SubtaskCardCountOne" xml:space="preserve">
-    <value>1 Subtask card</value>
+  <data name="Board_NoChecklist" xml:space="preserve">
+    <value>No checklist</value>
+    <comment>Board card checklist row when the task has no checklist items.</comment>
+  </data>
+  <data name="Board_CopyIdChipName" xml:space="preserve">
+    <value>Copy ID for Task {0}</value>
+    <comment>Board card Task chip accessible name and tooltip. {0} = task number.</comment>
+  </data>
+  <data name="Board_TagSeparator" xml:space="preserve">
+    <value>, </value>
+    <comment>Joins tag names in the Board card tag strip tooltip and accessible name.</comment>
+  </data>
+  <data name="Board_CardNameWithTags" xml:space="preserve">
+    <value>{0}, Tags: {1}</value>
+    <comment>Board card accessible name while its tag strip shows. {0} = the card summary, {1} = the tag names.</comment>
+  </data>
+  <data name="Board_SubtaskGlyph.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Subtask card</value>
+  </data>
+  <data name="Board_SubtaskGlyph.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Subtask card</value>
   </data>
   <data name="Board_DatesStarted" xml:space="preserve">
     <value>Started {0}</value>
@@ -2215,6 +2235,15 @@
   </data>
   <data name="Settings_ThemeCombo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>App theme</value>
+  </data>
+  <data name="Settings_BoardTagsCard.Header" xml:space="preserve">
+    <value>Show tags on Board cards</value>
+  </data>
+  <data name="Settings_BoardTagsCard.Description" xml:space="preserve">
+    <value>Shows a task's tags in a strip at the top of its Board card and its Subtask cards. Applies immediately.</value>
+  </data>
+  <data name="Settings_BoardTagsToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Show tags on Board cards</value>
   </data>
   <data name="Settings_ThemeSystem" xml:space="preserve">
     <value>Use system setting</value>

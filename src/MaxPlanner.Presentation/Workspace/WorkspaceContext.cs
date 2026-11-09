@@ -170,6 +170,26 @@ public sealed partial class WorkspaceContext : ObservableObject
     /// <summary>UI preferences (T-09): Grid layout and sort, archive visibility. In memory when no store is given (tests).</summary>
     public IUiPreferencesStore Preferences { get; }
 
+    /// <summary>
+    /// Settings › Appearance › Show tags on Board cards (design §4.2, §4.6): on unless the user turned it off. A UI
+    /// preference, so it is saved in the preferences file and never exported (ADR 0026). Setting it saves it, and the
+    /// change notification reaches every open Board card at once.
+    /// </summary>
+    public bool ShowBoardCardTags
+    {
+        get => Preferences.Current.ShowBoardCardTags ?? true;
+        set
+        {
+            if (value == ShowBoardCardTags)
+            {
+                return;
+            }
+
+            Preferences.Update(p => p with { ShowBoardCardTags = value });
+            OnPropertyChanged();
+        }
+    }
+
     /// <summary>The task and Subtask card commands shared by the Board, Grid, Checklists, and the editors.</summary>
     public TaskCommands Tasks => _tasks ??= new TaskCommands(this);
 

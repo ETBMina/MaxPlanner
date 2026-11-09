@@ -26,6 +26,22 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <!-- Board cards (design §4.2): the priority edge and glyph by configured rank, the CR/Task chips, and the neutral chips. -->
+            <StaticResource x:Key="BoardPriorityLevel1Brush" ResourceKey="SystemFillColorCriticalBrush" />
+            <StaticResource x:Key="BoardPriorityLevel2Brush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="BoardPriorityMidBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="BoardPriorityLowestBrush" ResourceKey="TextFillColorTertiaryBrush" />
+            <!-- The lowest-priority glyph carries meaning, so it keeps text contrast; only the decorative edge is tertiary. -->
+            <StaticResource x:Key="BoardPriorityLowestGlyphBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="IdChipForegroundBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <StaticResource x:Key="IdChipStrokeBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <StaticResource x:Key="IdChipHoverStrokeBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <x:Double x:Key="IdChipHoverOverlayOpacity">0.07</x:Double>
+            <x:Double x:Key="IdChipPressedOverlayOpacity">0.12</x:Double>
+            <StaticResource x:Key="NeutralChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="NeutralChipStrokeBrush" ResourceKey="CardStrokeColorDefaultBrush" />
+            <StaticResource x:Key="NeutralChipForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="NeutralChipIconBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
             <!-- Filter range picker (design §2.6): the accent band and its light/strong end squares. -->
             <SolidColorBrush x:Key="FilterRangeBandBrush" Color="{ThemeResource SystemAccentColorLight3}" />
             <StaticResource x:Key="FilterRangeBandForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
@@ -123,6 +139,22 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <!-- Board cards (design §4.2): the priority edge and glyph by configured rank, the CR/Task chips, and the neutral chips. -->
+            <StaticResource x:Key="BoardPriorityLevel1Brush" ResourceKey="SystemFillColorCriticalBrush" />
+            <StaticResource x:Key="BoardPriorityLevel2Brush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="BoardPriorityMidBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="BoardPriorityLowestBrush" ResourceKey="TextFillColorTertiaryBrush" />
+            <!-- The lowest-priority glyph carries meaning, so it keeps text contrast; only the decorative edge is tertiary. -->
+            <StaticResource x:Key="BoardPriorityLowestGlyphBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="IdChipForegroundBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <StaticResource x:Key="IdChipStrokeBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <StaticResource x:Key="IdChipHoverStrokeBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <x:Double x:Key="IdChipHoverOverlayOpacity">0.07</x:Double>
+            <x:Double x:Key="IdChipPressedOverlayOpacity">0.12</x:Double>
+            <StaticResource x:Key="NeutralChipBackgroundBrush" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="NeutralChipStrokeBrush" ResourceKey="CardStrokeColorDefaultBrush" />
+            <StaticResource x:Key="NeutralChipForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="NeutralChipIconBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
             <!-- Filter range picker (design §2.6): a dark accent band with light end squares. -->
             <SolidColorBrush x:Key="FilterRangeBandBrush" Color="{ThemeResource SystemAccentColorDark2}" />
             <StaticResource x:Key="FilterRangeBandForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
@@ -222,6 +254,21 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <!-- Board cards: no priority colors in High Contrast; the glyph carries the level. Chips are links (HotLight) and ButtonFace chips. -->
+            <StaticResource x:Key="BoardPriorityLevel1Brush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="BoardPriorityLevel2Brush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="BoardPriorityMidBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="BoardPriorityLowestBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="BoardPriorityLowestGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="IdChipForegroundBrush" ResourceKey="SystemColorHotlightColorBrush" />
+            <StaticResource x:Key="IdChipStrokeBrush" ResourceKey="SystemColorHotlightColorBrush" />
+            <StaticResource x:Key="IdChipHoverStrokeBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <x:Double x:Key="IdChipHoverOverlayOpacity">0</x:Double>
+            <x:Double x:Key="IdChipPressedOverlayOpacity">0</x:Double>
+            <StaticResource x:Key="NeutralChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
+            <StaticResource x:Key="NeutralChipStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="NeutralChipForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="NeutralChipIconBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <!-- Filter range picker: Highlight band with HighlightText; ButtonFace end squares with ButtonText. -->
             <StaticResource x:Key="FilterRangeBandBrush" ResourceKey="SystemColorHighlightColorBrush" />
             <StaticResource x:Key="FilterRangeBandForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
@@ -567,6 +614,143 @@
     <Style x:Key="TagPillButtonStyle9" BasedOn="{StaticResource TagPillButtonStyle}" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource TagPillFill9}" />
         <Setter Property="Foreground" Value="{ThemeResource TagPillForeground9}" />
+    </Style>
+
+    <!--
+        Board cards (design §4.2, owner redesign "H1 · Pill strip"). The 3-epx left edge and the ID-row glyph use the
+        priority color by configured rank; a Subtask card's edge is the Subtask accent. Picked by BoardPageView.
+    -->
+    <Style x:Key="BoardPriorityLevel1EdgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource BoardPriorityLevel1Brush}" />
+    </Style>
+    <Style x:Key="BoardPriorityLevel2EdgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource BoardPriorityLevel2Brush}" />
+    </Style>
+    <Style x:Key="BoardPriorityMidEdgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource BoardPriorityMidBrush}" />
+    </Style>
+    <Style x:Key="BoardPriorityLowestEdgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource BoardPriorityLowestBrush}" />
+    </Style>
+    <Style x:Key="BoardSubtaskEdgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource SubtaskCardAccentBrush}" />
+    </Style>
+    <Style x:Key="BoardPriorityLevel1GlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource BoardPriorityLevel1Brush}" />
+    </Style>
+    <Style x:Key="BoardPriorityLevel2GlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource BoardPriorityLevel2Brush}" />
+    </Style>
+    <Style x:Key="BoardPriorityMidGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource BoardPriorityMidBrush}" />
+    </Style>
+    <Style x:Key="BoardPriorityLowestGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource BoardPriorityLowestGlyphBrush}" />
+    </Style>
+    <!-- The tag strip: a narrow band in the secondary card fill with a 1-px divider below; its top-right corner follows the card. -->
+    <Style x:Key="BoardTagStripStyle" TargetType="Grid">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Padding" Value="8,0,2,0" />
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="CornerRadius" Value="0,7,0,0" />
+    </Style>
+    <!-- The card ⋯ button: icon only, transparent, not a tab stop (the card menu has its own keys, design §7.3). -->
+    <Style x:Key="BoardCardMenuButtonStyle" BasedOn="{StaticResource DefaultButtonStyle}" TargetType="Button">
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="IsTabStop" Value="False" />
+    </Style>
+    <!-- Neutral chips (Service, Squad): secondary fill, 1-px card stroke, secondary text. -->
+    <Style x:Key="NeutralChipStyle" BasedOn="{StaticResource ChipBorderStyle}" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource NeutralChipBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource NeutralChipStrokeBrush}" />
+    </Style>
+    <Style x:Key="NeutralChipTextStyle" BasedOn="{StaticResource ChipTextStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource NeutralChipForegroundBrush}" />
+    </Style>
+    <!--
+        The CR and Task chips: buttons that are not tab stops (the card is the focusable item; the card menu has Open CR
+        and Copy ID). 4-epx corners, a 1-px accent stroke, transparent fill, accent caption text; hover and press add an
+        overlay in the text color, and High Contrast uses HotLight with a Highlight stroke on hover.
+    -->
+    <Style x:Key="IdChipButtonStyle" TargetType="Button">
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="MinHeight" Value="20" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource IdChipForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource IdChipStrokeBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid
+                        x:Name="Root"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Overlay.Opacity" Value="{ThemeResource IdChipHoverOverlayOpacity}" />
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource IdChipHoverStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Overlay.Opacity" Value="{ThemeResource IdChipPressedOverlayOpacity}" />
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource IdChipHoverStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Border
+                            x:Name="Overlay"
+                            Background="{TemplateBinding Foreground}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0" />
+                        <ContentPresenter
+                            x:Name="ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="IdChipTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="MaxLines" Value="1" />
+    </Style>
+    <!-- The checklist count and bar turn the success color when every item is done (with the double-check glyph). -->
+    <Style x:Key="BoardChecklistTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="BoardChecklistCompleteTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource CompletedGlyphBrush}" />
+    </Style>
+    <Style x:Key="BoardChecklistCompleteGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource CompletedGlyphBrush}" />
+    </Style>
+    <Style x:Key="BoardChecklistCompleteBarStyle" BasedOn="{StaticResource DefaultProgressBarStyle}" TargetType="ProgressBar">
+        <Setter Property="Foreground" Value="{ThemeResource CompletedGlyphBrush}" />
     </Style>
 
     <!-- Card surfaces (design §3): card fill with a 1-px stroke; nested surfaces use the secondary fill. -->

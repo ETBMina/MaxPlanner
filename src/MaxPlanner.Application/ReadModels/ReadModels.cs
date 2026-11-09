@@ -59,6 +59,7 @@ public sealed record TaskReadModel(
     long Revision);
 
 /// <summary>A Subtask card with the parent's title and service and the CR values inherited through the parent (B-16.2).</summary>
+/// <param name="ParentTags">The parent task's Tags in tag order; the Board card's tag strip shows them (design §4.2).</param>
 public sealed record SubtaskCardReadModel(
     SubtaskCardId Id,
     BoardCardKind Kind,
@@ -66,6 +67,7 @@ public sealed record SubtaskCardReadModel(
     string Subtitle,
     string ParentTitle,
     string? ParentService,
+    IReadOnlyList<LookupRef<TagId>> ParentTags,
     bool IsParentArchived,
     LookupRef<TaskStatusId> Status,
     int StatusOrder,

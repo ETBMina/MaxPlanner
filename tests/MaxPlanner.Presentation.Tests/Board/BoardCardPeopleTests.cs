@@ -90,7 +90,7 @@ public sealed class BoardCardPeopleTests
     public void A_subtask_card_lists_only_the_inherited_cr_owner()
     {
         var card = new SubtaskCardReadModel(
-            new SubtaskCardId(Guid.NewGuid()), BoardCardKind.SubtaskCard, new TaskId(Guid.NewGuid()), "Rollout", "Card freeze", null, false,
+            new SubtaskCardId(Guid.NewGuid()), BoardCardKind.SubtaskCard, new TaskId(Guid.NewGuid()), "Rollout", "Card freeze", null, [], false,
             Status, 0, false, Cr(Mina), null, null, null, 1000, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch, 1);
 
         BoardCardPerson.From(WorkItemRecord.From(card), Strings)

@@ -51,7 +51,7 @@ public sealed partial class BoardBucketViewModel : ObservableObject, IDisposable
             WorkItemRecord.Connect(context.Store),
             context.Store.Scheduler,
             context.UiScheduler,
-            record => new BoardCardViewModel(record, context.Strings, priorityLevel),
+            record => new BoardCardViewModel(record, context.Strings, priorityLevel, () => context.ShowBoardCardTags),
             RankOrder.Instance,
             Predicate(filter));
         _view.Initialized += (_, _) => Initialized?.Invoke(this, EventArgs.Empty);
@@ -183,11 +183,15 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private readonly ObservableCollection<BoardBucketViewModel> _buckets = [];
     private readonly IDisposable _workflowSubscription;
     private readonly IDisposable _commits;
+    private readonly Action<string> _copyText;
     private Dictionary<PriorityId, PriorityLevel> _priorityLevels = [];
 
-    public BoardPageViewModel(WorkspaceContext context)
+    /// <param name="copyText">Puts text on the clipboard; tests pass a recorder.</param>
+    public BoardPageViewModel(WorkspaceContext context, Action<string>? copyText = null)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _copyText = copyText ?? ClipboardText.Set;
+        _context.PropertyChanged += OnContextPropertyChanged;
         Buckets = new ReadOnlyObservableCollection<BoardBucketViewModel>(_buckets);
         Filters = context.TaskFilters;
         Filters.Changed += OnFiltersChanged;
@@ -322,12 +326,15 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     /// <summary>Accent New task (default status) or a bucket's + (that status, B-02.1).</summary>
     public Task NewTaskAsync(BoardBucketViewModel? bucket = null) => _context.Tasks.NewAsync(bucket?.StatusId);
 
-    /// <summary>Card ⋯ › Copy ID (design §4.2): the card's ID text from the Settings › Defaults format.</summary>
+    /// <summary>The card's ID text from the Settings › Defaults Copy ID format (design §4.2, §4.6).</summary>
     public string CopyIdText(BoardCardViewModel card)
     {
         ArgumentNullException.ThrowIfNull(card);
         return CopyIdFormatter.Apply(_context.Store.CurrentWorkflow?.Defaults.CopyIdFormat, card.Model.CopyIdValues);
     }
+
+    /// <summary>Card ⋯ › Copy ID and the card's Task chip (design §4.2): copies the ID text, with no confirmation.</summary>
+    public void CopyId(BoardCardViewModel card) => _copyText(CopyIdText(card));
 
     public Task CopyAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
 
@@ -348,6 +355,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     public void Dispose()
     {
         Filters.Changed -= OnFiltersChanged;
+        _context.PropertyChanged -= OnContextPropertyChanged;
         _commits.Dispose();
         _workflowSubscription.Dispose();
         foreach (var bucket in _buckets)
@@ -370,6 +378,20 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private bool CanGoPrevious() => SelectedBucket is { } c && _buckets.IndexOf(c) > 0;
 
     private bool CanGoNext() => SelectedBucket is { } c && _buckets.IndexOf(c) < _buckets.Count - 1;
+
+    // Settings › Appearance › Show tags on Board cards applies at once to every open card (design §4.6).
+    private void OnContextPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(WorkspaceContext.ShowBoardCardTags))
+        {
+            return;
+        }
+
+        foreach (var card in _buckets.SelectMany(b => b.Cards))
+        {
+            card.OnShowTagsChanged();
+        }
+    }
 
     private void OnFiltersChanged(object? sender, EventArgs e)
     {

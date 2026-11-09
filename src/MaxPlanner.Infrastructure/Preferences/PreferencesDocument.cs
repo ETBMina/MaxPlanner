@@ -22,6 +22,8 @@ internal sealed class PreferencesDocument
     public string? CalendarMode { get; set; }
 
     public bool? ShowArchivedTasks { get; set; }
+
+    public bool? ShowBoardCardTags { get; set; }
 }
 
 internal sealed class RectDocument

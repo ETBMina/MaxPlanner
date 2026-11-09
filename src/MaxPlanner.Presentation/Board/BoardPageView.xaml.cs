@@ -91,6 +91,30 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
     public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
 
+    /// <summary>
+    /// The card's 3-epx left edge (design §4.2): the priority color by configured rank for a task, the Subtask accent for a
+    /// Subtask card. Styles use theme resources, so they follow theme changes.
+    /// </summary>
+    public static Style CardEdgeStyle(bool isTask, PriorityLevel level) => Resource(isTask ? "BoardPriority" + LevelKey(level) + "EdgeStyle" : "BoardSubtaskEdgeStyle");
+
+    /// <summary>The ID-row priority glyph in the priority color (design §4.2 item 3).</summary>
+    public static Style PriorityGlyphStyle(PriorityLevel level) => Resource("BoardPriority" + LevelKey(level) + "GlyphStyle");
+
+    /// <summary>The checklist count and bar use the success color once every item is done (with the double-check glyph).</summary>
+    public static Style ChecklistTextStyle(bool isComplete) => Resource(isComplete ? "BoardChecklistCompleteTextStyle" : "BoardChecklistTextStyle");
+
+    public static Style ChecklistBarStyle(bool isComplete) => Resource(isComplete ? "BoardChecklistCompleteBarStyle" : "DefaultProgressBarStyle");
+
+    private static string LevelKey(PriorityLevel level) => level switch
+    {
+        PriorityLevel.Level1 => "Level1",
+        PriorityLevel.Level2 => "Level2",
+        PriorityLevel.Lowest => "Lowest",
+        _ => "Mid",
+    };
+
+    private static Style Resource(string key) => (Style)Microsoft.UI.Xaml.Application.Current.Resources[key];
+
     /// <summary>Design §4.2: 60% opacity while the card is being moved; the "Moving" caption says it in text.</summary>
     public static double MovingOpacity(bool isMoving) => isMoving ? 0.6 : 1.0;
 
@@ -339,7 +363,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             menu.Items.Add(Item("Board_MenuCopy", "Board_MenuCopyItem", "", () => _ = ViewModel.CopyAsync(card)));
         }
 
-        menu.Items.Add(Item("Board_MenuCopyId", "Board_MenuCopyIdItem", "", () => ClipboardText.Set(ViewModel.CopyIdText(card))));
+        menu.Items.Add(Item("Board_MenuCopyId", "Board_MenuCopyIdItem", "", () => ViewModel.CopyId(card)));
         if (card.IsTask)
         {
             menu.Items.Add(Item("Board_MenuAddSubtaskCard", "Board_MenuAddSubtaskCardItem", "", () => _ = ViewModel.AddSubtaskCardAsync(card)));
@@ -356,6 +380,16 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
         {
             _ = ViewModel.OpenCrAsync(card);
+        }
+    }
+
+    // The Task chip copies the card's ID like the menu's Copy ID (design §4.2 item 3). The chip handles the press, so the
+    // card neither opens nor starts a drag.
+    private void OnCardTaskChipClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
+        {
+            ViewModel.CopyId(card);
         }
     }
 

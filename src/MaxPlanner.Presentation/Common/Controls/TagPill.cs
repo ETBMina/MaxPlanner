@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -34,32 +35,40 @@ public static class TagPill
     internal static Style Resource(string key) => (Style)Microsoft.UI.Xaml.Application.Current.Resources[key];
 }
 
+/// <summary>A tag as a <see cref="TagPillStrip"/> shows it; bound from item ViewModels such as Board cards.</summary>
+public sealed record TagPillItem(Guid Id, string Name);
+
 /// <summary>
-/// One row of tag pills that fits its width (Grid Tags cells, design §4.3): the pills that fit, then "+n" for the rest.
-/// When even one pill and the count do not fit, the first pill is trimmed. Display only: the cell owns input, focus,
-/// and the accessible name (the comma-joined names), so the strip is hidden from UI Automation.
+/// One row of tag pills that fits its width (Grid Tags cells, design §4.3; Board card tag strips, §4.2): the pills that
+/// fit, then "+n" for the rest. When even one pill and the count do not fit, the first pill is trimmed. Display only:
+/// the cell or card owns input, focus, and the accessible name (the comma-joined names), so the strip is hidden from
+/// UI Automation. In XAML, set <see cref="Items"/>; <see cref="IsCompact"/> gives the 16-epx Board card pills.
 /// </summary>
 public sealed partial class TagPillStrip : Panel
 {
     private const double Spacing = 4;
+    private const double CompactHeight = 16;
+
+    public static readonly DependencyProperty ItemsProperty = DependencyProperty.Register(
+        nameof(Items), typeof(object), typeof(TagPillStrip), new PropertyMetadata(null, (d, e) => ((TagPillStrip)d).OnItemsChanged(e.NewValue)));
 
     private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
 
     private readonly TextBlock _overflow;
-    private readonly int _pillCount;
+    private int _pillCount;
     private int _visibleCount;
+
+    public TagPillStrip()
+        : this([])
+    {
+    }
 
     public TagPillStrip(IReadOnlyList<(Guid Id, string Name)> tags)
     {
         ArgumentNullException.ThrowIfNull(tags);
-        _pillCount = tags.Count;
-        foreach (var (id, name) in tags)
-        {
-            Children.Add(TagPill.Create(id, name));
-        }
-
         _overflow = new TextBlock { Style = TagPill.Resource("TagPillOverflowTextStyle") };
         Children.Add(_overflow);
+        SetTags(tags);
 
         // A transparent background lets the strip show the cell's tooltip; taps still reach the cell.
         Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
@@ -67,6 +76,59 @@ public sealed partial class TagPillStrip : Panel
         AutomationProperties.SetAccessibilityView(this, AccessibilityView.Raw);
     }
 
+    /// <summary>The tags to show, an <see cref="IReadOnlyList{T}"/> of <see cref="TagPillItem"/>; null shows none.</summary>
+    public object? Items
+    {
+        get => GetValue(ItemsProperty);
+        set => SetValue(ItemsProperty, value);
+    }
+
+    /// <summary>Board card pills (design §4.2): 16 epx high, same colors and corner shape. Set it before the items.</summary>
+    public bool IsCompact { get; set; }
+
+    // A peer, so a strip's AutomationId reaches UI tests through the raw view; it stays out of the control and content views.
+    protected override AutomationPeer OnCreateAutomationPeer() => new FrameworkElementAutomationPeer(this);
+
+    private void OnItemsChanged(object? items)
+    {
+        // Any sequence of TagPillItem works (an array or a list from the item ViewModel). Anything else shows no pills,
+        // which Debug flags as a binding or projection mismatch rather than a record without tags.
+        var tags = items as IEnumerable<TagPillItem>;
+        Debug.Assert(items is null || tags is not null, $"TagPillStrip.Items expects TagPillItem values, got {items?.GetType()}.");
+        SetTags(tags is null ? [] : [.. tags.Select(t => (t.Id, t.Name))]);
+    }
+
+    private void SetTags(IReadOnlyList<(Guid Id, string Name)> tags)
+    {
+        // The overflow text stays last; the pills before it are replaced.
+        while (Children.Count > 1)
+        {
+            Children.RemoveAt(0);
+        }
+
+        for (var i = 0; i < tags.Count; i++)
+        {
+            Children.Insert(i, CreatePill(tags[i].Id, tags[i].Name));
+        }
+
+        _pillCount = tags.Count;
+        InvalidateMeasure();
+    }
+
+    private ContentPresenter CreatePill(Guid id, string name)
+    {
+        var pill = TagPill.Create(id, name);
+        if (IsCompact && pill.Content is TextBlock text)
+        {
+            pill.Height = CompactHeight;
+            pill.Padding = new Thickness(6, 0, 6, 0);
+            pill.CornerRadius = new CornerRadius(CompactHeight / 2);
+            text.LineHeight = 14;
+            text.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        }
+
+        return pill;
+    }
     protected override Size MeasureOverride(Size availableSize)
     {
         var unbounded = new Size(double.PositiveInfinity, availableSize.Height);

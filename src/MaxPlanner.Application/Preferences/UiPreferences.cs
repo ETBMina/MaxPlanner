@@ -68,6 +68,9 @@ public sealed record UiPreferences
     public CalendarModePreference? CalendarMode { get; init; }
 
     public bool? ShowArchivedTasks { get; init; }
+
+    /// <summary>Settings › Appearance › Show tags on Board cards (design §4.6); null means the default, on.</summary>
+    public bool? ShowBoardCardTags { get; init; }
 }
 
 public enum PreferencesRecovery

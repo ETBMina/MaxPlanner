@@ -9,7 +9,7 @@
     xmlns:local="using:MaxPlanner.Presentation.Board"
     IsTabStop="False">
     <UserControl.Resources>
-        <!-- Design §4.2 item 9: card people footer avatars sit side by side with a small gap, never overlapping. -->
+        <!-- Design §4.2 item 6: card avatars sit side by side with a small gap, never overlapping. -->
         <StackLayout x:Key="CardPeopleLayout" Orientation="Horizontal" Spacing="4" />
         <DataTemplate x:Key="CardPersonTemplate" x:DataType="local:BoardCardPerson">
             <!-- Each avatar is its own tooltip target: the name, then the roles in secondary text (design §2.10). -->
@@ -31,226 +31,256 @@
             </controls:PersonAvatar>
         </DataTemplate>
         <!--
-            One template for both card kinds, each loading only its own anatomy (design §4.2). Two templates through a
-            selector made the virtualizing panel misestimate a long bucket while scrolling up, until it reached the first
-            card and snapped the offset back by thousands of epx (the bucket jumped to the top).
+            One template for both card kinds, each loading only its own anatomy (design §4.2, owner redesign "H1 · Pill
+            strip"). Two templates through a selector made the virtualizing panel misestimate a long bucket while scrolling
+            up, until it reached the first card and snapped the offset back by thousands of epx (the bucket jumped to the top).
         -->
         <DataTemplate x:Key="CardTemplate" x:DataType="local:BoardCardViewModel">
-            <Grid>
-                <!-- Design §4.2: a card being moved is dimmed and captioned "Moving" until the move is saved. -->
+            <!-- Design §4.2: a card being moved is dimmed and captioned "Moving" until the move is saved. -->
+            <Grid Margin="0,0,0,8" Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <!-- Item 1: the 3-epx left edge, the priority color by rank (tasks) or the Subtask accent; square left corners. -->
+                <Border Style="{x:Bind local:BoardPageView.CardEdgeStyle(IsTask, PriorityLevel), Mode=OneWay}" />
                 <Border
-                    x:Name="TaskCard"
-                    x:Load="{x:Bind IsTask, Mode=OneWay}"
-                    Margin="0,0,0,8"
-                    Padding="12"
-                    Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
+                    Grid.Column="1"
+                    BorderThickness="0,1,1,1"
+                    CornerRadius="0,8,8,0"
                     Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="8">
-                        <Grid ColumnSpacing="4">
+                    <StackPanel>
+                        <!-- Item 2: the tag strip (task Tags, or the parent's on a Subtask card) with the ⋯ button at its end. -->
+                        <Grid
+                            ColumnSpacing="4"
+                            Style="{StaticResource BoardTagStripStyle}"
+                            ToolTipService.ToolTip="{x:Bind TagsText, Mode=OneWay}"
+                            Visibility="{x:Bind common:BindFunctions.Visible(HasTagStrip), Mode=OneWay}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock
-                                MaxLines="3"
-                                Style="{StaticResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind Title, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="Wrap"
-                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                            <controls:TagPillStrip
+                                HorizontalAlignment="Left"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardTagStrip_', Key), Mode=OneTime}"
+                                IsCompact="True"
+                                Items="{x:Bind Tags, Mode=OneWay}" />
                             <Button
                                 Grid.Column="1"
-                                Padding="6,4"
-                                VerticalAlignment="Top"
-                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButtonStrip_', Key), Mode=OneTime}"
                                 AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
-                                Background="Transparent"
-                                BorderThickness="0"
                                 Click="OnCardMenuButtonClick"
-                                IsTabStop="False"
+                                Style="{StaticResource BoardCardMenuButtonStyle}"
                                 ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
                                 <FontIcon FontSize="14" Glyph="&#xE712;" />
                             </Button>
                         </Grid>
-                        <TextBlock
-                            x:Uid="Board_MovingCaption"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
-                        <Border
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource AccentChipStyle}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <controls:ServiceIcon Foreground="{ThemeResource AccentChipForegroundBrush}" />
-                                <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
-                            </StackPanel>
-                        </Border>
-                        <!-- Design §4.2 anatomy 3: the CR reference link opens the CR. -->
-                        <HyperlinkButton
-                            Padding="0"
-                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
-                            AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
-                            Click="OnCardCrLinkClick"
-                            IsTabStop="False"
-                            ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon FontSize="12" Glyph="&#xE71B;" />
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
-                            </StackPanel>
-                        </HyperlinkButton>
-                        <Grid ColumnSpacing="6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <!--
-                                Design §4.2 item 4: an icon-only priority chip in the priority colour. Each level has its own
-                                glyph, so colour is never the only cue, and the tooltip names it. It stretches to the Squad
-                                chip height and is at least as wide, so it stays square-ish.
-                            -->
-                            <Border
-                                MinWidth="22"
-                                Padding="4,0"
-                                VerticalAlignment="Stretch"
-                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardPriority_', Key), Mode=OneTime}"
-                                AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
-                                Style="{x:Bind local:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}"
-                                ToolTipService.ToolTip="{x:Bind PriorityName, Mode=OneWay}">
-                                <FontIcon
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}"
-                                    Style="{StaticResource ChipGlyphStyle}" />
-                            </Border>
-                            <Border
-                                Grid.Column="1"
-                                HorizontalAlignment="Left"
-                                Style="{StaticResource SquadChipStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <FontIcon Glyph="&#xE716;" Style="{StaticResource ChipGlyphStyle}" />
-                                    <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind SquadText, Mode=OneWay}" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <StackPanel Spacing="4">
-                            <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind ChecklistText, Mode=OneWay}" />
-                            <!-- B-07: a task without checklist items shows text only, never an empty or full bar. -->
-                            <ProgressBar
-                                AutomationProperties.Name="{x:Bind ChecklistText, Mode=OneWay}"
-                                Maximum="100"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasChecklist), Mode=OneWay}"
-                                Value="{x:Bind ChecklistPercent, Mode=OneWay}" />
-                        </StackPanel>
-                        <!-- Design §4.2 items 7 and 9: the Subtask cards count on the left, the people footer on the right. -->
-                        <Grid ColumnSpacing="8" Visibility="{x:Bind common:BindFunctions.Visible(HasTaskFooter), Mode=OneWay}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel
-                                VerticalAlignment="Center"
-                                Orientation="Horizontal"
-                                Spacing="6"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskCards), Mode=OneWay}">
-                                <FontIcon FontSize="12" Glyph="&#xE8FD;" />
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind SubtaskCardsText, Mode=OneWay}" />
-                            </StackPanel>
-                            <ItemsRepeater
-                                Grid.Column="1"
-                                ItemTemplate="{StaticResource CardPersonTemplate}"
-                                ItemsSource="{x:Bind People, Mode=OneWay}"
-                                Layout="{StaticResource CardPeopleLayout}" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Design §4.2: a 3-epx left border and the Subtask glyph distinguish the kind without color. -->
-                <Border
-                    x:Name="SubtaskCard"
-                    x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
-                    Margin="0,0,0,8"
-                    Opacity="{x:Bind local:BoardPageView.MovingOpacity(IsMoving), Mode=OneWay}"
-                    Style="{StaticResource CardBorderStyle}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="3" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Button
-                            Grid.Column="2"
-                            Margin="0,8,8,0"
-                            Padding="6,4"
-                            VerticalAlignment="Top"
-                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
-                            AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Click="OnCardMenuButtonClick"
-                            IsTabStop="False"
-                            ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                            <FontIcon FontSize="14" Glyph="&#xE712;" />
-                        </Button>
-                        <Border Background="{ThemeResource SubtaskCardAccentBrush}" CornerRadius="8,0,0,8" />
-                        <StackPanel
-                            Grid.Column="1"
-                            Padding="12"
-                            Spacing="6">
-                            <!-- B-16.5: the "Subtask of" indicator opens the parent. -->
-                            <HyperlinkButton
-                                Padding="0"
-                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
-                                AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
-                                Click="OnCardParentLinkClick"
-                                IsTabStop="False">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon FontSize="12" Glyph="&#xE8FD;" />
-                                    <TextBlock
-                                        MaxLines="2"
-                                        Style="{StaticResource CaptionTextBlockStyle}"
-                                        Text="{x:Bind SubtaskOfText, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis"
-                                        TextWrapping="Wrap" />
-                                </StackPanel>
-                            </HyperlinkButton>
-                            <Border
-                                HorizontalAlignment="Left"
-                                Style="{StaticResource AccentChipStyle}"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <controls:ServiceIcon Foreground="{ThemeResource AccentChipForegroundBrush}" />
-                                    <TextBlock Style="{StaticResource AccentChipTextStyle}" Text="{x:Bind Service, Mode=OneWay}" />
-                                </StackPanel>
-                            </Border>
-                            <HyperlinkButton
-                                Padding="0"
-                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrLink_', Key), Mode=OneTime}"
-                                AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
-                                Click="OnCardCrLinkClick"
-                                IsTabStop="False"
-                                ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
-                                Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CrReference, Mode=OneWay}" />
-                            </HyperlinkButton>
-                            <TextBlock
-                                MaxLines="3"
-                                Style="{StaticResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind Title, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="Wrap"
-                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                        <StackPanel Padding="12,8,12,12" Spacing="8">
+                            <!-- Item 3: the ID row; without a strip the ⋯ button sits at its right end. -->
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <local:BoardChipRow MinHeight="20" Spacing="6">
+                                    <!-- Each priority level has its own glyph, so color is never the only cue. -->
+                                    <FontIcon
+                                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardPriority_', Key), Mode=OneTime}"
+                                        AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
+                                        FontSize="16"
+                                        Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}"
+                                        Style="{x:Bind local:BoardPageView.PriorityGlyphStyle(PriorityLevel), Mode=OneWay}"
+                                        ToolTipService.ToolTip="{x:Bind PriorityName, Mode=OneWay}"
+                                        Visibility="{x:Bind common:BindFunctions.Visible(IsTask), Mode=OneWay}" />
+                                    <!-- A Subtask card has no priority: the Subtask glyph and the edge accent mark the kind without color. -->
+                                    <FontIcon
+                                        x:Uid="Board_SubtaskGlyph"
+                                        FontSize="16"
+                                        Foreground="{ThemeResource SubtaskCardAccentBrush}"
+                                        Glyph="&#xE8FD;"
+                                        Visibility="{x:Bind common:BindFunctions.Visible(IsSubtaskCard), Mode=OneWay}" />
+                                    <!-- The CR chip opens the CR; the card menu's Open CR is its keyboard route. -->
+                                    <Button
+                                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrChip_', Key), Mode=OneTime}"
+                                        AutomationProperties.Name="{x:Bind OpenCrName, Mode=OneWay}"
+                                        Click="OnCardCrLinkClick"
+                                        Style="{StaticResource IdChipButtonStyle}"
+                                        ToolTipService.ToolTip="{x:Bind OpenCrName, Mode=OneWay}"
+                                        Visibility="{x:Bind common:BindFunctions.Visible(HasCrReference), Mode=OneWay}">
+                                        <Grid ColumnSpacing="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon FontSize="12" Glyph="&#xE8A5;" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Style="{StaticResource IdChipTextStyle}"
+                                                Text="{x:Bind CrNumber, Mode=OneWay}" />
+                                        </Grid>
+                                    </Button>
+                                    <!-- The Task chip copies the card's ID (Settings › Defaults Copy ID format), like the menu's Copy ID. -->
+                                    <Button
+                                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardTaskChip_', Key), Mode=OneTime}"
+                                        AutomationProperties.Name="{x:Bind CopyIdName, Mode=OneWay}"
+                                        Click="OnCardTaskChipClick"
+                                        Style="{StaticResource IdChipButtonStyle}"
+                                        ToolTipService.ToolTip="{x:Bind CopyIdName, Mode=OneWay}"
+                                        Visibility="{x:Bind common:BindFunctions.Visible(HasTaskNumber), Mode=OneWay}">
+                                        <TextBlock Style="{StaticResource IdChipTextStyle}" Text="{x:Bind TaskNumber, Mode=OneWay}" />
+                                    </Button>
+                                </local:BoardChipRow>
+                                <Button
+                                    Grid.Column="1"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
+                                    AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
+                                    Click="OnCardMenuButtonClick"
+                                    Style="{StaticResource BoardCardMenuButtonStyle}"
+                                    ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}"
+                                    Visibility="{x:Bind common:BindFunctions.Collapsed(HasTagStrip), Mode=OneWay}">
+                                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                                </Button>
+                            </Grid>
                             <TextBlock
                                 x:Uid="Board_MovingCaption"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
                                 Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
-                            <!-- Design §4.2: dates on the left, the people footer (inherited CR Owner) on the right. -->
-                            <Grid ColumnSpacing="8" Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskFooter), Mode=OneWay}">
+                            <!-- B-16.5: the "Subtask of" indicator opens the parent; the card menu's Open parent task is its keyboard route. -->
+                            <HyperlinkButton
+                                x:Name="SubtaskParentLink"
+                                x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
+                                Padding="0"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
+                                AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                Click="OnCardParentLinkClick"
+                                IsTabStop="False">
+                                <TextBlock
+                                    MaxLines="2"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="Wrap" />
+                            </HyperlinkButton>
+                            <!-- Item 4: the effective title, or a Subtask card's Subtitle. -->
+                            <TextBlock
+                                MaxLines="3"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Title, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap"
+                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                            <!-- Item 5: neutral Service chip (only its icon is accent) and, on tasks, the Squad chip. -->
+                            <local:BoardChipRow Visibility="{x:Bind common:BindFunctions.VisibleAny(IsTask, HasService, x:False), Mode=OneWay}">
+                                <Border Style="{StaticResource NeutralChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
+                                    <Grid ColumnSpacing="4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <controls:ServiceIcon Foreground="{ThemeResource NeutralChipIconBrush}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            Style="{StaticResource NeutralChipTextStyle}"
+                                            Text="{x:Bind Service, Mode=OneWay}" />
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource NeutralChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(IsTask), Mode=OneWay}">
+                                    <Grid ColumnSpacing="4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- A hierarchy glyph (one box over two): no Segoe Fluent glyph matches, so it is a 16-unit vector. -->
+                                        <Viewbox Width="12" Height="12" AutomationProperties.AccessibilityView="Raw">
+                                            <PathIcon
+                                                Width="16"
+                                                Height="16"
+                                                Data="F1 M5,0.5 H11 V5.5 H5 Z M6.25,1.75 V4.25 H9.75 V1.75 Z M7.375,5.5 H8.625 V7.375 H7.375 Z M2.375,7.375 H13.625 V8.625 H2.375 Z M2.375,8.625 H3.625 V10.5 H2.375 Z M12.375,8.625 H13.625 V10.5 H12.375 Z M0.5,10.5 H5.5 V15.5 H0.5 Z M1.75,11.75 V14.25 H4.25 V11.75 Z M10.5,10.5 H15.5 V15.5 H10.5 Z M11.75,11.75 V14.25 H14.25 V11.75 Z"
+                                                Foreground="{ThemeResource NeutralChipForegroundBrush}" />
+                                        </Viewbox>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            Style="{StaticResource NeutralChipTextStyle}"
+                                            Text="{x:Bind SquadText, Mode=OneWay}" />
+                                    </Grid>
+                                </Border>
+                            </local:BoardChipRow>
+                            <!-- Item 6 (tasks): below a divider, the checklist on the left and the avatars on the right. -->
+                            <Grid
+                                x:Name="TaskChecklistRow"
+                                x:Load="{x:Bind IsTask, Mode=OneWay}"
+                                Padding="0,8,0,0"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="0,1,0,0"
+                                ColumnSpacing="6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <!-- The CheckList glyph, or a double check once every item is done (never color alone). -->
+                                <FontIcon
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    FontSize="14"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Glyph="&#xE9D5;"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(IsChecklistIncomplete), Mode=OneWay}" />
+                                <Grid
+                                    Width="16"
+                                    Height="14"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(IsChecklistComplete), Mode=OneWay}">
+                                    <FontIcon
+                                        HorizontalAlignment="Left"
+                                        FontSize="11"
+                                        Glyph="&#xE73E;"
+                                        Style="{StaticResource BoardChecklistCompleteGlyphStyle}" />
+                                    <FontIcon
+                                        HorizontalAlignment="Right"
+                                        FontSize="11"
+                                        Glyph="&#xE73E;"
+                                        Style="{StaticResource BoardChecklistCompleteGlyphStyle}" />
+                                </Grid>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Style="{x:Bind local:BoardPageView.ChecklistTextStyle(IsChecklistComplete), Mode=OneWay}"
+                                    Text="{x:Bind ChecklistCountText, Mode=OneWay}"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(HasChecklist), Mode=OneWay}" />
+                                <!-- B-07: a task without checklist items shows muted text only, never an empty or full bar. -->
+                                <ProgressBar
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardChecklistBar_', Key), Mode=OneTime}"
+                                    AutomationProperties.Name="{x:Bind ChecklistText, Mode=OneWay}"
+                                    Maximum="100"
+                                    Style="{x:Bind local:BoardPageView.ChecklistBarStyle(IsChecklistComplete), Mode=OneWay}"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(HasChecklist), Mode=OneWay}"
+                                    Value="{x:Bind ChecklistPercent, Mode=OneWay}" />
+                                <TextBlock
+                                    Grid.ColumnSpan="3"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource BoardChecklistTextStyle}"
+                                    Text="{x:Bind ChecklistText, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    Visibility="{x:Bind common:BindFunctions.Collapsed(HasChecklist), Mode=OneWay}" />
+                                <ItemsRepeater
+                                    Grid.Column="3"
+                                    VerticalAlignment="Center"
+                                    ItemTemplate="{StaticResource CardPersonTemplate}"
+                                    ItemsSource="{x:Bind People, Mode=OneWay}"
+                                    Layout="{StaticResource CardPeopleLayout}" />
+                            </Grid>
+                            <!-- Subtask cards: the dates on the left and the avatar (the inherited CR Owner) on the right. -->
+                            <Grid
+                                x:Name="SubtaskFooterRow"
+                                x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
+                                ColumnSpacing="8"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskFooter), Mode=OneWay}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -263,12 +293,13 @@
                                     TextWrapping="Wrap" />
                                 <ItemsRepeater
                                     Grid.Column="1"
+                                    VerticalAlignment="Center"
                                     ItemTemplate="{StaticResource CardPersonTemplate}"
                                     ItemsSource="{x:Bind People, Mode=OneWay}"
                                     Layout="{StaticResource CardPeopleLayout}" />
                             </Grid>
                         </StackPanel>
-                    </Grid>
+                    </StackPanel>
                 </Border>
             </Grid>
         </DataTemplate>

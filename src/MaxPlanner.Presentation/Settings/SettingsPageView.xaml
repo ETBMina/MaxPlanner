@@ -383,6 +383,13 @@
                             ItemsSource="{x:Bind ViewModel.ThemeChoices, Mode=OneTime}"
                             SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" />
                     </local:SettingsCard>
+                    <!-- Design §4.6: a UI preference (not exported); it shows or hides the tag strip on every Board card at once. -->
+                    <local:SettingsCard x:Uid="Settings_BoardTagsCard" AutomationProperties.AutomationId="Settings_BoardTagsCard" Glyph="&#xE8EC;">
+                        <ToggleSwitch
+                            x:Uid="Settings_BoardTagsToggle"
+                            AutomationProperties.AutomationId="Settings_BoardTagsToggle"
+                            IsOn="{x:Bind ViewModel.ShowBoardCardTags, Mode=TwoWay}" />
+                    </local:SettingsCard>
 
                     <!-- Workflow (B-04): statuses with semantic flags, priorities, squads. -->
                     <TextBlock x:Uid="Settings_WorkflowHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />

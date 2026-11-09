@@ -21,6 +21,7 @@ public sealed class PreferencesStoreTests : IDisposable
         },
         CalendarMode = CalendarModePreference.Week,
         ShowArchivedTasks = true,
+        ShowBoardCardTags = false,
     };
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), "MaxPlanner Tëst Prefs", Guid.NewGuid().ToString("N"));
@@ -57,6 +58,7 @@ public sealed class PreferencesStoreTests : IDisposable
         preferences.ViewFilters["board"].Fields["squad"].Should().Equal("Retail Cards", "General");
         preferences.CalendarMode.Should().Be(CalendarModePreference.Week);
         preferences.ShowArchivedTasks.Should().BeTrue();
+        preferences.ShowBoardCardTags.Should().BeFalse();
         File.ReadAllText(Paths.ConfigurationFile).Should().Contain("\"configurationVersion\": 1");
     }
 

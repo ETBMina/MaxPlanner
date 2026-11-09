@@ -26,6 +26,7 @@ internal static class PreferencesMapper
             ViewFilters = MapViewFilters(document.ViewFilters),
             CalendarMode = ParseEnum<CalendarModePreference>(document.CalendarMode, ref resets),
             ShowArchivedTasks = document.ShowArchivedTasks,
+            ShowBoardCardTags = document.ShowBoardCardTags,
         };
         resetValues = resets;
         return preferences;
@@ -57,6 +58,7 @@ internal static class PreferencesMapper
             StringComparer.Ordinal),
         CalendarMode = preferences.CalendarMode?.ToString(),
         ShowArchivedTasks = preferences.ShowArchivedTasks,
+        ShowBoardCardTags = preferences.ShowBoardCardTags,
     };
 
     // Names only: Enum.TryParse would also accept numbers such as "7".

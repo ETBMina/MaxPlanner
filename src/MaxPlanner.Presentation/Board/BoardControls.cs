@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Windows.Foundation;
 
 namespace MaxPlanner.Presentation.Board;
 
@@ -66,4 +67,62 @@ internal sealed partial class BoardCardAutomationPeer(BoardCardContainer owner) 
     public void Invoke() => owner.Invoke();
 
     private static readonly Lazy<Common.Services.ResourceStrings> HelpText = new(() => new Common.Services.ResourceStrings());
+}
+
+/// <summary>
+/// One line of card chips (design §4.2 ID row and chip row) that never wraps or overflows the card: each visible child
+/// gets its natural width while they all fit; otherwise the width is shared out so the narrow ones keep theirs and the
+/// wide ones are trimmed (their text ellipsizes). Collapsed children take no space or spacing.
+/// </summary>
+public sealed partial class BoardChipRow : Panel
+{
+    public double Spacing { get; set; } = 4;
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var unbounded = new Size(double.PositiveInfinity, availableSize.Height);
+        var visible = Children.Where(c => c.Visibility == Visibility.Visible).ToList();
+        foreach (var child in Children)
+        {
+            child.Measure(child.Visibility == Visibility.Visible ? unbounded : default);
+        }
+
+        var spacing = Spacing * Math.Max(0, visible.Count - 1);
+        var natural = visible.Sum(c => c.DesiredSize.Width) + spacing;
+        if (natural > availableSize.Width)
+        {
+            // Water-filling: the narrowest children keep their width; the rest share what is left equally.
+            var left = Math.Max(0, availableSize.Width - spacing);
+            var pending = visible.OrderBy(c => c.DesiredSize.Width).ToList();
+            for (var i = 0; i < pending.Count; i++)
+            {
+                var share = left / (pending.Count - i);
+                var width = Math.Min(pending[i].DesiredSize.Width, share);
+                pending[i].Measure(new Size(width, availableSize.Height));
+                left -= pending[i].DesiredSize.Width;
+            }
+        }
+
+        var height = visible.Count == 0 ? 0 : visible.Max(c => c.DesiredSize.Height);
+        return new Size(Math.Min(visible.Sum(c => c.DesiredSize.Width) + spacing, availableSize.Width), height);
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        var x = 0d;
+        foreach (var child in Children)
+        {
+            if (child.Visibility != Visibility.Visible)
+            {
+                child.Arrange(default);
+                continue;
+            }
+
+            var size = child.DesiredSize;
+            child.Arrange(new Rect(x, (finalSize.Height - size.Height) / 2, size.Width, size.Height));
+            x += size.Width + Spacing;
+        }
+
+        return finalSize;
+    }
 }

@@ -256,18 +256,19 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 | Card menu | `MenuFlyout` from right-click, Shift+F10, the Application key or the **⋯** button `[gallery-listview-8, gallery-menuflyout-6]`. Items listed after this table. |
 | Drop feedback | The insertion line uses `AccentFillColorDefaultBrush` (2 epx) and the destination bucket gets a highlight stroke plus the caption "Drop to move to Review". During a drag the card has 60% opacity plus a "Moving" caption. When the Board is filtered, a drop places the card at the **top** of the full destination bucket and the insertion line is replaced by "Will be added to the top of Review" (B-07 filtered rule). |
 
-**Task card anatomy:**
-1. Effective Title (`BodyStrongTextBlockStyle`, max 3 lines, full text in a tooltip).
-2. Service chip, with the custom Service icon (owner request, Nov 2026: a rounded square holding a 2×2 grid of rounded squares, outline style; replaces the Repair/wrench glyph wherever the Service chip appears).
-3. CR reference link "CR-1067 · Task 00512", which opens the CR.
-4. Chip row: Priority chip, Squad chip ("General" when there is none). **Priority chip is icon-only** (owner request, Nov 2026): a small chip in the priority color with only the priority glyph (each level has its own glyph, so color is not the only cue). Its tooltip and accessible name are "Priority: High".
-5. Checklist progress "Checklist 1/3" with a determinate `ProgressBar` `[gallery-progressbar-2]`. When there are no items the card shows "No checklist items" text with no bar (B-07).
-6. Up to 3 incomplete checklist items as `CheckBox`es, plus a **Show all n** `HyperlinkButton`.
-7. Subtask cards count (glyph + "2 Subtask cards").
+**Task card anatomy** (owner redesign "H1 · Pill strip", Nov 2026; replaces the earlier anatomy, which had the Service chip second, a combined "CR-1067 · Task 00512" link, an icon-only Priority chip, a full-width "Checklist 1/3" row, a Subtask cards count and a separate people footer):
+1. **Priority edge:** a 3-epx left border in the priority color (assigned by configured rank, §6.1). The card's other three sides keep the standard card stroke; the left corners are square.
+2. **Tag strip** (optional, Settings › Appearance › **Show tags on Board cards**, on by default): a narrow band across the top of the card (`CardBackgroundFillColorSecondaryBrush`, 1-px `CardStrokeColorDefaultBrush` divider below it, about 26 epx high) holding the task's Tags as tag pills (§6.1) at a reduced 16-epx height, in tag order, on one line. Pills that do not fit are replaced by a secondary "+n"; if even the first pill does not fit, it is trimmed with an ellipsis. The strip's tooltip lists every tag. The card **⋯** button sits at the strip's right end. A task with no tags has no strip (no empty band), and the ⋯ button moves to the right end of row 3. With the setting off, no card shows a strip.
+3. **ID row:** the priority glyph (16 epx, priority color; each level has its own glyph so color is not the only cue; tooltip and accessible name "Priority: High"), then the **CR chip** and the **Task chip**. Both chips share one style: 4-epx corners, 1-px `AccentTextFillColorPrimaryBrush`-family stroke, transparent fill, accent text, `CaptionTextBlockStyle`. The CR chip has the document glyph and the CR number ("RDC-166"); the Task chip has no glyph and shows the task number ("INT-7625"). Clicking the **CR chip** opens the CR editor. Clicking the **Task chip** runs **Copy ID** (the card's ID text built from Settings › Defaults **Copy ID format**, §4.6) with no confirmation. An unlinked task has neither chip; a linked task without a task number has only the CR chip.
+4. Effective Title (`BodyStrongTextBlockStyle`, max 3 lines, full text in a tooltip).
+5. **Chip row:** the Service chip, with the custom Service icon (owner request, Nov 2026: a rounded square holding a 2×2 grid of rounded squares, outline style; replaces the Repair/wrench glyph wherever the Service chip appears), then the Squad chip ("General" when there is none) with a hierarchy glyph. Both are neutral chips (secondary fill, 1-px card stroke, secondary text); only the Service icon uses the accent color.
+6. **Checklist and people row**, below a 1-px divider: on the left, the checklist glyph and "1/3", then a determinate `ProgressBar` `[gallery-progressbar-2]` that fills the remaining width. When every item is done, the glyph becomes a double check and the count and bar use the success color, so the state is not shown by color alone. With no items the left side shows muted "No checklist" text with no bar (B-07: an empty list never looks complete). On the right, one 20-epx `PersonAvatar` per assigned person, side by side (not overlapping, no container), in the order CR Owner, Designer, Developer. A person who holds several roles appears once. Each avatar is a separate tooltip target with two lines: the name, then the roles in secondary text joined by " · " ("Mina Hakim" / "CR Owner · Designer"). Its accessible name is "Mina Hakim, CR Owner, Designer". No people → no avatars.
+7. Up to 3 incomplete checklist items as `CheckBox`es, plus a **Show all n** `HyperlinkButton` (unchanged; not yet built).
 8. "Archived" never appears on the Board, because the Board shows active tasks only.
-9. **People footer** (owner request, Nov 2026; replaces the Owner line under the chips): at the bottom right of the card, one 20-epx `PersonAvatar` per assigned person, side by side (not overlapping), in the order CR Owner, Designer, Developer. A person who holds several roles appears once. Each avatar is a separate tooltip target with two lines: the name, then the roles in secondary text joined by " · " ("Mina Hakim" / "CR Owner · Designer"). Its accessible name is "Mina Hakim, CR Owner, Designer". No people → no footer avatars.
 
-**Subtask card anatomy:** a "Subtask of {parent title}" `HyperlinkButton` (opens the parent), the parent Service chip, the inherited CR reference, the Subtitle (`BodyStrongTextBlockStyle`), dates when set, and the same people footer as task cards (only the inherited CR Owner). There is no priority, because Subtask cards have none. A 3-epx left border in `ControlStrongStrokeColorDefaultBrush` and the "Subtask" glyph give a non-color cue.
+The Subtask cards count is no longer shown on the card. The card's accessible name (§8.2) adds the tags ("Tags: Integration, Zain") when the strip is shown.
+
+**Subtask card anatomy** (same redesign): the same tag strip (showing the **parent task's** Tags, under the same setting), an ID row with the "Subtask" glyph in place of the priority glyph followed by the inherited CR and Task chips (same behavior as on task cards), a "Subtask of {parent title}" `HyperlinkButton` (opens the parent), the Subtitle (`BodyStrongTextBlockStyle`), the parent Service chip, and a last row with the dates on the left when set and the same avatars on the right (only the inherited CR Owner). There is no priority and no checklist, because Subtask cards have none. Its 3-epx left border uses `ControlStrongStrokeColorDefaultBrush` (never a priority color), and together with the "Subtask" glyph gives a non-color cue.
 
 **Card menu items:**
 - Open (Enter)
@@ -299,7 +300,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 - ~~"Add Subtask card" from the card menu opens a small dialog with a required Subtitle box. "Open" on a Subtask card opens its parent task until the Subtask card editor (§5.2, Phase 5).~~ Superseded in Phase 5: both open the Subtask card editor (§5.2).
 
 **Proposed notes (Phases 5–6, pending owner review):**
-- The CR reference on a card and the Subtask card's "Subtask of …" indicator are `HyperlinkButton`s that are not tab stops, because the card itself is the focusable list item. Their keyboard route is the card menu, which gains **Open CR** (linked cards) and **Open parent task** (Subtask cards).
+- The CR chip, the Task chip and the Subtask card's "Subtask of …" indicator are buttons that are not tab stops, because the card itself is the focusable list item. Their keyboard route is the card menu: **Open CR** (linked cards), **Copy ID**, and **Open parent task** (Subtask cards). The CR chip's accessible name and tooltip are "Open CR-1067"; the Task chip's are "Copy ID for Task INT-7625".
 - **New CR…** sits in an overflow-only `CommandBar` beside New task until the Calendar page exists (Phase 7), where the CR editor belongs (B-03.1). It is removed then.
 
 ### 4.3 Grid (B-07 Grid, T-08 gate, D7)
@@ -463,7 +464,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 
 | Section (HeadingLevel 2) | Cards |
 |---|---|
-| Appearance | **App theme** `ComboBox`: Use system setting / Light / Dark. It applies immediately (AC-23). |
+| Appearance | **App theme** `ComboBox`: Use system setting / Light / Dark. It applies immediately (AC-23). **Show tags on Board cards** `ToggleSwitch` (owner request, Nov 2026), on by default: shows or hides the tag strip on Board task and Subtask cards (§4.2). It applies immediately to every open card. It is a UI preference (stored with the other UI preferences, reset by Views › Restore default UI preferences), so it is not part of export and import (ADR 0026). |
 | Workflow | `SettingsExpander`s, one for each of **Task statuses**, **Change request statuses**, **Priorities** and **Squads**. The row layout and actions are described after this table. |
 | People and tags | Expanders for People and Tags. The rows are the same as the workflow rows. Person rows show the CR Owner count. |
 | Custom fields | Expanders for Task fields and CR fields. Rows: label, kind, required/default chips, ⋯ (Edit…, Move up/down, Deactivate…). **Add field…** opens the field dialog: Label*, Key* (proposed from the label, editable until first save), Kind* `ComboBox`, Required `ToggleSwitch` (if records exist, shows a backfill preview step), Default, Lookup source. Built-in fields are not listed (B-11). |
@@ -708,16 +709,16 @@ Anatomy: a `Border` with `CornerRadius` 4, padding 6×2, the `CaptionTextBlockSt
 | `PriorityLevel2` | 2nd ("High") | `SystemFillColorCautionBackgroundBrush` | Caution glyph | ChevronUp | Same |
 | `PriorityLevelMid` | Middle ranks ("Medium") | `SystemFillColorNeutralBackgroundBrush` | Text primary | Remove (dash) | Same |
 | `PriorityLevelLowest` | Lowest, when ≥3 priorities ("Low") | `SubtleFillColorSecondaryBrush` | Text secondary | ChevronDown | Same |
-| `SquadChip` | Squad / "General" | `ControlFillColorSecondaryBrush` + `ControlStrokeColorDefaultBrush` | Text primary | People | Same |
-| `ServiceChip` | Service (Board cards use `AccentChip`) | `SystemFillColorAttentionBackgroundBrush` | Text primary | Service icon (custom vector) | Same |
+| `SquadChip` | Squad / "General" | `ControlFillColorSecondaryBrush` + `ControlStrokeColorDefaultBrush` | Text primary | People (Board cards: a hierarchy vector, neutral chip, §4.2) | Same |
+| `ServiceChip` | Service (Board cards use a neutral chip with an accent-colored Service icon, §4.2) | `SystemFillColorAttentionBackgroundBrush` | Text primary | Service icon (custom vector) | Same |
 | `ArchivedChip` | Archived | `SystemFillColorNeutralBackgroundBrush` | Text secondary | Archive† | Same |
-| `AccentChip` | Board bucket counts and Board card service | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Service icon (service only) | Highlight/HighlightText |
+| `AccentChip` | Board bucket counts | `AccentFillColorDefaultBrush` | `TextOnAccentFillColorPrimaryBrush` (text and glyph) | Service icon (service only) | Highlight/HighlightText |
 | `FlagChip` | Settings flags | `SubtleFillColorSecondaryBrush` + stroke | Text secondary | per flag | Same |
 
 Priority tokens are assigned by **configured rank**, never by name, because priorities are editable lookups (B-04). A chip's name is "Priority: Urgent".
 
 **Tag pills (owner decision 2026-10-29).** Tags, both the built-in task Tags and custom Tags fields, have their own anatomy. All other chips keep the table above.
-- **Where:** TokenPicker tag chips (task editor, Grid flyout, Filters, custom-field editors) and the Grid Tags cells.
+- **Where:** TokenPicker tag chips (task editor, Grid flyout, Filters, custom-field editors), the Grid Tags cells, and the Board card tag strip (§4.2; there the pills are 16 epx high with the same colors and corner shape).
 - **Shape:** a fully rounded pill, `CornerRadius` 11, padding 8×2, height 22 epx. Text is `CaptionTextBlockStyle` on one line, trimmed with an ellipsis. The pill has no border, dot or leading glyph. A removable chip ends with a 10-epx Cancel glyph (E711).
 - **Color:** a semi-transparent tint of the tag's hue (`TagPillFill{i}`, about 14 % alpha in Light and 24 % in Dark) with text in a stronger shade of the same hue (`TagPillForeground{i}`).
   - The entry comes from the tag Id, using the same FNV-1a hash as the calendar palette (`PaletteHash`, 10 entries, same hue order). A tag therefore has the same color everywhere.
