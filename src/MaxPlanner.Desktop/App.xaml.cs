@@ -1,4 +1,5 @@
 using System.Reactive.Concurrency;
+using MaxPlanner.Application.Startup;
 using MaxPlanner.Desktop.Composition;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Desktop.Windowing;
@@ -77,6 +78,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         Log.WindowShown(_logger, elapsedMs);
 
         _coordinator = _services.GetRequiredService<StartupCoordinator>();
+        _services.GetRequiredService<ShellViewModel>().ReportPreferencesRecovery(_context.LoadedPreferences.Recovery);
         _ = _coordinator.RunAsync();
     }
 
@@ -138,7 +140,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             if (_coordinator is not null)
             {
                 await _coordinator.ShutdownAsync();
-                _context.ExitCode = _coordinator.ExitCode;
+                _context.ExitCode = ExitCodes.For(_coordinator.Exit);
             }
 
             await _context.Preferences.FlushAsync(CancellationToken.None);

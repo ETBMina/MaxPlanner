@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using MaxPlanner.Application.Startup;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Storage;
-using MaxPlanner.Presentation.Shell;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppLifecycle;
@@ -127,6 +127,11 @@ internal static class ExitCodes
     public const int NewerSchema = 4;
     public const int StartupFailure = 5;
 
-    /// <summary>Closing from the recovery page reports why the dataset was not used.</summary>
-    public static int ForRecovery(RecoveryKind kind) => kind == RecoveryKind.UnsupportedSchema ? NewerSchema : StartupFailure;
+    /// <summary>Closing from the recovery page, or after a startup failure, reports why the dataset was not used.</summary>
+    public static int For(StartupExit exit) => exit switch
+    {
+        StartupExit.NewerSchema => NewerSchema,
+        StartupExit.StartupFailure => StartupFailure,
+        _ => Ok,
+    };
 }
