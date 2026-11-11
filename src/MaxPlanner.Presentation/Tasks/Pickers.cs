@@ -28,10 +28,16 @@ public sealed class TokenViewModel(Guid id, string name, bool isNew, string remo
 }
 
 /// <summary>A suggestion row: an existing name, or "Add 'name'" for a new one. A person row shows the avatar.</summary>
-public sealed record TokenSuggestion(Guid? ExistingId, string Name, string Display, bool IsPerson = false)
+public sealed record TokenSuggestion(Guid? ExistingId, string Name, string Display, bool IsPerson = false, bool IsTag = false)
 {
     /// <summary>An existing person: the row shows their avatar ("Add 'name'" rows show the Add glyph instead).</summary>
     public bool ShowsAvatar => IsPerson && ExistingId is not null;
+
+    /// <summary>An existing tag: the row shows it as a pill in the tag's color ("Add 'name'" rows stay text).</summary>
+    public bool ShowsPill => IsTag && ExistingId is not null;
+
+    /// <summary>The pill's palette key; empty for a row without a pill.</summary>
+    public Guid PillId => ExistingId ?? Guid.Empty;
 
     public bool IsAddNew => ExistingId is null;
 
@@ -239,6 +245,18 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         }
     }
 
+    /// <summary>Backspace in an empty chip box removes the last chip, as in Planner's labels field.</summary>
+    public bool RemoveLast()
+    {
+        if (IsReadOnly || IsSingleSelection || _tokens.Count == 0 || Query.Length > 0)
+        {
+            return false;
+        }
+
+        Remove(_tokens[^1]);
+        return true;
+    }
+
     /// <summary>Clears a single-person choice. Only optional fields stay empty; a required one reports it on Save.</summary>
     public bool Clear()
     {
@@ -287,7 +305,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         var key = NewNameRegistry.Normalize(trimmed);
         if (_existing().FirstOrDefault(e => NewNameRegistry.Normalize(e.Name) == key) is { Name: not null } exact)
         {
-            return Choose(new TokenSuggestion(exact.Id, exact.Name, exact.Name, IsPeople));
+            return Choose(new TokenSuggestion(exact.Id, exact.Name, exact.Name, IsPeople, IsTags));
         }
 
         Revert();
@@ -351,7 +369,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
     private IEnumerable<TokenSuggestion> Available() => _existing()
         .Where(e => IsSingleSelection || _tokens.All(t => t.Id != e.Id))
         .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
-        .Select(e => new TokenSuggestion(e.Id, e.Name, e.Name, IsPeople));
+        .Select(e => new TokenSuggestion(e.Id, e.Name, e.Name, IsPeople, IsTags));
 
     private IEnumerable<TokenSuggestion> Suggest(string query)
     {
@@ -365,11 +383,11 @@ public sealed partial class TokenPickerViewModel : ObservableObject
         var existing = _existing().ToList();
         if (existing.FirstOrDefault(e => NewNameRegistry.Normalize(e.Name) == key) is { Name: not null } exact)
         {
-            yield return new TokenSuggestion(exact.Id, exact.Name, exact.Name, IsPeople);
+            yield return new TokenSuggestion(exact.Id, exact.Name, exact.Name, IsPeople, IsTags);
         }
         else if (AllowNew && trimmed.Length <= DomainLimits.LookupName)
         {
-            yield return new TokenSuggestion(null, trimmed, _strings.Format("TokenPicker_AddNew", trimmed), IsPeople);
+            yield return new TokenSuggestion(null, trimmed, _strings.Format("TokenPicker_AddNew", trimmed), IsPeople, IsTags);
         }
 
         foreach (var match in existing
@@ -377,7 +395,7 @@ public sealed partial class TokenPickerViewModel : ObservableObject
             .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
             .Take(MaxSuggestions))
         {
-            yield return new TokenSuggestion(match.Id, match.Name, match.Name, IsPeople);
+            yield return new TokenSuggestion(match.Id, match.Name, match.Name, IsPeople, IsTags);
         }
     }
 

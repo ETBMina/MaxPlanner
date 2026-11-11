@@ -3,6 +3,8 @@
     The TokenPicker of design §5.0 (ADR 0021): AutoSuggestBox [gallery-autosuggestbox-1] plus removable chip buttons.
     A single-person ViewModel makes it the person dropdown of design §5.0: the box shows the chosen person's avatar and
     name, a chevron (the box's query button) opens the full list, and there are no chips.
+    IsInline makes it a Planner-style tag field: one quiet field holding the chips and, right after the last one, the
+    search input, wrapping onto more lines; on hover or focus it takes the text-field fill and underline.
 -->
 <UserControl
     x:Class="MaxPlanner.Presentation.Common.Controls.TokenPicker"
@@ -12,23 +14,45 @@
     xmlns:local="using:MaxPlanner.Presentation.Common.Controls"
     xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     IsTabStop="False">
-    <StackPanel Spacing="6">
-        <Grid>
+    <StackPanel x:Name="Root" Spacing="6">
+        <VisualStateManager.VisualStateGroups>
+            <!-- The inline field's look, as a TextBox's: quiet at rest, filled on hover, filled and underlined when focused. -->
+            <VisualStateGroup x:Name="FieldStates">
+                <VisualState x:Name="FieldNormal" />
+                <VisualState x:Name="FieldPointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="InlineField.Background" Value="{ThemeResource TextControlBackgroundPointerOver}" />
+                        <Setter Target="InlineField.BorderBrush" Value="{ThemeResource TextControlBorderBrushPointerOver}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="FieldFocused">
+                    <VisualState.Setters>
+                        <Setter Target="InlineField.Background" Value="{ThemeResource TextControlBackgroundFocused}" />
+                        <Setter Target="InlineField.BorderBrush" Value="{ThemeResource TextControlBorderBrushFocused}" />
+                        <Setter Target="InlineField.BorderThickness" Value="{ThemeResource TextControlBorderThemeThicknessFocused}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <Grid x:Name="BoxHost">
             <AutoSuggestBox
                 x:Name="Box"
                 GotFocus="OnBoxGotFocus"
-                Header="{x:Bind Header, Mode=OneWay}"
+                Header="{x:Bind local:TokenPicker.BoxHeader(Header, IsInline), Mode=OneWay}"
                 IsEnabled="{x:Bind IsEditable, Mode=OneWay}"
                 ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}"
                 Loaded="OnBoxLoaded"
                 LostFocus="OnBoxLostFocus"
-                PlaceholderText="{x:Bind ViewModel.PlaceholderText, Mode=OneWay}"
+                PlaceholderText="{x:Bind local:TokenPicker.BoxPlaceholder(ViewModel.PlaceholderText, Placeholder), Mode=OneWay}"
                 PreviewKeyDown="OnBoxPreviewKeyDown"
                 QuerySubmitted="OnQuerySubmitted"
                 Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextChanged="OnBoxTextChanged"
                 UpdateTextOnSelect="False">
-                <!-- A people picker shows each existing person's avatar, and the Add glyph on "Add 'name'"; tags show text only. -->
+                <!--
+                    A people picker shows each existing person's avatar, and the Add glyph on "Add 'name'"; an existing tag
+                    shows as a pill in its color, and "Add 'name'" as text.
+                -->
                 <AutoSuggestBox.ItemTemplate>
                     <DataTemplate x:DataType="tasks:TokenSuggestion">
                         <Grid AutomationProperties.Name="{x:Bind Display, Mode=OneTime}" ColumnSpacing="8">
@@ -50,7 +74,15 @@
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
                                 Text="{x:Bind Display, Mode=OneTime}"
-                                TextTrimming="CharacterEllipsis" />
+                                TextTrimming="CharacterEllipsis"
+                                Visibility="{x:Bind common:BindFunctions.Collapsed(ShowsPill), Mode=OneTime}" />
+                            <ContentPresenter
+                                Grid.Column="1"
+                                HorizontalAlignment="Left"
+                                Style="{x:Bind local:TokenPicker.SuggestionPillStyle(PillId), Mode=OneTime}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(ShowsPill), Mode=OneTime}">
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name, Mode=OneTime}" TextTrimming="CharacterEllipsis" />
+                            </ContentPresenter>
                         </Grid>
                     </DataTemplate>
                 </AutoSuggestBox.ItemTemplate>
@@ -73,9 +105,10 @@
         </Grid>
         <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. Tag chips are pills in the tag's color. -->
         <ItemsRepeater
+            x:Name="Chips"
             ElementPrepared="OnChipPrepared"
             ItemsSource="{x:Bind ViewModel.Tokens, Mode=OneWay}"
-            Visibility="{x:Bind local:TokenPicker.HasChips(ViewModel), Mode=OneWay}">
+            Visibility="{x:Bind local:TokenPicker.HasChips(ViewModel, IsInline), Mode=OneWay}">
             <ItemsRepeater.Layout>
                 <LinedFlowLayout LineSpacing="6" MinItemSpacing="6" />
             </ItemsRepeater.Layout>
@@ -108,5 +141,27 @@
                 </DataTemplate>
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
+        <!--
+            Inline mode (the task editor's tags): IsInline moves BoxHost into this field as its last child; the chips are
+            created in front of it from the ViewModel's tokens, so chips and input flow on the same wrapping lines.
+        -->
+        <Border
+            x:Name="InlineField"
+            MinHeight="32"
+            Padding="4,0,0,0"
+            Background="Transparent"
+            BorderBrush="Transparent"
+            BorderThickness="{ThemeResource TextControlBorderThemeThickness}"
+            CornerRadius="{ThemeResource ControlCornerRadius}"
+            GotFocus="OnFieldFocusChanged"
+            LostFocus="OnFieldFocusChanged"
+            PointerCanceled="OnFieldPointerExited"
+            PointerEntered="OnFieldPointerEntered"
+            PointerExited="OnFieldPointerExited"
+            Tapped="OnFieldTapped"
+            ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(FieldToolTip), Mode=OneWay}"
+            Visibility="Collapsed">
+            <local:TokenFieldPanel x:Name="InlineFlow" />
+        </Border>
     </StackPanel>
 </UserControl>

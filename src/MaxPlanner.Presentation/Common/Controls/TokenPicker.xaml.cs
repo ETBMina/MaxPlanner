@@ -1,8 +1,10 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using MaxPlanner.Presentation.Tasks;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -29,10 +31,23 @@ public sealed partial class TokenPicker : UserControl
 
     public static readonly DependencyProperty BoxAutomationIdProperty = DependencyProperty.Register(
         nameof(BoxAutomationId), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty, (d, e) =>
-            AutomationProperties.SetAutomationId(((TokenPicker)d).Box, (string)e.NewValue)));
+        {
+            var picker = (TokenPicker)d;
+            AutomationProperties.SetAutomationId(picker.Box, (string)e.NewValue);
+            picker.RebuildInlineChips();
+        }));
 
     public static readonly DependencyProperty IsEditableProperty = DependencyProperty.Register(
-        nameof(IsEditable), typeof(bool), typeof(TokenPicker), new PropertyMetadata(true));
+        nameof(IsEditable), typeof(bool), typeof(TokenPicker), new PropertyMetadata(true, (d, _) => ((TokenPicker)d).UpdateInlineState()));
+
+    public static readonly DependencyProperty IsInlineProperty = DependencyProperty.Register(
+        nameof(IsInline), typeof(bool), typeof(TokenPicker), new PropertyMetadata(false, (d, _) => ((TokenPicker)d).ApplyInline()));
+
+    public static readonly DependencyProperty PlaceholderProperty = DependencyProperty.Register(
+        nameof(Placeholder), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty));
+
+    public static readonly DependencyProperty FieldToolTipProperty = DependencyProperty.Register(
+        nameof(FieldToolTip), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty));
 
     private readonly PointerEventHandler _outsidePressHandler;
     private UIElement? _pressRoot;
@@ -43,6 +58,7 @@ public sealed partial class TokenPicker : UserControl
     private TokenPickerViewModel? _observed;
     private TextBox? _textBox;
     private string _lastQuery = string.Empty;
+    private bool _isPointerOverField;
 
     public TokenPicker()
     {
@@ -97,6 +113,32 @@ public sealed partial class TokenPicker : UserControl
     }
 
     /// <summary>
+    /// A Planner-style tag field (the task editor's tags): one field holding the chips and, right after the last chip,
+    /// the search input, wrapping onto more lines. Quiet at rest; on hover or focus it takes the text-field fill and
+    /// underline. Backspace in the empty input removes the last chip. A read-only picker shows plain pills, no input.
+    /// <see cref="Header"/> becomes the box's accessible name instead of a visible header. Set it once, in XAML.
+    /// </summary>
+    public bool IsInline
+    {
+        get => (bool)GetValue(IsInlineProperty);
+        set => SetValue(IsInlineProperty, value);
+    }
+
+    /// <summary>The box's placeholder, for example "Search for a tag"; empty uses the ViewModel's.</summary>
+    public string Placeholder
+    {
+        get => (string)GetValue(PlaceholderProperty);
+        set => SetValue(PlaceholderProperty, value);
+    }
+
+    /// <summary>The inline field's tooltip, for example "Search for a tag to apply to the task".</summary>
+    public string FieldToolTip
+    {
+        get => (string)GetValue(FieldToolTipProperty);
+        set => SetValue(FieldToolTipProperty, value);
+    }
+
+    /// <summary>
     /// Moves focus to the search box without opening the suggestion list (a flyout editor opening, a field focused
     /// for a validation error). Use this rather than <c>Focus</c> on the picker itself.
     /// </summary>
@@ -115,6 +157,9 @@ public sealed partial class TokenPicker : UserControl
         return focused;
     }
 
+    /// <summary>The inline picker shows no header above its box; the header names the box for UI Automation instead.</summary>
+    public static object? BoxHeader(string header, bool isInline) => isInline ? null : header;
+
     /// <summary>The person dropdown shows the chosen person's avatar in the box.</summary>
     public static Visibility AvatarVisibility(TokenPickerViewModel? viewModel) => viewModel?.IsSingleSelection == true ? Visibility.Visible : Visibility.Collapsed;
 
@@ -122,10 +167,18 @@ public sealed partial class TokenPicker : UserControl
     public static double AvatarOpacity(bool isEditable) => isEditable ? 1 : 0.4;
 
     /// <summary>The person dropdown has no chips under the box (design §5.0).</summary>
-    public static Visibility HasChips(TokenPickerViewModel? viewModel) => viewModel?.IsSingleSelection == true ? Visibility.Collapsed : Visibility.Visible;
+    public static Visibility HasChips(TokenPickerViewModel? viewModel, bool isInline) =>
+        viewModel?.IsSingleSelection == true || isInline ? Visibility.Collapsed : Visibility.Visible;
+
+    public static string BoxPlaceholder(string viewModelPlaceholder, string placeholder) =>
+        string.IsNullOrEmpty(placeholder) ? viewModelPlaceholder : placeholder;
+
+    /// <summary>An existing tag's suggestion row shows the tag as a pill in its palette color.</summary>
+    public static Style SuggestionPillStyle(Guid id) => TagPill.Resource("TagPillStyle" + TagPill.IndexOf(id));
 
     // Space for the avatar beside the chosen name: its 20 epx plus a gap, added to the text box's own left padding.
     private const double AvatarInset = 26;
+
 
     private bool IsPersonDropdown => ViewModel?.IsSingleSelection == true;
 
@@ -255,6 +308,13 @@ public sealed partial class TokenPicker : UserControl
     private void OnBoxPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         _chevronPressFoundListOpen = null;
+        // Planner's labels field: Backspace in the empty input removes the last chip.
+        if (IsInline && e.Key == VirtualKey.Back && IsEditable && ViewModel is { } inlineViewModel && inlineViewModel.RemoveLast())
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (!IsPersonDropdown || ViewModel is not { } viewModel || !IsEditable)
         {
             return;
@@ -312,6 +372,7 @@ public sealed partial class TokenPicker : UserControl
         if (_observed is not null)
         {
             _observed.PropertyChanged -= OnViewModelPropertyChanged;
+            ((INotifyCollectionChanged)_observed.Tokens).CollectionChanged -= OnTokensChanged;
         }
 
         _observed = viewModel;
@@ -319,8 +380,11 @@ public sealed partial class TokenPicker : UserControl
         if (viewModel is not null)
         {
             viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            ((INotifyCollectionChanged)viewModel.Tokens).CollectionChanged += OnTokensChanged;
             UpdateAccessibleName();
         }
+
+        RebuildInlineChips();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -380,6 +444,12 @@ public sealed partial class TokenPicker : UserControl
     // value, so the person is not announced twice on focus.
     private void UpdateAccessibleName()
     {
+        if (IsInline)
+        {
+            AutomationProperties.SetName(Box, Header);
+            return;
+        }
+
         if (!IsPersonDropdown)
         {
             return;
@@ -522,6 +592,200 @@ public sealed partial class TokenPicker : UserControl
 
         // A pick empties a typed query through the binding; that text change must not reopen the full list.
         _ignoreNextEmptyText = hadText && viewModel.Query.Length == 0;
+    }
+
+    // IsInline moves the box into the field as the last child of its flow; the chips are created in front of it.
+    // The box loses its own fill and border there (the field draws them), so they are cleared in its scope only.
+    private void ApplyInline()
+    {
+        if (!IsInline || ReferenceEquals(BoxHost.Parent, InlineFlow))
+        {
+            return;
+        }
+
+        Root.Children.Remove(BoxHost);
+        InlineFlow.Children.Add(BoxHost);
+        var clear = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        foreach (var key in BoxChromeKeys)
+        {
+            BoxHost.Resources[key] = clear;
+        }
+
+        BoxHost.Resources["TextControlBorderThemeThickness"] = new Thickness(0);
+        BoxHost.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(0);
+        InlineField.Visibility = Visibility.Visible;
+        UpdateInlineState();
+        UpdateAccessibleName();
+    }
+
+    private static readonly string[] BoxChromeKeys =
+    [
+        "TextControlBackground", "TextControlBackgroundPointerOver", "TextControlBackgroundFocused",
+        "TextControlBorderBrush", "TextControlBorderBrushPointerOver", "TextControlBorderBrushFocused",
+    ];
+
+    // A read-only field has no input and shows plain pills; an editable one has the input and removable chips.
+    private void UpdateInlineState()
+    {
+        if (!IsInline)
+        {
+            return;
+        }
+
+        BoxHost.Visibility = IsEditable ? Visibility.Visible : Visibility.Collapsed;
+        RebuildInlineChips();
+        UpdateFieldState();
+    }
+
+    private void RebuildInlineChips()
+    {
+        if (!IsInline || !ReferenceEquals(BoxHost.Parent, InlineFlow))
+        {
+            return;
+        }
+
+        // The box stays the last child; the chips before it are replaced.
+        while (InlineFlow.Children.Count > 1)
+        {
+            InlineFlow.Children.RemoveAt(0);
+        }
+
+        if (ViewModel is { } viewModel)
+        {
+            for (var i = 0; i < viewModel.Tokens.Count; i++)
+            {
+                InlineFlow.Children.Insert(i, CreateInlineChip(viewModel.Tokens[i]));
+            }
+        }
+    }
+
+    // A chip is added or removed in place, so the field keeps its focus and typed text (ADR 0010).
+    private void OnTokensChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (!IsInline || !ReferenceEquals(BoxHost.Parent, InlineFlow))
+        {
+            return;
+        }
+
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add when e.NewItems is [TokenViewModel token] && e.NewStartingIndex >= 0:
+                InlineFlow.Children.Insert(e.NewStartingIndex, CreateInlineChip(token));
+                break;
+            case NotifyCollectionChangedAction.Remove when e.OldItems is [TokenViewModel] && e.OldStartingIndex >= 0:
+                var chip = InlineFlow.Children[e.OldStartingIndex];
+                var hadFocus = XamlRoot is not null && IsWithin(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject, chip);
+                InlineFlow.Children.RemoveAt(e.OldStartingIndex);
+
+                // A chip removed from the keyboard hands focus to the input, so the next key still lands in the field.
+                if (hadFocus && IsEditable)
+                {
+                    Box.Focus(FocusState.Keyboard);
+                }
+
+                break;
+            default:
+                RebuildInlineChips();
+                break;
+        }
+    }
+
+    // An editable chip is the removable pill button of the chip pickers; a read-only one is a plain pill without the X.
+    private UIElement CreateInlineChip(TokenViewModel token)
+    {
+        if (!IsEditable)
+        {
+            var pill = TagPill.Create(token.Id, token.Name);
+            if (pill.Content is TextBlock text)
+            {
+                AutomationProperties.SetAccessibilityView(text, AccessibilityView.Content);
+            }
+
+            return pill;
+        }
+
+        var chip = new Button
+        {
+            Style = ChipStyle(token.IsTag, token.Id),
+            Padding = ChipPadding(token.IsPerson),
+            Tag = token,
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 6,
+                Children =
+                {
+                    new TextBlock { Text = token.Name, Style = TagPill.Resource("CaptionTextBlockStyle"), VerticalAlignment = VerticalAlignment.Center },
+                    RemoveGlyph(),
+                },
+            },
+        };
+        AutomationProperties.SetName(chip, token.RemoveName);
+        ToolTipService.SetToolTip(chip, token.RemoveName);
+        if (!string.IsNullOrEmpty(BoxAutomationId))
+        {
+            AutomationProperties.SetAutomationId(chip, BoxAutomationId + "_Chip_" + token.Id.ToString("N"));
+        }
+
+        chip.Click += OnRemoveClick;
+        chip.KeyDown += OnChipKeyDown;
+        return chip;
+
+        static FontIcon RemoveGlyph()
+        {
+            var glyph = new FontIcon { Glyph = "\uE711", FontSize = 10, VerticalAlignment = VerticalAlignment.Center };
+            AutomationProperties.SetAccessibilityView(glyph, AccessibilityView.Raw);
+            return glyph;
+        }
+    }
+
+    private void OnFieldPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        _isPointerOverField = true;
+        UpdateFieldState();
+    }
+
+    private void OnFieldPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _isPointerOverField = false;
+        UpdateFieldState();
+    }
+
+    // Focus moving between the field's own parts raises LostFocus too, so the state is read once focus has settled.
+    private void OnFieldFocusChanged(object sender, RoutedEventArgs e) => DispatcherQueue.TryEnqueue(UpdateFieldState);
+
+    // A press on the field outside a chip goes to the input, as a click anywhere in a text field does.
+    private void OnFieldTapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (IsEditable && e.OriginalSource is DependencyObject source && !IsWithinChip(source) && !BoxHasFocus())
+        {
+            Box.Focus(FocusState.Pointer);
+        }
+    }
+
+    private bool IsWithinChip(DependencyObject source)
+    {
+        for (var element = source; element is not null && !ReferenceEquals(element, InlineFlow); element = VisualTreeHelper.GetParent(element))
+        {
+            if (element is Button)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void UpdateFieldState()
+    {
+        if (!IsInline)
+        {
+            return;
+        }
+
+        var focused = XamlRoot is not null && IsWithin(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject, InlineField);
+        var state = !IsEditable ? "FieldNormal" : focused ? "FieldFocused" : _isPointerOverField ? "FieldPointerOver" : "FieldNormal";
+        VisualStateManager.GoToState(this, state, true);
     }
 
     private void OnRemoveClick(object sender, RoutedEventArgs e)

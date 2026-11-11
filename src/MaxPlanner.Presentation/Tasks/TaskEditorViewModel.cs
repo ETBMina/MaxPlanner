@@ -64,9 +64,11 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private static readonly string[] StateProperties =
     [
         nameof(IsLinked), nameof(LinkedCr), nameof(IsTitleEditable), nameof(ShowInheritedTitle), nameof(InheritedTitle),
-        nameof(InheritedTitleHelper), nameof(IsServiceRequired), nameof(ServiceHeader), nameof(ServiceHelper), nameof(HasServiceHelper),
+        nameof(IsServiceRequired), nameof(ServiceHeader), nameof(ServiceHelper), nameof(HasServiceHelper),
         nameof(IsUnlinkedWithoutPending), nameof(HasPendingLink), nameof(PendingLinkWarning), nameof(CanLinkToCr), nameof(TaskNumberText),
-        nameof(SquadText), nameof(OwnerText), nameof(HasOwner), nameof(CrHelperText), nameof(LinkedCrTitle), nameof(LinkedCrSecondary), nameof(LinkedCrNumber), nameof(OpenCrName),
+        nameof(SquadText), nameof(OwnerText), nameof(HasOwner), nameof(LinkedCrNumber), nameof(OpenCrName),
+        nameof(PendingCrNumber), nameof(CrNumberToCopy), nameof(CanCopyCrNumber), nameof(CopyCrNumberName),
+        nameof(TaskNumberToCopy), nameof(CanCopyTaskNumber), nameof(CopyTaskNumberName),
         nameof(CanEditFields), nameof(CanSave), nameof(CanArchive), nameof(CanRestore), nameof(CanAddSubtaskCard), nameof(CanPopOut),
         nameof(IsFormStep), nameof(IsLinkPickStep), nameof(IsLinkConfirmStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
         nameof(Caption), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
@@ -326,10 +328,6 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     /// <summary>"Open CR-1042": the CR link's accessible name and tooltip (design §8.2).</summary>
     public string OpenCrName => LinkedCr is { } cr ? _context.Strings.Format("TaskEditor_OpenCrName", cr.Number) : string.Empty;
 
-    public string LinkedCrTitle => LinkedCr?.Title ?? string.Empty;
-
-    public string LinkedCrSecondary => LinkedCr?.Secondary ?? string.Empty;
-
     public bool CanEditFields => !IsReadOnly && !IsSaving;
 
     public bool IsTitleEditable => !IsLinked && PendingLink is null && CanEditFields;
@@ -337,11 +335,6 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public bool ShowInheritedTitle => !IsTitleEditable && (IsLinked || PendingLink is not null);
 
     public string InheritedTitle => PendingLink?.Title ?? LinkedCr?.Title ?? (Latest ?? _base)?.EffectiveTitle ?? string.Empty;
-
-    /// <summary>"Inherited from CR-1042. Edit it on the CR." or, while pending, what the title will become.</summary>
-    public string InheritedTitleHelper => PendingLink is { } pending
-        ? _context.Strings.Format("TaskEditor_PendingTitleHelper", pending.Number)
-        : LinkedCr is { } cr ? _context.Strings.Format("TaskEditor_InheritedTitleHelper", cr.Number) : string.Empty;
 
     /// <summary>D10: Service is required on linked tasks and while a link is pending.</summary>
     public bool IsServiceRequired => IsLinked || PendingLink is not null;
@@ -377,7 +370,28 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
     public bool HasOwner => !string.IsNullOrEmpty((LinkedCr ?? PendingLink)?.OwnerName);
 
-    public string CrHelperText => (LinkedCr ?? PendingLink) is { } cr ? _context.Strings.Format("TaskEditor_FromCrHelper", cr.Number) : string.Empty;
+    /// <summary>The CR chosen in the link step, shown in the facts strip until Save.</summary>
+    public string PendingCrNumber => PendingLink?.Number ?? string.Empty;
+
+    /// <summary>The plain CR number the facts strip's copy button copies ("RP-116"), not the Copy ID format; empty without a CR.</summary>
+    public string CrNumberToCopy => (LinkedCr ?? PendingLink)?.Number ?? string.Empty;
+
+    public bool CanCopyCrNumber => CrNumberToCopy.Length > 0;
+
+    /// <summary>"Copy CR number RP-116": the copy button's accessible name and tooltip.</summary>
+    public string CopyCrNumberName => CanCopyCrNumber ? _context.Strings.Format("TaskEditor_CopyCrNumberName", CrNumberToCopy) : string.Empty;
+
+    /// <summary>The plain task number ("INT-7116"); empty when the CR has none or the task is unlinked.</summary>
+    public string TaskNumberToCopy => (LinkedCr ?? PendingLink)?.TaskNumber ?? string.Empty;
+
+    public bool CanCopyTaskNumber => TaskNumberToCopy.Length > 0;
+
+    public string CopyTaskNumberName => CanCopyTaskNumber ? _context.Strings.Format("TaskEditor_CopyTaskNumberName", TaskNumberToCopy) : string.Empty;
+
+    /// <summary>"Checklist (2 of 4 items done)", or "Checklist" while it is empty.</summary>
+    public string ChecklistHeading => _checklist.Count == 0
+        ? _context.Strings.GetString("TaskEditor_ChecklistHeading")
+        : _context.Strings.Format("TaskEditor_ChecklistHeadingCount", _checklist.Count(i => i.IsCompleted), _checklist.Count);
 
     /// <summary>B-04 helper from the status flags, never from labels.</summary>
     public string StartHelper => Helper("TaskEditor_StartHelper", _workflow.TaskStatuses.Where(s => s.SetsStartDate));
@@ -799,14 +813,19 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         return true;
     }
 
-    public void MoveChecklistItem(EditorChecklistItemViewModel item, int delta)
+    public void MoveChecklistItem(EditorChecklistItemViewModel item, int delta) => MoveChecklistItemTo(item, _checklist.IndexOf(item) + delta);
+
+    /// <summary>Moves an item to a position in the draft (Move up/down, or a drag in the list); out-of-range targets do nothing.</summary>
+    public bool MoveChecklistItemTo(EditorChecklistItemViewModel item, int index)
     {
-        var index = _checklist.IndexOf(item);
-        var target = index + delta;
-        if (CanEditFields && index >= 0 && target >= 0 && target < _checklist.Count)
+        var current = _checklist.IndexOf(item);
+        if (!CanEditFields || current < 0 || index < 0 || index >= _checklist.Count || index == current)
         {
-            _checklist.Move(index, target);
+            return false;
         }
+
+        _checklist.Move(current, index);
+        return true;
     }
 
     /// <summary>Delete is an explicit command on the item (B-05); the item goes when the draft is saved.</summary>
@@ -1110,7 +1129,17 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private void AddChecklistRow(EditorChecklistItemViewModel item)
     {
         item.PropertyChanged += OnChecklistItemChanged;
+        UpdateRowState(item);
         _checklist.Add(item);
+    }
+
+    // The rows' action buttons follow the editor's state (design §5.1 group 7): edits need an editable draft, and Pop
+    // out runs immediately, so it is off for a dirty draft or an item that is not saved yet.
+    private void UpdateRowState(EditorChecklistItemViewModel item)
+    {
+        var canPopOut = CanPopOut && !item.IsNew;
+        var reason = !canPopOut && CanEditFields ? _context.Strings.GetString("TaskEditor_PopOutUnavailable") : string.Empty;
+        item.SetState(CanEditFields, canPopOut, reason);
     }
 
     private DraftValues Capture() => new(
@@ -1167,9 +1196,20 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     private void OnDraftChanged(object? sender, EventArgs e) => RecomputeDirty();
 
-    private void OnChecklistChanged(object? sender, NotifyCollectionChangedEventArgs e) => RecomputeDirty();
+    private void OnChecklistChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        RecomputeDirty();
+        OnPropertyChanged(nameof(ChecklistHeading));
+    }
 
-    private void OnChecklistItemChanged(object? sender, PropertyChangedEventArgs e) => RecomputeDirty();
+    private void OnChecklistItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(EditorChecklistItemViewModel.Text) or nameof(EditorChecklistItemViewModel.IsCompleted))
+        {
+            RecomputeDirty();
+            OnPropertyChanged(nameof(ChecklistHeading));
+        }
+    }
 
     private void RecomputeDirty()
     {
@@ -1242,6 +1282,11 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         foreach (var name in StateProperties)
         {
             OnPropertyChanged(name);
+        }
+
+        foreach (var item in _checklist)
+        {
+            UpdateRowState(item);
         }
     }
 }

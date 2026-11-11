@@ -970,12 +970,6 @@
   <data name="TaskEditor_DeletedElsewhere" xml:space="preserve">
     <value>This task was deleted elsewhere. Your changes can't be saved.</value>
   </data>
-  <data name="TaskEditor_FromCrHelper" xml:space="preserve">
-    <value>From {0}. Edit them on the CR.</value>
-  </data>
-  <data name="TaskEditor_InheritedTitleHelper" xml:space="preserve">
-    <value>Inherited from {0}. Edit it on the CR.</value>
-  </data>
   <data name="TaskEditor_NoOwner" xml:space="preserve">
     <value>No owner</value>
   </data>
@@ -984,9 +978,6 @@
   </data>
   <data name="TaskEditor_PendingLinkWarning" xml:space="preserve">
     <value>This link is permanent. When you save, the title becomes '{0}' and the task number, squad and owner come from {1}.</value>
-  </data>
-  <data name="TaskEditor_PendingTitleHelper" xml:space="preserve">
-    <value>This becomes the title from {0} when you save.</value>
   </data>
   <data name="TaskEditor_ServiceHelper" xml:space="preserve">
     <value>Tells this task apart from the other {0} tasks on {1}.</value>
@@ -1022,16 +1013,10 @@
     <value>Filled automatically when moved to {0}</value>
   </data>
   <data name="TaskEditor_AddChecklistBox.PlaceholderText" xml:space="preserve">
-    <value>Add a checklist item</value>
+    <value>Add an item</value>
   </data>
   <data name="TaskEditor_AddChecklistBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Add a checklist item</value>
-  </data>
-  <data name="TaskEditor_AddChecklistButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Add checklist item</value>
-  </data>
-  <data name="TaskEditor_AddChecklistButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Add checklist item (Enter)</value>
+    <value>Add an item</value>
   </data>
   <data name="TaskEditor_AddSubtaskCardBox.PlaceholderText" xml:space="preserve">
     <value>Subtitle of a new Subtask card</value>
@@ -1044,9 +1029,6 @@
   </data>
   <data name="TaskEditor_ArchivedInfoBar.Message" xml:space="preserve">
     <value>Archived tasks are read-only. Restore to edit.</value>
-  </data>
-  <data name="TaskEditor_ChecklistHeader.Text" xml:space="preserve">
-    <value>Checklist items</value>
   </data>
   <data name="TaskEditor_ChecklistList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Checklist items</value>
@@ -1066,9 +1048,6 @@
   <data name="TaskEditor_ClearEndDateButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Clear end date</value>
   </data>
-  <data name="TaskEditor_CrGroupHeader.Text" xml:space="preserve">
-    <value>Change request</value>
-  </data>
   <data name="TaskEditor_DesignerPicker.Header" xml:space="preserve">
     <value>Designer</value>
   </data>
@@ -1083,18 +1062,6 @@
   </data>
   <data name="TaskEditor_EndDate.Header" xml:space="preserve">
     <value>End date</value>
-  </data>
-  <data name="TaskEditor_ItemMoveUp.Text" xml:space="preserve">
-    <value>Move up</value>
-  </data>
-  <data name="TaskEditor_ItemMoveDown.Text" xml:space="preserve">
-    <value>Move down</value>
-  </data>
-  <data name="TaskEditor_ItemPopOut.Text" xml:space="preserve">
-    <value>Pop out to card</value>
-  </data>
-  <data name="TaskEditor_ItemDelete.Text" xml:space="preserve">
-    <value>Delete</value>
   </data>
   <data name="TaskEditor_LinkToCrButton.Content" xml:space="preserve">
     <value>Link to CR…</value>
@@ -1119,9 +1086,6 @@
   </data>
   <data name="TaskEditor_MoreDelete.Text" xml:space="preserve">
     <value>Delete…</value>
-  </data>
-  <data name="TaskEditor_NotLinked.Text" xml:space="preserve">
-    <value>Not linked to a CR</value>
   </data>
   <data name="TaskEditor_NotesBox.Header" xml:space="preserve">
     <value>Notes</value>
@@ -1152,12 +1116,6 @@
   </data>
   <data name="TaskEditor_SubtaskCardsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Subtask cards</value>
-  </data>
-  <data name="TaskEditor_TitleBox.Header" xml:space="preserve">
-    <value>Title *</value>
-  </data>
-  <data name="TaskEditor_TitleLabel.Text" xml:space="preserve">
-    <value>Title</value>
   </data>
   <data name="TaskEditor_ValidationInfoBar.Title" xml:space="preserve">
     <value>Can't save</value>
@@ -4239,5 +4197,65 @@
   <data name="Filters_RangeSelection" xml:space="preserve">
     <value>{0} – {1}</value>
     <comment>The range picker footer for a chosen range, e.g. "03/11/2026 – 13/11/2026" (short dates).</comment>
+  </data>
+  <data name="TaskEditor_TitleBox.PlaceholderText" xml:space="preserve">
+    <value>Task title</value>
+  </data>
+  <data name="TaskEditor_TitleBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="TaskEditor_TagsPicker.Placeholder" xml:space="preserve">
+    <value>Search for a tag</value>
+  </data>
+  <data name="TaskEditor_TagsPicker.FieldToolTip" xml:space="preserve">
+    <value>Search for a tag to apply to the task</value>
+  </data>
+  <data name="TaskEditor_CloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="TaskEditor_CloseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="TaskEditor_CrNumberLabel.Text" xml:space="preserve">
+    <value>CR number</value>
+  </data>
+  <data name="TaskEditor_CopyCrNumberName" xml:space="preserve">
+    <value>Copy CR number {0}</value>
+  </data>
+  <data name="TaskEditor_CopyTaskNumberName" xml:space="preserve">
+    <value>Copy task number {0}</value>
+  </data>
+  <data name="TaskEditor_ChecklistHeading" xml:space="preserve">
+    <value>Checklist</value>
+  </data>
+  <data name="TaskEditor_ChecklistHeadingCount" xml:space="preserve">
+    <value>Checklist ({0} of {1} items done)</value>
+  </data>
+  <data name="TaskEditor_PopOutUnavailable" xml:space="preserve">
+    <value>Save the task first</value>
+  </data>
+  <data name="TaskEditor_ChecklistMoveUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="TaskEditor_ChecklistMoveUpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="TaskEditor_ChecklistMoveDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="TaskEditor_ChecklistMoveDownButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="TaskEditor_ChecklistPopOutButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pop out to card</value>
+  </data>
+  <data name="TaskEditor_ChecklistPopOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Pop out to card</value>
+  </data>
+  <data name="TaskEditor_ChecklistDeleteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Delete item</value>
+  </data>
+  <data name="TaskEditor_ChecklistDeleteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Delete item</value>
   </data>
 </root>

@@ -532,6 +532,176 @@ public sealed class TaskEditorTests
     }
 
     [Fact]
+    [Trait("Req", "B-02.7")]
+    public void The_checklist_heading_counts_done_items_as_they_are_checked_added_and_removed()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task", "Service", null, "First", "Second"));
+        h.Strings.With("TaskEditor_ChecklistHeadingCount", "Checklist ({0} of {1} items done)");
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        var raised = new List<string?>();
+        editor.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        editor.ChecklistHeading.Should().Be("Checklist (0 of 2 items done)");
+        editor.ChecklistItems[0].IsCompleted = true;
+        editor.ChecklistHeading.Should().Be("Checklist (1 of 2 items done)");
+        raised.Should().Contain(nameof(TaskEditorViewModel.ChecklistHeading));
+
+        editor.NewChecklistText = "Third";
+        editor.AddChecklistItem().Should().BeTrue();
+        editor.ChecklistHeading.Should().Be("Checklist (1 of 3 items done)");
+
+        editor.RemoveChecklistItem(editor.ChecklistItems[0]);
+        editor.ChecklistHeading.Should().Be("Checklist (0 of 2 items done)");
+        editor.RemoveChecklistItem(editor.ChecklistItems[0]);
+        editor.RemoveChecklistItem(editor.ChecklistItems[0]);
+        editor.ChecklistHeading.Should().Be("TaskEditor_ChecklistHeading", "an empty checklist is plain \"Checklist\"");
+        editor.DiscardChanges();
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.6")]
+    public void The_tag_field_suggests_existing_tags_as_pills_and_backspace_removes_the_last_chip()
+    {
+        using var h = BoardMoveTests.Board(out var board, "Task");
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        var tags = editor.Tags;
+
+        tags.Query = "Design";
+        tags.SubmitQuery().Should().BeTrue();
+        tags.Query = "Development";
+        tags.SubmitQuery().Should().BeTrue();
+        tags.Suggestions.Should().BeEmpty("a pick empties the query and closes the list");
+        tags.Query = "Dev";
+        tags.Suggestions.Should().OnlyContain(s => s.IsTag, "tag rows are tag suggestions");
+        tags.Suggestions.Where(s => s.IsAddNew).Should().OnlyContain(s => !s.ShowsPill, "\"Add 'name'\" stays text");
+
+        tags.RemoveLast().Should().BeFalse("Backspace edits typed text first");
+        tags.Query = string.Empty;
+        tags.RemoveLast().Should().BeTrue();
+        tags.Tokens.Select(t => t.Name).Should().Equal("Design");
+        editor.IsDirty.Should().BeTrue("removing a chip is a draft change");
+        tags.RemoveLast().Should().BeTrue();
+        tags.RemoveLast().Should().BeFalse("no chip is left");
+        editor.Designer.RemoveLast().Should().BeFalse("a single-person box has no chips to remove");
+        editor.DiscardChanges();
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.7")]
+    public void A_dragged_checklist_item_moves_to_its_drop_position_in_the_draft()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task", "Service", null, "A", "B", "C"));
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        var a = editor.ChecklistItems[0];
+
+        editor.MoveChecklistItemTo(a, 2).Should().BeTrue();
+        editor.ChecklistItems.Select(i => i.Text).Should().Equal("B", "C", "A");
+        editor.IsDirty.Should().BeTrue();
+        editor.MoveChecklistItemTo(a, 3).Should().BeFalse("a position past the end is not a move");
+        editor.MoveChecklistItemTo(a, 2).Should().BeFalse("dropping an item where it is changes nothing");
+        editor.MoveChecklistItem(a, -2);
+        editor.ChecklistItems.Select(i => i.Text).Should().Equal("A", "B", "C");
+        editor.IsDirty.Should().BeFalse("back in the saved order");
+        editor.DiscardChanges();
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.7")]
+    public void Checklist_row_actions_follow_the_draft_pop_out_needs_a_saved_item_in_a_clean_draft()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task", "Service", null, "Saved"));
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        _ = board.OpenAsync(board.Buckets[0].Cards.Single());
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+        var saved = editor.ChecklistItems.Single();
+
+        saved.CanEdit.Should().BeTrue();
+        saved.CanPopOut.Should().BeTrue();
+        saved.PopOutUnavailableReason.Should().BeEmpty();
+
+        editor.NewChecklistText = "Fresh";
+        editor.AddChecklistItem().Should().BeTrue();
+        var fresh = editor.ChecklistItems.Single(i => i.IsNew);
+        saved.CanPopOut.Should().BeFalse("the draft now has unsaved changes");
+        saved.PopOutUnavailableReason.Should().Be("TaskEditor_PopOutUnavailable");
+        fresh.CanPopOut.Should().BeFalse("a new item has no saved card to pop out");
+        fresh.CanEdit.Should().BeTrue();
+        editor.DiscardChanges();
+    }
+
+    [Fact]
+    [Trait("Req", "B-05")]
+    public void An_archived_task_turns_its_checklist_rows_read_only()
+    {
+        using var h = WorkspaceHarness.Create(async s => await s.TaskAsync("Task", "Service", null, "Item"));
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        var flow = board.OpenAsync(board.Buckets[0].Cards.Single());
+        var editor = dialogs.Next<TaskEditorViewModel>(h);
+
+        h.Await(editor.ArchiveAsync()).Should().BeTrue();
+        h.Settle();
+        var item = editor.ChecklistItems.Single();
+        item.CanEdit.Should().BeFalse();
+        item.CanPopOut.Should().BeFalse();
+        item.PopOutUnavailableReason.Should().BeEmpty("the reason is about saving, which does not apply to a read-only task");
+        editor.MoveChecklistItemTo(item, 0).Should().BeFalse();
+        editor.TryClose().Should().BeTrue();
+        dialogs.CloseCurrent();
+        h.Await(flow);
+    }
+
+    [Fact]
+    [Trait("Req", "B-02.3")]
+    public void The_facts_strip_copies_the_plain_cr_and_task_numbers_of_a_linked_task_only()
+    {
+        ChangeRequestId cr = default;
+        using var h = WorkspaceHarness.Create(async s =>
+        {
+            cr = await s.CrAsync("RP-116", "Instant card freeze");
+            await s.TaskAsync(null, "Cards API", cr);
+            await s.TaskAsync("Unlinked", "Service");
+        });
+        h.Strings.With("TaskEditor_CopyCrNumberName", "Copy CR number {0}").With("TaskEditor_CopyTaskNumberName", "Copy task number {0}");
+        var board = BoardMoveTests.Ready(h);
+        using var dialogs = new DialogRecorder(h.Workspace.Context);
+        var cards = board.Buckets.SelectMany(b => b.Cards).ToList();
+
+        var flow = board.OpenAsync(cards.Single(c => c.Title == "Instant card freeze"));
+        var linked = dialogs.Next<TaskEditorViewModel>(h);
+        linked.CrNumberToCopy.Should().Be("RP-116", "the plain number, not the Copy ID format");
+        linked.CanCopyCrNumber.Should().BeTrue();
+        linked.CopyCrNumberName.Should().Be("Copy CR number RP-116");
+        linked.TaskNumberToCopy.Should().NotBeEmpty().And.Be(linked.TaskNumberText);
+        linked.CanCopyTaskNumber.Should().BeTrue();
+        linked.CopyTaskNumberName.Should().Be("Copy task number " + linked.TaskNumberToCopy);
+        linked.DiscardChanges();
+        h.Await(flow);
+
+        flow = board.OpenAsync(cards.Single(c => c.Title == "Unlinked"));
+        var unlinked = dialogs.Next<TaskEditorViewModel>(h);
+        unlinked.CanCopyCrNumber.Should().BeFalse();
+        unlinked.CrNumberToCopy.Should().BeEmpty();
+        unlinked.CanCopyTaskNumber.Should().BeFalse("\"No task number\" is not copied");
+        unlinked.CopyTaskNumberName.Should().BeEmpty();
+        unlinked.PendingCrNumber.Should().BeEmpty();
+        unlinked.DiscardChanges();
+        h.Await(flow);
+    }
+
+    [Fact]
     [Trait("Req", "B-02.6")]
     public void Save_commits_text_still_in_a_person_box_as_ctrl_enter_does_before_focus_leaves()
     {

@@ -1,20 +1,32 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Grid;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
+using XamlGrid = Microsoft.UI.Xaml.Controls.Grid;
 
 namespace MaxPlanner.Presentation.Tasks;
 
 /// <summary>
 /// The task editor dialog. Code-behind only forwards clicks and keys to <see cref="TaskEditorViewModel"/>,
 /// keeps the Status/Priority/CR selections in step with it (a two-way SelectedItem could run before
-/// ItemsSource), moves focus where the ViewModel asks, and reflows the fields by width (design §5.0).
+/// ItemsSource), moves focus where the ViewModel asks, reflows the fields by width (design §5.0), shows the
+/// hover-revealed copy and checklist row actions, and turns a checklist drag into a draft move.
 /// </summary>
 public sealed partial class TaskEditorDialog : ContentDialog
 {
+    // Elements marked Tag="Reveal" show while the pointer is over their host or focus is inside it.
+    private const string RevealTag = "Reveal";
+
+    private readonly HashSet<FrameworkElement> _pointerOverHosts = [];
+    private EditorChecklistItemViewModel? _draggedItem;
+
     public TaskEditorDialog(TaskEditorViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -38,14 +50,43 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     public static string CrName(string number, string title, string secondary) => number + ", " + title + ", " + secondary;
 
-    // Design §5.0 width rules: two field columns only when the window leaves room; S or a short window gets a
-    // full-size dialog so Save and Cancel stay reachable (T-08.1).
+    // Design §5.0 width rules: the fields sit side by side only when the window leaves room, and stack in one column
+    // otherwise (the facts strip keeps two). S or a short window gets a full-size dialog so Save and Cancel stay
+    // reachable (T-08.1).
     private void ApplyLayout(Windows.Foundation.Size size)
     {
-        var twoColumns = size.Width >= EditorDialogSizing.LargeBreakpoint;
-        Microsoft.UI.Xaml.Controls.Grid.SetColumn(RightPanel, twoColumns ? 1 : 0);
-        Microsoft.UI.Xaml.Controls.Grid.SetRow(RightPanel, twoColumns ? 0 : 1);
-        RightColumn.Width = twoColumns ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        var wide = size.Width >= EditorDialogSizing.LargeBreakpoint;
+        Reflow(FactsGrid, wide ? 4 : 2);
+        Reflow(WorkflowFields, wide ? 3 : 1);
+        Reflow(PeopleFields, wide ? 2 : 1);
+        Reflow(DateFields, wide ? 2 : 1);
+    }
+
+    // Places the grid's children in reading order across the given number of equal columns.
+    private static void Reflow(XamlGrid grid, int columns)
+    {
+        if (grid.ColumnDefinitions.Count == columns)
+        {
+            return;
+        }
+
+        grid.ColumnDefinitions.Clear();
+        for (var i = 0; i < columns; i++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        }
+
+        grid.RowDefinitions.Clear();
+        for (var i = 0; i < (grid.Children.Count + columns - 1) / columns; i++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        }
+
+        for (var i = 0; i < grid.Children.Count; i++)
+        {
+            XamlGrid.SetColumn((FrameworkElement)grid.Children[i], i % columns);
+            XamlGrid.SetRow((FrameworkElement)grid.Children[i], i / columns);
+        }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -107,6 +148,17 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
+    // The dialog would focus its first control, the tag field, which then looks active while the user has not touched
+    // it. An editable title takes focus instead, as in Planner; otherwise the Close button, which shows no focus
+    // visual for a programmatic focus.
+    // The dialog places its own initial focus after Opened, so this runs at low priority, once that has happened.
+    private void OnOpened(ContentDialog sender, ContentDialogOpenedEventArgs args) =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            Control target = ViewModel.IsTitleEditable ? TitleBox : CloseIconButton;
+            target.Focus(FocusState.Programmatic);
+        });
+
     private void OnPrimaryClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         // The dialog closes only after the save committed (the ViewModel asks for it); a failure keeps it open.
@@ -152,6 +204,78 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     private void OnOpenCrClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.OpenCr);
 
+    // Hide raises Closing with no result, so a dirty draft asks first, as Cancel and Esc do (design §5.8).
+    private void OnCloseClick(object sender, RoutedEventArgs e) => Hide();
+
+    // The plain numbers, not the configured Copy ID format.
+    private void OnCopyCrNumberClick(object sender, RoutedEventArgs e) => ClipboardText.Set(ViewModel.CrNumberToCopy);
+
+    private void OnCopyTaskNumberClick(object sender, RoutedEventArgs e) => ClipboardText.Set(ViewModel.TaskNumberToCopy);
+
+    private void OnRevealPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement host)
+        {
+            _pointerOverHosts.Add(host);
+            UpdateReveal(host);
+        }
+    }
+
+    private void OnRevealPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement host)
+        {
+            _pointerOverHosts.Remove(host);
+            UpdateReveal(host);
+        }
+    }
+
+    // Focus moving between a host's own parts raises LostFocus too, so the state is read once focus has settled.
+    private void OnRevealFocusChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement host)
+        {
+            DispatcherQueue.TryEnqueue(() => UpdateReveal(host));
+        }
+    }
+
+    // Opacity, not Visibility: the hidden parts keep their space, so nothing shifts, and stay reachable by Tab.
+    private void UpdateReveal(FrameworkElement host)
+    {
+        var shown = _pointerOverHosts.Contains(host) || IsFocusWithin(host);
+        SetRevealOpacity(host, shown ? 1 : 0);
+    }
+
+    private static void SetRevealOpacity(DependencyObject parent, double opacity)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is FrameworkElement { Tag: RevealTag } element)
+            {
+                element.Opacity = opacity;
+            }
+            else
+            {
+                SetRevealOpacity(child, opacity);
+            }
+        }
+    }
+
+    private bool IsFocusWithin(DependencyObject host)
+    {
+        var element = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        for (; element is not null; element = VisualTreeHelper.GetParent(element))
+        {
+            if (ReferenceEquals(element, host))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void OnSubtaskCardClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is EditorSubtaskCardViewModel card)
@@ -193,8 +317,6 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     private void OnClearEndClick(object sender, RoutedEventArgs e) => ViewModel.ClearEndDate();
 
-    private void OnAddChecklistClick(object sender, RoutedEventArgs e) => ViewModel.AddChecklistItem();
-
     private void OnAddChecklistKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter)
@@ -215,30 +337,110 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
-    private void OnChecklistMenuOpening(object sender, object e)
-    {
-        // Pop out runs immediately against the saved task, so it is off for a dirty draft or a new item.
-        // Flyout items are outside the visual tree, so they get the row's item explicitly.
-        if (sender is MenuFlyout menu && menu.Target?.DataContext is EditorChecklistItemViewModel item)
-        {
-            foreach (var entry in menu.Items.OfType<MenuFlyoutItem>())
-            {
-                entry.DataContext = item;
-                if (entry.Tag as string == "PopOut")
-                {
-                    entry.IsEnabled = ViewModel.CanPopOut && !item.IsNew;
-                }
-            }
-        }
-    }
+    private void OnItemMoveUpClick(object sender, RoutedEventArgs e) => MoveItem(sender, -1);
 
-    private void OnItemMoveUpClick(object sender, RoutedEventArgs e) => WithItem(sender, item => ViewModel.MoveChecklistItem(item, -1));
-
-    private void OnItemMoveDownClick(object sender, RoutedEventArgs e) => WithItem(sender, item => ViewModel.MoveChecklistItem(item, 1));
+    private void OnItemMoveDownClick(object sender, RoutedEventArgs e) => MoveItem(sender, 1);
 
     private void OnItemPopOutClick(object sender, RoutedEventArgs e) => WithItem(sender, item => _ = ViewModel.PopOutAsync(item));
 
     private void OnItemDeleteClick(object sender, RoutedEventArgs e) => WithItem(sender, ViewModel.RemoveChecklistItem);
+
+    // The list moves the row's container, so the pressed button keeps focus in its new place for repeated presses.
+    private void MoveItem(object sender, int delta)
+    {
+        if (sender is not Control { DataContext: EditorChecklistItemViewModel item } button)
+        {
+            return;
+        }
+
+        var automationId = AutomationProperties.GetAutomationId(button);
+        var focusState = button.FocusState;
+        ViewModel.MoveChecklistItem(item, delta);
+        if (focusState != FocusState.Unfocused)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (ChecklistList.ContainerFromItem(item) is DependencyObject row && FindByAutomationId(row, automationId) is { } moved)
+                {
+                    moved.Focus(focusState);
+                }
+            });
+        }
+    }
+
+    private static Control? FindByAutomationId(DependencyObject parent, string automationId)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is Control control && AutomationProperties.GetAutomationId(control) == automationId)
+            {
+                return control;
+            }
+
+            if (FindByAutomationId(child, automationId) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    // A drag reorders the draft (B-02.7): the list only reports where the item was dropped.
+    private void OnChecklistDragStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        _draggedItem = ViewModel.CanEditFields ? e.Items.FirstOrDefault() as EditorChecklistItemViewModel : null;
+        e.Cancel = _draggedItem is null;
+        e.Data.RequestedOperation = DataPackageOperation.Move;
+    }
+
+    private void OnChecklistDragOver(object sender, DragEventArgs e) =>
+        e.AcceptedOperation = _draggedItem is null ? DataPackageOperation.None : DataPackageOperation.Move;
+
+    private void OnChecklistDrop(object sender, DragEventArgs e)
+    {
+        if (_draggedItem is not { } item)
+        {
+            return;
+        }
+
+        // The drop goes before the first row whose middle is below the pointer; only realized rows are measured.
+        var from = ViewModel.ChecklistItems.IndexOf(item);
+        var y = e.GetPosition(ChecklistList).Y;
+        var insertAt = from;
+        for (var i = 0; i < ViewModel.ChecklistItems.Count; i++)
+        {
+            if (ChecklistList.ContainerFromIndex(i) is not FrameworkElement row)
+            {
+                continue;
+            }
+
+            var top = row.TransformToVisual(ChecklistList).TransformPoint(default).Y;
+            if (y < top + (row.ActualHeight / 2))
+            {
+                insertAt = i;
+                break;
+            }
+
+            insertAt = i + 1;
+        }
+
+        ViewModel.MoveChecklistItemTo(item, insertAt > from ? insertAt - 1 : insertAt);
+        _draggedItem = null;
+    }
+
+    // A row removed or moved under the pointer gets no PointerExited, so a reused container starts hidden again.
+    private void OnChecklistContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.ItemContainer?.ContentTemplateRoot is FrameworkElement host)
+        {
+            _pointerOverHosts.Remove(host);
+            SetRevealOpacity(host, 0);
+        }
+    }
+
+    private void OnChecklistDragCompleted(ListViewBase sender, DragItemsCompletedEventArgs args) => _draggedItem = null;
 
     private static void WithItem(object sender, Action<EditorChecklistItemViewModel> action)
     {

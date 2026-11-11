@@ -22,6 +22,9 @@ public static class BindFunctions
     /// <summary>True for a non-empty message, e.g. to open an InfoBar while its text is set.</summary>
     public static bool HasText(string? value) => !string.IsNullOrEmpty(value);
 
+    /// <summary>A tooltip only when there is text: an empty string would still open an empty tooltip.</summary>
+    public static object? ToolTipOrNull(string? text) => string.IsNullOrEmpty(text) ? null : text;
+
     /// <summary>A repeated item's AutomationId: <c>{prefix}{Guid:N}</c> (design §8.1).</summary>
     public static string RecordId(string prefix, Guid id) => prefix + id.ToString("N");
 

@@ -24,6 +24,25 @@ public sealed partial class EditorChecklistItemViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsCompleted { get; set; }
+
+    /// <summary>The draft is editable: the row's check, text, move, and delete are on.</summary>
+    [ObservableProperty]
+    public partial bool CanEdit { get; private set; } = true;
+
+    /// <summary>Pop out to card is available for this row now (a saved item in a clean, active task).</summary>
+    [ObservableProperty]
+    public partial bool CanPopOut { get; private set; }
+
+    /// <summary>Why Pop out is off ("Save the task first"); empty while it is available.</summary>
+    [ObservableProperty]
+    public partial string PopOutUnavailableReason { get; private set; } = string.Empty;
+
+    internal void SetState(bool canEdit, bool canPopOut, string popOutUnavailableReason)
+    {
+        CanEdit = canEdit;
+        CanPopOut = canPopOut;
+        PopOutUnavailableReason = popOutUnavailableReason;
+    }
 }
 
 /// <summary>A committed Subtask card of the edited task (design §5.1 group 8); cards are created immediately, not drafted.</summary>
