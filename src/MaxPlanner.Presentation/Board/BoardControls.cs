@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Windows.Foundation;
 
 namespace MaxPlanner.Presentation.Board;
@@ -38,6 +39,20 @@ public sealed partial class BoardCardList : ListView
 /// </summary>
 public sealed partial class BoardCardContainer : ListViewItem
 {
+    // The card's corner radius (design §4.2). The default template binds its presenter's CornerRadius to the
+    // ListViewItemCornerRadius theme resource, not to this control, so a style setter or a resource override in the list
+    // does not reach it. The presenter draws the pointer-over, pressed and selected backplates and the focus ring with it.
+    private static readonly CornerRadius CardCornerRadius = new(8);
+
+    protected override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        if (GetTemplateChild("Root") is ListViewItemPresenter presenter)
+        {
+            presenter.CornerRadius = CardCornerRadius;
+        }
+    }
+
     protected override AutomationPeer OnCreateAutomationPeer() => new BoardCardAutomationPeer(this);
 
     internal void Invoke()

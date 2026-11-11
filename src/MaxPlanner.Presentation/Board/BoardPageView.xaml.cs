@@ -91,12 +91,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
     public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
 
-    /// <summary>
-    /// The card's 3-epx left edge (design §4.2): the priority color by configured rank for a task, the Subtask accent for a
-    /// Subtask card. Styles use theme resources, so they follow theme changes.
-    /// </summary>
-    public static Style CardEdgeStyle(bool isTask, PriorityLevel level) => Resource(isTask ? "BoardPriority" + LevelKey(level) + "EdgeStyle" : "BoardSubtaskEdgeStyle");
-
     /// <summary>The ID-row priority glyph in the priority color (design §4.2 item 3).</summary>
     public static Style PriorityGlyphStyle(PriorityLevel level) => Resource("BoardPriority" + LevelKey(level) + "GlyphStyle");
 

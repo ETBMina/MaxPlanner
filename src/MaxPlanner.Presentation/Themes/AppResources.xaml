@@ -26,12 +26,10 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
-            <!-- Board cards (design §4.2): the priority edge and glyph by configured rank, the CR/Task chips, and the neutral chips. -->
+            <!-- Board cards (design §4.2): the priority glyph by configured rank, the CR/Task chips, and the neutral chips. -->
             <StaticResource x:Key="BoardPriorityLevel1Brush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="BoardPriorityLevel2Brush" ResourceKey="SystemFillColorCautionBrush" />
             <StaticResource x:Key="BoardPriorityMidBrush" ResourceKey="TextFillColorSecondaryBrush" />
-            <StaticResource x:Key="BoardPriorityLowestBrush" ResourceKey="TextFillColorTertiaryBrush" />
-            <!-- The lowest-priority glyph carries meaning, so it keeps text contrast; only the decorative edge is tertiary. -->
             <StaticResource x:Key="BoardPriorityLowestGlyphBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="IdChipForegroundBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
             <StaticResource x:Key="IdChipStrokeBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
@@ -139,12 +137,10 @@
             <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
-            <!-- Board cards (design §4.2): the priority edge and glyph by configured rank, the CR/Task chips, and the neutral chips. -->
+            <!-- Board cards (design §4.2): the priority glyph by configured rank, the CR/Task chips, and the neutral chips. -->
             <StaticResource x:Key="BoardPriorityLevel1Brush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="BoardPriorityLevel2Brush" ResourceKey="SystemFillColorCautionBrush" />
             <StaticResource x:Key="BoardPriorityMidBrush" ResourceKey="TextFillColorSecondaryBrush" />
-            <StaticResource x:Key="BoardPriorityLowestBrush" ResourceKey="TextFillColorTertiaryBrush" />
-            <!-- The lowest-priority glyph carries meaning, so it keeps text contrast; only the decorative edge is tertiary. -->
             <StaticResource x:Key="BoardPriorityLowestGlyphBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="IdChipForegroundBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
             <StaticResource x:Key="IdChipStrokeBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
@@ -258,7 +254,6 @@
             <StaticResource x:Key="BoardPriorityLevel1Brush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="BoardPriorityLevel2Brush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="BoardPriorityMidBrush" ResourceKey="SystemColorWindowTextColorBrush" />
-            <StaticResource x:Key="BoardPriorityLowestBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="BoardPriorityLowestGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="IdChipForegroundBrush" ResourceKey="SystemColorHotlightColorBrush" />
             <StaticResource x:Key="IdChipStrokeBrush" ResourceKey="SystemColorHotlightColorBrush" />
@@ -617,24 +612,9 @@
     </Style>
 
     <!--
-        Board cards (design §4.2, owner redesign "H1 · Pill strip"). The 3-epx left edge and the ID-row glyph use the
-        priority color by configured rank; a Subtask card's edge is the Subtask accent. Picked by BoardPageView.
+        Board cards (design §4.2, owner redesign "H1 · Pill strip"). No priority edge (owner request, Nov 2026); the
+        ID-row glyph uses the priority color by configured rank. Picked by BoardPageView.
     -->
-    <Style x:Key="BoardPriorityLevel1EdgeStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BoardPriorityLevel1Brush}" />
-    </Style>
-    <Style x:Key="BoardPriorityLevel2EdgeStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BoardPriorityLevel2Brush}" />
-    </Style>
-    <Style x:Key="BoardPriorityMidEdgeStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BoardPriorityMidBrush}" />
-    </Style>
-    <Style x:Key="BoardPriorityLowestEdgeStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BoardPriorityLowestBrush}" />
-    </Style>
-    <Style x:Key="BoardSubtaskEdgeStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource SubtaskCardAccentBrush}" />
-    </Style>
     <Style x:Key="BoardPriorityLevel1GlyphStyle" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource BoardPriorityLevel1Brush}" />
     </Style>
@@ -647,14 +627,14 @@
     <Style x:Key="BoardPriorityLowestGlyphStyle" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource BoardPriorityLowestGlyphBrush}" />
     </Style>
-    <!-- The tag strip: a narrow band in the secondary card fill with a 1-px divider below; its top-right corner follows the card. -->
+    <!-- The tag strip: a narrow band in the secondary card fill with a 1-px divider below; its top corners follow the card (8 minus the stroke). -->
     <Style x:Key="BoardTagStripStyle" TargetType="Grid">
         <Setter Property="MinHeight" Value="26" />
         <Setter Property="Padding" Value="8,0,2,0" />
         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
-        <Setter Property="CornerRadius" Value="0,7,0,0" />
+        <Setter Property="CornerRadius" Value="7,7,0,0" />
     </Style>
     <!-- The card ⋯ button: icon only, transparent, not a tab stop (the card menu has its own keys, design §7.3). -->
     <Style x:Key="BoardCardMenuButtonStyle" BasedOn="{StaticResource DefaultButtonStyle}" TargetType="Button">
