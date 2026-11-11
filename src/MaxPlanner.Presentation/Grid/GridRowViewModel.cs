@@ -304,6 +304,61 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         DraftDateCleared = true;
     }
 
+    /// <summary>
+    /// Sets the open edit's draft from a typed value (the cell's UI Automation value). Names match case-insensitively,
+    /// dates and numbers parse in the current culture, and an empty value clears a date, number, or lookup. People and
+    /// tags change only through their picker.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value does not fit the column; the message is also shown on the row.</exception>
+    internal void SetDraftFromText(string value, IEnumerable<StatusOption> statusOptions, IEnumerable<PriorityOption> priorityOptions)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var trimmed = value.Trim();
+        switch (EditingColumn)
+        {
+            case GridColumns.Status:
+                DraftStatus = statusOptions.FirstOrDefault(o => string.Equals(o.Name, trimmed, StringComparison.OrdinalIgnoreCase))
+                    ?? Refuse<StatusOption>("Grid_ValueError_NoStatus");
+                break;
+            case GridColumns.Priority:
+                DraftPriority = priorityOptions.FirstOrDefault(o => string.Equals(o.Name, trimmed, StringComparison.OrdinalIgnoreCase))
+                    ?? Refuse<PriorityOption>("Grid_ValueError_NoPriority");
+                break;
+            case GridColumns.StartDate or GridColumns.EndDate:
+                if (trimmed.Length == 0)
+                {
+                    ClearDraftDate();
+                }
+                else if (DateOnly.TryParse(trimmed, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
+                {
+                    DraftDate = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue));
+                }
+                else
+                {
+                    Refuse<object>("Grid_ValueError_NotDate");
+                }
+
+                break;
+            case GridColumns.Designer or GridColumns.Developer or GridColumns.Tags:
+                Refuse<object>("Grid_ValueError_UsePicker");
+                break;
+            case GridColumns.Notes:
+                DraftText = value;
+                break;
+            default:
+                if (DraftCustom is { } custom)
+                {
+                    SetCustomDraft(custom, trimmed);
+                }
+                else
+                {
+                    DraftText = value;
+                }
+
+                break;
+        }
+    }
+
     /// <summary>True when committing would change the record.</summary>
     internal bool IsDraftChanged()
     {
@@ -464,6 +519,40 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
 
     private static IEnumerable<(Guid Id, string Name, bool IsNew)> PersonToken(LookupRef<PersonId>? person) =>
         person is { } p ? [(p.Id.Value, p.Name, false)] : [];
+
+    private void SetCustomDraft(CustomFieldEditorViewModel custom, string value)
+    {
+        switch (custom.Kind)
+        {
+            case FieldKind.Number:
+                custom.Number = value.Length == 0 ? double.NaN
+                    : double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var number) ? number : Refuse<double>("Grid_ValueError_NotNumber");
+                break;
+            case FieldKind.Date:
+                custom.Date = value.Length == 0 ? null
+                    : DateOnly.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date) ? new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue))
+                    : Refuse<DateTimeOffset?>("Grid_ValueError_NotDate");
+                break;
+            case FieldKind.Lookup:
+                custom.SelectedOption = custom.Options.FirstOrDefault(o => string.Equals(o.Label, value, StringComparison.OrdinalIgnoreCase))
+                    ?? (value.Length == 0 ? custom.Options[0] : Refuse<FieldOptionChoice>("Grid_ValueError_NoOption"));
+                break;
+            case FieldKind.People or FieldKind.Tags:
+                Refuse<object>("Grid_ValueError_UsePicker");
+                break;
+            default:
+                custom.Text = value;
+                break;
+        }
+    }
+
+    /// <summary>Shows the refusal on the row and throws it, as a UI Automation value setter reports a bad value.</summary>
+    private T Refuse<T>(string key)
+    {
+        var message = _strings.GetString(key);
+        ShowError(message);
+        throw new ArgumentException(message);
+    }
 
     private bool TokensEqual(IEnumerable<Guid>? committed) => DraftTokens is null || DraftTokens.Ids.SequenceEqual(committed ?? []);
 

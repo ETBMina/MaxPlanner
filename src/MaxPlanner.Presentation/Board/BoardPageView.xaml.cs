@@ -20,8 +20,6 @@ namespace MaxPlanner.Presentation.Board;
 /// </summary>
 public sealed partial class BoardPageView : UserControl, Shell.IPageView
 {
-    private static readonly ResourceStrings Strings = new();
-
     private readonly HashSet<FrameworkElement> _buckets = [];
     private readonly Dictionary<BoardBucketViewModel, BoardCardList> _lists = [];
     private BoardLayout? _layout;
@@ -332,7 +330,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             menu.Items.Add(Item("Board_MenuOpenCr", "Board_MenuOpenCrItem", null, () => _ = ViewModel.OpenCrAsync(card)));
         }
 
-        var moveTo = new MenuFlyoutSubItem { Text = Strings.GetString("Board_MenuMoveTo") };
+        var moveTo = new MenuFlyoutSubItem { Text = ResourceStrings.Shared.GetString("Board_MenuMoveTo") };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(moveTo, "Board_MenuMoveToItem");
         foreach (var bucket in ViewModel.Buckets)
         {
@@ -400,7 +398,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private static MenuFlyoutItem Item(string textKey, string automationId, string? glyph, Action action, bool enabled = true)
     {
-        var item = new MenuFlyoutItem { Text = Strings.GetString(textKey), IsEnabled = enabled };
+        var item = new MenuFlyoutItem { Text = ResourceStrings.Shared.GetString(textKey), IsEnabled = enabled };
         if (glyph is not null)
         {
             item.Icon = new FontIcon { Glyph = glyph };
@@ -552,7 +550,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         {
             // B-07: positional reordering is off while filtered; the forbidden cursor and caption say so (§9).
             e.AcceptedOperation = DataPackageOperation.None;
-            e.DragUIOverride.Caption = Strings.GetString("Board_ReorderOffCaption");
+            e.DragUIOverride.Caption = ResourceStrings.Shared.GetString("Board_ReorderOffCaption");
             ClearDropFeedback();
             return;
         }

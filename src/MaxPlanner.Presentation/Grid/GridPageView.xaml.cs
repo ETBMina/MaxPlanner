@@ -1,7 +1,5 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
-using MaxPlanner.Domain.Fields;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Fields;
@@ -48,7 +46,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     /// second click of a double-click that started it (design §4.3 single-tap editing).
     /// </summary>
     private const long DoubleClickGuardMs = 500;
-    private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
 
     private readonly List<GridHeaderCell> _headerCells = [];
     private readonly List<GridColumnViewModel> _headerColumns = [];
@@ -250,7 +247,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         var text = new TextBlock { Text = column.Header, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         var glyph = new FontIcon { FontSize = 12, Glyph = SortGlyph(column.Sort), Visibility = column.Sort == GridSortDirection.None ? Visibility.Collapsed : Visibility.Visible };
         AutomationProperties.SetAccessibilityView(glyph, AccessibilityView.Raw);
-        var grip = GridHeaderGrip.Create(Strings.Value.Format("Grid_ResizeColumnName", column.Header), delta => ViewModel.SetWidth(column.Key, column.Width + delta));
+        var grip = GridHeaderGrip.Create(ResourceStrings.Shared.Format("Grid_ResizeColumnName", column.Header), delta => ViewModel.SetWidth(column.Key, column.Width + delta));
         var layout = new WinGrid { ColumnSpacing = 4 };
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -284,7 +281,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             if (_draggedColumn is { } dragged && dragged != column.Key)
             {
                 args.AcceptedOperation = DataPackageOperation.Move;
-                args.DragUIOverride.Caption = Strings.Value.Format("Grid_MoveColumnCaption", column.Header);
+                args.DragUIOverride.Caption = ResourceStrings.Shared.Format("Grid_MoveColumnCaption", column.Header);
             }
         };
         cell.Drop += (_, _) =>
@@ -378,7 +375,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private MenuFlyout HeaderMenu(GridColumnViewModel column)
     {
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
         void Item(string key, string id, Action action, bool enabled = true)
         {
@@ -403,7 +400,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     // Column chooser (design §4.3): a CheckBox per column plus Reset; visibility never changes the results (B-10).
     private void OnColumnsFlyoutOpening(object? sender, object e)
     {
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var list = new StackPanel { Spacing = 2 };
         foreach (var column in ViewModel.Columns)
         {
@@ -694,7 +691,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            row.ShowError(Strings.Value.GetString("Error_Unexpected"));
+            row.ShowError(ResourceStrings.Shared.GetString("Error_Unexpected"));
             ShowPopup(row);
             return;
         }
@@ -729,54 +726,10 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         var column = cell.Column;
         if (row.EditingColumn != column && !ViewModel.BeginEdit(row, column))
         {
-            throw new InvalidOperationException(row.ErrorMessage ?? "The cell can't be edited now.");
+            throw new InvalidOperationException(row.ErrorMessage ?? ResourceStrings.Shared.GetString("Grid_ValueError_CannotEdit"));
         }
 
-        var trimmed = value.Trim();
-        switch (column)
-        {
-            case GridColumns.Status:
-                row.DraftStatus = ViewModel.StatusOptions.FirstOrDefault(o => string.Equals(o.Name, trimmed, StringComparison.OrdinalIgnoreCase))
-                    ?? Refuse<StatusOption>(row, "No task status has that name.");
-                break;
-            case GridColumns.Priority:
-                row.DraftPriority = ViewModel.PriorityOptions.FirstOrDefault(o => string.Equals(o.Name, trimmed, StringComparison.OrdinalIgnoreCase))
-                    ?? Refuse<Tasks.PriorityOption>(row, "No priority has that name.");
-                break;
-            case GridColumns.StartDate or GridColumns.EndDate:
-                if (trimmed.Length == 0)
-                {
-                    row.ClearDraftDate();
-                }
-                else if (DateOnly.TryParse(trimmed, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
-                {
-                    row.DraftDate = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue));
-                }
-                else
-                {
-                    Refuse<object>(row, "The value is not a date.");
-                }
-
-                break;
-            case GridColumns.Designer or GridColumns.Developer or GridColumns.Tags:
-                Refuse<object>(row, "Use the picker to change people or tags.");
-                break;
-            case GridColumns.Notes:
-                row.DraftText = value;
-                break;
-            default:
-                if (row.DraftCustom is { } custom)
-                {
-                    SetCustomValue(row, custom, trimmed);
-                }
-                else
-                {
-                    row.DraftText = value;
-                }
-
-                break;
-        }
-
+        row.SetDraftFromText(value, ViewModel.StatusOptions, ViewModel.PriorityOptions);
         _ = CommitAsync(cell, row, move: 0, restoreFocus: true);
     }
 
@@ -810,38 +763,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     }
 
     void IGridCellHost.OnRowMenuRequested(GridRowViewModel row, FrameworkElement anchor) => RowMenu(row).ShowAt(anchor);
-
-    private static T Refuse<T>(GridRowViewModel row, string message)
-    {
-        row.ShowError(message);
-        throw new ArgumentException(message);
-    }
-
-    private static void SetCustomValue(GridRowViewModel row, CustomFieldEditorViewModel custom, string value)
-    {
-        switch (custom.Kind)
-        {
-            case FieldKind.Number:
-                custom.Number = value.Length == 0 ? double.NaN
-                    : double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var number) ? number : Refuse<double>(row, "The value is not a number.");
-                break;
-            case FieldKind.Date:
-                custom.Date = value.Length == 0 ? null
-                    : DateOnly.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date) ? new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue))
-                    : Refuse<DateTimeOffset?>(row, "The value is not a date.");
-                break;
-            case FieldKind.Lookup:
-                custom.SelectedOption = custom.Options.FirstOrDefault(o => string.Equals(o.Label, value, StringComparison.OrdinalIgnoreCase))
-                    ?? (value.Length == 0 ? custom.Options[0] : Refuse<FieldOptionChoice>(row, "No option has that name."));
-                break;
-            case FieldKind.People or FieldKind.Tags:
-                Refuse<object>(row, "Use the picker to change people or tags.");
-                break;
-            default:
-                custom.Text = value;
-                break;
-        }
-    }
 
     private static bool StartsByTyping(string column) => column is GridColumns.Title or GridColumns.Subtitle or GridColumns.Service || GridColumns.IsCustom(column);
 
@@ -914,7 +835,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             return;
         }
 
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         Control focus;
         FrameworkElement editor;
         switch (column.EditorKind)
@@ -1409,7 +1330,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private MenuFlyout RowMenu(GridRowViewModel row)
     {
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
         void Item(string key, string id, Action action)
         {

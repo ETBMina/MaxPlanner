@@ -1,14 +1,7 @@
-using System.ComponentModel;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MaxPlanner.Application.Preferences;
-using MaxPlanner.Application.Abstractions;
-using MaxPlanner.Application.ChangeRequests;
-using MaxPlanner.Application.Checklists;
-using MaxPlanner.Application.Reviews;
-using MaxPlanner.Application.SubtaskCards;
-using MaxPlanner.Application.Tasks;
 using MaxPlanner.Presentation.ChangeRequests;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Dialogs;
@@ -18,96 +11,6 @@ using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Tasks;
 
 namespace MaxPlanner.Presentation.Workspace;
-
-/// <summary>
-/// The Application use cases the pages and editors call (T-07: every edit goes through the same command path).
-/// Use cases are stateless, so one instance of each serves every page of the open dataset.
-/// </summary>
-public sealed record WorkspaceUseCases(
-    CreateTask CreateTask,
-    UpdateTaskContent UpdateTaskContent,
-    MoveTask MoveTask,
-    UpdateSubtaskCardContent UpdateSubtaskCardContent,
-    MoveSubtaskCard MoveSubtaskCard,
-    AddChecklistItem AddChecklistItem,
-    SetChecklistItemCompleted SetChecklistItemCompleted,
-    UpdateTask UpdateTask,
-    CopyTask CopyTask,
-    ArchiveTask ArchiveTask,
-    RestoreTask RestoreTask,
-    DeleteTask DeleteTask,
-    LinkTaskToChangeRequest LinkTaskToChangeRequest,
-    CreateSubtaskCard CreateSubtaskCard,
-    DeleteSubtaskCard DeleteSubtaskCard,
-    PopOutChecklistItem PopOutChecklistItem,
-    UpdateSubtaskCard UpdateSubtaskCard,
-    CreateChangeRequest CreateChangeRequest,
-    UpdateChangeRequest UpdateChangeRequest,
-    DeleteChangeRequest DeleteChangeRequest,
-    ScheduleChangeRequest ScheduleChangeRequest,
-    ResizeChangeRequest ResizeChangeRequest,
-    MoveChangeRequestToBacklog MoveChangeRequestToBacklog,
-    RenameChecklistItem RenameChecklistItem,
-    MoveChecklistItem MoveChecklistItem,
-    DeleteChecklistItem DeleteChecklistItem,
-    AddGeneralTodo AddGeneralTodo,
-    SetGeneralTodoCompleted SetGeneralTodoCompleted,
-    RenameGeneralTodo RenameGeneralTodo,
-    MoveGeneralTodo MoveGeneralTodo,
-    DeleteGeneralTodo DeleteGeneralTodo,
-    CreateReview CreateReview,
-    UpdateReview UpdateReview,
-    SetReviewDone SetReviewDone,
-    MoveReview MoveReview,
-    DeleteReview DeleteReview)
-{
-    /// <summary>Every use case over one dataset's coordinator; the composition root and tests share this list.</summary>
-    public static WorkspaceUseCases Create(IMutationCoordinator coordinator)
-    {
-        ArgumentNullException.ThrowIfNull(coordinator);
-        return new(
-            new CreateTask(coordinator),
-            new UpdateTaskContent(coordinator),
-            new MoveTask(coordinator),
-            new UpdateSubtaskCardContent(coordinator),
-            new MoveSubtaskCard(coordinator),
-            new AddChecklistItem(coordinator),
-            new SetChecklistItemCompleted(coordinator),
-            new UpdateTask(coordinator),
-            new CopyTask(coordinator),
-            new ArchiveTask(coordinator),
-            new RestoreTask(coordinator),
-            new DeleteTask(coordinator),
-            new LinkTaskToChangeRequest(coordinator),
-            new CreateSubtaskCard(coordinator),
-            new DeleteSubtaskCard(coordinator),
-            new PopOutChecklistItem(coordinator),
-            new UpdateSubtaskCard(coordinator),
-            new CreateChangeRequest(coordinator),
-            new UpdateChangeRequest(coordinator),
-            new DeleteChangeRequest(coordinator),
-            new ScheduleChangeRequest(coordinator),
-            new ResizeChangeRequest(coordinator),
-            new MoveChangeRequestToBacklog(coordinator),
-            new RenameChecklistItem(coordinator),
-            new MoveChecklistItem(coordinator),
-            new DeleteChecklistItem(coordinator),
-            new AddGeneralTodo(coordinator),
-            new SetGeneralTodoCompleted(coordinator),
-            new RenameGeneralTodo(coordinator),
-            new MoveGeneralTodo(coordinator),
-            new DeleteGeneralTodo(coordinator),
-            new CreateReview(coordinator),
-            new UpdateReview(coordinator),
-            new SetReviewDone(coordinator),
-            new MoveReview(coordinator),
-            new DeleteReview(coordinator));
-    }
-}
-
-/// <summary>A screen-reader announcement (design §8.3).</summary>
-/// <param name="IsFailure">ActionAborted rather than ActionCompleted.</param>
-public sealed record Announcement(string Text, bool IsFailure);
 
 /// <summary>
 /// What every page of one open dataset shares: the projection store, the use cases, the UI scheduler, the
@@ -262,43 +165,4 @@ public sealed partial class WorkspaceContext : ObservableObject
         });
         await Task.WhenAny(shown.Task, Task.Delay(timeout)).ConfigureAwait(true);
     }
-}
-
-/// <summary>The state a page's <c>StateView</c> shows (design §2.5).</summary>
-public enum ViewState
-{
-    Loading,
-    Empty,
-    FilteredEmpty,
-    Error,
-    Populated,
-}
-
-/// <summary>A retained page ViewModel (design §2.2: page ViewModels are kept for the session).</summary>
-public interface IPageViewModel : INotifyPropertyChanged, IDisposable
-{
-    /// <summary>The status-bar page summary (design §2.8).</summary>
-    string Summary { get; }
-
-    /// <summary>
-    /// The page's data-region state (design §2.5); Loading until its first data arrived. A page without one is
-    /// always Populated. The shell's page preload waits for it before it creates the page view.
-    /// </summary>
-    ViewState State => ViewState.Populated;
-}
-
-/// <summary>UI preferences kept in memory only, for a workspace without a preferences file (tests).</summary>
-internal sealed class InMemoryUiPreferences : IUiPreferencesStore
-{
-    public UiPreferences Current { get; private set; } = UiPreferences.Default;
-
-    public PreferencesLoadResult Load() => new(Current, PreferencesRecovery.None);
-
-    public void Update(Func<UiPreferences, UiPreferences> change)
-    {
-        ArgumentNullException.ThrowIfNull(change);
-        Current = change(Current);
-    }
-
-    public Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

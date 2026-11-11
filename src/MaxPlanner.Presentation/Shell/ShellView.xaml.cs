@@ -153,6 +153,9 @@ public sealed partial class ShellView : UserControl
     /// <summary>Opens or closes the overlay pane from the title bar's toggle (S breakpoint).</summary>
     public void TogglePane() => Nav.IsPaneOpen = !Nav.IsPaneOpen;
 
+    /// <summary>The data notice's severity: a failed restore is an error, any other outcome a success.</summary>
+    public static InfoBarSeverity DataNoticeSeverity(bool isError) => isError ? InfoBarSeverity.Error : InfoBarSeverity.Success;
+
     /// <summary>The App InfoBar text for a save failure: the actionable message, then the operation id line.</summary>
     public static string FailureText(string? message, string? details) =>
         message is null ? string.Empty : details is null ? message : message + Environment.NewLine + details;

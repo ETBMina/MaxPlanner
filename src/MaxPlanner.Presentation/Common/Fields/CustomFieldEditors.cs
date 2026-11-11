@@ -225,7 +225,7 @@ internal static class CustomFieldEditors
 
     private static bool SameNumber(double a, double b) => (double.IsNaN(a) && double.IsNaN(b)) || a.Equals(b);
 
-    private static readonly Lazy<string> ClearName = new(() => new Services.ResourceStrings().GetString("CustomField_ClearDateName"));
+    private static readonly Lazy<string> ClearName = new(() => Services.ResourceStrings.Shared.GetString("CustomField_ClearDateName"));
 }
 
 /// <summary>

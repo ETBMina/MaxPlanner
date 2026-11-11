@@ -16,8 +16,6 @@ namespace MaxPlanner.Presentation.Settings;
 /// </summary>
 public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 {
-    private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
-
     /// <summary>The row whose grip received the last pointer press; only that row may start a drag.</summary>
     private LookupRowViewModel? _gripPressedRow;
 
@@ -213,7 +211,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             return;
         }
 
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
         MenuFlyoutItem Item(string key, string id, Action action, bool enabled = true)
         {
@@ -304,7 +302,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             return;
         }
 
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
         void Item(string key, string id, Action action, bool enabled = true)
         {

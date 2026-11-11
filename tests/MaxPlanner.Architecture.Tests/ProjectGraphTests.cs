@@ -4,7 +4,7 @@ using AwesomeAssertions;
 namespace MaxPlanner.Architecture.Tests;
 
 // T-04 / T-11.8: the allowed project-reference matrix is checked from the .csproj files
-// themselves, so it also covers the WinUI projects this net10.0 test cannot load.
+// themselves, so it also covers the Desktop project, whose assembly these tests do not load.
 public sealed class ProjectGraphTests
 {
     private static readonly Dictionary<string, string[]> AllowedProjectReferences = new()

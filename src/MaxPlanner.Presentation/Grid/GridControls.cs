@@ -682,7 +682,7 @@ internal static class GridCellContent
                 var picker = new CalendarDatePicker { Date = row.DraftDate, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Center };
                 picker.DateChanged += (_, args) => row.DraftDate = args.NewDate;
                 var clear = new Button { Content = new FontIcon { Glyph = "", FontSize = 12 }, IsTabStop = false };
-                var clearName = new ResourceStrings().Format("Grid_ClearDateName", column.Header);
+                var clearName = ResourceStrings.Shared.Format("Grid_ClearDateName", column.Header);
                 AutomationProperties.SetName(clear, clearName);
                 ToolTipService.SetToolTip(clear, clearName);
                 clear.Click += (_, _) =>
@@ -992,7 +992,7 @@ internal sealed partial class GridCellAutomationPeer(GridCell owner) : Framework
         return -1;
     }
 
-    private static readonly Lazy<string> CellTypeName = new(() => new ResourceStrings().GetString("Grid_CellControlType"));
+    private static readonly Lazy<string> CellTypeName = new(() => ResourceStrings.Shared.GetString("Grid_CellControlType"));
 }
 
 /// <summary>The resize grip of a header (pointer resize, design §4.3); reuses the Calendar's cursor host.</summary>

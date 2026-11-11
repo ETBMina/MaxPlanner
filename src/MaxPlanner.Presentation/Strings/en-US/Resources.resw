@@ -725,6 +725,28 @@
   <data name="Grid_RowMenuName" xml:space="preserve">
     <value>More actions for {0}</value>
   </data>
+  <data name="Grid_ValueError_NoStatus" xml:space="preserve">
+    <value>No task status has that name.</value>
+    <comment>A value typed into a Status cell (UI Automation) matches no status.</comment>
+  </data>
+  <data name="Grid_ValueError_NoPriority" xml:space="preserve">
+    <value>No priority has that name.</value>
+  </data>
+  <data name="Grid_ValueError_NotDate" xml:space="preserve">
+    <value>The value is not a date.</value>
+  </data>
+  <data name="Grid_ValueError_NotNumber" xml:space="preserve">
+    <value>The value is not a number.</value>
+  </data>
+  <data name="Grid_ValueError_NoOption" xml:space="preserve">
+    <value>No option has that name.</value>
+  </data>
+  <data name="Grid_ValueError_CannotEdit" xml:space="preserve">
+    <value>The cell can't be edited now.</value>
+  </data>
+  <data name="Grid_ValueError_UsePicker" xml:space="preserve">
+    <value>Use the picker to change people or tags.</value>
+  </data>
   <data name="Checklists_OpenTaskName" xml:space="preserve">
     <value>Open task {0}</value>
   </data>

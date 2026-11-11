@@ -20,9 +20,6 @@ namespace MaxPlanner.Presentation.Checklists;
 /// </summary>
 public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
 {
-    // The strings of the code-built confirmation flyout.
-    private static readonly ResourceStrings Strings = new();
-
     // The Reviews card's key in IndexOfCard (it has no Add box focus target from the page commands).
     private const string ReviewsCardKey = "Reviews";
 
@@ -297,8 +294,8 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     private static void ShowDeleteFlyout(FrameworkElement anchor, string prompt, Func<Task> delete)
     {
         var flyout = new Flyout { ShouldConstrainToRootBounds = true };
-        var confirm = new Button { Content = Strings.GetString("Checklists_DeleteButton") };
-        var cancel = new Button { Content = Strings.GetString("Common_Cancel"), Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["AccentButtonStyle"] };
+        var confirm = new Button { Content = ResourceStrings.Shared.GetString("Checklists_DeleteButton") };
+        var cancel = new Button { Content = ResourceStrings.Shared.GetString("Common_Cancel"), Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["AccentButtonStyle"] };
         AutomationProperties.SetAutomationId(confirm, "Checklists_DeleteConfirmButton");
         AutomationProperties.SetAutomationId(cancel, "Checklists_DeleteCancelButton");
         confirm.Click += (_, _) =>

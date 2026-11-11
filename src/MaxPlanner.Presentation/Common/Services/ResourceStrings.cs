@@ -8,7 +8,15 @@ public sealed class ResourceStrings : ILocalizedStrings
     // ADR 0014: this library's Resources.resw is merged into the app's PRI under its own resource map.
     private const string ResourceMap = "MaxPlanner.Presentation/Resources";
 
+    private static readonly Lazy<ResourceStrings> SharedInstance = new(() => new ResourceStrings());
+
     private readonly ResourceLoader _loader = new(ResourceLoader.GetDefaultResourceFilePath(), ResourceMap);
+
+    /// <summary>
+    /// The one instance for views and controls, which XAML creates without dependency injection. View models take
+    /// their <see cref="ILocalizedStrings"/> from the constructor instead.
+    /// </summary>
+    public static ResourceStrings Shared => SharedInstance.Value;
 
     public string GetString(string key)
     {

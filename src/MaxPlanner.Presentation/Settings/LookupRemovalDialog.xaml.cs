@@ -10,7 +10,7 @@ public sealed partial class LookupRemovalDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        var strings = new ResourceStrings();
+        var strings = ResourceStrings.Shared;
         ModeRadios.ItemsSource = new[] { strings.GetString("LookupRemove_ReplaceOption"), strings.GetString("LookupRemove_ClearOption") };
         ModeRadios.SelectedIndex = 0;
     }

@@ -101,7 +101,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     public partial string? DataNoticeMessage { get; private set; }
 
     [ObservableProperty]
-    public partial Microsoft.UI.Xaml.Controls.InfoBarSeverity DataNoticeSeverity { get; private set; }
+    public partial bool IsDataNoticeError { get; private set; }
 
     public bool IsStarting => State == ShellState.Starting;
 
@@ -224,7 +224,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         DataNoticeMessage = message;
-        DataNoticeSeverity = isError ? Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error : Microsoft.UI.Xaml.Controls.InfoBarSeverity.Success;
+        IsDataNoticeError = isError;
         IsDataNoticeOpen = true;
     }
 
