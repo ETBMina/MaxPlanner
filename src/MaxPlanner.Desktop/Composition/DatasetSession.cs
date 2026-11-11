@@ -2,12 +2,14 @@ using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Application.Startup;
 using MaxPlanner.Application.Transfer;
 using MaxPlanner.Desktop.Maintenance;
 using MaxPlanner.Infrastructure.Transfer;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
+using MaxPlanner.Infrastructure.Startup;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Settings;
@@ -19,7 +21,7 @@ namespace MaxPlanner.Desktop.Composition;
 
 /// <summary>
 /// The services of the one open dataset (one session per process): the dataset and its ports, the
-/// projection store, the daily backup, and the use cases. Built only after the dataset opened, because
+/// projection store, the backups, and the use cases. Built only after the dataset opened, because
 /// none of these can exist without it.
 /// </summary>
 /// <remarks>
@@ -37,7 +39,7 @@ internal sealed class DatasetSession : IAsyncDisposable
         _provider = provider;
         Dataset = dataset;
         Store = provider.GetRequiredService<WorkspaceProjectionStore>();
-        Backups = provider.GetRequiredService<DailyBackupService>();
+        Backups = provider.GetRequiredService<IDatasetBackups>();
     }
 
     /// <summary>The pages of this dataset; created on the UI thread by <see cref="CreateWorkspace"/>.</summary>
@@ -47,7 +49,7 @@ internal sealed class DatasetSession : IAsyncDisposable
 
     public WorkspaceProjectionStore Store { get; }
 
-    public DailyBackupService Backups { get; }
+    public IDatasetBackups Backups { get; }
 
     public IServiceProvider Services => _provider;
 
@@ -65,6 +67,7 @@ internal sealed class DatasetSession : IAsyncDisposable
         services.AddSingleton(app.GetRequiredService<IUiPreferencesStore>());
         services.AddSingleton(app.GetRequiredService<ThemeService>());
         services.AddSingleton(app.GetRequiredService<IDataFolderLauncher>());
+        services.AddSingleton(app.GetRequiredService<IRestoreOperations>());
 
         // Owned and disposed explicitly by DisposeAsync, in the required order.
         services.AddSingleton(dataset);
@@ -86,7 +89,7 @@ internal sealed class DatasetSession : IAsyncDisposable
             sp.GetRequiredService<ReadModelComposer>(),
             sp.GetRequiredService<TimeProvider>(),
             sp.GetRequiredService<IDayBoundarySource>()));
-        services.AddSingleton(sp => new DailyBackupService(
+        services.AddSingleton<IDatasetBackups>(sp => new SqliteDatasetBackups(
             dataset, sp.GetRequiredService<TimeProvider>(), StartupContext.AppVersion, sp.GetRequiredService<ILogger<DailyBackupService>>()));
 
         // Use cases are stateless; one instance of each serves the pages and editors of the session.
@@ -109,7 +112,7 @@ internal sealed class DatasetSession : IAsyncDisposable
         IUiDispatcher dispatcher,
         ILocalizedStrings strings,
         IFilePickerService pickers,
-        Func<RestoreValidation, Task<RestoreRunOutcome>> restore)
+        Func<IStagedRestore, Task<RestoreRunResult>> restore)
     {
         var data = new DataServices(
             _provider.GetRequiredService<ExportTransfer>(),
@@ -117,7 +120,12 @@ internal sealed class DatasetSession : IAsyncDisposable
             TransferAdapters.CreateReader(),
             TransferAdapters.CreateExternalReader(),
             Dataset.ImportState,
-            new DataMaintenanceService(Dataset, _provider.GetRequiredService<TimeProvider>(), restore, _provider.GetRequiredService<ILogger<DataMaintenanceService>>()),
+            new DataMaintenanceService(
+                Backups,
+                _provider.GetRequiredService<IRestoreOperations>(),
+                _provider.GetRequiredService<TimeProvider>(),
+                restore,
+                _provider.GetRequiredService<ILogger<DataMaintenanceService>>()),
             pickers,
             _provider.GetRequiredService<TimeProvider>());
         Workspace ??= new WorkspaceViewModel(
