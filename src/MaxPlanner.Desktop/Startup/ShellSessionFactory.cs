@@ -12,8 +12,9 @@ using Microsoft.Extensions.Logging;
 namespace MaxPlanner.Desktop.Startup;
 
 /// <summary>
-/// Builds a <see cref="DatasetSession"/> over an opened dataset and shows it in the shell: the store, the pages, the
-/// T-11 navigation and startup-timing logs, and the first-ready signal the coordinator waits for. Runs on the UI thread.
+/// Builds a <see cref="DatasetSession"/> over an opened dataset; its <see cref="IDatasetSession.Attach"/> shows it in the
+/// shell: the store, the pages, the T-11 navigation and startup-timing logs, and the first-ready signal the coordinator
+/// waits for. Runs on the UI thread.
 /// </summary>
 internal sealed partial class ShellSessionFactory : IDatasetSessionFactory
 {
@@ -55,10 +56,7 @@ internal sealed partial class ShellSessionFactory : IDatasetSessionFactory
             throw new ArgumentException("The dataset was not opened by the SQLite storage.", nameof(dataset));
         }
 
-        var session = DatasetSession.Create(_appServices, sqlite.Dataset);
-        _shell.AttachStore(session.Store, _uiScheduler);
-        _shell.AttachWorkspace(session.CreateWorkspace(_uiScheduler, _uiDispatcher, _strings, _pickers, hooks.Restore));
-        return new ShellSession(this, session, hooks.OnFirstReady);
+        return new ShellSession(this, DatasetSession.Create(_appServices, sqlite.Dataset), hooks);
     }
 
     // T-11 startup budget ("usable initial view"): the first frame rendered after the store became ready. The
@@ -82,31 +80,45 @@ internal sealed partial class ShellSessionFactory : IDatasetSessionFactory
     {
         private readonly ShellSessionFactory _owner;
         private readonly DatasetSession _session;
-        private readonly Action _onFirstReady;
-        private readonly IDisposable _readySubscription;
+        private readonly DatasetSessionHooks _hooks;
+        private IDisposable? _readySubscription;
+        private bool _isObservingShell;
 
-        public ShellSession(ShellSessionFactory owner, DatasetSession session, Action onFirstReady)
+        public ShellSession(ShellSessionFactory owner, DatasetSession session, DatasetSessionHooks hooks)
         {
             _owner = owner;
             _session = session;
-            _onFirstReady = onFirstReady;
-            owner._shell.PropertyChanged += OnShellPropertyChanged;
-            _readySubscription = session.Store.State
-                .Where(state => state.Status == ProjectionStatus.Ready)
-                .Take(1)
-                .ObserveOn(owner._uiScheduler)
-                .Subscribe(_ => OnFirstReady());
+            _hooks = hooks;
         }
 
         public IDatasetBackups Backups => _session.Backups;
 
+        public void Attach()
+        {
+            var shell = _owner._shell;
+            shell.AttachStore(_session.Store, _owner._uiScheduler);
+            shell.AttachWorkspace(_session.CreateWorkspace(_owner._uiScheduler, _owner._uiDispatcher, _owner._strings, _owner._pickers, _hooks.Restore));
+            shell.PropertyChanged += OnShellPropertyChanged;
+            _isObservingShell = true;
+            _readySubscription = _session.Store.State
+                .Where(state => state.Status == ProjectionStatus.Ready)
+                .Take(1)
+                .ObserveOn(_owner._uiScheduler)
+                .Subscribe(_ => OnFirstReady());
+        }
+
         public void Start() => _session.Store.Start();
 
-        /// <summary>Stops the shell hooks, then runs the T-06.6 close of the session (pages, store, dataset, container).</summary>
+        /// <summary>Stops the shell hooks attached so far, then runs the T-06.6 close of the session (pages, store, dataset, container).</summary>
         public ValueTask DisposeAsync()
         {
-            _readySubscription.Dispose();
-            _owner._shell.PropertyChanged -= OnShellPropertyChanged;
+            _readySubscription?.Dispose();
+            if (_isObservingShell)
+            {
+                _isObservingShell = false;
+                _owner._shell.PropertyChanged -= OnShellPropertyChanged;
+            }
+
             return _session.DisposeAsync();
         }
 
@@ -128,7 +140,7 @@ internal sealed partial class ShellSessionFactory : IDatasetSessionFactory
             var elapsedMs = _owner._context.ElapsedMilliseconds;
             Log.Ready(_owner._logger, elapsedMs, store.Tasks.Count, store.ChangeRequests.Count, store.ReviewItems.Count);
             _owner.LogFirstRenderedFrame();
-            _onFirstReady();
+            _hooks.OnFirstReady();
         }
     }
 

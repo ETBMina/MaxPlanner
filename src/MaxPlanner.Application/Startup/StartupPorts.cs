@@ -21,18 +21,28 @@ public enum RestoreRunResult
 public sealed record DatasetSessionHooks(Func<IStagedRestore, Task<RestoreRunResult>> Restore, Action OnFirstReady);
 
 /// <summary>The services and pages of the one open dataset, shown in the shell.</summary>
+/// <remarks>
+/// Disposing closes whatever was built, also after <see cref="Attach"/> failed part-way (T-06.6): it detaches what was
+/// attached, then disposes the pages, the store, and the dataset.
+/// </remarks>
 public interface IDatasetSession : IAsyncDisposable
 {
     IDatasetBackups Backups { get; }
+
+    /// <summary>Shows the session in the shell: the store, the pages, and the first-ready signal. Call once, before <see cref="Start"/>.</summary>
+    void Attach();
 
     /// <summary>Starts the first projection load; <see cref="DatasetSessionHooks.OnFirstReady"/> follows when it is ready.</summary>
     void Start();
 }
 
-/// <summary>Builds the per-dataset services over an opened dataset and attaches its pages to the shell.</summary>
+/// <summary>Builds the per-dataset services over an opened dataset.</summary>
 public interface IDatasetSessionFactory
 {
-    /// <summary>Takes ownership of <paramref name="dataset"/>; disposing the session closes it (T-06.6). Does not start loading.</summary>
+    /// <summary>
+    /// Takes ownership of <paramref name="dataset"/>; disposing the session closes it (T-06.6). Builds the services only;
+    /// the caller owns the session from here, so a failure in <see cref="IDatasetSession.Attach"/> is still closed by it.
+    /// </summary>
     IDatasetSession Create(IOpenedDataset dataset, DatasetSessionHooks hooks);
 }
 

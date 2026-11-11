@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Startup;
 
@@ -30,15 +31,76 @@ internal sealed class CallLog
             _calls.Add(call);
         }
     }
+}
 
-    /// <summary>Waits until <paramref name="call"/> has been recorded.</summary>
-    public async Task WaitForAsync(string call)
+internal static class TestWaits
+{
+    /// <summary>How long a test waits for a step before failing instead of hanging.</summary>
+    public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+
+    public static Task WithTimeout(this Task task) => task.WaitAsync(Timeout, TestContext.Current.CancellationToken);
+
+    public static Task<T> WithTimeout<T>(this Task<T> task) => task.WaitAsync(Timeout, TestContext.Current.CancellationToken);
+}
+
+/// <summary>
+/// A single-threaded synchronization context like the UI thread's: posted continuations run one at a time on its own
+/// thread. <see cref="RunAsync{T}"/> pumps it until the body's task completes.
+/// </summary>
+internal sealed class SingleThreadSynchronizationContext : SynchronizationContext
+{
+    private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = [];
+
+    public static Task<T> RunAsync<T>(Func<Task<T>> body)
     {
-        while (!Calls.Contains(call))
+        var result = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
         {
-            await Task.Delay(5, TestContext.Current.CancellationToken);
-        }
+            var context = new SingleThreadSynchronizationContext();
+            SetSynchronizationContext(context);
+            Task<T> task;
+            try
+            {
+                task = body();
+            }
+            catch (Exception ex)
+            {
+                task = Task.FromException<T>(ex);
+            }
+
+            task.ContinueWith(_ => context._queue.CompleteAdding(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            foreach (var (callback, state) in context._queue.GetConsumingEnumerable())
+            {
+                callback(state);
+            }
+
+            context._queue.Dispose();
+            if (task.IsFaulted)
+            {
+                result.SetException(task.Exception!.InnerExceptions);
+            }
+            else if (task.IsCanceled)
+            {
+                result.SetCanceled();
+            }
+            else
+            {
+                result.SetResult(task.Result);
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "Fake UI thread",
+        };
+        thread.Start();
+        return result.Task;
     }
+
+    public override void Post(SendOrPostCallback d, object? state) => _queue.Add((d, state));
+
+    public override void Send(SendOrPostCallback d, object? state) => throw new NotSupportedException("The UI thread is never blocked.");
+
+    public override SynchronizationContext CreateCopy() => this;
 }
 
 internal sealed class FakeOpenedDataset(CallLog log, string name = "dataset") : IOpenedDataset
@@ -199,6 +261,18 @@ internal sealed class FakeDatasetSession(CallLog log, FakeOpenedDataset dataset,
 
     public bool IsDisposed { get; private set; }
 
+    /// <summary>Thrown by <see cref="Attach"/>, for a failure while the pages are shown.</summary>
+    public Exception? AttachFailure { get; init; }
+
+    public void Attach()
+    {
+        log.Add($"session.attach:{dataset.Name}");
+        if (AttachFailure is not null)
+        {
+            throw AttachFailure;
+        }
+    }
+
     public void Start()
     {
         IsStarted = true;
@@ -225,11 +299,22 @@ internal sealed class FakeSessionFactory(CallLog log) : IDatasetSessionFactory
     /// <summary>The backups the next session gets; tests configure them before the session exists.</summary>
     public FakeDatasetBackups NextBackups { get; set; } = new(log);
 
+    /// <summary>Thrown by <see cref="Create"/>, for a failure while the session's services are built.</summary>
+    public Exception? CreateFailure { get; set; }
+
+    /// <summary>Thrown by the next session's <see cref="IDatasetSession.Attach"/>.</summary>
+    public Exception? AttachFailure { get; set; }
+
     public IDatasetSession Create(IOpenedDataset dataset, DatasetSessionHooks hooks)
     {
         var fake = (FakeOpenedDataset)dataset;
         log.Add($"session.create:{fake.Name}");
-        var session = new FakeDatasetSession(log, fake, hooks, NextBackups);
+        if (CreateFailure is not null)
+        {
+            throw CreateFailure;
+        }
+
+        var session = new FakeDatasetSession(log, fake, hooks, NextBackups) { AttachFailure = AttachFailure };
         NextBackups = new FakeDatasetBackups(log);
         Sessions.Add(session);
         return session;
@@ -249,46 +334,62 @@ internal sealed class FakeStartupShell(CallLog log) : IStartupShell
     /// <summary>The folder the user picks; null means the user cancelled.</summary>
     public string? PickedFolder { get; set; } = @"D:\Backups\20261101T080000Z-manual";
 
+    /// <summary>Completes when a restore blocks edits, right before it closes the session.</summary>
+    public TaskCompletionSource ReplacementBegun { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>The managed thread of every call, to check that the coordinator stays on the UI thread.</summary>
+    public ConcurrentQueue<int> CallThreads { get; } = [];
+
     public void ShowStarting()
     {
-        log.Add("shell.starting");
+        Record("shell.starting");
         Recovery = null;
         HasFailed = false;
     }
 
     public void ShowRecovery(StartupRecovery recovery)
     {
-        log.Add($"shell.recovery:{recovery.Kind}");
+        Record($"shell.recovery:{recovery.Kind}");
         Recovery = recovery;
     }
 
     public void ShowUnexpectedFailure()
     {
-        log.Add("shell.failed");
+        Record("shell.failed");
         HasFailed = true;
     }
 
-    public void BeginDatasetReplacement() => log.Add("shell.begin-replacement");
+    public void BeginDatasetReplacement()
+    {
+        Record("shell.begin-replacement");
+        ReplacementBegun.TrySetResult();
+    }
 
-    public void BeginShutdown() => log.Add("shell.begin-shutdown");
+    public void BeginShutdown() => Record("shell.begin-shutdown");
 
-    public void DetachWorkspace() => log.Add("shell.detach");
+    public void DetachWorkspace() => Record("shell.detach");
 
     public void ReportDataNotice(DataNotice notice, string? safetyBackupDirectory = null)
     {
-        log.Add($"shell.notice:{notice}");
+        Record($"shell.notice:{notice}");
         Notices.Add((notice, safetyBackupDirectory));
     }
 
     public void ReportBackupFailed(StorageFailureKind? kind)
     {
-        log.Add("shell.backup-failed");
+        Record("shell.backup-failed");
         BackupFailures.Add(kind);
     }
 
     public Task<string?> PickBackupFolderAsync()
     {
-        log.Add("shell.pick-folder");
+        Record("shell.pick-folder");
         return Task.FromResult(PickedFolder);
+    }
+
+    private void Record(string call)
+    {
+        CallThreads.Enqueue(Environment.CurrentManagedThreadId);
+        log.Add(call);
     }
 }

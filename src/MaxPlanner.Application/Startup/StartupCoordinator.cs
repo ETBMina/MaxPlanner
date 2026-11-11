@@ -293,7 +293,9 @@ public sealed partial class StartupCoordinator : IDisposable
     private void StartSession(IOpenedDataset dataset)
     {
         _recovery = null;
+        // Owned before it is shown, so a failure while attaching is still closed by the next close or shutdown.
         _session = _sessions.Create(dataset, new DatasetSessionHooks(RestoreAsync, OnFirstReady));
+        _session.Attach();
         var elapsedMs = _environment.ElapsedMilliseconds();
         Log.DatasetOpened(_logger, dataset.Id, dataset.SchemaVersion, _environment.AppVersion, elapsedMs);
         _session.Start();

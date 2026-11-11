@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Startup;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
@@ -151,7 +152,7 @@ public sealed class StartupAdapterTests
     }
 
     [Fact]
-    public async Task The_daily_backup_and_its_failure_kind_are_reported_through_the_port()
+    public async Task A_daily_backup_is_reported_through_the_port_and_cannot_be_deleted_as_manual()
     {
         await using var db = await TestDataset.CreateAsync();
         var backups = new SqliteDatasetBackups(db.Dataset, db.Clock, AppVersion);
@@ -161,6 +162,20 @@ public sealed class StartupAdapterTests
         report.Should().Be(new DailyBackupReport(false, null));
         backups.List().Should().ContainSingle(b => b.Kind == "daily" && !b.IsManual);
         backups.DeleteManual(backups.List()[0].Path).Should().BeFalse("only manual backups can be deleted");
+    }
+
+    [Fact]
+    public async Task A_failed_daily_backup_is_reported_with_its_failure_kind()
+    {
+        await using var db = await TestDataset.CreateAsync();
+        var backups = new SqliteDatasetBackups(db.Dataset, db.Clock, AppVersion);
+
+        // A file where the backups folder should be makes the final move fail.
+        await File.WriteAllTextAsync(db.Paths.BackupsDirectory, "not a folder", Ct);
+
+        var report = await backups.RunDailyAsync(Ct);
+
+        report.Should().Be(new DailyBackupReport(true, StorageFailureKind.Io));
     }
 
     [Fact]
