@@ -1222,13 +1222,13 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         // every header sits above its column's cells.
         var window = PagePadding.WindowWidth(this, width);
         var inset = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= 640 ? 12 : 8);
+        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= Breakpoints.Medium ? 12 : 8);
         HeaderBorder.Padding = new Thickness(inset, 0, 0, 0);
         Table.Padding = new Thickness(inset, 0, 0, 0);
 
         // Design §4.3 S: only New task keeps its label inline; the CommandBar overflows the rest by itself.
         NewTaskText.Visibility = width >= 500 ? Visibility.Visible : Visibility.Collapsed;
-        var small = width < 640;
+        var small = width < Breakpoints.Medium;
         ChipsBar.IsCompact = small;
         if (small != _isSmall)
         {

@@ -59,7 +59,7 @@ public sealed partial class DataPageView : UserControl
         // Design §4.6: the step list sits on the left at L; M/S show "Step 2 of 5 · …" instead.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        var isLarge = width >= 1008;
+        var isLarge = width >= Breakpoints.Large;
         HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 8);
         _import.SetLayout(isLarge, padding);
         _export.SetLayout(isLarge, padding);

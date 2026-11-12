@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Options;
 using Microsoft.UI.Xaml;
@@ -38,7 +39,7 @@ public sealed partial class CrEditorDialog : ContentDialog
     // gets a full-size dialog so Save and Cancel stay reachable (T-08.1).
     private void ApplyLayout(Windows.Foundation.Size size)
     {
-        var twoColumns = size.Width >= EditorDialogSizing.LargeBreakpoint;
+        var twoColumns = size.Width >= Breakpoints.Large;
         Pair(NumberPair, TaskNumberPanel, twoColumns);
         Pair(OwnerPair, SquadPanel, twoColumns);
         Pair(StatusPair, PriorityPanel, twoColumns);

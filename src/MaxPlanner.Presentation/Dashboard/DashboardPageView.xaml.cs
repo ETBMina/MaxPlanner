@@ -138,13 +138,13 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
         // T-08.1 page padding: L 32/24, M 24/16, S 16/12 (design §2.3).
         var window = PagePadding.WindowWidth(this, width);
         var inset = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= 640 ? 12 : 8);
+        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= Breakpoints.Medium ? 12 : 8);
         ContentRoot.Padding = new Thickness(inset, 0, inset, 24);
 
         // Design §4.1: cards 3–6 per row at L, 2 columns at M, 1 at S.
-        CardsLayout.MinItemWidth = width >= 1008 ? 220 : width >= 640 ? Math.Max(220, (width - (2 * inset) - 12) / 2) : Math.Max(200, width - (2 * inset));
+        CardsLayout.MinItemWidth = width >= Breakpoints.Large ? 220 : width >= Breakpoints.Medium ? Math.Max(220, (width - (2 * inset) - 12) / 2) : Math.Max(200, width - (2 * inset));
 
-        var wide = width >= 1008;
+        var wide = width >= Breakpoints.Large;
         Place(StatusChartView, 0, 0, 1);
         Place(SquadChartView, wide ? 0 : 1, wide ? 1 : 0, 1);
         Place(ReviewChartView, wide ? 1 : 2, 0, 1);

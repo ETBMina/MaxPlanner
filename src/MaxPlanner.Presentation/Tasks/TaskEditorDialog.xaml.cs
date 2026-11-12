@@ -54,7 +54,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
     // reachable (T-08.1).
     private void ApplyLayout(Windows.Foundation.Size size)
     {
-        var wide = size.Width >= EditorDialogSizing.LargeBreakpoint;
+        var wide = size.Width >= Breakpoints.Large;
         Reflow(FactsGrid, wide ? 4 : 2);
         Reflow(WorkflowFields, wide ? 3 : 1);
         Reflow(PeopleFields, wide ? 2 : 1);

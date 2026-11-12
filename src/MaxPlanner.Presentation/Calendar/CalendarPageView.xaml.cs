@@ -217,13 +217,13 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     // at M; a full-width overlay card at S. Below L the command group moves to its own row so it can wrap.
     private void ApplyBreakpoint(double width)
     {
-        var wide = width >= 1008;
+        var wide = width >= Breakpoints.Large;
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= 640 ? 12 : 8);
+        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= Breakpoints.Medium ? 12 : 8);
         _gutter = padding;
-        ViewModel.SetCompact(width < 640);
-        ChipsBar.IsCompact = width < 640;
+        ViewModel.SetCompact(width < Breakpoints.Medium);
+        ChipsBar.IsCompact = width < Breakpoints.Medium;
         Split.DisplayMode = wide ? SplitViewDisplayMode.CompactInline : SplitViewDisplayMode.CompactOverlay;
 
         Microsoft.UI.Xaml.Controls.Grid.SetRow(CommandGroup, wide ? 0 : 1);
@@ -232,7 +232,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         CommandGroup.HorizontalAlignment = wide ? HorizontalAlignment.Right : HorizontalAlignment.Left;
 
         // At S the period navigation takes a line of its own and Filters and New CR sit under it.
-        var stacked = width < 640;
+        var stacked = width < Breakpoints.Medium;
         Microsoft.UI.Xaml.Controls.Grid.SetRow(PeriodPanel, 0);
         Microsoft.UI.Xaml.Controls.Grid.SetColumn(PeriodPanel, 0);
         Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(PeriodPanel, stacked ? 3 : 1);
@@ -243,14 +243,14 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
 
         // The rail and the backlog card sit inside the page gutter; at S the full-width pane keeps the gutter on both sides.
         BacklogRail.Margin = new Thickness(padding, 0, 0, 16);
-        BacklogCardHost.Margin = new Thickness(padding, 0, width < 640 ? padding : 0, 16);
+        BacklogCardHost.Margin = new Thickness(padding, 0, width < Breakpoints.Medium ? padding : 0, 16);
         BacklogOpaqueBase.Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
         // ADR 0008: the overlay base uses the window's material, Mica Base, only where the window does; otherwise the
         // solid base beneath it shows, as on the window. At L the inline pane sees the window's own Mica, so the
         // hosted backdrop is detached rather than kept running while collapsed.
         BacklogMica.SystemBackdrop = wide || !IsMicaSupported ? null : _backlogMica ??= new MicaBackdrop { Kind = MicaKind.Base };
         Split.CompactPaneLength = padding + BacklogRail.Width;
-        Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280 + padding;
+        Split.OpenPaneLength = width < Breakpoints.Medium ? Math.Max(280, width) : 280 + padding;
         ApplyContentPadding();
         if (_wasWide != wide)
         {

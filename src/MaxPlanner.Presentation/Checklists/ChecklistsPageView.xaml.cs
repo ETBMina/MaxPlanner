@@ -450,11 +450,11 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         // T-08.1 / design §4.5: L 2–3 columns, M 1–2, S one full-width column; padding L 32/24, M 24/16, S 16/12.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= 640 ? 12 : 8);
+        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= Breakpoints.Medium ? 12 : 8);
         GroupsRepeater.Margin = new Thickness(padding, 0, padding, 24);
         NoMatchesBar.Margin = new Thickness(padding, 0, padding, 8);
-        GroupsLayout.MaxColumns = width >= 1008 ? 3 : width >= 640 ? 2 : 1;
-        GroupsLayout.MinColumnWidth = width >= 640 ? 380 : 0;
+        GroupsLayout.MaxColumns = Breakpoints.BySize(width, 3, 2, 1);
+        GroupsLayout.MinColumnWidth = width >= Breakpoints.Medium ? 380 : 0;
     }
 
     private static bool IsDown(VirtualKey key) => InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);

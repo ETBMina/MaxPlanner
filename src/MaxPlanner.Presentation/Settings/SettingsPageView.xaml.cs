@@ -80,8 +80,8 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
         CapWrapper.Padding = new Thickness(padding, 0, padding, 32);
         ErrorBar.Margin = new Thickness(padding, 0, padding, 8);
-        CardsPanel.HorizontalAlignment = width >= 1008 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
-        var wrap = width < 640;
+        CardsPanel.HorizontalAlignment = width >= Breakpoints.Large ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        var wrap = width < Breakpoints.Medium;
         foreach (var card in FindDescendants<SettingsCard>(CardsPanel))
         {
             card.IsWrapped = wrap;

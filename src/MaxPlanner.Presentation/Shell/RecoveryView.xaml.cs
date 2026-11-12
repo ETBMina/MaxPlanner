@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -25,7 +26,7 @@ public sealed partial class RecoveryView : UserControl
     // (docs/evidence/phase-1/2026-10-22), so the T-08.1 breakpoint is applied from the page's own width.
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        var state = e.NewSize.Width >= 1008 ? "Large" : e.NewSize.Width >= 640 ? "Medium" : "Small";
+        var state = Breakpoints.BySize(e.NewSize.Width, "Large", "Medium", "Small");
         VisualStateManager.GoToState(this, state, useTransitions: false);
     }
 
