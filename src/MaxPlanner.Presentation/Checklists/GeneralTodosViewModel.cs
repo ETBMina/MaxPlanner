@@ -30,7 +30,7 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     public GeneralTodosViewModel(WorkspaceContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _queue = new ChecklistCommandQueue(context, "Record_GeneralTodo");
+        _queue = new ChecklistCommandQueue(context.Commands, "Record_GeneralTodo");
         OpenItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_openItems);
         CompletedItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_completedItems);
         _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => Sync());

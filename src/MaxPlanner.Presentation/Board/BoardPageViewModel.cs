@@ -440,36 +440,28 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private async Task<bool> MoveAsync(BoardCardViewModel card, BoardBucketViewModel target, BoardPlacement placement)
     {
         var source = BucketOf(card);
-        if (_context.IsEditingBlocked)
-        {
-            _context.Announce(_context.Strings.GetString("Error_EditingBlocked"), isFailure: true);
-            return false;
-        }
-
         var model = card.Model;
-        var operation = OperationId.New();
-        card.IsMoving = true;
-        _context.SaveStatus.Begin();
-        var result = model switch
+        var run = await _context.Commands.RunAsync(new CommandRequest<long>(card.IsTask ? "Record_Task" : "Record_SubtaskCard", operation => model switch
         {
-            { Task: { } task } => await _context.UseCases.MoveTask.ExecuteAsync(
-                new MoveTaskCommand(operation, task.Id, task.Revision, target.StatusId, placement), CancellationToken.None).ConfigureAwait(true),
-            { Card: { } subtaskCard } => await _context.UseCases.MoveSubtaskCard.ExecuteAsync(
-                new MoveSubtaskCardCommand(operation, subtaskCard.Id, subtaskCard.Revision, target.StatusId, placement), CancellationToken.None).ConfigureAwait(true),
+            { Task: { } task } => _context.UseCases.MoveTask.ExecuteAsync(
+                new MoveTaskCommand(operation, task.Id, task.Revision, target.StatusId, placement), CancellationToken.None),
+            { Card: { } subtaskCard } => _context.UseCases.MoveSubtaskCard.ExecuteAsync(
+                new MoveSubtaskCardCommand(operation, subtaskCard.Id, subtaskCard.Revision, target.StatusId, placement), CancellationToken.None),
             _ => throw new InvalidOperationException("A Board card is a task or a Subtask card."),
-        };
-        if (!result.IsSuccess)
+        })
         {
-            card.IsMoving = false;
-            var failure = CommandFailure.From(result.Error!, operation, card.IsTask ? "Record_Task" : "Record_SubtaskCard", _context.Strings);
-            _context.SaveStatus.Fail(failure);
-            _context.Announce(_context.Strings.Format("Board_MoveFailed", card.Title, source?.Name ?? model.Status.Name) + " " + failure.Message, isFailure: true);
+            // The Board ends every failed move with Fail and names the card and the bucket it stays in.
+            FailureIndicator = CommandFailureIndicator.Fail,
+            FailureAnnouncement = failure => _context.Strings.Format("Board_MoveFailed", card.Title, source?.Name ?? model.Status.Name) + " " + failure.Message,
+            AnnouncesBlocked = true,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy => card.IsMoving = busy,
+        }).ConfigureAwait(true);
+        if (!run.IsSuccess)
+        {
             return false;
         }
 
-        _context.SaveStatus.Complete();
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        card.IsMoving = false;
         if (target.Cards.FirstOrDefault(c => c.Key == card.Key) is { } moved)
         {
             _context.Announce(_context.Strings.Format("Board_Moved", moved.Title, target.Name, target.Cards.IndexOf(moved) + 1, target.Cards.Count));

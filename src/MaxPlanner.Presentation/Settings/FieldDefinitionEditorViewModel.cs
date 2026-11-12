@@ -222,60 +222,31 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 
         var options = IsLookup ? Options.Select(o => new FieldOptionDraft(o.Id, o.Label)).ToList() : [];
         var draft = new FieldDefinitionDraft(Label, IsRequired, defaultValue, options);
-        var operation = _retryOperation ?? OperationId.New();
-        IsSaving = true;
-        _context.SaveStatus.Begin();
-        AppResult<CommandOutcome<long>> result;
-        try
+        // The dialog shows and announces a failure itself. An unknown outcome, including a throw, is retried under the
+        // same operation (T-05); after a throw the dialog stays with the unexpected-error text.
+        var run = await _context.Commands.RunAsync(new CommandRequest<long>("Record_Settings", operation => _existing is null
+            ? _useCases.AddFieldDefinition.ExecuteAsync(new AddFieldDefinitionCommand(operation, _id, Target, Key, Kind, draft), CancellationToken.None)
+            : _useCases.UpdateFieldDefinition.ExecuteAsync(new UpdateFieldDefinitionCommand(operation, _id, _stamp, draft), CancellationToken.None))
         {
-            result = _existing is null
-                ? await _useCases.AddFieldDefinition.ExecuteAsync(new AddFieldDefinitionCommand(operation, _id, Target, Key, Kind, draft), CancellationToken.None).ConfigureAwait(true)
-                : await _useCases.UpdateFieldDefinition.ExecuteAsync(new UpdateFieldDefinitionCommand(operation, _id, _stamp, draft), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+            Operation = _retryOperation,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy => IsSaving = busy,
+        }).ConfigureAwait(true);
+        _retryOperation = run.RetryOperation;
+        switch (run.Status)
         {
-            _context.SaveStatus.Reject();
-            FailUnexpectedly(ex, operation);
-            return false;
+            case CommandRunStatus.Succeeded:
+                _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
+                CloseRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+            case CommandRunStatus.Failed:
+                ShowFailure(run.Failure!.Error, run.Message!);
+                _context.Announce(run.Message!, isFailure: true);
+                return false;
+            default:
+                SaveError = run.Message;
+                return false;
         }
-
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            IsSaving = false;
-            ShowFailure(result.Error!, failure.Message);
-            _context.Announce(failure.Message, isFailure: true);
-            return false;
-        }
-
-        _context.SaveStatus.Complete();
-        _retryOperation = null;
-        try
-        {
-            await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            FailUnexpectedly(ex, operation);
-            return false;
-        }
-
-        IsSaving = false;
-        _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        return true;
-    }
-
-    // The save threw: the outcome is unknown, so a retry reuses the operation (T-05). The dialog stays with the
-    // unexpected-error text, and the failure is logged and shown once.
-    private void FailUnexpectedly(Exception exception, OperationId operation)
-    {
-        _retryOperation = operation;
-        IsSaving = false;
-        SaveError = _context.Strings.GetString("Error_Unexpected");
-        UiTasks.Report(exception, _context);
     }
 
     partial void OnLabelChanged(string value)

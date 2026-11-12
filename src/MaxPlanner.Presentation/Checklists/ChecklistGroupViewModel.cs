@@ -37,7 +37,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _completions = completions ?? throw new ArgumentNullException(nameof(completions));
         _keepVisible = keepVisible ?? throw new ArgumentNullException(nameof(keepVisible));
-        _queue = new ChecklistCommandQueue(context, "Record_Task");
+        _queue = new ChecklistCommandQueue(context.Commands, "Record_Task");
         OpenItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_openItems);
         CompletedItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_completedItems);
         SyncItems();

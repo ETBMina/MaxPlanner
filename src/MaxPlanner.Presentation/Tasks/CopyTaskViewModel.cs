@@ -308,7 +308,6 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
 
         IsSaving = true;
         Error = null;
-        var operation = _retryOperation ?? OperationId.New();
         var options = new CopyOptions
         {
             CopyStatus = KeepCurrentStatus,
@@ -321,59 +320,53 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
             CopyCustomValues = CopyCustomValues,
         };
         var link = PendingLink is { } cr ? new CrLinkTarget(cr.Id, cr.Revision) : null;
-        _context.SaveStatus.Begin();
-        AppResult<CommandOutcome<TaskId>> result;
-        try
-        {
-            result = await _context.UseCases.CopyTask.ExecuteAsync(
+
+        // The dialog shows and announces a failure itself. An unknown outcome, including a throw, is retried under the
+        // same operation (T-05); after a throw the dialog stays with the unexpected-error text.
+        var run = await _context.Commands.RunAsync(new CommandRequest<TaskId>("Record_Task", operation =>
+            _context.UseCases.CopyTask.ExecuteAsync(
                 new CopyTaskCommand(operation, _source.Id, _newId, PendingLink is null ? Title : null, Service, options,
                     KeepCurrentStatus ? null : SelectedStatus?.Id, SelectedPriority?.Id, link),
-                CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+                CancellationToken.None))
         {
-            // The outcome is unknown, so a retry reuses the operation (T-05); the dialog stays with the unexpected-error text.
-            _context.SaveStatus.Reject();
-            _retryOperation = operation;
-            IsSaving = false;
-            Error = _context.Strings.GetString("Error_Unexpected");
-            UiTasks.Report(ex, _context);
+            Operation = _retryOperation,
+        }).ConfigureAwait(true);
+        IsSaving = false;
+        if (run.IsSuccess)
+        {
+            CreatedTaskId = run.Outcome!.Value;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+
+        _retryOperation = run.RetryOperation;
+        if (run.Failure is not { } failure)
+        {
+            Error = run.Message;
             return false;
         }
 
-        IsSaving = false;
-        if (!result.IsSuccess)
+        Error = failure.Message;
+        if (failure.Error is ValidationFailedError validation)
         {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Task", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            Error = failure.Message;
-            if (failure.Error is ValidationFailedError validation)
+            foreach (var error in validation.Errors)
             {
-                foreach (var error in validation.Errors)
+                var text = CommandErrorText.Describe(error, _context.Strings);
+                if (error.Field == "Title")
                 {
-                    var text = CommandErrorText.Describe(error, _context.Strings);
-                    if (error.Field == "Title")
-                    {
-                        TitleError = text;
-                    }
-                    else if (error.Field == "Service" || error.Code == DomainErrorCodes.ServiceRequiredWhenLinked)
-                    {
-                        ServiceError = text;
-                    }
+                    TitleError = text;
                 }
-
-                CurrentStep = CopyStep.Options;
+                else if (error.Field == "Service" || error.Code == DomainErrorCodes.ServiceRequiredWhenLinked)
+                {
+                    ServiceError = text;
+                }
             }
 
-            _context.Announce(failure.Message, isFailure: true);
-            return false;
+            CurrentStep = CopyStep.Options;
         }
 
-        _context.SaveStatus.Complete();
-        CreatedTaskId = result.Value.Value;
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        return true;
+        _context.Announce(failure.Message, isFailure: true);
+        return false;
     }
 
     private StatusOption? ResolvedStatus => KeepCurrentStatus ? _sourceStatus ?? _defaultStatus : SelectedStatus;

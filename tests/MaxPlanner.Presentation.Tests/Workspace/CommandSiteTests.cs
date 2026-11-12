@@ -454,6 +454,169 @@ public sealed class CommandSiteTests
         h.Coordinator.OperationIds[^1].Should().NotBe(h.Coordinator.OperationIds[^2], "the removal does not reuse the operation of a throw");
     }
 
+    [Fact]
+    [Trait("Req", "B-16.3")]
+    public void A_subtask_card_add_in_the_task_editor_is_still_sent_while_editing_is_blocked()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task"));
+        using var editor = new TaskEditorViewModel(h.Workspace.Context, id, null);
+        editor.NewSubtaskCardText = "Card";
+        var calls = h.Coordinator.Calls;
+        h.Workspace.Context.IsEditingBlocked = true;
+
+        h.Await(editor.AddSubtaskCardAsync()).Should().BeTrue("this command has never checked the blocked state (kept as it was)");
+
+        h.Coordinator.Calls.Should().Be(calls + 1);
+    }
+
+    // ----- The approved fix: a thrown command no longer leaves "Saving…" or a busy flag behind, and is reported once -----
+
+    [Fact]
+    [Trait("Req", "ADR-0029")]
+    public void A_task_archive_that_throws_ends_saving_and_is_reported_once()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task"));
+        var announced = Announcements(h);
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(h.Workspace.Context.Tasks.ArchiveAsync(h.Task(id))).Should().BeFalse();
+
+        (h.Workspace.SaveStatus.IsSaving, h.Workspace.SaveStatus.IsFailed).Should().Be((false, true));
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    [Trait("Req", "ADR-0029")]
+    public void A_pop_out_that_throws_ends_saving_and_the_group_shows_the_unexpected_text()
+    {
+        using var h = WorkspaceHarness.Create(async s => await s.TaskAsync("Task", "Service", null, "One"));
+        var checklists = h.Workspace.Checklists;
+        h.PumpUntil(() => checklists.Groups.Count == 1);
+        var group = checklists.Groups.Single();
+        var item = group.OpenItems.Single();
+        var announced = Announcements(h);
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(item.PopOutCommand.ExecuteAsync(null));
+
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        item.IsPending.Should().BeFalse();
+        group.ToggleError.Should().Be("Error_Unexpected");
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    [Trait("Req", "ADR-0029")]
+    public void A_board_move_that_throws_ends_moving_and_saving_and_is_reported_once()
+    {
+        using var h = BoardMoveTests.Board(out var board, "Stays");
+        var announced = Announcements(h);
+        var card = board.Buckets[0].Cards.Single();
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(board.MoveToAdjacentBucketAsync(card, 1)).Should().BeFalse();
+
+        card.IsMoving.Should().BeFalse();
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    [Trait("Req", "ADR-0029")]
+    [Trait("Req", "T-05")]
+    public void A_grid_commit_that_throws_keeps_the_editor_and_draft_and_retries_under_the_same_operation()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Committed"));
+        var grid = h.Workspace.Grid;
+        h.PumpUntil(() => grid.Rows.Count == 1);
+        var announced = Announcements(h);
+        var row = grid.Rows.Single();
+        grid.BeginEdit(row, GridColumns.Title);
+        row.DraftText = "Draft";
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(grid.CommitAsync(row)).Should().BeFalse();
+
+        (row.IsSaving, row.IsEditingTitle, row.DraftText, row.ErrorMessage).Should().Be((false, true, "Draft", "Error_Unexpected"));
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+
+        h.Await(grid.CommitAsync(row)).Should().BeTrue();
+        h.Coordinator.OperationIds[^1].Should().Be(h.Coordinator.OperationIds[^2], "a throw leaves the outcome unknown (T-05)");
+        h.Task(id).EffectiveTitle.Should().Be("Draft");
+    }
+
+    [Fact]
+    [Trait("Req", "ADR-0029")]
+    public void A_settings_add_that_throws_ends_adding_and_shows_the_unexpected_text_inline()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var settings = Settings(h);
+        var section = settings.Tags;
+        var announced = Announcements(h);
+        section.AddText = "Urgent";
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(settings.AddAsync(section));
+
+        (section.AddText, section.AddError, section.IsAdding).Should().Be(("Urgent", "Error_Unexpected", false));
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    [Trait("Req", "ADR-0029")]
+    public void A_checklist_add_that_throws_ends_adding_and_the_next_command_on_the_card_still_runs()
+    {
+        using var h = WorkspaceHarness.Create();
+        var general = h.Workspace.Checklists.General;
+        var announced = Announcements(h);
+        general.NewItemText = "Call the bank";
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(general.AddItemCommand.ExecuteAsync(null));
+        general.NewItemError.Should().Be("Error_Unexpected");
+        general.IsAdding.Should().BeFalse();
+
+        h.Await(general.AddItemCommand.ExecuteAsync(null));
+        general.NewItemError.Should().BeNull();
+        general.OpenItems.Select(i => i.Text).Should().Equal("Call the bank");
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    public void A_failed_queued_action_does_not_stop_the_next_one_and_the_queue_stays_in_order()
+    {
+        using var h = WorkspaceHarness.Create();
+        var queue = new Checklists.ChecklistCommandQueue(h.Workspace.Context.Commands, "Record_Task");
+        var steps = new List<string>();
+        var hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var first = queue.Enqueue(async () =>
+        {
+            await hold.Task;
+            steps.Add("first");
+            throw new InvalidOperationException("defect");
+        });
+        var second = queue.Enqueue(() =>
+        {
+            steps.Add("second");
+            return Task.CompletedTask;
+        });
+        h.Settle();
+        steps.Should().BeEmpty("the second action waits for the first");
+
+        hold.SetResult();
+        h.PumpUntil(() => second.IsCompleted);
+
+        first.IsFaulted.Should().BeTrue("the failing action's own caller still sees its exception");
+        second.IsCompletedSuccessfully.Should().BeTrue();
+        steps.Should().Equal("first", "second");
+    }
+
     private static SettingsPageViewModel Settings(WorkspaceHarness h)
     {
         var settings = new SettingsPageViewModel(h.Workspace.Context, new SettingsServices(SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), null, null, null));

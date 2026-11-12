@@ -116,7 +116,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     public ReviewsViewModel(WorkspaceContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _queue = new ChecklistCommandQueue(context, "Record_Review");
+        _queue = new ChecklistCommandQueue(context.Commands, "Record_Review");
         Open = new ReadOnlyObservableCollection<ReviewRowViewModel>(_open);
         Completed = new ReadOnlyObservableCollection<ReviewRowViewModel>(_completed);
         _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => Sync());

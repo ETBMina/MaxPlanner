@@ -140,53 +140,44 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         Error = null;
         UsageChangedMessage = null;
         Guid? replacement = IsUnused || ClearInstead ? null : ReplacementChoices[SelectedReplacementIndex].Id;
-        var operation = _retryOperation ?? OperationId.New();
-        IsSaving = true;
-        _context.SaveStatus.Begin();
-        AppResult<CommandOutcome<long>> result;
-        try
+        // The coordinator logs an exception and rolls the transaction back; nothing was written, so after a thrown command
+        // the indicator keeps its last result, the dialog stays open with a generic message that is announced, and the
+        // retry is a new operation. The dialog announces a typed failure itself, after showing it.
+        var run = await _context.Commands.RunAsync(new CommandRequest<long>("Record_Settings", operation =>
+            _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None))
         {
-            result = await _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+            Operation = _retryOperation,
+            UnexpectedFailure = CommandUnexpectedFailure.AnnounceOnly,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy => IsSaving = busy,
+        }).ConfigureAwait(true);
+        switch (run.Status)
         {
-            // The coordinator logs the exception and rolls the transaction back; nothing was written, so the
-            // indicator keeps its last result and the dialog stays open with a generic message.
-            _context.SaveStatus.Reject();
-            _retryOperation = null;
-            IsSaving = false;
-            Error = _context.Strings.GetString("Error_Unexpected");
-            _context.Announce(Error, isFailure: true);
-            return false;
+            case CommandRunStatus.Succeeded:
+                _retryOperation = null;
+                _context.Announce(_context.Strings.Format("LookupRemove_Done", _name));
+                CloseRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+            case CommandRunStatus.Failed:
+                _retryOperation = run.RetryOperation;
+                if (run.Failure!.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.LookupUsageChanged }, ..] })
+                {
+                    UsageChangedMessage = _context.Strings.GetString("LookupRemove_UsageChanged");
+                    await LoadAsync().ConfigureAwait(true);
+                }
+                else
+                {
+                    Error = run.Message;
+                }
+
+                _context.Announce(run.Message!, isFailure: true);
+                return false;
+            default:
+                // A failure after the commit (the display wait) was reported by the runner; its retry reuses the operation.
+                _retryOperation = run.Outcome is null ? null : run.RetryOperation;
+                Error = run.Message;
+                return false;
         }
-
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            IsSaving = false;
-            if (result.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.LookupUsageChanged }, ..] })
-            {
-                UsageChangedMessage = _context.Strings.GetString("LookupRemove_UsageChanged");
-                await LoadAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                Error = failure.Message;
-            }
-
-            _context.Announce(failure.Message, isFailure: true);
-            return false;
-        }
-
-        _context.SaveStatus.Complete();
-        _retryOperation = null;
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        IsSaving = false;
-        _context.Announce(_context.Strings.Format("LookupRemove_Done", _name));
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        return true;
     }
 
     private List<string> Describe(LookupUsageCounts usage)

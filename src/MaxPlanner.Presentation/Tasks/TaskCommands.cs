@@ -74,27 +74,27 @@ public sealed class TaskCommands
     public async Task<bool> ArchiveAsync(TaskReadModel task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        var outcome = await RunAsync("Record_Task", op => _context.UseCases.ArchiveTask.ExecuteAsync(
-            new ArchiveTaskCommand(op, task.Id, task.Revision), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is not null)
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.ArchiveTask.ExecuteAsync(
+            new ArchiveTaskCommand(op, task.Id, task.Revision), CancellationToken.None))).ConfigureAwait(true);
+        if (run.IsSuccess)
         {
             _context.Announce(_context.Strings.Format("Task_Archived", task.EffectiveTitle));
         }
 
-        return outcome is not null;
+        return run.IsSuccess;
     }
 
     public async Task<bool> RestoreAsync(TaskReadModel task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        var outcome = await RunAsync("Record_Task", op => _context.UseCases.RestoreTask.ExecuteAsync(
-            new RestoreTaskCommand(op, task.Id, task.Revision), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is not null)
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.RestoreTask.ExecuteAsync(
+            new RestoreTaskCommand(op, task.Id, task.Revision), CancellationToken.None))).ConfigureAwait(true);
+        if (run.IsSuccess)
         {
             _context.Announce(_context.Strings.Format("Task_Restored", task.EffectiveTitle));
         }
 
-        return outcome is not null;
+        return run.IsSuccess;
     }
 
     /// <summary>
@@ -118,14 +118,14 @@ public sealed class TaskCommands
         switch (confirmation.Result)
         {
             case ConfirmationResult.Primary:
-                var outcome = await RunAsync("Record_Task", op => _context.UseCases.DeleteTask.ExecuteAsync(
-                    new DeleteTaskCommand(op, task.Id, task.Revision), CancellationToken.None)).ConfigureAwait(true);
-                if (outcome is not null)
+                var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.DeleteTask.ExecuteAsync(
+                    new DeleteTaskCommand(op, task.Id, task.Revision), CancellationToken.None))).ConfigureAwait(true);
+                if (run.IsSuccess)
                 {
                     _context.Announce(strings.Format("Task_Deleted", task.EffectiveTitle));
                 }
 
-                return outcome is not null;
+                return run.IsSuccess;
             case ConfirmationResult.Secondary:
                 return await ArchiveAsync(task).ConfigureAwait(true);
             default:
@@ -149,22 +149,31 @@ public sealed class TaskCommands
     {
         ArgumentNullException.ThrowIfNull(task);
         var cardId = new SubtaskCardId(Guid.NewGuid());
-        var outcome = await RunAsync(
+        var statusName = string.Empty;
+        var request = CommandRequest.Announced(
             "Record_Task",
-            op => _context.UseCases.PopOutChecklistItem.ExecuteAsync(new PopOutChecklistItemCommand(op, task.Id, task.Revision, itemId, cardId), CancellationToken.None),
-            complete: _ => { }).ConfigureAwait(true);
-        if (outcome is null)
+            op => _context.UseCases.PopOutChecklistItem.ExecuteAsync(new PopOutChecklistItemCommand(op, task.Id, task.Revision, itemId, cardId), CancellationToken.None));
+        var run = await _context.Commands.RunAsync(request with
+        {
+            DisplayTimeout = PopOutDisplayTimeout,
+
+            // The status the use case chose (default, or the first completed one for a checked item) is read from the
+            // committed card once it is displayed, so the message never guesses it.
+            Completion = _ =>
+            {
+                var card = _context.Store.SubtaskCards.Lookup(cardId);
+                statusName = card.HasValue ? card.Value.Status.Name : string.Empty;
+                return new CommandResultText(
+                    _context.Strings.Format("PopOut_Moved", statusName),
+                    _context.Strings.GetString("PopOut_OpenCard"),
+                    () => OpenSubtaskCardAsync(cardId));
+            },
+        }).ConfigureAwait(true);
+        if (!run.IsSuccess)
         {
             return null;
         }
 
-        // The status the use case chose (default, or the first completed one for a checked item) is read from
-        // the committed card, so the message never guesses it.
-        await _context.WhenDisplayedAsync(outcome.CommitSequence, PopOutDisplayTimeout).ConfigureAwait(true);
-        var card = _context.Store.SubtaskCards.Lookup(cardId);
-        var statusName = card.HasValue ? card.Value.Status.Name : string.Empty;
-        var message = _context.Strings.Format("PopOut_Moved", statusName);
-        _context.SaveStatus.Complete(message, _context.Strings.GetString("PopOut_OpenCard"), () => OpenSubtaskCardAsync(cardId));
         _context.Announce(_context.Strings.Format("PopOut_Announced", statusName));
         return cardId;
     }
@@ -186,54 +195,14 @@ public sealed class TaskCommands
             return false;
         }
 
-        var outcome = await RunAsync("Record_SubtaskCard", op => _context.UseCases.DeleteSubtaskCard.ExecuteAsync(
-            new DeleteSubtaskCardCommand(op, card.Id, card.Revision), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is not null)
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_SubtaskCard", op => _context.UseCases.DeleteSubtaskCard.ExecuteAsync(
+            new DeleteSubtaskCardCommand(op, card.Id, card.Revision), CancellationToken.None))).ConfigureAwait(true);
+        if (run.IsSuccess)
         {
             _context.Announce(strings.Format("SubtaskCard_Deleted", card.Subtitle));
         }
 
-        return outcome is not null;
-    }
-
-    /// <summary>
-    /// Runs one command with the shared save indicator: Saving while it runs, then the actual result. A
-    /// failure is reported and announced and returns null; nothing is retried (T-07).
-    /// </summary>
-    /// <param name="complete">Replaces the plain "Saved" result when the caller reports its own result text.</param>
-    internal async Task<CommandOutcome<T>?> RunAsync<T>(
-        string recordKey,
-        Func<OperationId, Task<AppResult<CommandOutcome<T>>>> command,
-        Action<CommandOutcome<T>>? complete = null)
-    {
-        if (_context.IsEditingBlocked)
-        {
-            _context.Announce(_context.Strings.GetString("Error_EditingBlocked"), isFailure: true);
-            return null;
-        }
-
-        var operation = OperationId.New();
-        _context.SaveStatus.Begin();
-        var result = await command(operation).ConfigureAwait(true);
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, recordKey, _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _context.Announce(failure.Message, isFailure: true);
-            return null;
-        }
-
-        if (complete is null)
-        {
-            _context.SaveStatus.Complete();
-        }
-        else
-        {
-            // The caller completes the indicator with its own result once it is displayed.
-            complete(result.Value);
-        }
-
-        return result.Value;
+        return run.IsSuccess;
     }
 
     private async Task RunEditorAsync(TaskEditorViewModel editor)

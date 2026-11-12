@@ -206,23 +206,25 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             customValues = values.AsReadOnly();
         }
 
-        var operation = row.NextOperation();
+        var baseModel = row.BaseModel!;
         row.BeginSave();
-        _context.SaveStatus.Begin();
-        var (error, revision) = await ExecuteAsync(row, column, row.BaseModel!, operation, customValues);
-        if (error is not null)
+
+        // The failure is shown at the cell, so nothing is announced. The editor closes only once the committed value is
+        // displayed (T-07: show committed state only); the bound covers a row that leaves the list meanwhile, and a
+        // resync replaces it with the committed value too.
+        var run = await _context.Commands.RunAsync(new CommandRequest<long>(
+            row.IsTask ? "Record_Task" : "Record_SubtaskCard",
+            operation => ExecuteAsync(row, column, baseModel, operation, customValues))
         {
-            var failure = CommandFailure.From(error, operation, row.IsTask ? "Record_Task" : "Record_SubtaskCard", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            row.FailSave(failure);
+            Operation = row.NextOperation(),
+            WhenDisplayed = outcome => Task.WhenAny(row.WaitForRevisionAsync(outcome.Value), Task.Delay(CommittedDisplayTimeout)),
+        }).ConfigureAwait(true);
+        if (!run.IsSuccess)
+        {
+            row.FailSave(run.Message!, run.Failure is { IsConflict: true }, run.RetryOperation);
             return false;
         }
 
-        _context.SaveStatus.Complete();
-
-        // Close the editor only once the committed value is displayed (T-07: show committed state only). The
-        // bound covers a row that leaves the list meanwhile; a resync replaces it with the committed value too.
-        await Task.WhenAny(row.WaitForRevisionAsync(revision), Task.Delay(CommittedDisplayTimeout));
         EndEdit(row);
         return true;
     }
@@ -461,7 +463,8 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
             || _context.Store.SubtaskCards.Items.Any(c => c.IsParentArchived && filter(WorkItemRecord.From(c)));
     }
 
-    private async Task<(AppError? Error, long Revision)> ExecuteAsync(
+    /// <returns>The result; its value is the record's new revision.</returns>
+    private async Task<AppResult<CommandOutcome<long>>> ExecuteAsync(
         GridRowViewModel row,
         string column,
         WorkItemRecord baseModel,
@@ -499,7 +502,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
                 CancellationToken.None),
             _ => throw new InvalidOperationException($"Column {column} is not editable for this row."),
         };
-        return result.IsSuccess ? (null, result.Value.Value) : (result.Error, 0);
+        return result;
     }
 
     private static UpdateTaskCommand TaskEdit(GridRowViewModel row, TaskReadModel task, string column, OperationId operation, IReadOnlyDictionary<FieldId, CustomValue>? customValues)

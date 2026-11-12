@@ -275,10 +275,10 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        section.IsAdding = true;
         var id = Guid.NewGuid();
-        var error = await RunAsync(op => _services.UseCases.AddLookup.ExecuteAsync(new AddLookupCommand(op, section.Kind, id, section.AddText), CancellationToken.None)).ConfigureAwait(true);
-        section.IsAdding = false;
+        var error = await RunAsync(
+            op => _services.UseCases.AddLookup.ExecuteAsync(new AddLookupCommand(op, section.Kind, id, section.AddText), CancellationToken.None),
+            busy => section.IsAdding = busy).ConfigureAwait(true);
         if (error is null)
         {
             section.AddText = string.Empty;
@@ -304,10 +304,9 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return true;
         }
 
-        row.IsBusy = true;
-        var error = await RunAsync(op => _services.UseCases.RenameLookup.ExecuteAsync(
-            new RenameLookupCommand(op, row.Kind, row.Id, row.Stamp, row.RenameText), CancellationToken.None)).ConfigureAwait(true);
-        row.IsBusy = false;
+        var error = await RunAsync(
+            op => _services.UseCases.RenameLookup.ExecuteAsync(new RenameLookupCommand(op, row.Kind, row.Id, row.Stamp, row.RenameText), CancellationToken.None),
+            busy => row.IsBusy = busy).ConfigureAwait(true);
         if (error is not null)
         {
             row.RenameError = error;
@@ -581,37 +580,26 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        row.IsBusy = true;
-        var error = await RunAsync(command).ConfigureAwait(true);
-        row.IsBusy = false;
-        ErrorMessage = error;
+        ErrorMessage = await RunAsync(command, busy => row.IsBusy = busy).ConfigureAwait(true);
     }
 
     private async Task RunPageAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command) =>
         ErrorMessage = await RunAsync(command).ConfigureAwait(true);
 
-    /// <summary>Runs one Settings command with the save indicator; returns the failure text or null on success.</summary>
-    private async Task<string?> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command)
+    /// <summary>
+    /// Runs one Settings command with the save indicator, announcing a failure and waiting until the commit is displayed.
+    /// Returns null on success, otherwise the text to show: blocked, failed, or unexpected. <paramref name="busy"/> is
+    /// the row or section flag that is set while the command runs.
+    /// </summary>
+    private async Task<string?> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command, Action<bool>? busy = null)
     {
-        if (_context.IsEditingBlocked)
+        var run = await _context.Commands.RunAsync(new CommandRequest<long>("Record_Settings", command)
         {
-            return _context.Strings.GetString("Error_EditingBlocked");
-        }
-
-        var operation = OperationId.New();
-        _context.SaveStatus.Begin();
-        var result = await command(operation).ConfigureAwait(true);
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _context.Announce(failure.Message, isFailure: true);
-            return failure.Message;
-        }
-
-        _context.SaveStatus.Complete();
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        return null;
+            FailureAnnouncement = CommandRequest.FailureText,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy,
+        }).ConfigureAwait(true);
+        return run.Message;
     }
 
     private void OnWorkflow(WorkflowSnapshot workflow)

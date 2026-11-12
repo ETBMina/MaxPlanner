@@ -386,13 +386,14 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         HasConflict = false;
     }
 
-    internal void FailSave(CommandFailure failure)
+    /// <param name="retryOperation">T-05: the operation a retry of this same draft reuses because the outcome is unknown.</param>
+    internal void FailSave(string message, bool isConflict, OperationId? retryOperation)
     {
         IsSaving = false;
-        ErrorMessage = failure.Message;
-        HasConflict = failure.IsConflict;
+        ErrorMessage = message;
+        HasConflict = isConflict;
         FailedDraft = DraftValue;
-        UnknownOutcome = failure.RequiresSameOperationOnRetry ? (failure.OperationId, DraftValue) : null;
+        UnknownOutcome = retryOperation is { } operation ? (operation, DraftValue) : null;
     }
 
     /// <summary>A draft that cannot be converted (for example an invalid URL); shown like a refused commit.</summary>
