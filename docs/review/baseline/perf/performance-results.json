@@ -1,0 +1,92 @@
+{
+  "Date": "2026-11-11T19:06:21.3153958+02:00",
+  "Machine": {
+    "Os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
+    "Cpu": "13th Gen Intel(R) Core(TM) i7-13700HX",
+    "LogicalCores": 24,
+    "MemoryGiB": 31.7,
+    "Disk": "Samsung SSD 970 EVO Plus 500GB (SSD)",
+    "DotNetSdk": "10.0.404",
+    "Zip": "C:\\Users\\MAXIMI~1\\AppData\\Local\\Temp\\claude\\1c78f3750c6e3267\\6c2cf1b8-90bf-43f3-b0d1-9d12e00a089b\\scratchpad\\MaxPlanner-reviewbase-win-x64.zip"
+  },
+  "Fixture": "Created C:\\Users\\Maximizer\\AppData\\Local\\Temp\\MaxPlanner Perf ef546386\\fixture\\data\\data.db: 5000 CRs, 10000 tasks (2000 archived), 2000 Subtask cards, 50000 checklist items, 2000 reviews, 5000 General to-dos.",
+  "Benchmarks": [
+    "benchmarks\\results\\MaxPlanner.Benchmarks.FilterBenchmarks-report-github.md",
+    "benchmarks\\results\\MaxPlanner.Benchmarks.LoadBenchmarks-report-github.md",
+    "benchmarks\\results\\MaxPlanner.Benchmarks.TransferBenchmarks-report-github.md",
+    "benchmarks\\results\\MaxPlanner.Benchmarks.WorkspaceBenchmarks-report-github.md"
+  ],
+  "Launches": [
+    {
+      "Run": 1,
+      "ReadyMs": 1268,
+      "RenderedMs": 1490
+    },
+    {
+      "Run": 2,
+      "ReadyMs": 1146,
+      "RenderedMs": 1365
+    },
+    {
+      "Run": 3,
+      "ReadyMs": 1231,
+      "RenderedMs": 1443
+    },
+    {
+      "Run": 4,
+      "ReadyMs": 1157,
+      "RenderedMs": 1372
+    },
+    {
+      "Run": 5,
+      "ReadyMs": 1173,
+      "RenderedMs": 1384
+    }
+  ],
+  "Navigation": {
+    "Switches": 100,
+    "P50Ms": 28.0,
+    "P95Ms": 95.0,
+    "MaxMs": 99.0,
+    "SubscriptionsFirst": [
+      21,
+      21,
+      21,
+      21,
+      21
+    ],
+    "SubscriptionsLast": [
+      21,
+      21,
+      21,
+      21,
+      21
+    ],
+    "IdleWorkingSetMiB": 597.4
+  },
+  "Verdicts": {
+    "Startup": {
+      "WorstRenderedMs": 1490.0,
+      "BudgetMs": 3000,
+      "Pass": true
+    },
+    "PageSwitch": {
+      "P95Ms": 95.0,
+      "BudgetMs": 250,
+      "Pass": true
+    },
+    "IdleWorkingSet": {
+      "MiB": 597.4,
+      "BudgetMiB": 500,
+      "Pass": false
+    },
+    "Subscriptions": {
+      "FirstCyclesMax": 21.0,
+      "LastCyclesMax": 21.0,
+      "Pass": true
+    }
+  },
+  "Limitations": [
+    "Save-to-visible-UI, search-to-visible-UI, Dashboard-after-commit in the UI, and UI-thread stalls during import are not scripted here; the benchmarks measure their non-UI part and the Phase 19 UI run records the rest."
+  ]
+}

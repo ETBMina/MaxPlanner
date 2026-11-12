@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>MaxPlanner.Benchmarks.FilterBenchmarks-20261111-190820</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26300.9974)
+13th Gen Intel Core i7-13700HX 2.10GHz, 1 CPU, 24 logical and 16 physical cores
+.NET SDK 10.0.404
+  [Host] : .NET 10.0.15 (10.0.15, 10.0.1526.53008), X64 RyuJIT x86-64-v3
+</code></pre>
+<pre><code>Job=InProcess  Toolchain=InProcessEmitToolchain  
+</code></pre>
+
+<table>
+<thead><tr><th>Method                                   </th><th>Filter   </th><th>Mean</th><th>Error</th><th>StdDev</th><th>P95 </th><th>Gen0</th><th>Gen1</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>&#39;Filter and search every task and Subtask card&#39;</td><td>Search</td><td>2,170.4 &mu;s</td><td>36.43 &mu;s</td><td>34.08 &mu;s</td><td>2,217.5 &mu;s</td><td>35.1563</td><td>3.9063</td><td>577.3 KB</td>
+</tr><tr><td>&#39;Filter and search every task and Subtask card&#39;</td><td>Fields</td><td>303.1 &mu;s</td><td>2.97 &mu;s</td><td>2.78 &mu;s</td><td>306.9 &mu;s</td><td>26.3672</td><td>4.3945</td><td>407.21 KB</td>
+</tr><tr><td>&#39;Filter and search every task and Subtask card&#39;</td><td>SearchAndFields</td><td>566.6 &mu;s</td><td>9.50 &mu;s</td><td>8.88 &mu;s</td><td>579.9 &mu;s</td><td>27.3438</td><td>4.8828</td><td>434.11 KB</td>
+</tr></tbody></table>
+</body>
+</html>
