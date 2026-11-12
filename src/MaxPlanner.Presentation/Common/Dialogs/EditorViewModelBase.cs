@@ -355,8 +355,16 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
     protected Task WhenDisplayedAsync(long sequence) => Context.WhenDisplayedAsync(sequence, DisplayTimeout);
 
     /// <summary>Starts following committed changes; call once, at the end of the editor's constructor.</summary>
-    protected void ObserveCommits() =>
+    /// <exception cref="InvalidOperationException">The editor already follows committed changes.</exception>
+    protected void ObserveCommits()
+    {
+        if (_commits is not null)
+        {
+            throw new InvalidOperationException("The editor already follows committed changes.");
+        }
+
         _commits = Context.Store.Committed.ObserveOn(Context.UiScheduler).Subscribe(_ => OnCommitted());
+    }
 
     /// <summary>A commit reached the store: follow it while the draft is clean, or notice a deletion.</summary>
     protected abstract void OnCommitted();
@@ -366,7 +374,11 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
     {
     }
 
-    /// <summary>Called when <see cref="IsSaving"/> changed, before its change notification.</summary>
+    /// <summary>
+    /// Brings the editor's busy-dependent state (for example its pickers' read-only flag) in line with
+    /// <see cref="IsSaving"/>. Called when <see cref="IsSaving"/> changed, before its change notification; an editor
+    /// may also call it when another input of that state changes (the task editor does when it is archived).
+    /// </summary>
     protected virtual void OnSavingChanged()
     {
     }

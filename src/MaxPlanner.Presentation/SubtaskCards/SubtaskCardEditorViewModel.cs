@@ -460,6 +460,7 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
 
     private static T? Lookup<T>(DynamicData.Kernel.Optional<T> value)
         where T : class => value.HasValue ? value.Value : null;
+
     private void Load(SubtaskCardReadModel model)
     {
         IsLoading = true;

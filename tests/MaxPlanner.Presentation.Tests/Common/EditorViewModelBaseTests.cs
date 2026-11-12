@@ -44,11 +44,64 @@ public sealed class EditorViewModelBaseTests
         h.Await(editor.SaveAsync()).Should().BeFalse();
         h.Await(editor.SaveAsync()).Should().BeTrue();
 
-        using var next = new ProbeEditor(h.Workspace.Context, isNew: true);
-        h.Await(next.SaveAsync()).Should().BeTrue();
+        h.Await(editor.SaveAsync()).Should().BeTrue();
 
-        editor.Operations.Distinct().Should().ContainSingle();
-        next.Operations.Single().Should().NotBe(editor.Operations[0]);
+        editor.Operations.Should().HaveCount(3);
+        editor.Operations[1].Should().Be(editor.Operations[0]);
+        editor.Operations[2].Should().NotBe(editor.Operations[1], "the committed operation is done; the next save is a new intent");
+    }
+
+    [Fact]
+    [Trait("Req", "T-05")]
+    public void The_retry_operation_survives_attempts_that_send_nothing()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        editor.Results.Enqueue(new CommitOutcomeUnknownError(OperationId.New()));
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+
+        h.Workspace.Context.IsEditingBlocked = true;
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+        h.Workspace.Context.IsEditingBlocked = false;
+        editor.IsPrepared = false;
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+        editor.IsPrepared = true;
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+
+        editor.Operations.Should().HaveCount(2, "the blocked and the refused attempts send no command");
+        editor.Operations[1].Should().Be(editor.Operations[0], "T-05: the retry still reuses the unknown outcome's operation");
+    }
+
+    [Fact]
+    public void Starting_the_command_closes_an_open_dirty_prompt_but_a_refused_draft_leaves_it_open()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true, IsPrepared = false };
+        editor.TryClose().Should().BeFalse();
+        editor.IsDirtyClosePromptOpen.Should().BeTrue();
+
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+        editor.IsDirtyClosePromptOpen.Should().BeTrue("the prompt closes only when the command starts");
+
+        editor.IsPrepared = true;
+        var hold = new TaskCompletionSource<AppError?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        editor.Pending = hold.Task;
+        var save = editor.SaveAsync();
+        h.PumpUntil(() => editor.Operations.Count == 1);
+        editor.IsDirtyClosePromptOpen.Should().BeFalse("a save that is not answering the prompt still closes it");
+
+        hold.SetResult(new StorageFailureError(StorageFailureKind.DiskFull));
+        h.Await(save).Should().BeFalse();
+        editor.IsDirtyClosePromptOpen.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Following_committed_changes_twice_is_refused()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context);
+
+        editor.Invoking(e => e.ObserveAgain()).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -323,6 +376,8 @@ public sealed class EditorViewModelBaseTests
         public void FollowUpWith(ProbeFollowUp followUp) => CloseForFollowUp(followUp);
 
         public void Resolve() => EndConflict();
+
+        public void ObserveAgain() => ObserveCommits();
 
         public void LoadChanged()
         {
