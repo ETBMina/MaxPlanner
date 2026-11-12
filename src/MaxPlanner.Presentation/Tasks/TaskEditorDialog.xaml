@@ -102,7 +102,7 @@
                         <FontIcon FontSize="14" Glyph="&#xE712;" />
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                <MenuFlyoutItem x:Uid="TaskEditor_MoreCopy" AutomationProperties.AutomationId="TaskEditor_MoreCopyItem" Click="OnCopyClick">
+                                <MenuFlyoutItem x:Uid="TaskEditor_MoreCopy" AutomationProperties.AutomationId="TaskEditor_MoreCopyItem" Command="{x:Bind ViewModel.RequestCopyCommand}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE8C8;" />
                                     </MenuFlyoutItem.Icon>
@@ -110,7 +110,7 @@
                                 <MenuFlyoutItem
                                     x:Uid="TaskEditor_MoreArchive"
                                     AutomationProperties.AutomationId="TaskEditor_MoreArchiveItem"
-                                    Click="OnArchiveClick"
+                                    Command="{x:Bind ViewModel.ArchiveCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanArchive, Mode=OneWay}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE7B8;" />
@@ -119,15 +119,15 @@
                                 <MenuFlyoutItem
                                     x:Uid="TaskEditor_MoreRestore"
                                     AutomationProperties.AutomationId="TaskEditor_MoreRestoreItem"
-                                    Click="OnRestoreClick"
+                                    Command="{x:Bind ViewModel.RestoreCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanRestore, Mode=OneWay}" />
                                 <MenuFlyoutItem
                                     x:Uid="TaskEditor_MoreAddSubtaskCard"
                                     AutomationProperties.AutomationId="TaskEditor_MoreAddSubtaskCardItem"
-                                    Click="OnAddSubtaskCardFollowUpClick"
+                                    Command="{x:Bind ViewModel.RequestAddSubtaskCardCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanAddSubtaskCard, Mode=OneWay}" />
                                 <MenuFlyoutSeparator />
-                                <MenuFlyoutItem x:Uid="TaskEditor_MoreDelete" AutomationProperties.AutomationId="TaskEditor_MoreDeleteItem" Click="OnDeleteClick">
+                                <MenuFlyoutItem x:Uid="TaskEditor_MoreDelete" AutomationProperties.AutomationId="TaskEditor_MoreDeleteItem" Command="{x:Bind ViewModel.RequestDeleteCommand}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE74D;" />
                                     </MenuFlyoutItem.Icon>
@@ -177,8 +177,8 @@
                         Orientation="Horizontal"
                         Spacing="8"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}">
-                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Click="OnReviewConflictClick" />
-                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Click="OnReloadClick" />
+                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Command="{x:Bind ViewModel.ReviewConflictCommand}" />
+                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Command="{x:Bind ViewModel.BeginReloadCommand}" />
                     </StackPanel>
                 </InfoBar.Content>
             </InfoBar>
@@ -211,7 +211,7 @@
                     <Button
                         x:Uid="TaskEditor_RestoreButton"
                         AutomationProperties.AutomationId="TaskEditor_RestoreButton"
-                        Click="OnRestoreClick"
+                        Command="{x:Bind ViewModel.RestoreCommand}"
                         IsEnabled="{x:Bind ViewModel.CanRestore, Mode=OneWay}" />
                 </InfoBar.ActionButton>
             </InfoBar>
@@ -280,7 +280,7 @@
                                     VerticalAlignment="Center"
                                     AutomationProperties.AutomationId="TaskEditor_OpenCrLink"
                                     AutomationProperties.Name="{x:Bind ViewModel.OpenCrName, Mode=OneWay}"
-                                    Click="OnOpenCrClick"
+                                    Command="{x:Bind ViewModel.RequestOpenCrCommand}"
                                     FontSize="15"
                                     FontWeight="SemiBold"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.OpenCrName, Mode=OneWay}"
@@ -308,13 +308,13 @@
                                 x:Uid="TaskEditor_ChooseDifferentCrButton"
                                 Margin="0,4,0,0"
                                 AutomationProperties.AutomationId="TaskEditor_ChooseDifferentCrButton"
-                                Click="OnLinkClick"
+                                Command="{x:Bind ViewModel.BeginLinkCommand}"
                                 Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasPendingLink), Mode=OneWay}" />
                             <Button
                                 x:Uid="TaskEditor_LinkToCrButton"
                                 Margin="0,4,0,0"
                                 AutomationProperties.AutomationId="TaskEditor_LinkToCrButton"
-                                Click="OnLinkClick"
+                                Command="{x:Bind ViewModel.BeginLinkCommand}"
                                 IsEnabled="{x:Bind ViewModel.CanLinkToCr, Mode=OneWay}"
                                 Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsUnlinkedWithoutPending), Mode=OneWay}" />
                         </StackPanel>
@@ -479,7 +479,7 @@
                                     Grid.Column="1"
                                     VerticalAlignment="Bottom"
                                     AutomationProperties.AutomationId="TaskEditor_ClearStartDateButton"
-                                    Click="OnClearStartClick"
+                                    Command="{x:Bind ViewModel.ClearStartDateCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
                                     <FontIcon FontSize="12" Glyph="&#xE711;" />
                                 </Button>
@@ -508,7 +508,7 @@
                                     Grid.Column="1"
                                     VerticalAlignment="Bottom"
                                     AutomationProperties.AutomationId="TaskEditor_ClearEndDateButton"
-                                    Click="OnClearEndClick"
+                                    Command="{x:Bind ViewModel.ClearEndDateCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
                                     <FontIcon FontSize="12" Glyph="&#xE711;" />
                                 </Button>
@@ -734,7 +734,7 @@
                             x:Uid="TaskEditor_AddSubtaskCardButton"
                             Grid.Column="1"
                             AutomationProperties.AutomationId="TaskEditor_AddSubtaskCardButton"
-                            Click="OnAddSubtaskClick"
+                            Command="{x:Bind ViewModel.AddSubtaskCardCommand}"
                             IsEnabled="{x:Bind ViewModel.CanAddSubtaskCard, Mode=OneWay}" />
                     </Grid>
                     <local:FieldError Text="{x:Bind ViewModel.SubtaskCardError, Mode=OneWay}" />
@@ -791,11 +791,11 @@
                     </ListView.ItemTemplate>
                 </ListView>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_BackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="LinkCr_NextButton"
                         AutomationProperties.AutomationId="LinkCr_NextButton"
-                        Click="OnLinkNextClick"
+                        Command="{x:Bind ViewModel.LinkNextCommand}"
                         IsEnabled="{x:Bind ViewModel.CrPicker.HasSelection, Mode=OneWay, FallbackValue=False}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
@@ -819,11 +819,11 @@
                     Text="{x:Bind ViewModel.Service, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <local:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_ConfirmBackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_ConfirmBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="LinkCr_LinkButton"
                         AutomationProperties.AutomationId="LinkCr_LinkButton"
-                        Click="OnConfirmLinkClick"
+                        Command="{x:Bind ViewModel.ConfirmLinkCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -867,11 +867,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="Conflict_ApplyButton"
                         AutomationProperties.AutomationId="Conflict_ApplyButton"
-                        Click="OnApplyConflictClick"
+                        Command="{x:Bind ViewModel.ApplyConflictReviewCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -880,11 +880,11 @@
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReloadConfirmStep), Mode=OneWay}">
                 <TextBlock x:Uid="Conflict_ReloadMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="Conflict_ReloadConfirmButton"
                         AutomationProperties.AutomationId="Conflict_ReloadConfirmButton"
-                        Click="OnConfirmReloadClick"
+                        Command="{x:Bind ViewModel.ConfirmReloadCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>

@@ -14,7 +14,8 @@ using XamlGrid = Microsoft.UI.Xaml.Controls.Grid;
 namespace MaxPlanner.Presentation.Tasks;
 
 /// <summary>
-/// The task editor dialog. Code-behind only forwards clicks and keys to <see cref="TaskEditorViewModel"/>,
+/// The task editor dialog. Buttons and menu items bind <see cref="TaskEditorViewModel"/> commands; code-behind
+/// handles what needs event args or the row's item (the dialog buttons, accelerators, Enter keys, checklist rows),
 /// keeps the Status/Priority/CR selections in step with it (a two-way SelectedItem could run before
 /// ItemsSource), moves focus where the ViewModel asks, reflows the fields by width (design §5.0), shows the
 /// hover-revealed copy and checklist row actions, and turns a checklist drag into a draft move.
@@ -163,7 +164,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
     {
         // The dialog closes only after the save committed (the ViewModel asks for it); a failure keeps it open.
         args.Cancel = true;
-        _ = ViewModel.SaveAsync();
+        ViewModel.SaveCommand.Execute(null);
     }
 
     private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
@@ -180,7 +181,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
     private void OnSaveAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        _ = ViewModel.SaveAsync();
+        ViewModel.SaveCommand.Execute(null);
     }
 
     private void OnBackAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -191,18 +192,6 @@ public sealed partial class TaskEditorDialog : ContentDialog
             ViewModel.StepBack();
         }
     }
-
-    private void OnCopyClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.Copy);
-
-    private void OnDeleteClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.Delete);
-
-    private void OnArchiveClick(object sender, RoutedEventArgs e) => _ = ViewModel.ArchiveAsync();
-
-    private void OnRestoreClick(object sender, RoutedEventArgs e) => _ = ViewModel.RestoreAsync();
-
-    private void OnAddSubtaskCardFollowUpClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.AddSubtaskCard);
-
-    private void OnOpenCrClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(EditorFollowUp.OpenCr);
 
     // Hide raises Closing with no result, so a dirty draft asks first, as Cancel and Esc do (design §5.8).
     private void OnCloseClick(object sender, RoutedEventArgs e) => Hide();
@@ -284,22 +273,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
-    private void OnReviewConflictClick(object sender, RoutedEventArgs e) => ViewModel.ReviewConflict();
-
-    private void OnReloadClick(object sender, RoutedEventArgs e) => ViewModel.BeginReload();
-
-    private void OnConfirmReloadClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmReload();
-
-    private void OnApplyConflictClick(object sender, RoutedEventArgs e) => ViewModel.ApplyConflictReview();
-
-    private void OnLinkClick(object sender, RoutedEventArgs e) => ViewModel.BeginLink();
-
-    private void OnLinkNextClick(object sender, RoutedEventArgs e) => ViewModel.LinkNext();
-
-    private void OnConfirmLinkClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmLink();
-
-    private void OnStepBackClick(object sender, RoutedEventArgs e) => ViewModel.StepBack();
-
+    // Not a two-way SelectedItem: that could write null back while ItemsSource is (re)set.
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedStatus = StatusCombo.SelectedItem as StatusOption;
 
     private void OnPrioritySelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedPriority = PriorityCombo.SelectedItem as PriorityOption;
@@ -313,10 +287,6 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
-    private void OnClearStartClick(object sender, RoutedEventArgs e) => ViewModel.ClearStartDate();
-
-    private void OnClearEndClick(object sender, RoutedEventArgs e) => ViewModel.ClearEndDate();
-
     private void OnAddChecklistKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter)
@@ -326,14 +296,12 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
-    private void OnAddSubtaskClick(object sender, RoutedEventArgs e) => _ = ViewModel.AddSubtaskCardAsync();
-
     private void OnAddSubtaskKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter)
         {
             e.Handled = true;
-            _ = ViewModel.AddSubtaskCardAsync();
+            ViewModel.AddSubtaskCardCommand.Execute(null);
         }
     }
 
@@ -341,7 +309,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     private void OnItemMoveDownClick(object sender, RoutedEventArgs e) => MoveItem(sender, 1);
 
-    private void OnItemPopOutClick(object sender, RoutedEventArgs e) => WithItem(sender, item => _ = ViewModel.PopOutAsync(item));
+    private void OnItemPopOutClick(object sender, RoutedEventArgs e) => WithItem(sender, ViewModel.PopOutCommand.Execute);
 
     private void OnItemDeleteClick(object sender, RoutedEventArgs e) => WithItem(sender, ViewModel.RemoveChecklistItem);
 

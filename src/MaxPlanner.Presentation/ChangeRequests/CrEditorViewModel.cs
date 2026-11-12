@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
@@ -384,6 +385,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     /// "+ Create task" (B-03.5, T-13): a saved, clean CR closes the editor and the task editor opens with the
     /// link; a new or dirty CR first shows the inline "Save and create" step.
     /// </summary>
+    [RelayCommand]
     public void BeginCreateTask()
     {
         if (!CanCreateTask)
@@ -428,6 +430,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>"Open CR-1042" beside a duplicate-number error (B-03.2).</summary>
+    [RelayCommand]
     public void OpenDuplicate()
     {
         if (DuplicateId is not null)
@@ -447,6 +450,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     /// More › Move to backlog (B-08.11): the editor closes (after the dirty prompt, so a draft is never saved
     /// implicitly) and the explicit command clears the dates and sets the backlog status.
     /// </summary>
+    [RelayCommand]
     public void RequestMoveToBacklog()
     {
         if (CanMoveToBacklog)
@@ -456,6 +460,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>More › Delete… (design §5.7): the cascade step with the counts of what goes with the CR.</summary>
+    [RelayCommand]
     public void BeginDelete()
     {
         if (!CanDelete)
@@ -469,6 +474,17 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         CurrentStep = CrEditorStep.DeleteConfirm;
         RaiseState();
     }
+
+    // The async actions as commands for the dialog's buttons. Concurrent runs are allowed, so a running command never
+    // disables its button; each method keeps its own guards.
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task OpenUrl() => await OpenUrlAsync().ConfigureAwait(true);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task SaveAndCreateTask() => await SaveAndCreateTaskAsync().ConfigureAwait(true);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task ConfirmDelete() => await ConfirmDeleteAsync().ConfigureAwait(true);
 
     /// <summary>
     /// "Delete CR and n tasks": sends the exact task set the step showed. When the linked tasks changed, the
@@ -527,6 +543,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>Back (Alt+Left) from an inline step.</summary>
+    [RelayCommand]
     public void StepBack()
     {
         CurrentStep = CrEditorStep.Form;
@@ -536,11 +553,14 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         RaiseDeleteState();
     }
 
+    [RelayCommand]
     public void ClearPlannedStart() => PlannedStart = null;
 
+    [RelayCommand]
     public void ClearPlannedEnd() => PlannedEnd = null;
 
     /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
+    [RelayCommand]
     public void ReviewConflict()
     {
         if (!IsConflict || Latest is not { } latest)
@@ -564,6 +584,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on.</summary>
+    [RelayCommand]
     public void ApplyConflictReview()
     {
         if (Latest is not { } latest)
@@ -595,12 +616,14 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         RaiseState();
     }
 
+    [RelayCommand]
     public void BeginReload()
     {
         CurrentStep = CrEditorStep.ReloadConfirm;
         RaiseState();
     }
 
+    [RelayCommand]
     public void ConfirmReload()
     {
         if (Latest is { } latest)

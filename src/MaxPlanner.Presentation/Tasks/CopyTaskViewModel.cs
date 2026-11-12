@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.Tasks;
@@ -33,6 +34,7 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
     private readonly StatusOption? _sourceStatus;
     private readonly StatusOption? _defaultStatus;
     private OperationId? _retryOperation;
+    private RelayCommand? _confirmLinkCommand;
 
     public CopyTaskViewModel(WorkspaceContext context, TaskReadModel source)
     {
@@ -170,6 +172,13 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
 
     public bool CanPrimary => !IsSaving && CurrentStep is CopyStep.Options or CopyStep.Review;
 
+    /// <summary>Use this CR (the link step's button); <see cref="ConfirmLink"/> keeps its result for callers that need it.</summary>
+    public IRelayCommand ConfirmLinkCommand => _confirmLinkCommand ??= new RelayCommand(() => ConfirmLink());
+
+    /// <summary>The primary button and its accelerator; concurrent runs are allowed, so the command never disables anything.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task Primary() => await PrimaryAsync().ConfigureAwait(true);
+
     /// <summary>The dialog's primary button: Options → Review → Create copy.</summary>
     public async Task<bool> PrimaryAsync()
     {
@@ -228,12 +237,14 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         }
     }
 
+    [RelayCommand]
     public void BeginLink()
     {
         CrPicker.Refresh();
         CurrentStep = CopyStep.LinkPick;
     }
 
+    [RelayCommand]
     public void LinkNext()
     {
         if (CurrentStep == CopyStep.LinkPick && CrPicker.Selected is not null)
@@ -263,6 +274,7 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
     }
 
     /// <summary>Clears the chosen CR, so the copy is created unlinked.</summary>
+    [RelayCommand]
     public void ClearLink()
     {
         PendingLink = null;
@@ -270,6 +282,7 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         ServiceError = null;
     }
 
+    [RelayCommand]
     public void StepBack() => CurrentStep = CurrentStep switch
     {
         CopyStep.LinkConfirm => CopyStep.LinkPick,

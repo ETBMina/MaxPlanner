@@ -49,7 +49,7 @@
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuFlyoutItem x:Uid="SubtaskEditor_MoreDelete" AutomationProperties.AutomationId="SubtaskEditor_MoreDeleteItem" Click="OnDeleteClick">
+                            <MenuFlyoutItem x:Uid="SubtaskEditor_MoreDelete" AutomationProperties.AutomationId="SubtaskEditor_MoreDeleteItem" Command="{x:Bind ViewModel.RequestDeleteCommand}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE74D;" />
                                 </MenuFlyoutItem.Icon>
@@ -81,8 +81,8 @@
                         Orientation="Horizontal"
                         Spacing="8"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}">
-                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Click="OnReviewConflictClick" />
-                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Click="OnReloadClick" />
+                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Command="{x:Bind ViewModel.ReviewConflictCommand}" />
+                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Command="{x:Bind ViewModel.BeginReloadCommand}" />
                     </StackPanel>
                 </InfoBar.Content>
             </InfoBar>
@@ -109,7 +109,7 @@
                             Padding="0"
                             AutomationProperties.AutomationId="SubtaskEditor_OpenParentLink"
                             AutomationProperties.Name="{x:Bind ViewModel.ParentTitle, Mode=OneWay}"
-                            Click="OnOpenParentClick"
+                            Command="{x:Bind ViewModel.RequestOpenParentCommand}"
                             IsEnabled="{x:Bind ViewModel.CanOpenParent, Mode=OneWay}">
                             <TextBlock Text="{x:Bind ViewModel.ParentTitle, Mode=OneWay}" TextWrapping="Wrap" />
                         </HyperlinkButton>
@@ -209,7 +209,7 @@
                         Grid.Column="1"
                         VerticalAlignment="Bottom"
                         AutomationProperties.AutomationId="SubtaskEditor_ClearStartDateButton"
-                        Click="OnClearStartClick"
+                        Command="{x:Bind ViewModel.ClearStartDateCommand}"
                         IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
                         <FontIcon FontSize="12" Glyph="&#xE711;" />
                     </Button>
@@ -234,7 +234,7 @@
                         Grid.Column="1"
                         VerticalAlignment="Bottom"
                         AutomationProperties.AutomationId="SubtaskEditor_ClearEndDateButton"
-                        Click="OnClearEndClick"
+                        Command="{x:Bind ViewModel.ClearEndDateCommand}"
                         IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
                         <FontIcon FontSize="12" Glyph="&#xE711;" />
                     </Button>
@@ -300,11 +300,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="Conflict_ApplyButton"
                         AutomationProperties.AutomationId="Conflict_ApplyButton"
-                        Click="OnApplyConflictClick"
+                        Command="{x:Bind ViewModel.ApplyConflictReviewCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -313,11 +313,11 @@
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReloadConfirmStep), Mode=OneWay}">
                 <TextBlock x:Uid="SubtaskEditor_ReloadMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="Conflict_ReloadConfirmButton"
                         AutomationProperties.AutomationId="Conflict_ReloadConfirmButton"
-                        Click="OnConfirmReloadClick"
+                        Command="{x:Bind ViewModel.ConfirmReloadCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>

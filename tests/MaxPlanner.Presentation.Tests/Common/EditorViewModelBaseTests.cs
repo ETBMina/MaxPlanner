@@ -283,6 +283,45 @@ public sealed class EditorViewModelBaseTests
     }
 
     [Fact]
+    public void The_save_command_saves_and_closes_like_save_and_never_disables_itself()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        var closed = 0;
+        editor.CloseRequested += (_, _) => closed++;
+        var hold = new TaskCompletionSource<AppError?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        editor.Pending = hold.Task;
+
+        editor.SaveCommand.CanExecute(null).Should().BeTrue();
+        var save = editor.SaveCommand.ExecuteAsync(null);
+        h.PumpUntil(() => editor.Operations.Count == 1);
+        editor.SaveCommand.CanExecute(null).Should().BeTrue("the command allows concurrent runs, so its button stays as it was");
+        h.Await(editor.SaveCommand.ExecuteAsync(null));
+        editor.Operations.Should().ContainSingle("SaveAsync ignores a second save while saving");
+
+        hold.SetResult(null);
+        h.Await(save);
+        editor.Calls.Should().Equal("CommitPendingInput", "ClearFieldErrors", "TryPrepareSave", "Execute", "OnSaved");
+        closed.Should().Be(1);
+    }
+
+    [Fact]
+    public void The_save_command_on_a_failed_save_keeps_the_editor_open()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        var closed = 0;
+        editor.CloseRequested += (_, _) => closed++;
+        editor.Results.Enqueue(new StorageFailureError(StorageFailureKind.DiskFull));
+
+        h.Await(editor.SaveCommand.ExecuteAsync(null));
+
+        closed.Should().Be(0);
+        editor.SaveError.Should().Be("Not saved. The drive is full.");
+        editor.TryClose().Should().BeFalse("the draft still has changes");
+    }
+
+    [Fact]
     [Trait("Req", "B-02.8")]
     public void A_window_close_on_a_dirty_draft_stays_pending_until_the_prompt_is_answered()
     {

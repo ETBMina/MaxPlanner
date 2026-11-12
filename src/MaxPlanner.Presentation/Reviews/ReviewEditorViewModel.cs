@@ -1,5 +1,6 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
 using MaxPlanner.Application.Reviews;
@@ -145,6 +146,7 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
     protected override bool NeedsClosePrompt => IsDirty && !IsDeletedElsewhere;
 
     /// <summary>"Open CR CR-1042" beside the CR number (B-17.3): the editor closes (after the dirty prompt), then the CR opens.</summary>
+    [RelayCommand]
     public void OpenMatchingCr()
     {
         if (HasMatchingCr)
@@ -154,6 +156,7 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
     }
 
     /// <summary>More › Delete…: the editor closes first, then the confirmation runs (design §5.4, §5.7).</summary>
+    [RelayCommand]
     public void RequestDelete()
     {
         if (CanDelete)
@@ -163,6 +166,7 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
     }
 
     /// <summary>After a conflict: replaces the draft with the saved review (the user chose to discard their draft).</summary>
+    [RelayCommand]
     public void Reload()
     {
         if (Context.Store.ReviewItems.Lookup(_id) is { HasValue: true } latest)

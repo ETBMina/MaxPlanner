@@ -52,13 +52,13 @@
                             <MenuFlyoutItem
                                 x:Uid="CrEditor_MoreMoveToBacklog"
                                 AutomationProperties.AutomationId="CrEditor_MoreMoveToBacklogItem"
-                                Click="OnMoveToBacklogClick"
+                                Command="{x:Bind ViewModel.RequestMoveToBacklogCommand}"
                                 IsEnabled="{x:Bind ViewModel.CanMoveToBacklog, Mode=OneWay}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE72B;" />
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Uid="CrEditor_MoreDelete" AutomationProperties.AutomationId="CrEditor_MoreDeleteItem" Click="OnDeleteClick">
+                            <MenuFlyoutItem x:Uid="CrEditor_MoreDelete" AutomationProperties.AutomationId="CrEditor_MoreDeleteItem" Command="{x:Bind ViewModel.BeginDeleteCommand}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE74D;" />
                                 </MenuFlyoutItem.Icon>
@@ -90,8 +90,8 @@
                         Orientation="Horizontal"
                         Spacing="8"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}">
-                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Click="OnReviewConflictClick" />
-                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Click="OnReloadClick" />
+                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Command="{x:Bind ViewModel.ReviewConflictCommand}" />
+                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Command="{x:Bind ViewModel.BeginReloadCommand}" />
                     </StackPanel>
                 </InfoBar.Content>
             </InfoBar>
@@ -133,7 +133,7 @@
                         <HyperlinkButton
                             Padding="0"
                             AutomationProperties.AutomationId="CrEditor_OpenDuplicateLink"
-                            Click="OnOpenDuplicateClick"
+                            Command="{x:Bind ViewModel.OpenDuplicateCommand}"
                             Content="{x:Bind ViewModel.OpenDuplicateText, Mode=OneWay}"
                             Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDuplicate), Mode=OneWay}" />
                     </StackPanel>
@@ -274,7 +274,7 @@
                             Grid.Column="1"
                             VerticalAlignment="Bottom"
                             AutomationProperties.AutomationId="CrEditor_ClearPlannedStartButton"
-                            Click="OnClearStartClick"
+                            Command="{x:Bind ViewModel.ClearPlannedStartCommand}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
                             <FontIcon FontSize="12" Glyph="&#xE711;" />
                         </Button>
@@ -296,7 +296,7 @@
                             Grid.Column="1"
                             VerticalAlignment="Bottom"
                             AutomationProperties.AutomationId="CrEditor_ClearPlannedEndButton"
-                            Click="OnClearEndClick"
+                            Command="{x:Bind ViewModel.ClearPlannedEndCommand}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
                             <FontIcon FontSize="12" Glyph="&#xE711;" />
                         </Button>
@@ -337,7 +337,7 @@
                         Grid.Column="1"
                         VerticalAlignment="Bottom"
                         AutomationProperties.AutomationId="CrEditor_OpenUrlButton"
-                        Click="OnOpenUrlClick"
+                        Command="{x:Bind ViewModel.OpenUrlCommand}"
                         IsEnabled="{x:Bind ViewModel.CanOpenUrl, Mode=OneWay}">
                         <FontIcon FontSize="14" Glyph="&#xE8A7;" />
                     </Button>
@@ -380,7 +380,7 @@
                         <Button
                             Grid.Column="1"
                             AutomationProperties.AutomationId="CrEditor_CreateTaskButton"
-                            Click="OnCreateTaskClick"
+                            Command="{x:Bind ViewModel.BeginCreateTaskCommand}"
                             IsEnabled="{x:Bind ViewModel.CanCreateTask, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon FontSize="14" Glyph="&#xE710;" />
@@ -455,11 +455,11 @@
                     TextWrapping="Wrap" />
                 <TextBlock x:Uid="CrEditor_SaveAndCreateNote" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="CrEditor_SaveAndCreateBackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="CrEditor_SaveAndCreateBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="CrEditor_SaveAndCreateButton"
                         AutomationProperties.AutomationId="CrEditor_SaveAndCreateButton"
-                        Click="OnSaveAndCreateClick"
+                        Command="{x:Bind ViewModel.SaveAndCreateTaskCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -500,10 +500,10 @@
                         x:Name="DeleteBackButton"
                         x:Uid="CascadeDelete_CancelButton"
                         AutomationProperties.AutomationId="CascadeDelete_CancelButton"
-                        Click="OnStepBackClick" />
+                        Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         AutomationProperties.AutomationId="CascadeDelete_DeleteButton"
-                        Click="OnConfirmDeleteClick"
+                        Command="{x:Bind ViewModel.ConfirmDeleteCommand}"
                         Content="{x:Bind ViewModel.DeleteButtonText, Mode=OneWay}"
                         IsEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsSaving), Mode=OneWay}" />
                 </StackPanel>
@@ -548,11 +548,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="Conflict_ApplyButton"
                         AutomationProperties.AutomationId="Conflict_ApplyButton"
-                        Click="OnApplyConflictClick"
+                        Command="{x:Bind ViewModel.ApplyConflictReviewCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -561,11 +561,11 @@
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReloadConfirmStep), Mode=OneWay}">
                 <TextBlock x:Uid="CrEditor_ReloadMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="Conflict_ReloadConfirmButton"
                         AutomationProperties.AutomationId="Conflict_ReloadConfirmButton"
-                        Click="OnConfirmReloadClick"
+                        Command="{x:Bind ViewModel.ConfirmReloadCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>

@@ -1,5 +1,6 @@
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Presentation.Common.Services;
@@ -126,6 +127,14 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
 
         return saved;
     }
+
+    /// <summary>
+    /// Ctrl+Enter and the primary button go through <c>SaveCommand</c>, so a failure that throws reaches the UI
+    /// thread's unhandled-exception handler instead of being lost. Concurrent runs are allowed: the command never
+    /// disables anything while it runs, and <see cref="SaveAsync"/> already ignores a repeat while saving.
+    /// </summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task Save() => await SaveAsync().ConfigureAwait(true);
 
     /// <summary>
     /// Esc, Cancel, an outside click or a follow-up. A draft with changes cancels the close and asks for the Save /
