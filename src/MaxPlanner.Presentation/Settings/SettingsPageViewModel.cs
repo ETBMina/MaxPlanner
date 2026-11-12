@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -887,7 +886,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
                 ? _context.Strings.GetString("Settings_BackupNone")
                 : _context.Strings.Format(
                     "Settings_BackupLast",
-                    latest.CreatedAtUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture),
+                    DateText.ShortDateTime(latest.CreatedAtUtc.ToLocalTime()),
                     _context.Strings.GetString("BackupKind_" + latest.Kind.Replace("-", string.Empty, StringComparison.Ordinal)));
         }
         catch (IOException)

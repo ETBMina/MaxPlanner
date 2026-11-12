@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
@@ -174,7 +173,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
     /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", b.CreatedAtUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture)) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -1042,7 +1041,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         string Join(IEnumerable<string> names) => names.DefaultIfEmpty(none).Aggregate((a, b) => a + ", " + b);
         string Person(Guid id) => _workflow.FindPerson(new PersonId(id))?.Name.Display ?? _newPeople.Used([id]).Select(p => p.Name).FirstOrDefault() ?? none;
         string Tag(Guid id) => _workflow.FindTag(new TagId(id))?.Name.Display ?? _newTags.Used([id]).Select(t => t.Name).FirstOrDefault() ?? none;
-        string Date(DateOnly? date) => date?.ToString("d", CultureInfo.CurrentCulture) ?? none;
+        string Date(DateOnly? date) => date is { } day ? DateText.ShortDate(day) : none;
         string Text(string text) => text.Length == 0 ? none : text;
         return key switch
         {
@@ -1126,9 +1125,9 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     private string DatesText(DateOnly? start, DateOnly? end) => (start, end) switch
     {
         (null, null) => string.Empty,
-        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", s.ToString("d", CultureInfo.CurrentCulture)),
-        (null, { } e) => Context.Strings.Format("Board_DatesEnded", e.ToString("d", CultureInfo.CurrentCulture)),
-        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", s.ToString("d", CultureInfo.CurrentCulture), e.ToString("d", CultureInfo.CurrentCulture)),
+        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.ShortDate(s)),
+        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.ShortDate(e)),
+        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.ShortDate(s), DateText.ShortDate(e)),
     };
 
     private string Helper(string key, IEnumerable<Domain.Workflow.TaskStatusDefinition> statuses)

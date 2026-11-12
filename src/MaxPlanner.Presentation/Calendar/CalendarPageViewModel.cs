@@ -244,9 +244,9 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     }
 
     private string PeriodTextFor(CalendarMode mode, DateOnly anchor) => mode == CalendarMode.Week
-        ? _context.Strings.Format("Calendar_WeekPeriod", Workweek.WeekStart(anchor).ToString("MMM d", CultureInfo.CurrentCulture),
-            Workweek.WeekStart(anchor).AddDays(4).ToString("MMM d", CultureInfo.CurrentCulture), Workweek.WeekStart(anchor).AddDays(4).Year)
-        : anchor.ToString("MMM yyyy", CultureInfo.CurrentCulture);
+        ? _context.Strings.Format("Calendar_WeekPeriod", DateText.MonthDay(Workweek.WeekStart(anchor)),
+            DateText.MonthDay(Workweek.WeekStart(anchor).AddDays(4)), Workweek.WeekStart(anchor).AddDays(4).Year)
+        : DateText.MonthYear(anchor);
 
     public string PreviousName => _context.Strings.GetString(Mode == CalendarMode.Week ? "Calendar_PreviousWeek" : "Calendar_PreviousMonth");
 
@@ -379,7 +379,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     public string ReplacePrompt(ChangeRequestReadModel cr, DateOnly day)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        return cr.PlannedStart is null ? string.Empty : _context.Strings.Format("Calendar_ReplaceDates", Create(cr).RangeText, day.ToString("MMM d", CultureInfo.CurrentCulture));
+        return cr.PlannedStart is null ? string.Empty : _context.Strings.Format("Calendar_ReplaceDates", Create(cr).RangeText, DateText.MonthDay(day));
     }
 
     /// <summary>One bar edge, a keyboard step, or the Edit dates flyout (B-08.8). Failure keeps the committed dates.</summary>
@@ -407,7 +407,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     public string DayName(CalendarDayCell day)
     {
         ArgumentNullException.ThrowIfNull(day);
-        var name = _context.Strings.Format(day.Items.Count == 1 ? "Calendar_DayNameOne" : "Calendar_DayName", day.Date.ToString("D", CultureInfo.CurrentCulture), day.Items.Count);
+        var name = _context.Strings.Format(day.Items.Count == 1 ? "Calendar_DayNameOne" : "Calendar_DayName", DateText.LongDate(day.Date), day.Items.Count);
         return day.IsToday ? name + ", " + _context.Strings.GetString("Calendar_TodayMarker") : name;
     }
 
@@ -444,7 +444,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     public string MoreName(CalendarDayCell day)
     {
         ArgumentNullException.ThrowIfNull(day);
-        return _context.Strings.Format("Calendar_MoreName", day.HiddenCount, day.Date.ToString("D", CultureInfo.CurrentCulture));
+        return _context.Strings.Format("Calendar_MoreName", day.HiddenCount, DateText.LongDate(day.Date));
     }
 
     public string OutsideName(CalendarWeek week)
@@ -553,7 +553,7 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
         foreach (var day in Surface.Weeks.SelectMany(w => w.Days).Where(d => d.IsInPeriod && d.Items.Count > 0))
         {
             var key = day.Date.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-            _agenda.Add(new CalendarAgendaRow(true, day.Date.ToString("D", CultureInfo.CurrentCulture), null, "Calendar_AgendaDay_" + key));
+            _agenda.Add(new CalendarAgendaRow(true, DateText.LongDate(day.Date), null, "Calendar_AgendaDay_" + key));
             foreach (var cr in day.Items)
             {
                 _agenda.Add(new CalendarAgendaRow(false, string.Empty, Create(cr), "Calendar_AgendaRow_" + cr.Id.Value.ToString("N") + "_" + key));

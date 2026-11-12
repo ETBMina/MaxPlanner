@@ -251,7 +251,7 @@ public sealed partial class CalendarMonthView : UserControl
     {
         // Design §4.4: the 1st of a month (and the first cell shown) carries the month name.
         var label = day.Date.Day == 1 || (day.Column == 0 && ReferenceEquals(week, _surface.Weeks[0]))
-            ? day.Date.ToString("MMM d", CultureInfo.CurrentCulture)
+            ? DateText.MonthDay(day.Date)
             : day.Date.Day.ToString(CultureInfo.CurrentCulture);
         UIElement header = day.IsToday
             ? new Border { Style = StyleOf("CalendarTodayBadgeStyle"), HorizontalAlignment = HorizontalAlignment.Left, Child = new TextBlock { Text = label, Style = StyleOf("CalendarTodayTextStyle") } }
@@ -529,7 +529,7 @@ public sealed partial class CalendarMonthView : UserControl
             var target = surface.Weeks[weekIndex].Row.VisibleDays[column];
             proposed = CalendarResizeTarget.Range(start, end, isStart, target);
             ShowRange(proposed);
-            tip.Content = target.ToString("D", CultureInfo.CurrentCulture);
+            tip.Content = DateText.LongDate(target);
             tip.IsOpen = proposed is not null;
         }), handledEventsToo: true);
 
@@ -604,7 +604,7 @@ public sealed partial class CalendarMonthView : UserControl
         WinGrid.SetRow(link, maxLanes + 1);
         AutomationProperties.SetAutomationId(link, "Calendar_MoreLink_" + DateId(day.Date));
         AutomationProperties.SetName(link, viewModel.MoreName(day));
-        link.Click += (_, _) => ShowCrListFlyout(viewModel, link, day.Date.ToString("D", CultureInfo.CurrentCulture), day.Items, day.Date);
+        link.Click += (_, _) => ShowCrListFlyout(viewModel, link, DateText.LongDate(day.Date), day.Items, day.Date);
         _focusables["more:" + DateId(day.Date)] = link;
         return link;
     }
@@ -649,7 +649,7 @@ public sealed partial class CalendarMonthView : UserControl
         // A short fitted row scales the stub down instead of clipping the outside-workdays button.
         var fitted = new Viewbox { Child = panel, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, VerticalAlignment = VerticalAlignment.Top };
         var stub = new Border { Style = StyleOf("CalendarStubBorderStyle"), Child = fitted };
-        AutomationProperties.SetName(stub, viewModel.Format("Calendar_StubName", friday.ToString("D", CultureInfo.CurrentCulture), saturday.ToString("D", CultureInfo.CurrentCulture)));
+        AutomationProperties.SetName(stub, viewModel.Format("Calendar_StubName", DateText.LongDate(friday), DateText.LongDate(saturday)));
         WinGrid.SetColumn(stub, Workweek.VisibleDays.Count);
         WinGrid.SetRowSpan(stub, maxLanes + 2);
         return stub;
@@ -669,7 +669,7 @@ public sealed partial class CalendarMonthView : UserControl
 
     // Design §7.5: Enter opens the day flyout (the CRs on that date + "New CR on this date").
     private static void ShowDayFlyout(CalendarPageViewModel viewModel, FrameworkElement anchor, CalendarDayCell day) =>
-        ShowCrListFlyout(viewModel, anchor, day.Date.ToString("D", CultureInfo.CurrentCulture), day.Items, day.Date);
+        ShowCrListFlyout(viewModel, anchor, DateText.LongDate(day.Date), day.Items, day.Date);
 
     /// <summary>The "+N more", day and outside-workdays flyouts: every CR listed, each opening its editor (B-08.9).</summary>
     private static void ShowCrListFlyout(CalendarPageViewModel viewModel, FrameworkElement anchor, string heading, IReadOnlyList<ChangeRequestReadModel> items, DateOnly? newOn)
@@ -829,7 +829,7 @@ public sealed partial class CalendarMonthView : UserControl
             (DateOnly Start, DateOnly End) pending = _pendingKeyboard.TryGetValue(cr.Id.Value, out var current) ? current : (start, end);
             pending = control ? (pending.Start.AddDays(step), pending.End) : (pending.Start, pending.End.AddDays(step));
             _pendingKeyboard[cr.Id.Value] = pending;
-            ToolTipService.SetToolTip(bar, viewModel.Format("Calendar_PendingRange", pending.Start.ToString("D", CultureInfo.CurrentCulture), pending.End.ToString("D", CultureInfo.CurrentCulture)));
+            ToolTipService.SetToolTip(bar, viewModel.Format("Calendar_PendingRange", DateText.LongDate(pending.Start), DateText.LongDate(pending.End)));
             RestartKeyboardTimer(viewModel);
             return;
         }
@@ -907,7 +907,7 @@ public sealed partial class CalendarMonthView : UserControl
 
         // Design §9: the drop target shows a stroke and a caption, never color only.
         e.AcceptedOperation = DataPackageOperation.Copy;
-        e.DragUIOverride.Caption = viewModel.Format("Calendar_DropCaption", day.Date.ToString("MMM d", CultureInfo.CurrentCulture));
+        e.DragUIOverride.Caption = viewModel.Format("Calendar_DropCaption", DateText.MonthDay(day.Date));
         e.DragUIOverride.IsCaptionVisible = true;
         cell.Style = StyleOf("CalendarDayCellDropTargetButtonStyle");
     }

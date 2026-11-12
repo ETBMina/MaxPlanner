@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
@@ -210,7 +209,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     /// <summary>The number as saved, or as typed for a new CR, for step texts ("Save CR-1042 and create a task?").</summary>
     public string DisplayNumber => Latest?.Number ?? (Number.Trim().Length > 0 ? Number.Trim() : Context.Strings.GetString("CrEditor_ThisCr"));
 
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", b.CreatedAtUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture)) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Number { get; set; } = string.Empty;
@@ -346,7 +345,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     public bool IsOverdue => Latest is { IsOverdue: true };
 
     public string OverdueMessage => Latest is { IsOverdue: true, PlannedEnd: { } end } cr
-        ? Context.Strings.Format(cr.DaysOverdue == 1 ? "CrEditor_OverdueOne" : "CrEditor_Overdue", cr.DaysOverdue, end.ToString("D", CultureInfo.CurrentCulture))
+        ? Context.Strings.Format(cr.DaysOverdue == 1 ? "CrEditor_OverdueOne" : "CrEditor_Overdue", cr.DaysOverdue, DateText.LongDate(end))
         : string.Empty;
 
     /// <summary>"Unscheduled" when both planned dates are empty (design §5.3 group 5).</summary>
@@ -989,7 +988,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
             SquadId squad => _workflow.FindSquad(squad)?.Name.Display ?? none,
             CrStatusId status => _workflow.FindCrStatus(status)?.Name.Display ?? none,
             PriorityId priority => _workflow.FindPriority(priority)?.Name.Display ?? none,
-            DateOnly date => date.ToString("d", CultureInfo.CurrentCulture),
+            DateOnly date => DateText.ShortDate(date),
             var other => other.ToString() ?? none,
         };
     }

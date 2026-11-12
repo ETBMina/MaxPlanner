@@ -1,4 +1,3 @@
-using System.Globalization;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Controls;
@@ -233,5 +232,5 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(TagsText));
     }
 
-    private static string Format(DateOnly date) => date.ToString("d", CultureInfo.CurrentCulture);
+    private static string Format(DateOnly date) => DateText.ShortDate(date);
 }

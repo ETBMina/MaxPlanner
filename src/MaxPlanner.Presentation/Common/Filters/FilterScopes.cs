@@ -43,7 +43,7 @@ internal static class FilterKeys
 /// <summary>Visible text for filter values; dates use the user's culture (T-08), stored values never do.</summary>
 internal static class FilterText
 {
-    public static string Date(DateOnly day) => day.ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+    public static string Date(DateOnly day) => DateText.MonthDayYear(day);
 
     /// <summary>An inclusive range: "Nov 1, 2026 – Nov 7, 2026", "from …", "until …", or empty.</summary>
     public static string Range(ILocalizedStrings strings, DateOnly? from, DateOnly? to) => (from, to) switch

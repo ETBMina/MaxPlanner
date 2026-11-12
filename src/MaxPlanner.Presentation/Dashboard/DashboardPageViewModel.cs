@@ -369,7 +369,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         _result = result;
         var s = _context.Strings;
         string Count(int value) => value.ToString(CultureInfo.CurrentCulture);
-        Subtitle = s.Format("Dashboard_Subtitle", today.ToString("D", CultureInfo.CurrentCulture));
+        Subtitle = s.Format("Dashboard_Subtitle", DateText.LongDate(today));
 
         SetCard(ActiveTasks, result.ActiveTasks, s.Format("Dashboard_ActiveCaption", Count(result.TotalTasks)), "Dashboard_OpensGrid", s.GetString("Dashboard_ActiveTasks"));
         SetCard(CompletedTasks, result.CompletedTasks, string.Empty, "Dashboard_OpensGrid", s.GetString("Dashboard_CompletedTasks"));

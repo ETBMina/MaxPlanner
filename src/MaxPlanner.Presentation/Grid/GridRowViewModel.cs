@@ -7,6 +7,7 @@ using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Options;
@@ -571,7 +572,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
             TextCustomValue text => text.Value,
             MultilineTextCustomValue text => FirstLine(text.Value),
             NumberCustomValue number => number.Value.ToString("G", CultureInfo.CurrentCulture),
-            DateCustomValue date => date.Value.ToString("d", CultureInfo.CurrentCulture),
+            DateCustomValue date => DateText.ShortDate(date.Value),
             LookupCustomValue lookup => field.Options.FirstOrDefault(o => o.Id == lookup.OptionId)?.Label.Display ?? string.Empty,
             PeopleCustomValue people => string.Join(", ", people.PersonIds.Select(id => workflow?.FindPerson(id)?.Name.Display ?? string.Empty).Where(n => n.Length > 0)),
             TagsCustomValue tags => string.Join(", ", tags.TagIds.Select(id => workflow?.FindTag(id)?.Name.Display ?? string.Empty).Where(n => n.Length > 0)),
@@ -588,5 +589,5 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
         _ => DisplayValue(column),
     };
 
-    private static string FormatDate(DateOnly? date) => date?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
+    private static string FormatDate(DateOnly? date) => date is { } day ? DateText.ShortDate(day) : string.Empty;
 }

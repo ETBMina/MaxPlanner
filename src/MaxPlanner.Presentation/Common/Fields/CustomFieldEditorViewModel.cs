@@ -121,7 +121,7 @@ public sealed partial class CustomFieldEditorViewModel : ObservableObject
     public string DisplayText => Kind switch
     {
         FieldKind.Number => double.IsNaN(Number) ? string.Empty : Number.ToString("G", CultureInfo.CurrentCulture),
-        FieldKind.Date => DraftDates.FromPicker(Date)?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty,
+        FieldKind.Date => DraftDates.FromPicker(Date) is { } day ? DateText.ShortDate(day) : string.Empty,
         FieldKind.Lookup => SelectedOption?.Id is null ? string.Empty : SelectedOption.Label,
         FieldKind.People or FieldKind.Tags => string.Join(", ", Tokens!.Tokens.Select(t => t.Name)),
         _ => Text,

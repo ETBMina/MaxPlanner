@@ -1,7 +1,7 @@
-using System.Globalization;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
 
@@ -81,7 +81,7 @@ public sealed class ChangeRequestCommands
         return outcome is not null;
     }
 
-    private static string LongDate(DateOnly day) => day.ToString("M", CultureInfo.CurrentCulture);
+    private static string LongDate(DateOnly day) => DateText.LongMonthDay(day);
 
     private async Task RunEditorAsync(ChangeRequestId? id, DateOnly? plannedDay, bool startDelete)
     {

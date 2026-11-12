@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Composition.SystemBackdrops;
@@ -497,7 +496,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         {
             prompt.Text = ViewModel.ReplacePrompt(cr, day);
             prompt.Visibility = prompt.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-            schedule.Content = ViewModel.Format("Calendar_ScheduleOnButton", day.ToString("MMM d", CultureInfo.CurrentCulture));
+            schedule.Content = ViewModel.Format("Calendar_ScheduleOnButton", DateText.MonthDay(day));
         }
 
         calendar.SelectedDatesChanged += (_, args) =>
