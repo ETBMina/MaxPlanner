@@ -367,11 +367,11 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
 
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Calendar_MenuOpen", "Calendar_BacklogMenuOpen_", record, () => ViewModel.OpenAsync(record.Id).Forget()));
-        menu.Items.Add(Item("Calendar_MenuScheduleOn", "Calendar_BacklogMenuSchedule_", record, () => ShowScheduleFlyout(anchor, record.Model)));
-        menu.Items.Add(Item("Calendar_MenuOpenLinkedTasks", "Calendar_BacklogMenuLinkedTasks_", record, () => ViewModel.OpenLinkedTasksAsync(record.Id).Forget()));
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Calendar_MenuDelete", "Calendar_BacklogMenuDelete_", record, () => ViewModel.DeleteAsync(record.Id).Forget()));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpen"), "Calendar_BacklogMenuOpen_" + record.Id.ToString("N"), () => ViewModel.OpenAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuScheduleOn"), "Calendar_BacklogMenuSchedule_" + record.Id.ToString("N"), () => ShowScheduleFlyout(anchor, record.Model));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpenLinkedTasks"), "Calendar_BacklogMenuLinkedTasks_" + record.Id.ToString("N"), () => ViewModel.OpenLinkedTasksAsync(record.Id).Forget());
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuDelete"), "Calendar_BacklogMenuDelete_" + record.Id.ToString("N"), () => ViewModel.DeleteAsync(record.Id).Forget());
         menu.ShowAt(anchor);
     }
 
@@ -384,15 +384,13 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
 
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Calendar_MenuOpen", "Calendar_RecordMenuOpen_", record, () => ViewModel.OpenAsync(record.Id).Forget()));
-        menu.Items.Add(Item("Calendar_MenuOpenLinkedTasks", "Calendar_RecordMenuLinkedTasks_", record, () => ViewModel.OpenLinkedTasksAsync(record.Id).Forget()));
-        menu.Items.Add(Item("Calendar_MenuCreateTask", "Calendar_RecordMenuCreateTask_", record, () => ViewModel.CreateTaskAsync(record.Id).Forget()));
-        menu.Items.Add(Item("Calendar_MenuScheduleOn", "Calendar_RecordMenuSchedule_", record, () => ShowScheduleFlyout(anchor, record.Model)));
-        var backlog = Item("Calendar_MenuMoveToBacklog", "Calendar_RecordMenuBacklog_", record, () => ViewModel.MoveToBacklogAsync(record.Id).Forget());
-        backlog.IsEnabled = record.CanMoveToBacklog;
-        menu.Items.Add(backlog);
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Calendar_MenuDelete", "Calendar_RecordMenuDelete_", record, () => ViewModel.DeleteAsync(record.Id).Forget()));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpen"), "Calendar_RecordMenuOpen_" + record.Id.ToString("N"), () => ViewModel.OpenAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpenLinkedTasks"), "Calendar_RecordMenuLinkedTasks_" + record.Id.ToString("N"), () => ViewModel.OpenLinkedTasksAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuCreateTask"), "Calendar_RecordMenuCreateTask_" + record.Id.ToString("N"), () => ViewModel.CreateTaskAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuScheduleOn"), "Calendar_RecordMenuSchedule_" + record.Id.ToString("N"), () => ShowScheduleFlyout(anchor, record.Model));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuMoveToBacklog"), "Calendar_RecordMenuBacklog_" + record.Id.ToString("N"), () => ViewModel.MoveToBacklogAsync(record.Id).Forget(), record.CanMoveToBacklog);
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuDelete"), "Calendar_RecordMenuDelete_" + record.Id.ToString("N"), () => ViewModel.DeleteAsync(record.Id).Forget());
         menu.ShowAt(anchor);
     }
 
@@ -518,14 +516,6 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         UpdatePrompt();
         flyout.Content = new StackPanel { Spacing = 8, Children = { calendar, prompt, schedule } };
         flyout.ShowAt(anchor);
-    }
-
-    private MenuFlyoutItem Item(string key, string idPrefix, CalendarRecordViewModel record, Action action)
-    {
-        var item = new MenuFlyoutItem { Text = ViewModel.Text(key) };
-        AutomationProperties.SetAutomationId(item, idPrefix + record.Id.ToString("N"));
-        item.Click += (_, _) => action();
-        return item;
     }
 
     private static CalendarRecordViewModel? Record(object sender) => (sender as FrameworkElement)?.Tag as CalendarRecordViewModel;

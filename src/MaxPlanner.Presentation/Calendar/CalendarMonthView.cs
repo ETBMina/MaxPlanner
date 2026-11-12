@@ -658,21 +658,13 @@ public sealed partial class CalendarMonthView : UserControl
     private static MenuFlyout BarMenu(CalendarPageViewModel viewModel, Button bar, ChangeRequestReadModel cr)
     {
         var menu = new MenuFlyout();
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuOpen", "Calendar_BarMenuOpen_", cr, () => viewModel.OpenAsync(cr.Id.Value).Forget()));
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuEditDates", "Calendar_BarMenuEditDates_", cr, () => ShowEditDatesFlyout(viewModel, bar, cr)));
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuOpenLinkedTasks", "Calendar_BarMenuLinkedTasks_", cr, () => viewModel.OpenLinkedTasksAsync(cr.Id.Value).Forget()));
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuMoveToBacklog", "Calendar_BarMenuBacklog_", cr, () => ShowMoveToBacklogFlyout(viewModel, bar, cr)));
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuDelete", "Calendar_BarMenuDelete_", cr, () => viewModel.DeleteAsync(cr.Id.Value).Forget()));
+        menu.Items.AddItem(viewModel.Text("Calendar_MenuOpen"), "Calendar_BarMenuOpen_" + cr.Id.Value.ToString("N"), () => viewModel.OpenAsync(cr.Id.Value).Forget());
+        menu.Items.AddItem(viewModel.Text("Calendar_MenuEditDates"), "Calendar_BarMenuEditDates_" + cr.Id.Value.ToString("N"), () => ShowEditDatesFlyout(viewModel, bar, cr));
+        menu.Items.AddItem(viewModel.Text("Calendar_MenuOpenLinkedTasks"), "Calendar_BarMenuLinkedTasks_" + cr.Id.Value.ToString("N"), () => viewModel.OpenLinkedTasksAsync(cr.Id.Value).Forget());
+        menu.Items.AddItem(viewModel.Text("Calendar_MenuMoveToBacklog"), "Calendar_BarMenuBacklog_" + cr.Id.Value.ToString("N"), () => ShowMoveToBacklogFlyout(viewModel, bar, cr));
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(viewModel.Text("Calendar_MenuDelete"), "Calendar_BarMenuDelete_" + cr.Id.Value.ToString("N"), () => viewModel.DeleteAsync(cr.Id.Value).Forget());
         return menu;
-    }
-
-    private static MenuFlyoutItem MenuItem(CalendarPageViewModel viewModel, string textKey, string idPrefix, ChangeRequestReadModel cr, Action action)
-    {
-        var item = new MenuFlyoutItem { Text = viewModel.Text(textKey) };
-        AutomationProperties.SetAutomationId(item, idPrefix + cr.Id.Value.ToString("N"));
-        item.Click += (_, _) => action();
-        return item;
     }
 
     // Design §7.5: Enter opens the day flyout (the CRs on that date + "New CR on this date").
