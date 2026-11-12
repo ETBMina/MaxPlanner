@@ -90,5 +90,6 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
         }
     }
 
+    // Not a two-way SelectedItem: that could write null back while ItemsSource is (re)set.
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedStatus = StatusCombo.SelectedItem as StatusOption;
 }

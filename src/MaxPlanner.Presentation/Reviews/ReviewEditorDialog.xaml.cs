@@ -6,8 +6,8 @@ using Microsoft.UI.Xaml.Input;
 namespace MaxPlanner.Presentation.Reviews;
 
 /// <summary>
-/// The review editor dialog. Buttons bind commands; code-behind forwards the dialog buttons and keys to <see cref="ReviewEditorViewModel"/>,
-/// moves focus where the ViewModel asks, and uses a full-size dialog in small or short windows (design §5.0).
+/// The review editor dialog. Buttons bind <see cref="ReviewEditorViewModel"/> commands; code-behind forwards the
+/// dialog buttons and keys to it, moves focus where the ViewModel asks, and uses a full-size dialog in small or short windows (design §5.0).
 /// </summary>
 public sealed partial class ReviewEditorDialog : ContentDialog
 {

@@ -22,6 +22,7 @@ public sealed partial class RestoreWizardView : UserControl
         RestoreCaption.Visibility = isLarge ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    // Not a two-way SelectedItem: a null selection must not clear the chosen backup.
     private void OnRestoreBackupSelected(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ListView { SelectedItem: BackupRowViewModel row })

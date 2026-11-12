@@ -186,18 +186,6 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     /// <summary>The page scroll offset, kept across a drill-down and restored on Back (AC-20).</summary>
     public double ScrollOffset { get; set; }
 
-    public void OpenOverdue(OverdueRowViewModel row)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        _ = _context.ChangeRequests.OpenAsync(new ChangeRequestId(row.Id));
-    }
-
-    public void OpenUnlinked(UnlinkedRowViewModel row)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        _ = _context.Tasks.OpenAsync(new TaskId(row.Id));
-    }
-
     public void Dispose()
     {
         _results.Dispose();
@@ -391,8 +379,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         SquadChart.Update(result.TasksBySquad);
         ReviewChart.Update(result.OpenReviewsByDeveloper);
 
-        ReplaceRows(_overdue, [.. result.OverdueList.Preview.Select(r => new OverdueRowViewModel(r, s))]);
-        ReplaceRows(_unlinked, [.. result.UnlinkedList.Preview.Select(t => new UnlinkedRowViewModel(t, s))]);
+        ReplaceRows(_overdue, [.. result.OverdueList.Preview.Select(r => new OverdueRowViewModel(r, s, () => _context.ChangeRequests.OpenAsync(r.ChangeRequest.Id)))]);
+        ReplaceRows(_unlinked, [.. result.UnlinkedList.Preview.Select(t => new UnlinkedRowViewModel(t, s, () => _context.Tasks.OpenAsync(t.Id)))]);
         HasOverdue = _overdue.Count > 0;
         HasUnlinked = _unlinked.Count > 0;
         OverdueCaption = s.Format("Dashboard_ShowingOf", Count(_overdue.Count), Count(result.OverdueList.TotalCount));

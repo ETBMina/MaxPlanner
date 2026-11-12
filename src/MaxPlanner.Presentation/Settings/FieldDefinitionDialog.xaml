@@ -87,7 +87,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button x:Uid="FieldDialog_AddOptionButton" AutomationProperties.AutomationId="FieldDialog_AddOptionButton" Click="OnAddOptionClick" />
+                <Button x:Uid="FieldDialog_AddOptionButton" AutomationProperties.AutomationId="FieldDialog_AddOptionButton" Command="{x:Bind ViewModel.AddOptionCommand}" />
                 <tasks:FieldError Text="{x:Bind ViewModel.OptionsError, Mode=OneWay}" />
             </StackPanel>
 

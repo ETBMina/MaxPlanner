@@ -165,20 +165,4 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
         Microsoft.UI.Xaml.Controls.Grid.SetColumn(element, column);
         Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(element, span);
     }
-
-    private void OnOverdueRowClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: OverdueRowViewModel row })
-        {
-            ViewModel.OpenOverdue(row);
-        }
-    }
-
-    private void OnUnlinkedRowClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: UnlinkedRowViewModel row })
-        {
-            ViewModel.OpenUnlinked(row);
-        }
-    }
 }

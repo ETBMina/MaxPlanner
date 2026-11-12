@@ -16,7 +16,7 @@
             <Button
                 Padding="10,3"
                 AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
-                Click="OnChipClick"
+                Command="{x:Bind RemoveCommand}"
                 CornerRadius="12"
                 Loaded="OnChipLoaded"
                 ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneTime}">

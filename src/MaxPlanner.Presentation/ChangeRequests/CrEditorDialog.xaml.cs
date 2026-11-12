@@ -8,8 +8,8 @@ using Microsoft.UI.Xaml.Input;
 namespace MaxPlanner.Presentation.ChangeRequests;
 
 /// <summary>
-/// The CR editor dialog. Buttons bind commands; code-behind forwards the dialog buttons and keys to <see cref="CrEditorViewModel"/>, keeps
-/// the combo box selections in step with it (a two-way SelectedItem could run before ItemsSource), moves
+/// The CR editor dialog. Buttons bind <see cref="CrEditorViewModel"/> commands; code-behind forwards the dialog
+/// buttons and keys to it, keeps the combo box selections in step with it (a two-way SelectedItem could run before ItemsSource), moves
 /// focus where the ViewModel asks, and reflows the field pairs by width (design §5.0).
 /// </summary>
 public sealed partial class CrEditorDialog : ContentDialog
@@ -146,6 +146,7 @@ public sealed partial class CrEditorDialog : ContentDialog
         }
     }
 
+    // Not a two-way SelectedItem: that could write null back while ItemsSource is (re)set.
     private void OnSquadSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedSquad = SquadCombo.SelectedItem as SquadOption;
 
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedStatus = StatusCombo.SelectedItem as CrStatusOption;

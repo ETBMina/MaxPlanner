@@ -78,12 +78,4 @@ public sealed partial class FilterChipsBar : UserControl
             AutomationProperties.SetAutomationId(element, PageKey + "_FilterChip_" + chip.Key);
         }
     }
-
-    private void OnChipClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: FilterChipViewModel chip })
-        {
-            chip.Remove();
-        }
-    }
 }

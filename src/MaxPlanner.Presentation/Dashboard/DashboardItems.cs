@@ -220,9 +220,13 @@ public sealed partial class BarChartViewModel : ObservableObject
 }
 
 /// <summary>An Overdue CRs row (B-15.4): number, title, owner, squad, status, priority, planned end, days overdue.</summary>
-public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings strings)
+/// <param name="open">Opens the row's CR (the row's button).</param>
+public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings strings, Func<Task> open)
 {
     public Guid Id { get; } = row.ChangeRequest.Id.Value;
+
+    /// <summary>Opens the CR editor; concurrent runs are allowed, so the row never disables itself.</summary>
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(open, AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
     public string Number { get; } = row.ChangeRequest.Number;
 
@@ -250,9 +254,13 @@ public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings stri
 }
 
 /// <summary>An Unlinked tasks row (B-15.5): title, service, status, priority, people. Opens the task editor to link a CR.</summary>
-public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings strings)
+/// <param name="open">Opens the row's task (the row's button).</param>
+public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings strings, Func<Task> open)
 {
     public Guid Id { get; } = task.Id.Value;
+
+    /// <summary>Opens the task editor; concurrent runs are allowed, so the row never disables itself.</summary>
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(open, AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
     public string Title { get; } = task.EffectiveTitle;
 

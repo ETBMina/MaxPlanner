@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
@@ -179,6 +180,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
         return new(context, useCases, workflow, field.Target, field);
     }
 
+    [RelayCommand]
     public void AddOption()
     {
         Options.Add(NewOption(new FieldOptionId(Guid.NewGuid()), string.Empty));
@@ -192,6 +194,10 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
             RefreshDefaultOptions();
         }
     }
+
+    /// <summary>The primary button; concurrent runs are allowed, so the command never disables anything.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task Save() => await SaveAsync().ConfigureAwait(true);
 
     public async Task<bool> SaveAsync()
     {

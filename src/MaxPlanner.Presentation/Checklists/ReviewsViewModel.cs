@@ -71,6 +71,8 @@ public sealed partial class ReviewRowViewModel : ObservableObject
 
     public Task ToggleAsync(bool isDone) => _owner.ToggleAsync(this, isDone);
 
+    /// <summary>View/Edit (the row's menu item, Enter, or a tap on its text); concurrent runs are allowed, as before.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
     public Task EditAsync() => _owner.EditAsync(this);
 
     public Task DeleteAsync() => _owner.DeleteAsync(this);

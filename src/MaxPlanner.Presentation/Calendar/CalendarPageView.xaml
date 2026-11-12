@@ -483,7 +483,7 @@
                 <Button
                     x:Uid="Calendar_ClearSearchButton"
                     AutomationProperties.AutomationId="Calendar_ClearSearchButton"
-                    Click="OnClearSearchClick" />
+                    Command="{x:Bind ViewModel.Filters.ClearAllCommand, FallbackValue={x:Null}}" />
             </InfoBar.ActionButton>
         </InfoBar>
 
