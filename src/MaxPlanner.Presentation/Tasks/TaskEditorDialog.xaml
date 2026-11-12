@@ -79,7 +79,7 @@
                         Margin="0,8,0,0"
                         VerticalAlignment="Top"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="16"
+                        FontSize="{StaticResource StandardIconSize}"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Glyph="&#xE8EC;"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}" />
@@ -100,7 +100,7 @@
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_MoreMenu"
                         IsEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsNew), Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE712;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
                                 <MenuFlyoutItem x:Uid="TaskEditor_MoreCopy" AutomationProperties.AutomationId="TaskEditor_MoreCopyItem" Command="{x:Bind ViewModel.RequestCopyCommand}">
@@ -145,7 +145,7 @@
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_CloseButton"
                         Click="OnCloseClick">
-                        <FontIcon FontSize="14" Glyph="&#xE711;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE711;" />
                     </Button>
                 </Grid>
                 <fields:FieldError Text="{x:Bind ViewModel.TagsError, Mode=OneWay}" />
@@ -301,7 +301,7 @@
                                     Style="{StaticResource CopyNumberButtonStyle}"
                                     Tag="Reveal"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.CopyCrNumberName, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8C8;" />
                                 </Button>
                             </StackPanel>
                             <!-- No Unlink and no Change exist (B-03.7); a pending link can still be replaced before Save. -->
@@ -341,7 +341,7 @@
                                     Tag="Reveal"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.CopyTaskNumberName, Mode=OneWay}"
                                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CanCopyTaskNumber), Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8C8;" />
                                 </Button>
                             </StackPanel>
                         </StackPanel>
@@ -482,7 +482,7 @@
                                     AutomationProperties.AutomationId="TaskEditor_ClearStartDateButton"
                                     Command="{x:Bind ViewModel.ClearStartDateCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                                 </Button>
                             </Grid>
                             <TextBlock
@@ -511,7 +511,7 @@
                                     AutomationProperties.AutomationId="TaskEditor_ClearEndDateButton"
                                     Command="{x:Bind ViewModel.ClearEndDateCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                                 </Button>
                             </Grid>
                             <TextBlock
@@ -589,7 +589,7 @@
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         AutomationProperties.AccessibilityView="Raw"
-                                        FontSize="12"
+                                        FontSize="{StaticResource CaptionIconSize}"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Glyph="&#xE76F;"
                                         Opacity="0"
@@ -628,14 +628,14 @@
                                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_ChecklistMoveUp_', Id.Value), Mode=OneTime}"
                                             Click="OnItemMoveUpClick"
                                             Style="{StaticResource ChecklistActionButtonStyle}">
-                                            <FontIcon FontSize="12" Glyph="&#xE74A;" />
+                                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE74A;" />
                                         </Button>
                                         <Button
                                             x:Uid="TaskEditor_ChecklistMoveDownButton"
                                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_ChecklistMoveDown_', Id.Value), Mode=OneTime}"
                                             Click="OnItemMoveDownClick"
                                             Style="{StaticResource ChecklistActionButtonStyle}">
-                                            <FontIcon FontSize="12" Glyph="&#xE74B;" />
+                                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE74B;" />
                                         </Button>
                                         <!-- A disabled button shows no tooltip, so the reason sits on a wrapper (design §5.1 group 7). -->
                                         <Border Background="Transparent" ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(PopOutUnavailableReason), Mode=OneWay}">
@@ -646,7 +646,7 @@
                                                 Click="OnItemPopOutClick"
                                                 IsEnabled="{x:Bind CanPopOut, Mode=OneWay}"
                                                 Style="{StaticResource ChecklistActionButtonStyle}">
-                                                <FontIcon FontSize="12" Glyph="&#xE8A7;" />
+                                                <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8A7;" />
                                             </Button>
                                         </Border>
                                         <Button
@@ -654,7 +654,7 @@
                                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_ChecklistDelete_', Id.Value), Mode=OneTime}"
                                             Click="OnItemDeleteClick"
                                             Style="{StaticResource ChecklistActionButtonStyle}">
-                                            <FontIcon FontSize="12" Glyph="&#xE74D;" />
+                                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE74D;" />
                                         </Button>
                                     </StackPanel>
                                 </Grid>

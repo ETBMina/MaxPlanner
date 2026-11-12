@@ -330,7 +330,7 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <FontIcon FontSize="14" Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="{x:Bind Glyph, Mode=OneTime}" />
                                             <StackPanel Grid.Column="1">
                                                 <TextBlock TextWrapping="Wrap"><Run FontWeight="SemiBold" Text="{x:Bind SeverityText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind EntityText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind RecordKey, Mode=OneTime}" /></TextBlock>
                                                 <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Message, Mode=OneTime}" TextWrapping="Wrap" />

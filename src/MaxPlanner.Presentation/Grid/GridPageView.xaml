@@ -114,7 +114,7 @@
                     <KeyboardAccelerator Key="N" Modifiers="Control" />
                 </Button.KeyboardAccelerators>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="16" Glyph="&#xE710;" />
+                    <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                     <TextBlock x:Name="NewTaskText" x:Uid="Grid_NewTaskButtonText" />
                 </StackPanel>
             </Button>
@@ -247,7 +247,7 @@
                         <FontIcon
                             VerticalAlignment="Top"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Foreground="{ThemeResource ErrorTextBrush}"
                             Glyph="&#xE783;" />
                         <TextBlock

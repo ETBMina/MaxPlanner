@@ -67,7 +67,7 @@
                             <FontIcon
                                 Width="24"
                                 AutomationProperties.AccessibilityView="Raw"
-                                FontSize="14"
+                                FontSize="{StaticResource BodyIconSize}"
                                 Glyph="&#xE710;"
                                 Visibility="{x:Bind common:BindFunctions.VisibleAll(IsPerson, IsAddNew), Mode=OneTime}" />
                             <TextBlock

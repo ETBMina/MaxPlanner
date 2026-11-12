@@ -10,7 +10,7 @@
     xmlns:local="using:MaxPlanner.Presentation.Settings.DataPage">
     <DataTemplate x:Key="StepTemplate" x:DataType="local:WizardStep">
         <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
-            <FontIcon FontSize="14" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
+            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
             <TextBlock Text="{x:Bind Title, Mode=OneTime}" />
             <TextBlock
                 x:Uid="Data_CurrentStepText"

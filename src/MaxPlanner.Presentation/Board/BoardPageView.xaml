@@ -66,7 +66,7 @@
                             Click="OnCardMenuButtonClick"
                             Style="{StaticResource BoardCardMenuButtonStyle}"
                             ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                            <FontIcon FontSize="14" Glyph="&#xE712;" />
+                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                         </Button>
                     </Grid>
                     <StackPanel Padding="12,8,12,12" Spacing="8">
@@ -81,7 +81,7 @@
                                 <FontIcon
                                     AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardPriority_', Key), Mode=OneTime}"
                                     AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
-                                    FontSize="16"
+                                    FontSize="{StaticResource StandardIconSize}"
                                     Glyph="{x:Bind common:BindFunctions.PriorityGlyph(PriorityLevel), Mode=OneWay}"
                                     Style="{x:Bind local:BoardPageView.PriorityGlyphStyle(PriorityLevel), Mode=OneWay}"
                                     ToolTipService.ToolTip="{x:Bind PriorityName, Mode=OneWay}"
@@ -89,7 +89,7 @@
                                 <!-- A Subtask card has no priority: the Subtask glyph and the "Subtask of" link mark the kind without color. -->
                                 <FontIcon
                                     x:Uid="Board_SubtaskGlyph"
-                                    FontSize="16"
+                                    FontSize="{StaticResource StandardIconSize}"
                                     Foreground="{ThemeResource SubtaskCardAccentBrush}"
                                     Glyph="&#xE8FD;"
                                     Visibility="{x:Bind common:BindFunctions.Visible(IsSubtaskCard), Mode=OneWay}" />
@@ -106,7 +106,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <FontIcon FontSize="12" Glyph="&#xE8A5;" />
+                                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8A5;" />
                                         <TextBlock
                                             Grid.Column="1"
                                             Style="{StaticResource IdChipTextStyle}"
@@ -132,7 +132,7 @@
                                 Style="{StaticResource BoardCardMenuButtonStyle}"
                                 ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}"
                                 Visibility="{x:Bind common:BindFunctions.Collapsed(HasTagStrip), Mode=OneWay}">
-                                <FontIcon FontSize="14" Glyph="&#xE712;" />
+                                <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                             </Button>
                         </Grid>
                         <TextBlock
@@ -218,7 +218,7 @@
                             <FontIcon
                                 VerticalAlignment="Center"
                                 AutomationProperties.AccessibilityView="Raw"
-                                FontSize="14"
+                                FontSize="{StaticResource BodyIconSize}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Glyph="&#xE9D5;"
                                 Visibility="{x:Bind common:BindFunctions.Visible(IsChecklistIncomplete), Mode=OneWay}" />
@@ -339,7 +339,7 @@
                         BorderThickness="0"
                         Click="OnBucketAddClick"
                         ToolTipService.ToolTip="{x:Bind AddButtonName, Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
                     </Button>
                     <!-- The bucket fills the viewport height, so this list is bounded and virtualizes (T-08). -->
                     <!--
@@ -460,7 +460,7 @@
                         <KeyboardAccelerator Key="N" Modifiers="Control" />
                     </Button.KeyboardAccelerators>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
                         <TextBlock x:Uid="Board_NewTaskText" />
                     </StackPanel>
                 </Button>
@@ -479,7 +479,7 @@
                     x:Uid="Board_PrevBucketButton"
                     AutomationProperties.AutomationId="Board_PrevBucketButton"
                     Command="{x:Bind ViewModel.PreviousBucketCommand}">
-                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
                 </Button>
                 <ComboBox
                     x:Name="BucketPicker"
@@ -494,7 +494,7 @@
                     Grid.Column="2"
                     AutomationProperties.AutomationId="Board_NextBucketButton"
                     Command="{x:Bind ViewModel.NextBucketCommand}">
-                    <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
                 </Button>
             </Grid>
             <filters:FilterChipsBar

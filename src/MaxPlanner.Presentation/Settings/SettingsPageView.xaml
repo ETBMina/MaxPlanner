@@ -147,7 +147,7 @@
                     IsEnabled="{x:Bind common:BindFunctions.Not(IsBusy), Mode=OneWay}"
                     Style="{StaticResource SubtleButtonStyle}"
                     ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                 </Button>
             </Grid>
         </DataTemplate>
@@ -279,7 +279,7 @@
                     Click="OnFieldRowMenuClick"
                     Style="{StaticResource SubtleButtonStyle}"
                     ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                 </Button>
             </Grid>
         </DataTemplate>

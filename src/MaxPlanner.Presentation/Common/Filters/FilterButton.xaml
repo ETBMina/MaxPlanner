@@ -208,14 +208,14 @@
                     <FontIcon
                         HorizontalAlignment="Left"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="14"
+                        FontSize="{StaticResource BodyIconSize}"
                         Glyph="&#xE73E;"
                         Visibility="{x:Bind common:BindFunctions.Visible(IsChecked), Mode=OneWay}" />
                     <FontIcon
                         Grid.Column="1"
                         Margin="0,0,12,0"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="16"
+                        FontSize="{StaticResource StandardIconSize}"
                         Glyph="{x:Bind Glyph, Mode=OneTime}"
                         Style="{x:Bind local:FilterButton.GlyphStyle(Tone), Mode=OneTime}"
                         Visibility="{x:Bind common:BindFunctions.Visible(HasGlyph), Mode=OneTime}" />
@@ -292,14 +292,14 @@
                         <FontIcon
                             HorizontalAlignment="Left"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Glyph="&#xE73E;"
                             Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}" />
                         <FontIcon
                             Grid.Column="1"
                             Margin="0,0,12,0"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Glyph="&#xE787;" />
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
                             <TextBlock x:Uid="Filters_DateCustomisedText" />
@@ -313,7 +313,7 @@
                             Grid.Column="3"
                             Margin="12,0,0,0"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="12"
+                            FontSize="{StaticResource CaptionIconSize}"
                             Glyph="&#xE76C;" />
                     </Grid>
                 </Button>
@@ -345,14 +345,14 @@
                         <FontIcon
                             HorizontalAlignment="Left"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Glyph="&#xE73E;"
                             Visibility="{x:Bind common:BindFunctions.Visible(IsCustom), Mode=OneWay}" />
                         <FontIcon
                             Grid.Column="1"
                             Margin="0,0,12,0"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Glyph="&#xE787;" />
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
                             <TextBlock x:Uid="Filters_DateCustomisedText" />
@@ -366,7 +366,7 @@
                             Grid.Column="3"
                             Margin="12,0,0,0"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="12"
+                            FontSize="{StaticResource CaptionIconSize}"
                             Glyph="&#xE76C;" />
                     </Grid>
                 </Button>
@@ -612,7 +612,7 @@
                     Style="{StaticResource FilterMenuItemButtonStyle}">
                     <FontIcon
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="{StaticResource CaptionIconSize}"
                         Glyph="&#xE76B;" />
                 </Button>
                 <Button
@@ -628,7 +628,7 @@
                     Style="{StaticResource FilterMenuItemButtonStyle}">
                     <FontIcon
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="{StaticResource CaptionIconSize}"
                         Glyph="&#xE76C;" />
                 </Button>
                 <Grid Grid.Row="1" ColumnSpacing="8">
@@ -681,7 +681,7 @@
                     <FontIcon
                         HorizontalAlignment="Left"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="16"
+                        FontSize="{StaticResource StandardIconSize}"
                         Glyph="{x:Bind Glyph, Mode=OneTime}" />
                     <TextBlock
                         Grid.Column="1"
@@ -699,7 +699,7 @@
                         Grid.Column="3"
                         Margin="8,0,0,0"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="{StaticResource CaptionIconSize}"
                         Glyph="&#xE76C;" />
                 </Grid>
             </Button>
@@ -743,7 +743,7 @@
                 Spacing="8">
                 <FontIcon
                     AutomationProperties.AccessibilityView="Raw"
-                    FontSize="14"
+                    FontSize="{StaticResource BodyIconSize}"
                     Glyph="&#xE71C;" />
                 <TextBlock x:Uid="Filters_ButtonText" />
             </StackPanel>

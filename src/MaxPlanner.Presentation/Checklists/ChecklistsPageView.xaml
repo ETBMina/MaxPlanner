@@ -64,7 +64,7 @@
                     Background="Transparent"
                     BorderThickness="0"
                     ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Opening="OnItemMenuOpening">
                             <MenuFlyoutItem
@@ -107,7 +107,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Glyph="&#xE9D5;" />
                         <TextBlock
                             x:Uid="Checklists_GeneralTitle"
@@ -154,7 +154,7 @@
                             Grid.Column="1"
                             AutomationProperties.AutomationId="Checklists_AddItemButton_General"
                             Command="{x:Bind AddItemCommand}">
-                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                         </Button>
                     </Grid>
                     <TextBlock
@@ -257,7 +257,7 @@
                             Grid.Column="1"
                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_AddItemButton_', Key.Value), Mode=OneTime}"
                             Command="{x:Bind AddItemCommand}">
-                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                         </Button>
                     </Grid>
                     <TextBlock
@@ -340,7 +340,7 @@
                     Background="Transparent"
                     BorderThickness="0"
                     ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Opening="OnItemMenuOpening">
                             <MenuFlyoutItem
@@ -377,7 +377,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Glyph="&#xED15;" />
                         <TextBlock
                             x:Uid="Checklists_ReviewsTitle"
@@ -424,7 +424,7 @@
                             Grid.Column="1"
                             AutomationProperties.AutomationId="Checklists_AddItemButton_Reviews"
                             Command="{x:Bind AddReviewCommand}">
-                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                         </Button>
                     </Grid>
                     <TextBlock
@@ -526,7 +526,7 @@
                             <KeyboardAccelerator Key="N" Modifiers="Control" />
                         </Button.KeyboardAccelerators>
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="14" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
                             <TextBlock x:Uid="Checklists_NewTodoText" />
                         </StackPanel>
                     </Button>
@@ -564,7 +564,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="{StaticResource CaptionIconSize}"
                         Glyph="&#xF246;" />
                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.DashboardChipText, Mode=OneWay}" />
                     <FontIcon

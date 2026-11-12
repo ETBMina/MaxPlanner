@@ -69,7 +69,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="local:RestoreCheckRow">
                                 <StackPanel Margin="0,4" Orientation="Horizontal" Spacing="8">
-                                    <FontIcon FontSize="14" Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="{x:Bind Glyph, Mode=OneTime}" />
                                     <TextBlock Text="{x:Bind Text, Mode=OneTime}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </DataTemplate>

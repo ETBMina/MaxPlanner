@@ -81,7 +81,7 @@
                                     AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
                                     Click="OnRemoveOptionClick"
                                     ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneTime}">
-                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                                 </Button>
                             </Grid>
                         </DataTemplate>
