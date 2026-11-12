@@ -41,6 +41,7 @@ public sealed partial class WorkspaceContext : ObservableObject
         UiScheduler = uiScheduler ?? throw new ArgumentNullException(nameof(uiScheduler));
         Strings = strings ?? throw new ArgumentNullException(nameof(strings));
         SaveStatus = saveStatus ?? throw new ArgumentNullException(nameof(saveStatus));
+        Commands = new CommandRunner(this);
     }
 
     /// <summary>
@@ -67,6 +68,9 @@ public sealed partial class WorkspaceContext : ObservableObject
     public ILocalizedStrings Strings { get; }
 
     public SaveStatusViewModel SaveStatus { get; }
+
+    /// <summary>Runs every write command with this save status and these announcements (C-05).</summary>
+    public ICommandRunner Commands { get; }
 
     public IUrlLauncher UrlLauncher { get; }
 
