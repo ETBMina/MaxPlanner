@@ -1227,7 +1227,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         Table.Padding = new Thickness(inset, 0, 0, 0);
 
         // Design §4.3 S: only New task keeps its label inline; the CommandBar overflows the rest by itself.
-        NewTaskText.Visibility = width >= 500 ? Visibility.Visible : Visibility.Collapsed;
+        NewTaskContent.IsTextVisible = width >= 500;
         var small = width < Breakpoints.Medium;
         ChipsBar.IsCompact = small;
         if (small != _isSmall)

@@ -525,10 +525,7 @@
                         <Button.KeyboardAccelerators>
                             <KeyboardAccelerator Key="N" Modifiers="Control" />
                         </Button.KeyboardAccelerators>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
-                            <TextBlock x:Uid="Checklists_NewTodoText" />
-                        </StackPanel>
+                        <controls:NewButtonContent x:Uid="Checklists_NewTodoText" />
                     </Button>
                 </StackPanel>
                 <!-- Design §2.3: the search icon is last in its (left) group and expands into the free space after it. -->

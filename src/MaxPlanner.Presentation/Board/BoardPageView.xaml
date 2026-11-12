@@ -459,10 +459,7 @@
                     <Button.KeyboardAccelerators>
                         <KeyboardAccelerator Key="N" Modifiers="Control" />
                     </Button.KeyboardAccelerators>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
-                        <TextBlock x:Uid="Board_NewTaskText" />
-                    </StackPanel>
+                    <controls:NewButtonContent x:Uid="Board_NewTaskText" />
                 </Button>
             </Grid>
             <!-- Design §4.2 S: one bucket per viewport, chosen here or with the previous/next buttons. -->

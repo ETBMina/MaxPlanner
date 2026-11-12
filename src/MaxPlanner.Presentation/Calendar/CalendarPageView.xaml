@@ -436,10 +436,7 @@
                         <Button.KeyboardAccelerators>
                             <KeyboardAccelerator Key="N" Modifiers="Control" />
                         </Button.KeyboardAccelerators>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
-                            <TextBlock x:Uid="Calendar_NewCrText" />
-                        </StackPanel>
+                        <controls:NewButtonContent x:Uid="Calendar_NewCrText" />
                     </Button>
                 </Grid>
             </Grid>
