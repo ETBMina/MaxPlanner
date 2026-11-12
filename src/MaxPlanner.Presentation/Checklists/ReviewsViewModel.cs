@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -51,7 +50,7 @@ public sealed partial class ReviewRowViewModel : ObservableObject
     public bool HasReference => Reference.Length > 0;
 
     /// <summary>"Done Oct 20" for the Completed section (design §4.5).</summary>
-    public string DoneText => Model.CompletedOn is { } day ? _strings.Format("Reviews_DoneOn", day.ToString("MMM d", CultureInfo.CurrentCulture)) : string.Empty;
+    public string DoneText => Model.CompletedOn is { } day ? _strings.Format("Reviews_DoneOn", DateText.MonthDay(day)) : string.Empty;
 
     public string AccessibleName => string.Join(", ", new[] { Title, Reference, IsDone ? DoneText : _strings.GetString("Reviews_Open") }.Where(p => p.Length > 0));
 

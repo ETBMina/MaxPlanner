@@ -28,6 +28,22 @@ public static class BindFunctions
     /// <summary>A repeated item's AutomationId: <c>{prefix}{Guid:N}</c> (design §8.1).</summary>
     public static string RecordId(string prefix, Guid id) => prefix + id.ToString("N");
 
+    /// <summary>The priority chip style for a rank token (design §6.1); styles use theme resources, so they follow theme changes.</summary>
+    public static Style PriorityChipStyle(PriorityLevel level) =>
+        (Style)Microsoft.UI.Xaml.Application.Current.Resources[level switch
+        {
+            PriorityLevel.Level1 => "PriorityLevel1ChipStyle",
+            PriorityLevel.Level2 => "PriorityLevel2ChipStyle",
+            PriorityLevel.Lowest => "PriorityLowestChipStyle",
+            _ => "PriorityMidChipStyle",
+        }];
+
+    /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
+    public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
+
+    /// <summary>The AutomationId of a conflict row's Use mine box (design §8.1: stable keys, never display text).</summary>
+    public static string UseMineId(string key) => "Conflict_UseMineCheck_" + key;
+
     /// <summary>Segoe Fluent Icons Warning (E7BA) or StatusErrorFull (EA39).</summary>
     public static string SeverityGlyph(bool isWarning) => isWarning ? "" : "";
 

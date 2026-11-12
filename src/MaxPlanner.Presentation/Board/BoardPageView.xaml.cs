@@ -76,19 +76,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     public BoardPageViewModel ViewModel { get; }
 
-    /// <summary>The priority chip style for a rank token (design §6.1); styles use theme resources, so they follow theme changes.</summary>
-    public static Style PriorityChipStyle(PriorityLevel level) =>
-        (Style)Microsoft.UI.Xaml.Application.Current.Resources[level switch
-        {
-            PriorityLevel.Level1 => "PriorityLevel1ChipStyle",
-            PriorityLevel.Level2 => "PriorityLevel2ChipStyle",
-            PriorityLevel.Lowest => "PriorityLowestChipStyle",
-            _ => "PriorityMidChipStyle",
-        }];
-
-    /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
-    public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
-
     /// <summary>The ID-row priority glyph in the priority color (design §4.2 item 3).</summary>
     public static Style PriorityGlyphStyle(PriorityLevel level) => Resource("BoardPriority" + LevelKey(level) + "GlyphStyle");
 
@@ -319,16 +306,16 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private MenuFlyout BuildMenu(BoardCardViewModel card)
     {
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Board_MenuOpen", "Board_MenuOpenItem", "", () => ViewModel.OpenAsync(card).Forget()));
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpen"), "Board_MenuOpenItem", () => ViewModel.OpenAsync(card).Forget(), glyph: "");
         if (card.IsSubtaskCard)
         {
-            menu.Items.Add(Item("Board_MenuOpenParent", "Board_MenuOpenParentItem", null, () => ViewModel.OpenParentAsync(card).Forget()));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpenParent"), "Board_MenuOpenParentItem", () => ViewModel.OpenParentAsync(card).Forget());
         }
 
         // The card's CR link is not a tab stop inside the list, so the menu is its keyboard route (design §7.3).
         if (card.HasCrReference)
         {
-            menu.Items.Add(Item("Board_MenuOpenCr", "Board_MenuOpenCrItem", null, () => ViewModel.OpenCrAsync(card).Forget()));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpenCr"), "Board_MenuOpenCrItem", () => ViewModel.OpenCrAsync(card).Forget());
         }
 
         var moveTo = new MenuFlyoutSubItem { Text = ResourceStrings.Shared.GetString("Board_MenuMoveTo") };
@@ -339,32 +326,30 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(target, "Board_MenuMoveTo_" + bucket.StatusId.Value.ToString("N"));
             // B-07: while filtered Top/Bottom address the full bucket and same-bucket reordering is off.
             var enabled = !ViewModel.IsFiltered || ViewModel.BucketOf(card) != bucket;
-            target.Items.Add(Item("Board_MenuTopOfBucket", "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), null,
-                () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top).Forget(), enabled));
-            target.Items.Add(Item("Board_MenuBottomOfBucket", "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), null,
-                () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom).Forget(), enabled));
+            target.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuTopOfBucket"), "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top).Forget(), enabled);
+            target.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuBottomOfBucket"), "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom).Forget(), enabled);
 
             moveTo.Items.Add(target);
         }
 
         menu.Items.Add(moveTo);
-        menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => ViewModel.MoveWithinBucketAsync(card, -1).Forget(), ViewModel.CanMoveUp(card)));
-        menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => ViewModel.MoveWithinBucketAsync(card, 1).Forget(), ViewModel.CanMoveDown(card)));
-        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuMoveUp"), "Board_MenuMoveUpItem", () => ViewModel.MoveWithinBucketAsync(card, -1).Forget(), isEnabled: ViewModel.CanMoveUp(card), glyph: "");
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuMoveDown"), "Board_MenuMoveDownItem", () => ViewModel.MoveWithinBucketAsync(card, 1).Forget(), isEnabled: ViewModel.CanMoveDown(card), glyph: "");
+        menu.Items.AddSeparator();
         if (card.IsTask)
         {
-            menu.Items.Add(Item("Board_MenuCopy", "Board_MenuCopyItem", "", () => ViewModel.CopyAsync(card).Forget()));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuCopy"), "Board_MenuCopyItem", () => ViewModel.CopyAsync(card).Forget(), glyph: "");
         }
 
-        menu.Items.Add(Item("Board_MenuCopyId", "Board_MenuCopyIdItem", "", () => ViewModel.CopyId(card)));
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuCopyId"), "Board_MenuCopyIdItem", () => ViewModel.CopyId(card), glyph: "");
         if (card.IsTask)
         {
-            menu.Items.Add(Item("Board_MenuAddSubtaskCard", "Board_MenuAddSubtaskCardItem", "", () => ViewModel.AddSubtaskCardAsync(card).Forget()));
-            menu.Items.Add(Item("Board_MenuArchive", "Board_MenuArchiveItem", "", () => ViewModel.ArchiveAsync(card).Forget()));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuAddSubtaskCard"), "Board_MenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(card).Forget(), glyph: "");
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuArchive"), "Board_MenuArchiveItem", () => ViewModel.ArchiveAsync(card).Forget(), glyph: "");
         }
 
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Board_MenuDelete", "Board_MenuDeleteItem", "", () => ViewModel.DeleteAsync(card).Forget()));
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuDelete"), "Board_MenuDeleteItem", () => ViewModel.DeleteAsync(card).Forget(), glyph: "");
         return menu;
     }
 
@@ -396,19 +381,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     // A click anywhere on the card that is not a drag or a child control's press, or UIA Invoke.
     private void OnCardInvoked(object? sender, BoardCardViewModel card) => ViewModel.OpenAsync(card).Forget();
-
-    private static MenuFlyoutItem Item(string textKey, string automationId, string? glyph, Action action, bool enabled = true)
-    {
-        var item = new MenuFlyoutItem { Text = ResourceStrings.Shared.GetString(textKey), IsEnabled = enabled };
-        if (glyph is not null)
-        {
-            item.Icon = new FontIcon { Glyph = glyph };
-        }
-
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(item, automationId);
-        item.Click += (_, _) => action();
-        return item;
-    }
 
     // ----- Keyboard (design §7.3) -----
     private void OnListPreviewKeyDown(object sender, KeyRoutedEventArgs e)

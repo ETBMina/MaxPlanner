@@ -345,6 +345,14 @@
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
+    <!--
+        FontIcon sizes: a glyph beside caption text or inside a chip (12), beside body text or in a compact button (14),
+        and the standard Fluent icon size (16).
+    -->
+    <x:Double x:Key="CaptionIconSize">12</x:Double>
+    <x:Double x:Key="BodyIconSize">14</x:Double>
+    <x:Double x:Key="StandardIconSize">16</x:Double>
+
     <!-- Person avatars (PersonAvatar, PersonAvatarGroup): size, corner radius, and fill are set in code. -->
     <Style x:Key="PersonAvatarStyle" TargetType="Grid">
         <Setter Property="Background" Value="{ThemeResource PersonAvatarBackgroundBrush}" />
@@ -426,7 +434,7 @@
         <Setter Property="MaxLines" Value="1" />
     </Style>
     <Style x:Key="ChipGlyphStyle" TargetType="FontIcon">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource CaptionIconSize}" />
         <Setter Property="Foreground" Value="{ThemeResource ChipForegroundBrush}" />
     </Style>
     <Style x:Key="AccentChipTextStyle" BasedOn="{StaticResource ChipTextStyle}" TargetType="TextBlock">
@@ -796,7 +804,7 @@
         <Setter Property="Background" Value="{ThemeResource GridAffordancePressedBackgroundBrush}" />
     </Style>
     <Style x:Key="GridCellAffordanceGlyphStyle" TargetType="FontIcon">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource CaptionIconSize}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="IsHitTestVisible" Value="False" />

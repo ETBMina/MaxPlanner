@@ -72,7 +72,7 @@ public sealed partial class CalendarDayViewModel : ObservableObject
     {
         get
         {
-            var parts = new List<string> { Date.ToString("D", CultureInfo.CurrentCulture) };
+            var parts = new List<string> { DateText.LongDate(Date) };
             if (IsToday)
             {
                 parts.Add(_todayState);
@@ -216,7 +216,7 @@ public sealed partial class DateRangePickerViewModel : ObservableObject
 
     private static DateOnly MonthOf(DateOnly day) => new(day.Year, day.Month, 1);
 
-    private static string Short(DateOnly day) => day.ToString("d", CultureInfo.CurrentCulture);
+    private static string Short(DateOnly day) => DateText.ShortDate(day);
 
     private void ShowMonth(DateOnly month)
     {

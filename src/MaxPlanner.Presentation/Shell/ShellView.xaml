@@ -114,9 +114,9 @@
             AlwaysShowHeader="False"
             AutomationProperties.AutomationId="Shell_Nav"
             AutomationProperties.LandmarkType="Navigation"
-            CompactModeThresholdWidth="640"
+            CompactModeThresholdWidth="{x:Bind common:Breakpoints.Medium, Mode=OneTime}"
             DisplayModeChanged="OnNavDisplayModeChanged"
-            ExpandedModeThresholdWidth="1008"
+            ExpandedModeThresholdWidth="{x:Bind common:Breakpoints.Large, Mode=OneTime}"
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="True"
             PaneDisplayMode="Auto"
@@ -201,7 +201,7 @@
                         Spacing="6">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Glyph="&#xE73E;"
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsSettled), Mode=OneWay}" />
                         <ProgressRing
@@ -211,12 +211,12 @@
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsSaving), Mode=OneWay}" />
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Glyph="&#xE895;"
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsResyncing), Mode=OneWay}" />
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Foreground="{ThemeResource ErrorTextBrush}"
                             Glyph="&#xE783;"
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsFailed), Mode=OneWay}" />

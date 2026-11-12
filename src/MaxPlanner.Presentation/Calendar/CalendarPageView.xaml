@@ -9,7 +9,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:filters="using:MaxPlanner.Presentation.Common.Filters"
-    xmlns:board="using:MaxPlanner.Presentation.Board"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
     xmlns:local="using:MaxPlanner.Presentation.Calendar"
@@ -42,9 +41,9 @@
                             Click="OnBacklogOpenClick"
                             Content="{x:Bind Number, Mode=OneWay}"
                             Tag="{x:Bind Mode=OneTime}" />
-                        <Border AutomationProperties.Name="{x:Bind PriorityAccessibleName, Mode=OneWay}" Style="{x:Bind board:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
+                        <Border AutomationProperties.Name="{x:Bind PriorityAccessibleName, Mode=OneWay}" Style="{x:Bind common:BindFunctions.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="{x:Bind board:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
+                                <FontIcon Glyph="{x:Bind common:BindFunctions.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
                                 <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind PriorityName, Mode=OneWay}" />
                             </StackPanel>
                         </Border>
@@ -60,7 +59,7 @@
                         Click="OnBacklogMenuClick"
                         Tag="{x:Bind Mode=OneTime}"
                         ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE712;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     </Button>
                     <TextBlock
                         Grid.Row="1"
@@ -155,7 +154,7 @@
                     Visibility="{x:Bind common:BindFunctions.Visible(IsOverdue), Mode=OneWay}">
                     <FontIcon
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="{StaticResource CaptionIconSize}"
                         Foreground="{ThemeResource SystemFillColorCautionBrush}"
                         Glyph="&#xE7BA;" />
                     <TextBlock Text="{x:Bind OverdueText, Mode=OneWay}" />
@@ -170,7 +169,7 @@
                     Click="OnRecordMenuClick"
                     Tag="{x:Bind Mode=OneTime}"
                     ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                 </Button>
             </Grid>
         </DataTemplate>
@@ -220,7 +219,7 @@
                     Click="OnRecordMenuClick"
                     Tag="{x:Bind Mode=OneTime}"
                     ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                 </Button>
             </Grid>
         </DataTemplate>
@@ -374,7 +373,7 @@
                                     Command="{x:Bind ViewModel.PreviousCommand}"
                                     Style="{StaticResource SubtleButtonStyle}"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.PreviousName, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
                                 </Button>
                                 <Rectangle
                                     Width="1"
@@ -391,7 +390,7 @@
                                     Command="{x:Bind ViewModel.NextCommand}"
                                     Style="{StaticResource SubtleButtonStyle}"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.NextName, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
                                 </Button>
                             </StackPanel>
                         </Border>
@@ -437,10 +436,7 @@
                         <Button.KeyboardAccelerators>
                             <KeyboardAccelerator Key="N" Modifiers="Control" />
                         </Button.KeyboardAccelerators>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="14" Glyph="&#xE710;" />
-                            <TextBlock x:Uid="Calendar_NewCrText" />
-                        </StackPanel>
+                        <controls:NewButtonContent x:Uid="Calendar_NewCrText" />
                     </Button>
                 </Grid>
             </Grid>
@@ -530,7 +526,7 @@
                             Spacing="12">
                             <FontIcon
                                 AutomationProperties.AccessibilityView="Raw"
-                                FontSize="12"
+                                FontSize="{StaticResource CaptionIconSize}"
                                 Glyph="&#xE76C;" />
                             <!--
                                 Layout ignores a rotation: the TextBlock keeps its horizontal 104 x 20 box and turns a quarter
@@ -601,7 +597,7 @@
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Command="{x:Bind ViewModel.ToggleBacklogCommand}">
-                                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
                                 </Button>
                                 <TextBlock
                                     x:Uid="Calendar_BacklogHeading"

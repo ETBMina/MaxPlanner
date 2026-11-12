@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
@@ -19,30 +18,13 @@ using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Tasks;
-
-/// <summary>A priority offered by the editors' Priority box.</summary>
-public sealed record PriorityOption(PriorityId Id, string Name, PriorityLevel Level = PriorityLevel.Mid) : IPriorityChoice
-{
-    string IPriorityChoice.DisplayName => Name;
-
-    PriorityLevel? IPriorityChoice.Level => Level;
-
-    /// <summary>The configured priorities in rank order, each with the glyph level of its rank (design §6.1).</summary>
-    public static IReadOnlyList<PriorityOption> From(WorkflowSnapshot workflow)
-    {
-        ArgumentNullException.ThrowIfNull(workflow);
-        var levels = PriorityLevels.Of(workflow.Priorities);
-        return [.. workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display, levels.GetValueOrDefault(p.Id, PriorityLevel.Mid)))];
-    }
-
-    public override string ToString() => Name;
-}
 
 /// <summary>
 /// The task editor (B-02, B-03, B-05, T-13, design §5.0–§5.1, §5.6, §5.8, §5.10). It edits a draft and never
@@ -191,7 +173,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
     /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", b.CreatedAtUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture)) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -1059,7 +1041,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         string Join(IEnumerable<string> names) => names.DefaultIfEmpty(none).Aggregate((a, b) => a + ", " + b);
         string Person(Guid id) => _workflow.FindPerson(new PersonId(id))?.Name.Display ?? _newPeople.Used([id]).Select(p => p.Name).FirstOrDefault() ?? none;
         string Tag(Guid id) => _workflow.FindTag(new TagId(id))?.Name.Display ?? _newTags.Used([id]).Select(t => t.Name).FirstOrDefault() ?? none;
-        string Date(DateOnly? date) => date?.ToString("d", CultureInfo.CurrentCulture) ?? none;
+        string Date(DateOnly? date) => date is { } day ? DateText.ShortDate(day) : none;
         string Text(string text) => text.Length == 0 ? none : text;
         return key switch
         {
@@ -1143,9 +1125,9 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     private string DatesText(DateOnly? start, DateOnly? end) => (start, end) switch
     {
         (null, null) => string.Empty,
-        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", s.ToString("d", CultureInfo.CurrentCulture)),
-        (null, { } e) => Context.Strings.Format("Board_DatesEnded", e.ToString("d", CultureInfo.CurrentCulture)),
-        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", s.ToString("d", CultureInfo.CurrentCulture), e.ToString("d", CultureInfo.CurrentCulture)),
+        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.ShortDate(s)),
+        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.ShortDate(e)),
+        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.ShortDate(s), DateText.ShortDate(e)),
     };
 
     private string Helper(string key, IEnumerable<Domain.Workflow.TaskStatusDefinition> statuses)

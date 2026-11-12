@@ -71,7 +71,7 @@
                                     Visibility="{x:Bind common:BindFunctions.Visible(HasBadge), Mode=OneWay}">
                                     <FontIcon
                                         AutomationProperties.AccessibilityView="Raw"
-                                        FontSize="14"
+                                        FontSize="{StaticResource BodyIconSize}"
                                         Foreground="{ThemeResource SystemFillColorCautionBrush}"
                                         Glyph="&#xE7BA;" />
                                     <TextBlock x:Uid="Dashboard_NeedsAttention" Style="{StaticResource CaptionTextBlockStyle}" />
@@ -130,7 +130,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Foreground="{ThemeResource SystemFillColorCautionBrush}"
                             Glyph="&#xE7BA;" />
                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneTime}" />

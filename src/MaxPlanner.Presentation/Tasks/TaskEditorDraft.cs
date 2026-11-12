@@ -48,31 +48,6 @@ public sealed partial class EditorChecklistItemViewModel : ObservableObject
 /// <summary>A committed Subtask card of the edited task (design §5.1 group 8); cards are created immediately, not drafted.</summary>
 public sealed record EditorSubtaskCardViewModel(SubtaskCardId Id, string Subtitle, string StatusName, string DatesText);
 
-/// <summary>One row of the conflict review step (design §5.10): Field | Your draft | Saved now, with Use mine.</summary>
-public sealed partial class ConflictRowViewModel : ObservableObject
-{
-    public ConflictRowViewModel(string key, string field, string mine, string saved)
-    {
-        Key = key;
-        Field = field;
-        Mine = mine;
-        Saved = saved;
-    }
-
-    /// <summary>The draft field, for example <c>Title</c>; stable, never display text.</summary>
-    public string Key { get; }
-
-    public string Field { get; }
-
-    public string Mine { get; }
-
-    public string Saved { get; }
-
-    /// <summary>Keeps the draft's value when the draft is refreshed; off takes the saved value.</summary>
-    [ObservableProperty]
-    public partial bool UseMine { get; set; } = true;
-}
-
 /// <summary>The inline steps of the task editor (design §5.0: nested decisions never open a second dialog).</summary>
 public enum EditorStep
 {

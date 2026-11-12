@@ -1,4 +1,3 @@
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
@@ -8,9 +7,10 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Reviews;
@@ -80,7 +80,7 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
 
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "ReviewEditor_CreateButton" : "TaskEditor_SaveButton");
 
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", b.CreatedAtUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture)) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -126,7 +126,7 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
     /// <summary>"Completed on Oct 20, 2026" while Done is checked (design §5.4); today for a newly checked box.</summary>
     public string DoneCaption => !IsDone
         ? string.Empty
-        : Context.Strings.Format("ReviewEditor_CompletedOn", (_base?.CompletedOn ?? Context.Store.Today).ToString("D", CultureInfo.CurrentCulture));
+        : Context.Strings.Format("ReviewEditor_CompletedOn", DateText.LongDate(_base?.CompletedOn ?? Context.Store.Today));
 
     /// <summary>
     /// B-17.3: the CR whose normalized number equals the typed text, for the "Open CR" affordance only. The review

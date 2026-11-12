@@ -377,19 +377,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        void Item(string key, string id, Action action, bool enabled = true)
-        {
-            var item = new MenuFlyoutItem { Text = strings.GetString(key), IsEnabled = enabled };
-            AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => action();
-            menu.Items.Add(item);
-        }
-
         var index = _displayColumns.IndexOf(column);
-        Item("Grid_HeaderMenuSort", "Grid_HeaderMenuSortItem", () => ViewModel.CycleSort(column.Key));
-        Item("Grid_HeaderMenuMoveLeft", "Grid_HeaderMenuMoveLeftItem", () => ViewModel.MoveColumn(column.Key, -1), index > 0);
-        Item("Grid_HeaderMenuMoveRight", "Grid_HeaderMenuMoveRightItem", () => ViewModel.MoveColumn(column.Key, 1), index < _displayColumns.Count - 1);
-        Item("Grid_HeaderMenuHide", "Grid_HeaderMenuHideItem", () => ViewModel.SetVisible(column.Key, false), _displayColumns.Count > 1);
+        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuSort"), "Grid_HeaderMenuSortItem", () => ViewModel.CycleSort(column.Key));
+        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuMoveLeft"), "Grid_HeaderMenuMoveLeftItem", () => ViewModel.MoveColumn(column.Key, -1), index > 0);
+        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuMoveRight"), "Grid_HeaderMenuMoveRightItem", () => ViewModel.MoveColumn(column.Key, 1), index < _displayColumns.Count - 1);
+        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuHide"), "Grid_HeaderMenuHideItem", () => ViewModel.SetVisible(column.Key, false), _displayColumns.Count > 1);
         return menu;
     }
 
@@ -1230,13 +1222,13 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         // every header sits above its column's cells.
         var window = PagePadding.WindowWidth(this, width);
         var inset = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= 640 ? 12 : 8);
+        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= Breakpoints.Medium ? 12 : 8);
         HeaderBorder.Padding = new Thickness(inset, 0, 0, 0);
         Table.Padding = new Thickness(inset, 0, 0, 0);
 
         // Design §4.3 S: only New task keeps its label inline; the CommandBar overflows the rest by itself.
-        NewTaskText.Visibility = width >= 500 ? Visibility.Visible : Visibility.Collapsed;
-        var small = width < 640;
+        NewTaskContent.IsTextVisible = width >= 500;
+        var small = width < Breakpoints.Medium;
         ChipsBar.IsCompact = small;
         if (small != _isSmall)
         {
@@ -1334,48 +1326,40 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        void Item(string key, string id, Action action)
-        {
-            var item = new MenuFlyoutItem { Text = strings.GetString(key) };
-            AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => action();
-            menu.Items.Add(item);
-        }
-
-        Item("Board_MenuOpen", "Grid_RowMenuOpenItem", () => ViewModel.OpenRowAsync(row).Forget());
+        menu.Items.AddItem(strings.GetString("Board_MenuOpen"), "Grid_RowMenuOpenItem", () => ViewModel.OpenRowAsync(row).Forget());
         if (row.Model.Cr.ChangeRequestId is not null)
         {
-            Item("Board_MenuOpenCr", "Grid_RowMenuOpenCrItem", () => ViewModel.OpenCrAsync(row).Forget());
+            menu.Items.AddItem(strings.GetString("Board_MenuOpenCr"), "Grid_RowMenuOpenCrItem", () => ViewModel.OpenCrAsync(row).Forget());
         }
 
         if (row.Model.Task is not null)
         {
-            Item("Board_MenuCopy", "Grid_RowMenuCopyItem", () => ViewModel.CopyRowAsync(row).Forget());
+            menu.Items.AddItem(strings.GetString("Board_MenuCopy"), "Grid_RowMenuCopyItem", () => ViewModel.CopyRowAsync(row).Forget());
         }
 
-        Item("Board_MenuCopyId", "Grid_RowMenuCopyIdItem", () => ClipboardText.Set(ViewModel.CopyIdText(row)));
+        menu.Items.AddItem(strings.GetString("Board_MenuCopyId"), "Grid_RowMenuCopyIdItem", () => ClipboardText.Set(ViewModel.CopyIdText(row)));
         if (row.Model.Task is { } task)
         {
 
             // B-03.6/B-05: Link to CR… is offered for every unlinked task, archived ones included.
             if (task.Cr.ChangeRequestId is null)
             {
-                Item("Grid_MenuLinkToCr", "Grid_RowMenuLinkToCrItem", () => ViewModel.LinkRowAsync(row).Forget());
+                menu.Items.AddItem(strings.GetString("Grid_MenuLinkToCr"), "Grid_RowMenuLinkToCrItem", () => ViewModel.LinkRowAsync(row).Forget());
             }
 
             if (task.IsArchived)
             {
-                Item("Grid_MenuRestore", "Grid_RowMenuRestoreItem", () => ViewModel.RestoreRowAsync(row).Forget());
+                menu.Items.AddItem(strings.GetString("Grid_MenuRestore"), "Grid_RowMenuRestoreItem", () => ViewModel.RestoreRowAsync(row).Forget());
             }
             else
             {
-                Item("Board_MenuAddSubtaskCard", "Grid_RowMenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(row).Forget());
-                Item("Board_MenuArchive", "Grid_RowMenuArchiveItem", () => ViewModel.ArchiveRowAsync(row).Forget());
+                menu.Items.AddItem(strings.GetString("Board_MenuAddSubtaskCard"), "Grid_RowMenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(row).Forget());
+                menu.Items.AddItem(strings.GetString("Board_MenuArchive"), "Grid_RowMenuArchiveItem", () => ViewModel.ArchiveRowAsync(row).Forget());
             }
         }
 
-        menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Board_MenuDelete", "Grid_RowMenuDeleteItem", () => ViewModel.DeleteRowAsync(row).Forget());
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(strings.GetString("Board_MenuDelete"), "Grid_RowMenuDeleteItem", () => ViewModel.DeleteRowAsync(row).Forget());
         return menu;
     }
 }

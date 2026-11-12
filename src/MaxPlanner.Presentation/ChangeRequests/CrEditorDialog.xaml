@@ -9,9 +9,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:dialogs="using:MaxPlanner.Presentation.Common.Dialogs"
     xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.ChangeRequests"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     AutomationProperties.AutomationId="CrEditor_Dialog"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
@@ -46,7 +46,7 @@
                     Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="CrEditor_MoreMenu"
                     IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
                             <MenuFlyoutItem
@@ -128,7 +128,7 @@
                             MaxLength="100"
                             Text="{x:Bind ViewModel.Number, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                         <TextBlock x:Uid="CrEditor_NumberHelper" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
-                        <tasks:FieldError Text="{x:Bind ViewModel.NumberError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind ViewModel.NumberError, Mode=OneWay}" />
                         <!-- B-03.2: a duplicate names the existing CR and allows opening it. -->
                         <HyperlinkButton
                             Padding="0"
@@ -150,7 +150,7 @@
                             Style="{StaticResource CaptionTextBlockStyle}"
                             Text="{x:Bind ViewModel.TaskNumberHelper, Mode=OneWay}"
                             TextWrapping="Wrap" />
-                        <tasks:FieldError Text="{x:Bind ViewModel.TaskNumberError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind ViewModel.TaskNumberError, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
 
@@ -169,7 +169,7 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{StaticResource CaptionTextBlockStyle}"
                         TextWrapping="Wrap" />
-                    <tasks:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
                 </StackPanel>
 
                 <!-- Group 3: Owner · Squad. -->
@@ -196,7 +196,7 @@
                             IsChecked="{x:Bind ViewModel.MakeDefaultOwner, Mode=TwoWay}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.ShowMakeDefaultOwner), Mode=OneWay}" />
-                        <tasks:FieldError Text="{x:Bind ViewModel.OwnerError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind ViewModel.OwnerError, Mode=OneWay}" />
                     </StackPanel>
                     <StackPanel x:Name="SquadPanel" Grid.Column="1" Spacing="4">
                         <ComboBox
@@ -207,7 +207,7 @@
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             ItemsSource="{x:Bind ViewModel.SquadOptions, Mode=OneWay}"
                             SelectionChanged="OnSquadSelectionChanged" />
-                        <tasks:FieldError Text="{x:Bind ViewModel.SquadError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind ViewModel.SquadError, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
 
@@ -231,7 +231,7 @@
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             ItemsSource="{x:Bind ViewModel.StatusOptions, Mode=OneWay}"
                             SelectionChanged="OnStatusSelectionChanged" />
-                        <tasks:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
                     </StackPanel>
                     <StackPanel x:Name="PriorityPanel" Grid.Column="1" Spacing="4">
                         <ComboBox
@@ -244,7 +244,7 @@
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"
                             SelectionChanged="OnPrioritySelectionChanged" />
-                        <tasks:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
 
@@ -276,7 +276,7 @@
                             AutomationProperties.AutomationId="CrEditor_ClearPlannedStartButton"
                             Command="{x:Bind ViewModel.ClearPlannedStartCommand}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                            <FontIcon FontSize="12" Glyph="&#xE711;" />
+                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                         </Button>
                     </Grid>
                     <Grid x:Name="PlannedEndPanel" Grid.Column="1" ColumnSpacing="8">
@@ -298,7 +298,7 @@
                             AutomationProperties.AutomationId="CrEditor_ClearPlannedEndButton"
                             Command="{x:Bind ViewModel.ClearPlannedEndCommand}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                            <FontIcon FontSize="12" Glyph="&#xE711;" />
+                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                         </Button>
                     </Grid>
                 </Grid>
@@ -307,7 +307,7 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.PlannedCaption, Mode=OneWay}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.PlannedError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.PlannedError, Mode=OneWay}" />
 
                 <!-- Group 6: email subject, solution design link (+ Open), description. -->
                 <TextBox
@@ -317,7 +317,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     MaxLength="1000"
                     Text="{x:Bind ViewModel.EmailSubject, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.EmailSubjectError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.EmailSubjectError, Mode=OneWay}" />
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -339,10 +339,10 @@
                         AutomationProperties.AutomationId="CrEditor_OpenUrlButton"
                         Command="{x:Bind ViewModel.OpenUrlCommand}"
                         IsEnabled="{x:Bind ViewModel.CanOpenUrl, Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE8A7;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE8A7;" />
                     </Button>
                 </Grid>
-                <tasks:FieldError Text="{x:Bind ViewModel.UrlError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.UrlError, Mode=OneWay}" />
                 <TextBox
                     x:Name="DescriptionBox"
                     x:Uid="CrEditor_DescriptionBox"
@@ -353,7 +353,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     Text="{x:Bind ViewModel.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
-                <tasks:FieldError Text="{x:Bind ViewModel.DescriptionError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.DescriptionError, Mode=OneWay}" />
 
                 <!-- Custom CR fields (B-11), one typed editor per active field (design §5.0). -->
                 <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CustomFields.HasFields), Mode=OneTime}">
@@ -383,7 +383,7 @@
                             Command="{x:Bind ViewModel.BeginCreateTaskCommand}"
                             IsEnabled="{x:Bind ViewModel.CanCreateTask, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontSize="14" Glyph="&#xE710;" />
+                                <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
                                 <TextBlock x:Uid="CrEditor_CreateTaskText" />
                             </StackPanel>
                         </Button>
@@ -526,7 +526,7 @@
                 </Grid>
                 <ItemsControl AutomationProperties.AutomationId="Conflict_Rows" ItemsSource="{x:Bind ViewModel.ConflictRows, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="tasks:ConflictRowViewModel">
+                        <DataTemplate x:DataType="dialogs:ConflictRowViewModel">
                             <Grid Padding="0,6" ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120" />
@@ -540,7 +540,7 @@
                                 <CheckBox
                                     Grid.Column="3"
                                     MinWidth="0"
-                                    AutomationProperties.AutomationId="{x:Bind tasks:TaskEditorDialog.UseMineId(Key), Mode=OneTime}"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.UseMineId(Key), Mode=OneTime}"
                                     AutomationProperties.Name="{x:Bind Field, Mode=OneTime}"
                                     IsChecked="{x:Bind UseMine, Mode=TwoWay}" />
                             </Grid>

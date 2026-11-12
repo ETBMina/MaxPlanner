@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
@@ -10,10 +9,10 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Options;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Grid;
-using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.SubtaskCards;
@@ -519,7 +518,7 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
             string { Length: 0 } => none,
             string text => text,
             TaskStatusId status => _workflow.FindTaskStatus(status)?.Name.Display ?? none,
-            DateOnly date => date.ToString("d", CultureInfo.CurrentCulture),
+            DateOnly date => DateText.ShortDate(date),
             var other => other.ToString() ?? none,
         };
     }

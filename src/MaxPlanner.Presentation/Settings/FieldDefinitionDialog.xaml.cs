@@ -1,3 +1,4 @@
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -18,7 +19,7 @@ public sealed partial class FieldDefinitionDialog : ContentDialog
         {
             if (XamlRoot is { } root)
             {
-                FullSizeDesired = root.Size.Width < 640 || root.Size.Height < 600;
+                FullSizeDesired = root.Size.Width < Breakpoints.Medium || root.Size.Height < 600;
             }
         };
     }

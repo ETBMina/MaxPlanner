@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
-using MaxPlanner.Presentation.Grid;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -10,6 +9,8 @@ using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using XamlGrid = Microsoft.UI.Xaml.Controls.Grid;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 
 namespace MaxPlanner.Presentation.Tasks;
 
@@ -46,9 +47,6 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     public TaskEditorViewModel ViewModel { get; }
 
-    /// <summary>The AutomationId of a conflict row's Use mine box (design §8.1: stable keys, never display text).</summary>
-    public static string UseMineId(string key) => "Conflict_UseMineCheck_" + key;
-
     public static string CrName(string number, string title, string secondary) => number + ", " + title + ", " + secondary;
 
     // Design §5.0 width rules: the fields sit side by side only when the window leaves room, and stack in one column
@@ -56,7 +54,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
     // reachable (T-08.1).
     private void ApplyLayout(Windows.Foundation.Size size)
     {
-        var wide = size.Width >= EditorDialogSizing.LargeBreakpoint;
+        var wide = size.Width >= Breakpoints.Large;
         Reflow(FactsGrid, wide ? 4 : 2);
         Reflow(WorkflowFields, wide ? 3 : 1);
         Reflow(PeopleFields, wide ? 2 : 1);

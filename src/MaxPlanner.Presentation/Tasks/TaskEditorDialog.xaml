@@ -11,9 +11,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:dialogs="using:MaxPlanner.Presentation.Common.Dialogs"
     xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
-    xmlns:grid="using:MaxPlanner.Presentation.Grid"
     xmlns:local="using:MaxPlanner.Presentation.Tasks"
+    xmlns:pickers="using:MaxPlanner.Presentation.Common.Pickers"
     AutomationProperties.AutomationId="TaskEditor_Dialog"
     AutomationProperties.Name="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
@@ -78,7 +79,7 @@
                         Margin="0,8,0,0"
                         VerticalAlignment="Top"
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="16"
+                        FontSize="{StaticResource StandardIconSize}"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Glyph="&#xE8EC;"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}" />
@@ -99,7 +100,7 @@
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_MoreMenu"
                         IsEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsNew), Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE712;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
                                 <MenuFlyoutItem x:Uid="TaskEditor_MoreCopy" AutomationProperties.AutomationId="TaskEditor_MoreCopyItem" Command="{x:Bind ViewModel.RequestCopyCommand}">
@@ -144,10 +145,10 @@
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_CloseButton"
                         Click="OnCloseClick">
-                        <FontIcon FontSize="14" Glyph="&#xE711;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE711;" />
                     </Button>
                 </Grid>
-                <local:FieldError Text="{x:Bind ViewModel.TagsError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.TagsError, Mode=OneWay}" />
             </StackPanel>
 
             <!--
@@ -239,7 +240,7 @@
                         Text="{x:Bind ViewModel.InheritedTitle, Mode=OneWay}"
                         TextWrapping="Wrap"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.ShowInheritedTitle), Mode=OneWay}" />
-                    <local:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{StaticResource CaptionTextBlockStyle}"
@@ -300,7 +301,7 @@
                                     Style="{StaticResource CopyNumberButtonStyle}"
                                     Tag="Reveal"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.CopyCrNumberName, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8C8;" />
                                 </Button>
                             </StackPanel>
                             <!-- No Unlink and no Change exist (B-03.7); a pending link can still be replaced before Save. -->
@@ -340,7 +341,7 @@
                                     Tag="Reveal"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.CopyTaskNumberName, Mode=OneWay}"
                                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CanCopyTaskNumber), Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8C8;" />
                                 </Button>
                             </StackPanel>
                         </StackPanel>
@@ -395,7 +396,7 @@
                                 Text="{x:Bind ViewModel.ServiceHelper, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasServiceHelper), Mode=OneWay}" />
-                            <local:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Spacing="4">
                             <ComboBox
@@ -407,7 +408,7 @@
                                 IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                                 ItemsSource="{x:Bind ViewModel.StatusOptions, Mode=OneWay}"
                                 SelectionChanged="OnStatusSelectionChanged" />
-                            <local:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Spacing="4">
                             <ComboBox
@@ -420,7 +421,7 @@
                                 ItemTemplate="{StaticResource PriorityChoiceTemplate}"
                                 ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"
                                 SelectionChanged="OnPrioritySelectionChanged" />
-                            <local:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
 
@@ -440,7 +441,7 @@
                                 BoxAutomationId="TaskEditor_DesignerPicker"
                                 IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                                 ViewModel="{x:Bind ViewModel.Designer, Mode=OneWay}" />
-                            <local:FieldError Text="{x:Bind ViewModel.DesignerError, Mode=OneWay}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.DesignerError, Mode=OneWay}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Spacing="4">
                             <controls:TokenPicker
@@ -449,7 +450,7 @@
                                 BoxAutomationId="TaskEditor_DeveloperPicker"
                                 IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                                 ViewModel="{x:Bind ViewModel.Developer, Mode=OneWay}" />
-                            <local:FieldError Text="{x:Bind ViewModel.DeveloperError, Mode=OneWay}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.DeveloperError, Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
 
@@ -481,7 +482,7 @@
                                     AutomationProperties.AutomationId="TaskEditor_ClearStartDateButton"
                                     Command="{x:Bind ViewModel.ClearStartDateCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                                 </Button>
                             </Grid>
                             <TextBlock
@@ -510,7 +511,7 @@
                                     AutomationProperties.AutomationId="TaskEditor_ClearEndDateButton"
                                     Command="{x:Bind ViewModel.ClearEndDateCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                                 </Button>
                             </Grid>
                             <TextBlock
@@ -520,7 +521,7 @@
                                 TextWrapping="Wrap" />
                         </StackPanel>
                     </Grid>
-                    <local:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
                 </StackPanel>
 
                 <!--
@@ -588,7 +589,7 @@
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         AutomationProperties.AccessibilityView="Raw"
-                                        FontSize="12"
+                                        FontSize="{StaticResource CaptionIconSize}"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Glyph="&#xE76F;"
                                         Opacity="0"
@@ -627,14 +628,14 @@
                                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_ChecklistMoveUp_', Id.Value), Mode=OneTime}"
                                             Click="OnItemMoveUpClick"
                                             Style="{StaticResource ChecklistActionButtonStyle}">
-                                            <FontIcon FontSize="12" Glyph="&#xE74A;" />
+                                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE74A;" />
                                         </Button>
                                         <Button
                                             x:Uid="TaskEditor_ChecklistMoveDownButton"
                                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_ChecklistMoveDown_', Id.Value), Mode=OneTime}"
                                             Click="OnItemMoveDownClick"
                                             Style="{StaticResource ChecklistActionButtonStyle}">
-                                            <FontIcon FontSize="12" Glyph="&#xE74B;" />
+                                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE74B;" />
                                         </Button>
                                         <!-- A disabled button shows no tooltip, so the reason sits on a wrapper (design §5.1 group 7). -->
                                         <Border Background="Transparent" ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(PopOutUnavailableReason), Mode=OneWay}">
@@ -645,7 +646,7 @@
                                                 Click="OnItemPopOutClick"
                                                 IsEnabled="{x:Bind CanPopOut, Mode=OneWay}"
                                                 Style="{StaticResource ChecklistActionButtonStyle}">
-                                                <FontIcon FontSize="12" Glyph="&#xE8A7;" />
+                                                <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8A7;" />
                                             </Button>
                                         </Border>
                                         <Button
@@ -653,7 +654,7 @@
                                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('TaskEditor_ChecklistDelete_', Id.Value), Mode=OneTime}"
                                             Click="OnItemDeleteClick"
                                             Style="{StaticResource ChecklistActionButtonStyle}">
-                                            <FontIcon FontSize="12" Glyph="&#xE74D;" />
+                                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE74D;" />
                                         </Button>
                                     </StackPanel>
                                 </Grid>
@@ -686,7 +687,7 @@
                             Style="{StaticResource InlineTextBoxStyle}"
                             Text="{x:Bind ViewModel.NewChecklistText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
-                    <local:FieldError Text="{x:Bind ViewModel.ChecklistError, Mode=OneWay}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.ChecklistError, Mode=OneWay}" />
                 </StackPanel>
 
 
@@ -737,7 +738,7 @@
                             Command="{x:Bind ViewModel.AddSubtaskCardCommand}"
                             IsEnabled="{x:Bind ViewModel.CanAddSubtaskCard, Mode=OneWay}" />
                     </Grid>
-                    <local:FieldError Text="{x:Bind ViewModel.SubtaskCardError, Mode=OneWay}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.SubtaskCardError, Mode=OneWay}" />
                 </StackPanel>
 
                 <!-- Group 9: notes. -->
@@ -751,7 +752,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     Text="{x:Bind ViewModel.Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
-                <local:FieldError Text="{x:Bind ViewModel.NotesError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.NotesError, Mode=OneWay}" />
 
                 <!-- Group 10: custom fields (B-11), one typed editor per active field (design §5.0). -->
                 <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CustomFields.HasFields), Mode=OneTime}">
@@ -781,7 +782,7 @@
                     SelectionChanged="OnCrSelectionChanged"
                     SelectionMode="Single">
                     <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="local:CrChoice">
+                        <DataTemplate x:DataType="pickers:CrChoice">
                             <StackPanel Padding="0,6" AutomationProperties.Name="{x:Bind local:TaskEditorDialog.CrName(Number, Title, Secondary), Mode=OneTime}">
                                 <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneTime}" />
                                 <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Title, Mode=OneTime}" TextWrapping="Wrap" />
@@ -817,7 +818,7 @@
                     IsReadOnly="{x:Bind ViewModel.IsLinkServiceLocked, Mode=OneWay}"
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Service, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <local:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_ConfirmBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
@@ -845,7 +846,7 @@
                 </Grid>
                 <ItemsControl AutomationProperties.AutomationId="Conflict_Rows" ItemsSource="{x:Bind ViewModel.ConflictRows, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="local:ConflictRowViewModel">
+                        <DataTemplate x:DataType="dialogs:ConflictRowViewModel">
                             <Grid Padding="0,6" ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120" />
@@ -859,7 +860,7 @@
                                 <CheckBox
                                     Grid.Column="3"
                                     MinWidth="0"
-                                    AutomationProperties.AutomationId="{x:Bind local:TaskEditorDialog.UseMineId(Key), Mode=OneTime}"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.UseMineId(Key), Mode=OneTime}"
                                     AutomationProperties.Name="{x:Bind Field, Mode=OneTime}"
                                     IsChecked="{x:Bind UseMine, Mode=TwoWay}" />
                             </Grid>

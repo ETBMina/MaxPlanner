@@ -11,8 +11,6 @@ namespace MaxPlanner.Presentation.Board;
 /// </summary>
 internal readonly record struct BoardLayout(double BucketWidth, double SidePadding, double HeaderTop, double HeaderBottom, bool IsSmall)
 {
-    private const double ExpandedWidth = 1008;
-    private const double CompactWidth = 640;
     private const double MinimumSmallBucketWidth = 260;
 
     // The bucket's right margin in BucketTemplate; the S bucket fills the viewport less the side padding and it.
@@ -25,9 +23,9 @@ internal readonly record struct BoardLayout(double BucketWidth, double SidePaddi
         var window = windowWidth ?? width;
         var side = PagePadding.Side(window);
         var top = PagePadding.Top(window);
-        return width >= ExpandedWidth
+        return width >= Breakpoints.Large
             ? new(300, side, top, 12, IsSmall: false)
-            : width >= CompactWidth
+            : width >= Breakpoints.Medium
                 ? new(280, side, top, 12, IsSmall: false)
                 : new(Math.Max(MinimumSmallBucketWidth, width - (2 * side) - BucketSpacing), side, top, 8, IsSmall: true);
     }

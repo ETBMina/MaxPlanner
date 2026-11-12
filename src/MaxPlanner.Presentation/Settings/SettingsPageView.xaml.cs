@@ -80,8 +80,8 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
         CapWrapper.Padding = new Thickness(padding, 0, padding, 32);
         ErrorBar.Margin = new Thickness(padding, 0, padding, 8);
-        CardsPanel.HorizontalAlignment = width >= 1008 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
-        var wrap = width < 640;
+        CardsPanel.HorizontalAlignment = width >= Breakpoints.Large ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        var wrap = width < Breakpoints.Medium;
         foreach (var card in FindDescendants<SettingsCard>(CardsPanel))
         {
             card.IsWrapped = wrap;
@@ -213,15 +213,6 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
         var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        MenuFlyoutItem Item(string key, string id, Action action, bool enabled = true)
-        {
-            var item = new MenuFlyoutItem { Text = strings.GetString(key), IsEnabled = enabled };
-            AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => action();
-            menu.Items.Add(item);
-            return item;
-        }
-
         void Flag(string key, string id, bool value, StatusFlagKind flag)
         {
             var item = new ToggleMenuFlyoutItem { Text = strings.GetString(key), IsChecked = value };
@@ -230,15 +221,15 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             menu.Items.Add(item);
         }
 
-        Item("Settings_MenuRename", "Settings_RowMenuRenameItem", () => BeginRename(button, row));
+        menu.Items.AddItem(strings.GetString("Settings_MenuRename"), "Settings_RowMenuRenameItem", () => BeginRename(button, row));
         if (row.Kind is LookupKind.TaskStatus or LookupKind.CrStatus or LookupKind.Priority or LookupKind.Person && !row.IsDefault)
         {
-            Item(row.Kind == LookupKind.Person ? "Settings_MenuMakeDefaultOwner" : "Settings_MenuSetDefault", "Settings_RowMenuSetDefaultItem", () => ViewModel.SetAsDefaultAsync(row).Forget());
+            menu.Items.AddItem(strings.GetString(row.Kind == LookupKind.Person ? "Settings_MenuMakeDefaultOwner" : "Settings_MenuSetDefault"), "Settings_RowMenuSetDefaultItem", () => ViewModel.SetAsDefaultAsync(row).Forget());
         }
 
         if (row.Kind is LookupKind.TaskStatus or LookupKind.CrStatus)
         {
-            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.AddSeparator();
             Flag("Settings_MenuFlagCompleted", "Settings_RowMenuCompletedItem", row.IsCompleted, StatusFlagKind.Completed);
             if (row.Kind == LookupKind.TaskStatus)
             {
@@ -250,13 +241,13 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
         if (row.Kind is not (LookupKind.Person or LookupKind.Tag))
         {
-            menu.Items.Add(new MenuFlyoutSeparator());
-            Item("Settings_MenuMoveUp", "Settings_RowMenuMoveUpItem", () => ViewModel.MoveAsync(row, -1).Forget(), row.CanMoveUp);
-            Item("Settings_MenuMoveDown", "Settings_RowMenuMoveDownItem", () => ViewModel.MoveAsync(row, 1).Forget(), row.CanMoveDown);
+            menu.Items.AddSeparator();
+            menu.Items.AddItem(strings.GetString("Settings_MenuMoveUp"), "Settings_RowMenuMoveUpItem", () => ViewModel.MoveAsync(row, -1).Forget(), row.CanMoveUp);
+            menu.Items.AddItem(strings.GetString("Settings_MenuMoveDown"), "Settings_RowMenuMoveDownItem", () => ViewModel.MoveAsync(row, 1).Forget(), row.CanMoveDown);
         }
 
-        menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Settings_MenuRemove", "Settings_RowMenuRemoveItem", () => ViewModel.RemoveAsync(row).Forget());
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(strings.GetString("Settings_MenuRemove"), "Settings_RowMenuRemoveItem", () => ViewModel.RemoveAsync(row).Forget());
         menu.ShowAt(button);
     }
 
@@ -304,19 +295,11 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
         var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        void Item(string key, string id, Action action, bool enabled = true)
-        {
-            var item = new MenuFlyoutItem { Text = strings.GetString(key), IsEnabled = enabled };
-            AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => action();
-            menu.Items.Add(item);
-        }
-
-        Item("Settings_MenuEditField", "Settings_FieldMenuEditItem", () => ViewModel.EditFieldAsync(row).Forget());
-        Item("Settings_MenuMoveUp", "Settings_FieldMenuMoveUpItem", () => ViewModel.MoveFieldAsync(row, -1).Forget(), row.CanMoveUp);
-        Item("Settings_MenuMoveDown", "Settings_FieldMenuMoveDownItem", () => ViewModel.MoveFieldAsync(row, 1).Forget(), row.CanMoveDown);
-        menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Settings_MenuRemoveField", "Settings_FieldMenuRemoveItem", () => ViewModel.DeactivateFieldAsync(row).Forget());
+        menu.Items.AddItem(strings.GetString("Settings_MenuEditField"), "Settings_FieldMenuEditItem", () => ViewModel.EditFieldAsync(row).Forget());
+        menu.Items.AddItem(strings.GetString("Settings_MenuMoveUp"), "Settings_FieldMenuMoveUpItem", () => ViewModel.MoveFieldAsync(row, -1).Forget(), row.CanMoveUp);
+        menu.Items.AddItem(strings.GetString("Settings_MenuMoveDown"), "Settings_FieldMenuMoveDownItem", () => ViewModel.MoveFieldAsync(row, 1).Forget(), row.CanMoveDown);
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(strings.GetString("Settings_MenuRemoveField"), "Settings_FieldMenuRemoveItem", () => ViewModel.DeactivateFieldAsync(row).Forget());
         menu.ShowAt(button);
     }
 

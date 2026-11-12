@@ -22,7 +22,7 @@ public sealed class BackupRowViewModel(BackupListItem item, ILocalizedStrings st
 
     public string KindText { get; } = strings.GetString("BackupKind_" + item.Kind.Replace("-", string.Empty, StringComparison.Ordinal));
 
-    public string DateText { get; } = item.CreatedAtUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+    public string DateText { get; } = Common.DateText.ShortDateTime(item.CreatedAtUtc.ToLocalTime());
 
     public string SizeText { get; } = strings.Format("Backups_Size", (item.SizeBytes / 1024.0 / 1024.0).ToString("N1", CultureInfo.CurrentCulture));
 

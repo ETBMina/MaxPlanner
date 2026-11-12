@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using MaxPlanner.Presentation.Common.Dialogs;
-using MaxPlanner.Presentation.Grid;
+using MaxPlanner.Presentation.Common.Options;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;

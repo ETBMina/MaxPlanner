@@ -36,7 +36,7 @@
             Click="OnSearchButtonClick">
             <FontIcon
                 AutomationProperties.AccessibilityView="Raw"
-                FontSize="14"
+                FontSize="{StaticResource BodyIconSize}"
                 Glyph="&#xE721;" />
         </Button>
 
@@ -71,7 +71,7 @@
                 Style="{StaticResource SubtleButtonStyle}">
                 <FontIcon
                     AutomationProperties.AccessibilityView="Raw"
-                    FontSize="12"
+                    FontSize="{StaticResource CaptionIconSize}"
                     Glyph="&#xE894;" />
             </Button>
         </Grid>

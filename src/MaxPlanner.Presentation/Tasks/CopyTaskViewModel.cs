@@ -10,8 +10,9 @@ using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Policies;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Tasks;

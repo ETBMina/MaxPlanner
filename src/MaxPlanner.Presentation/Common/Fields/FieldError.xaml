@@ -4,7 +4,7 @@
     repeats the text, so color never carries the meaning alone (P3). Theme brushes follow theme changes.
 -->
 <UserControl
-    x:Class="MaxPlanner.Presentation.Tasks.FieldError"
+    x:Class="MaxPlanner.Presentation.Common.Fields.FieldError"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     IsTabStop="False"
@@ -14,7 +14,7 @@
             Margin="0,2,0,0"
             VerticalAlignment="Top"
             AutomationProperties.AccessibilityView="Raw"
-            FontSize="12"
+            FontSize="{StaticResource CaptionIconSize}"
             Foreground="{ThemeResource ErrorTextBrush}"
             Glyph="&#xE783;" />
         <!-- Assertive, so an error that appears after Save is announced (design §8.3). -->

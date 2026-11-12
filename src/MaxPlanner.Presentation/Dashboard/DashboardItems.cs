@@ -240,7 +240,7 @@ public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings stri
 
     public string Priority { get; } = row.ChangeRequest.Priority.Name;
 
-    public string PlannedEnd { get; } = row.ChangeRequest.PlannedEnd?.ToString("MMM d, yyyy", CultureInfo.CurrentCulture) ?? string.Empty;
+    public string PlannedEnd { get; } = row.ChangeRequest.PlannedEnd is { } end ? DateText.MonthDayYear(end) : string.Empty;
 
     /// <summary>Design §6.3: a number plus "days", never color alone.</summary>
     public string DaysText { get; } = strings.Format(row.DaysOverdue == 1 ? "Dashboard_DaysOverdueOne" : "Dashboard_DaysOverdue", row.DaysOverdue);

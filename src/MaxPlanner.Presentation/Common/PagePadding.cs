@@ -13,13 +13,13 @@ internal static class PagePadding
     /// the NavigationView's Left, LeftCompact and LeftMinimal), not the page's, so opening or closing the inline Left
     /// pane, which only narrows the page, never moves the header and the content below it vertically.
     /// </summary>
-    public static double Top(double windowWidth) => windowWidth >= 1008 ? 24 : windowWidth >= 640 ? 16 : 12;
+    public static double Top(double windowWidth) => Breakpoints.BySize(windowWidth, 24d, 16d, 12d);
 
     /// <summary>
     /// The left and right padding of a page, header and content alike: L 32, M 24, S 16 epx, by the window's size
     /// class for the same reason as <see cref="Top"/>: the inline pane opening or closing never moves the page's edges.
     /// </summary>
-    public static double Side(double windowWidth) => windowWidth >= 1008 ? 32 : windowWidth >= 640 ? 24 : 16;
+    public static double Side(double windowWidth) => Breakpoints.BySize(windowWidth, 32d, 24d, 16d);
 
     /// <summary>The width of <paramref name="page"/>'s window, or <paramref name="pageWidth"/> before it is in one.</summary>
     public static double WindowWidth(FrameworkElement page, double pageWidth) =>
