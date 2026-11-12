@@ -270,6 +270,7 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             // The command committed; the next save reuses its operation, so the ledger reports that commit (T-05).
+            // Known limitation: the editor and the status bar still say the change is not saved, although it is.
             FailUnexpectedly(ex, operation);
             return false;
         }

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -56,6 +57,8 @@ public sealed partial class BackupsViewModel(WorkspaceContext context, DataServi
     private bool CanAct => !IsBusy;
 
     [RelayCommand]
+    private Task Refresh() => UiTasks.RunGuardedAsync(RefreshAsync);
+
     public async Task RefreshAsync()
     {
         var items = await services.Maintenance.ListBackupsAsync(CancellationToken.None).ConfigureAwait(true);
@@ -68,8 +71,10 @@ public sealed partial class BackupsViewModel(WorkspaceContext context, DataServi
         StatusText = context.Strings.Format("Backups_Count", Rows.Count);
     }
 
-    /// <summary>T-09: a manual backup, never pruned by retention.</summary>
     [RelayCommand(CanExecute = nameof(CanAct))]
+    private Task BackUpNow() => UiTasks.RunGuardedAsync(BackUpNowAsync);
+
+    /// <summary>T-09: a manual backup, never pruned by retention.</summary>
     public async Task BackUpNowAsync()
     {
         IsBusy = true;
@@ -97,6 +102,8 @@ public sealed partial class BackupsViewModel(WorkspaceContext context, DataServi
     private void OpenFolder() => services.Maintenance.OpenBackupsFolder();
 
     [RelayCommand(CanExecute = nameof(CanAct))]
+    private Task Delete(BackupRowViewModel? row) => UiTasks.RunGuardedAsync(() => DeleteAsync(row));
+
     private async Task DeleteAsync(BackupRowViewModel? row)
     {
         if (row is not { IsManual: true })
@@ -268,6 +275,8 @@ public sealed partial class RestoreWizardViewModel : WizardViewModel
     }
 
     [RelayCommand]
+    private Task Browse() => UiTasks.RunGuardedAsync(BrowseAsync);
+
     private async Task BrowseAsync()
     {
         if (await _services.Pickers.PickFolderAsync().ConfigureAwait(true) is { } folder)

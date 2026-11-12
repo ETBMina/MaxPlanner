@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
 
@@ -48,9 +49,9 @@ public sealed partial class ChecklistItemViewModel : ObservableObject
         _strings = strings ?? throw new ArgumentNullException(nameof(strings));
         Text = text;
         IsChecked = isChecked;
-        PopOutCommand = new AsyncRelayCommand(() => _owner.PopOutAsync(this), () => !IsPending && _owner.CanPopOut);
-        MoveUpCommand = new AsyncRelayCommand(() => _owner.MoveAsync(this, up: true), () => !IsPending && _owner.CanMove(this, up: true));
-        MoveDownCommand = new AsyncRelayCommand(() => _owner.MoveAsync(this, up: false), () => !IsPending && _owner.CanMove(this, up: false));
+        PopOutCommand = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(() => _owner.PopOutAsync(this)), () => !IsPending && _owner.CanPopOut);
+        MoveUpCommand = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(() => _owner.MoveAsync(this, up: true)), () => !IsPending && _owner.CanMove(this, up: true));
+        MoveDownCommand = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(() => _owner.MoveAsync(this, up: false)), () => !IsPending && _owner.CanMove(this, up: false));
     }
 
     public Guid Id { get; }

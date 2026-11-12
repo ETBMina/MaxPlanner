@@ -1,4 +1,7 @@
 using AwesomeAssertions;
+using MaxPlanner.Application.Common;
+using MaxPlanner.Application.Reviews;
+using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Tests.Testing;
 using MaxPlanner.Presentation.Workspace;
@@ -119,4 +122,100 @@ public sealed class UiTasksTests
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
             Entries.Add((logLevel, eventId.Id, exception?.Message));
     }
+}
+
+/// <summary>
+/// Commands that existed before A-02 run through the same guard, one test per pattern: a generated command that
+/// disables itself while running, a hand-built row command, and a command whose action comes from elsewhere.
+/// </summary>
+[Collection(nameof(UiTasksConfiguration))]
+public sealed class GuardedExistingCommandTests
+{
+    [Fact]
+    public void A_generated_command_that_throws_is_reported_and_still_disables_itself_while_running()
+    {
+        using var h = WorkspaceHarness.Create();
+        var announced = Configure(h.Workspace.Context);
+        try
+        {
+            var general = h.Workspace.Checklists.General;
+            general.NewItemText = "Call the bank";
+            var hold = h.Coordinator.HoldNext();
+            h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+            var run = general.AddItemCommand.ExecuteAsync(null);
+            general.AddItemCommand.CanExecute(null).Should().BeFalse("a command without concurrent runs still disables its button while it runs");
+            hold.SetResult();
+            h.Await(run);
+
+            announced.Should().ContainSingle().Which.Should().Be(new Announcement("Error_Unexpected", true));
+            general.AddItemCommand.IsRunning.Should().BeFalse();
+        }
+        finally
+        {
+            Reset();
+        }
+    }
+
+    [Fact]
+    public void A_hand_built_row_command_that_throws_is_reported()
+    {
+        using var h = WorkspaceHarness.Create(async s =>
+        {
+            foreach (var title in (string[])["First", "Second"])
+            {
+                (await new CreateReview(s.Coordinator).ExecuteAsync(
+                    new CreateReviewCommand(OperationId.New(), new ReviewItemId(Guid.NewGuid()), new ReviewDraft(title, null, null, [], null, null), null, false), default))
+                    .IsSuccess.Should().BeTrue();
+            }
+        });
+        var announced = Configure(h.Workspace.Context);
+        try
+        {
+            var reviews = h.Workspace.Checklists.Reviews;
+            h.PumpUntil(() => reviews.Open.Count == 2);
+            var second = reviews.Open[1];
+            second.MoveUpCommand.CanExecute(null).Should().BeTrue();
+            h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+            h.Await(second.MoveUpCommand.ExecuteAsync(null));
+
+            announced.Should().Contain(new Announcement("Error_Unexpected", true));
+        }
+        finally
+        {
+            Reset();
+        }
+    }
+
+    [Fact]
+    public void A_command_whose_action_throws_is_reported_in_the_current_workspace()
+    {
+        using var h = WorkspaceHarness.Create();
+        var announced = Configure(h.Workspace.Context);
+        try
+        {
+            var status = h.Workspace.Context.SaveStatus;
+            status.Complete("Moved", "Open card", () => Task.FromException(new InvalidOperationException("defect")));
+
+            h.Await(status.RunResultActionCommand.ExecuteAsync(null));
+
+            announced.Should().ContainSingle().Which.Should().Be(new Announcement("Error_Unexpected", true));
+            status.IsFailureNoticeOpen.Should().BeTrue();
+        }
+        finally
+        {
+            Reset();
+        }
+    }
+
+    private static List<Announcement> Configure(WorkspaceContext context)
+    {
+        var announced = new List<Announcement>();
+        context.Announced += (_, a) => announced.Add(a);
+        UiTasks.Configure(NullLogger.Instance, () => context);
+        return announced;
+    }
+
+    private static void Reset() => UiTasks.Configure(NullLogger.Instance, () => null);
 }

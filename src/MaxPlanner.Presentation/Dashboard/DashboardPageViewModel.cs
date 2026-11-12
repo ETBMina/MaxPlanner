@@ -10,6 +10,7 @@ using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Scheduling;
 using MaxPlanner.Presentation.Common.Services;
@@ -207,9 +208,13 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     }
 
     [RelayCommand]
+    private Task NewChangeRequest() => UiTasks.RunGuardedAsync(NewChangeRequestAsync);
+
     private Task NewChangeRequestAsync() => _context.ChangeRequests.NewAsync();
 
     [RelayCommand]
+    private Task NewTask() => UiTasks.RunGuardedAsync(NewTaskAsync);
+
     private Task NewTaskAsync() => _context.Tasks.NewAsync();
 
     [RelayCommand]

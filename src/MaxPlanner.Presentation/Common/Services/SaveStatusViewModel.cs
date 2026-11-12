@@ -204,6 +204,8 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     private void ShowDetails() => IsFailureNoticeOpen = FailureMessage is not null;
 
     [RelayCommand]
+    private Task RunResultAction() => UiTasks.RunGuardedAsync(RunResultActionAsync);
+
     private async Task RunResultActionAsync()
     {
         var action = _resultAction;

@@ -11,6 +11,7 @@ using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Settings.DataPage;
@@ -225,8 +226,10 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
     private bool CanBackUpNow => HasDataServices && !IsBackingUp;
 
-    /// <summary>T-09 Back up now: a manual backup, never pruned.</summary>
     [RelayCommand(CanExecute = nameof(CanBackUpNow))]
+    private Task BackUpNow() => UiTasks.RunGuardedAsync(BackUpNowAsync);
+
+    /// <summary>T-09 Back up now: a manual backup, never pruned.</summary>
     private async Task BackUpNowAsync()
     {
         if (_services.Data is not { } data)

@@ -367,7 +367,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     }
 
     [RelayCommand]
-    private Task NewTask() => NewTaskAsync();
+    private Task NewTask() => UiTasks.RunGuardedAsync(() => NewTaskAsync());
 
     [RelayCommand(CanExecute = nameof(CanGoPrevious))]
     private void PreviousBucket() => SelectedBucket = _buckets[_buckets.IndexOf(SelectedBucket!) - 1];
