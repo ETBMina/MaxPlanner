@@ -226,7 +226,7 @@ public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings stri
     public Guid Id { get; } = row.ChangeRequest.Id.Value;
 
     /// <summary>Opens the CR editor; concurrent runs are allowed, so the row never disables itself.</summary>
-    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(open, AsyncRelayCommandOptions.AllowConcurrentExecutions);
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(open), AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
     public string Number { get; } = row.ChangeRequest.Number;
 
@@ -260,7 +260,7 @@ public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings s
     public Guid Id { get; } = task.Id.Value;
 
     /// <summary>Opens the task editor; concurrent runs are allowed, so the row never disables itself.</summary>
-    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(open, AsyncRelayCommandOptions.AllowConcurrentExecutions);
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(open), AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
     public string Title { get; } = task.EffectiveTitle;
 

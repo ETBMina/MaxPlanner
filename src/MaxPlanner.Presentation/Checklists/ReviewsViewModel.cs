@@ -7,6 +7,7 @@ using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Reviews;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Reviews;
@@ -71,9 +72,11 @@ public sealed partial class ReviewRowViewModel : ObservableObject
 
     public Task ToggleAsync(bool isDone) => _owner.ToggleAsync(this, isDone);
 
+    public Task EditAsync() => _owner.EditAsync(this);
+
     /// <summary>View/Edit (the row's menu item, Enter, or a tap on its text); concurrent runs are allowed, as before.</summary>
     [RelayCommand(AllowConcurrentExecutions = true)]
-    public Task EditAsync() => _owner.EditAsync(this);
+    private Task Edit() => UiTasks.RunGuardedAsync(EditAsync);
 
     public Task DeleteAsync() => _owner.DeleteAsync(this);
 

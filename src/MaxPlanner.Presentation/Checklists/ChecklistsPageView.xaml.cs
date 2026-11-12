@@ -171,30 +171,30 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
 
     private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor)
+        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor || e.Key is not (VirtualKey.Enter or VirtualKey.Escape))
         {
             return;
         }
 
-        if (e.Key == VirtualKey.Enter)
-        {
-            e.Handled = true;
-            CommitRenameAsync(editor, item).Forget();
-        }
-        else if (e.Key == VirtualKey.Escape)
-        {
-            e.Handled = true;
-            item.CancelRename();
-            FocusRowCheckBox(editor);
-        }
+        e.Handled = true;
+        RenameKeyAsync(editor, item, commit: e.Key == VirtualKey.Enter).Forget();
     }
 
-    private async Task CommitRenameAsync(TextBox editor, ChecklistItemViewModel item)
+    // Escape runs before the first await, so it completes within the key event as before.
+    private async Task RenameKeyAsync(TextBox editor, ChecklistItemViewModel item, bool commit)
     {
         try
         {
-            if (await item.CommitRenameAsync().ConfigureAwait(true))
+            if (commit)
             {
+                if (await item.CommitRenameAsync().ConfigureAwait(true))
+                {
+                    FocusRowCheckBox(editor);
+                }
+            }
+            else
+            {
+                item.CancelRename();
                 FocusRowCheckBox(editor);
             }
         }

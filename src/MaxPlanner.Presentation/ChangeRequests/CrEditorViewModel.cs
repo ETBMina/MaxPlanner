@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
@@ -11,6 +12,7 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Services;
@@ -478,13 +480,13 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     // The async actions as commands for the dialog's buttons. Concurrent runs are allowed, so a running command never
     // disables its button; each method keeps its own guards.
     [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task OpenUrl() => await OpenUrlAsync().ConfigureAwait(true);
+    private Task OpenUrl() => UiTasks.RunGuardedAsync(OpenUrlAsync);
 
     [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task SaveAndCreateTask() => await SaveAndCreateTaskAsync().ConfigureAwait(true);
+    private Task SaveAndCreateTask() => UiTasks.RunGuardedAsync(SaveAndCreateTaskAsync);
 
     [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task ConfirmDelete() => await ConfirmDeleteAsync().ConfigureAwait(true);
+    private Task ConfirmDelete() => UiTasks.RunGuardedAsync(ConfirmDeleteAsync);
 
     /// <summary>
     /// "Delete CR and n tasks": sends the exact task set the step showed. When the linked tasks changed, the
@@ -511,8 +513,19 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         // The confirmation is about what is deleted, so the CR's current revision is sent: a content edit
         // elsewhere does not change what the user agreed to, while a scope change does and is refused.
-        var result = await Context.UseCases.DeleteChangeRequest.ExecuteAsync(
-            new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None).ConfigureAwait(true);
+        AppResult<CommandOutcome<CascadeDeletionSummary>> result;
+        try
+        {
+            result = await Context.UseCases.DeleteChangeRequest.ExecuteAsync(
+                new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Context.SaveStatus.Reject();
+            FailDeleteUnexpectedly(ex);
+            return false;
+        }
+
         if (!result.IsSuccess)
         {
             var failure = CommandFailure.From(result.Error!, operation, "Record_ChangeRequest", Context.Strings);
@@ -535,11 +548,29 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         }
 
         Context.SaveStatus.Complete();
-        await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
+        try
+        {
+            await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            FailDeleteUnexpectedly(ex);
+            return false;
+        }
+
         IsSaving = false;
         Context.Announce(Context.Strings.Format("CrEditor_Deleted", cr.Number, result.Value.Value.TaskCount));
         Approve();
         return true;
+    }
+
+    // The delete threw: the step stays with the unexpected-error text, and the failure is logged and shown once.
+    private void FailDeleteUnexpectedly(Exception exception)
+    {
+        IsSaving = false;
+        DeleteError = Context.Strings.GetString("Error_Unexpected");
+        RaiseDeleteState();
+        UiTasks.Report(exception, Context);
     }
 
     /// <summary>Back (Alt+Left) from an inline step.</summary>

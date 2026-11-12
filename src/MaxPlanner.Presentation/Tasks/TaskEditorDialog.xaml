@@ -823,7 +823,7 @@
                     <Button
                         x:Uid="LinkCr_LinkButton"
                         AutomationProperties.AutomationId="LinkCr_LinkButton"
-                        Command="{x:Bind ViewModel.ConfirmLinkCommand}"
+                        Command="{x:Bind ViewModel.UseSelectedCrCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>

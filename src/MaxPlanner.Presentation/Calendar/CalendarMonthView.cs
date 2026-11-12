@@ -1,6 +1,7 @@
 using System.Globalization;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Calendar;
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -365,7 +366,7 @@ public sealed partial class CalendarMonthView : UserControl
         AutomationProperties.SetName(body, name);
         AutomationProperties.SetHelpText(body, viewModel.Text("Calendar_BarHelp"));
         ToolTipService.SetToolTip(body, name);
-        body.Click += (_, _) => _ = viewModel.OpenAsync(cr.Id.Value);
+        body.Click += (_, _) => viewModel.OpenAsync(cr.Id.Value).Forget();
         body.KeyDown += (_, e) => OnBarKeyDown(viewModel, body, cr, e);
         body.ContextFlyout = BarMenu(viewModel, body, cr);
         var key = BarKey(bar);
@@ -575,7 +576,7 @@ public sealed partial class CalendarMonthView : UserControl
             }
 
             // A refused or failed resize renders the committed dates again (CalendarPageViewModel.ResizeAsync).
-            _ = viewModel.ResizeAsync(cr.Id.Value, isStart ? changed.Start : null, isStart ? null : changed.End);
+            viewModel.ResizeAsync(cr.Id.Value, isStart ? changed.Start : null, isStart ? null : changed.End).Forget();
         };
         return handle;
     }
@@ -679,12 +680,12 @@ public sealed partial class CalendarMonthView : UserControl
     private static MenuFlyout BarMenu(CalendarPageViewModel viewModel, Button bar, ChangeRequestReadModel cr)
     {
         var menu = new MenuFlyout();
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuOpen", "Calendar_BarMenuOpen_", cr, () => _ = viewModel.OpenAsync(cr.Id.Value)));
+        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuOpen", "Calendar_BarMenuOpen_", cr, () => viewModel.OpenAsync(cr.Id.Value).Forget()));
         menu.Items.Add(MenuItem(viewModel, "Calendar_MenuEditDates", "Calendar_BarMenuEditDates_", cr, () => ShowEditDatesFlyout(viewModel, bar, cr)));
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuOpenLinkedTasks", "Calendar_BarMenuLinkedTasks_", cr, () => _ = viewModel.OpenLinkedTasksAsync(cr.Id.Value)));
+        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuOpenLinkedTasks", "Calendar_BarMenuLinkedTasks_", cr, () => viewModel.OpenLinkedTasksAsync(cr.Id.Value).Forget()));
         menu.Items.Add(MenuItem(viewModel, "Calendar_MenuMoveToBacklog", "Calendar_BarMenuBacklog_", cr, () => ShowMoveToBacklogFlyout(viewModel, bar, cr)));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuDelete", "Calendar_BarMenuDelete_", cr, () => _ = viewModel.DeleteAsync(cr.Id.Value)));
+        menu.Items.Add(MenuItem(viewModel, "Calendar_MenuDelete", "Calendar_BarMenuDelete_", cr, () => viewModel.DeleteAsync(cr.Id.Value).Forget()));
         return menu;
     }
 
@@ -726,7 +727,7 @@ public sealed partial class CalendarMonthView : UserControl
             row.Click += (_, _) =>
             {
                 flyout.Hide();
-                _ = viewModel.OpenAsync(cr.Id.Value);
+                viewModel.OpenAsync(cr.Id.Value).Forget();
             };
             panel.Children.Add(row);
         }
@@ -738,7 +739,7 @@ public sealed partial class CalendarMonthView : UserControl
             create.Click += (_, _) =>
             {
                 flyout.Hide();
-                _ = viewModel.NewChangeRequestOnAsync(day);
+                viewModel.NewChangeRequestOnAsync(day).Forget();
             };
             panel.Children.Add(create);
         }
@@ -798,7 +799,7 @@ public sealed partial class CalendarMonthView : UserControl
         move.Click += (_, _) =>
         {
             flyout.Hide();
-            _ = viewModel.MoveToBacklogAsync(cr.Id.Value);
+            viewModel.MoveToBacklogAsync(cr.Id.Value).Forget();
         };
         cancel.Click += (_, _) => flyout.Hide();
         flyout.Content = new StackPanel
@@ -883,7 +884,7 @@ public sealed partial class CalendarMonthView : UserControl
         else if (e.Key == VirtualKey.Delete)
         {
             e.Handled = true;
-            _ = viewModel.DeleteAsync(cr.Id.Value);
+            viewModel.DeleteAsync(cr.Id.Value).Forget();
         }
     }
 
@@ -918,7 +919,7 @@ public sealed partial class CalendarMonthView : UserControl
             if (newStart is not null || newEnd is not null)
             {
                 // An inverted range is refused by the use case; the bar keeps its committed dates (B-08.8).
-                _ = viewModel.ResizeAsync(id, newStart, newEnd);
+                viewModel.ResizeAsync(id, newStart, newEnd).Forget();
             }
         }
     }
@@ -946,7 +947,7 @@ public sealed partial class CalendarMonthView : UserControl
         cell.Style = StyleOf("CalendarDayCellButtonStyle");
         if (e.DataView.Properties.TryGetValue(DragCrIdProperty, out var value) && value is string text && Guid.TryParse(text, out var id))
         {
-            _ = viewModel.ScheduleFromDropAsync(id, day.Date);
+            viewModel.ScheduleFromDropAsync(id, day.Date).Forget();
         }
     }
 }

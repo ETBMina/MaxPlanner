@@ -88,4 +88,38 @@ public sealed class BoundCommandTests
 
         opened.Should().Equal("task", "cr");
     }
+
+    [Fact]
+    public void The_field_dialog_save_command_saves_and_closes()
+    {
+        using var h = WorkspaceHarness.Create();
+        var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
+        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
+        var closed = false;
+        vm.CloseRequested += (_, _) => closed = true;
+        vm.Label = "Cost centre";
+
+        h.Await(vm.SaveCommand.ExecuteAsync(null));
+
+        closed.Should().BeTrue();
+        vm.IsSaving.Should().BeFalse();
+    }
+
+    [Fact]
+    public void The_field_dialog_save_that_throws_ends_saving_and_keeps_the_dialog_open()
+    {
+        using var h = WorkspaceHarness.Create();
+        var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
+        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
+        var closed = false;
+        vm.CloseRequested += (_, _) => closed = true;
+        vm.Label = "Cost centre";
+
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+        h.Await(vm.SaveCommand.ExecuteAsync(null));
+
+        (vm.IsSaving, closed).Should().Be((false, false));
+        vm.SaveError.Should().Be(h.Strings.GetString("Error_Unexpected"));
+        h.Workspace.Context.SaveStatus.IsSaving.Should().BeFalse();
+    }
 }

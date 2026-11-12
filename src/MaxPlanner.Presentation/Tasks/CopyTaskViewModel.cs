@@ -1,12 +1,14 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Policies;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Grid;
@@ -34,7 +36,6 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
     private readonly StatusOption? _sourceStatus;
     private readonly StatusOption? _defaultStatus;
     private OperationId? _retryOperation;
-    private RelayCommand? _confirmLinkCommand;
 
     public CopyTaskViewModel(WorkspaceContext context, TaskReadModel source)
     {
@@ -172,12 +173,13 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
 
     public bool CanPrimary => !IsSaving && CurrentStep is CopyStep.Options or CopyStep.Review;
 
-    /// <summary>Use this CR (the link step's button); <see cref="ConfirmLink"/> keeps its result for callers that need it.</summary>
-    public IRelayCommand ConfirmLinkCommand => _confirmLinkCommand ??= new RelayCommand(() => ConfirmLink());
+    /// <summary>The link step's Link button; <see cref="ConfirmLink"/> keeps its result for callers that need it.</summary>
+    [RelayCommand]
+    private void UseSelectedCr() => ConfirmLink();
 
     /// <summary>The primary button and its accelerator; concurrent runs are allowed, so the command never disables anything.</summary>
     [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task Primary() => await PrimaryAsync().ConfigureAwait(true);
+    private Task Primary() => UiTasks.RunGuardedAsync(PrimaryAsync);
 
     /// <summary>The dialog's primary button: Options → Review → Create copy.</summary>
     public async Task<bool> PrimaryAsync()
@@ -319,10 +321,25 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         };
         var link = PendingLink is { } cr ? new CrLinkTarget(cr.Id, cr.Revision) : null;
         _context.SaveStatus.Begin();
-        var result = await _context.UseCases.CopyTask.ExecuteAsync(
-            new CopyTaskCommand(operation, _source.Id, _newId, PendingLink is null ? Title : null, Service, options,
-                KeepCurrentStatus ? null : SelectedStatus?.Id, SelectedPriority?.Id, link),
-            CancellationToken.None).ConfigureAwait(true);
+        AppResult<CommandOutcome<TaskId>> result;
+        try
+        {
+            result = await _context.UseCases.CopyTask.ExecuteAsync(
+                new CopyTaskCommand(operation, _source.Id, _newId, PendingLink is null ? Title : null, Service, options,
+                    KeepCurrentStatus ? null : SelectedStatus?.Id, SelectedPriority?.Id, link),
+                CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The outcome is unknown, so a retry reuses the operation (T-05); the dialog stays with the unexpected-error text.
+            _context.SaveStatus.Reject();
+            _retryOperation = operation;
+            IsSaving = false;
+            Error = _context.Strings.GetString("Error_Unexpected");
+            UiTasks.Report(ex, _context);
+            return false;
+        }
+
         IsSaving = false;
         if (!result.IsSuccess)
         {

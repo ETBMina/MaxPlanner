@@ -3,6 +3,7 @@ using MaxPlanner.Application.Startup;
 using MaxPlanner.Desktop.Composition;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Desktop.Windowing;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Shell;
@@ -50,7 +51,11 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         _services = AppComposition.Build(_context, DispatcherQueue.GetForCurrentThread(), BeginClose);
         var preferences = _context.LoadedPreferences.Preferences;
-        var window = new MainWindow(_services.GetRequiredService<ShellViewModel>());
+        var shell = _services.GetRequiredService<ShellViewModel>();
+
+        // A UI action that fails unexpectedly is logged and shown in the open workspace; the app keeps running.
+        UiTasks.Configure(_context.LoggerFactory.CreateLogger(typeof(UiTasks).FullName!), () => shell.Workspace?.Context);
+        var window = new MainWindow(shell);
         _window = window;
         var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(window);
         _services.GetRequiredService<Maintenance.WindowFilePickers>().Attach(window.AppWindow.Id);

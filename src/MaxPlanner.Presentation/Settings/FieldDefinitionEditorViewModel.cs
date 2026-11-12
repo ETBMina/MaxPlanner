@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
@@ -8,6 +9,7 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -197,7 +199,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 
     /// <summary>The primary button; concurrent runs are allowed, so the command never disables anything.</summary>
     [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task Save() => await SaveAsync().ConfigureAwait(true);
+    private Task Save() => UiTasks.RunGuardedAsync(SaveAsync);
 
     public async Task<bool> SaveAsync()
     {
@@ -223,9 +225,20 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
         var operation = _retryOperation ?? OperationId.New();
         IsSaving = true;
         _context.SaveStatus.Begin();
-        var result = _existing is null
-            ? await _useCases.AddFieldDefinition.ExecuteAsync(new AddFieldDefinitionCommand(operation, _id, Target, Key, Kind, draft), CancellationToken.None).ConfigureAwait(true)
-            : await _useCases.UpdateFieldDefinition.ExecuteAsync(new UpdateFieldDefinitionCommand(operation, _id, _stamp, draft), CancellationToken.None).ConfigureAwait(true);
+        AppResult<CommandOutcome<long>> result;
+        try
+        {
+            result = _existing is null
+                ? await _useCases.AddFieldDefinition.ExecuteAsync(new AddFieldDefinitionCommand(operation, _id, Target, Key, Kind, draft), CancellationToken.None).ConfigureAwait(true)
+                : await _useCases.UpdateFieldDefinition.ExecuteAsync(new UpdateFieldDefinitionCommand(operation, _id, _stamp, draft), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            _context.SaveStatus.Reject();
+            FailUnexpectedly(ex, operation);
+            return false;
+        }
+
         if (!result.IsSuccess)
         {
             var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);
@@ -239,11 +252,30 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 
         _context.SaveStatus.Complete();
         _retryOperation = null;
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
+        try
+        {
+            await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            FailUnexpectedly(ex, operation);
+            return false;
+        }
+
         IsSaving = false;
         _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
         CloseRequested?.Invoke(this, EventArgs.Empty);
         return true;
+    }
+
+    // The save threw: the outcome is unknown, so a retry reuses the operation (T-05). The dialog stays with the
+    // unexpected-error text, and the failure is logged and shown once.
+    private void FailUnexpectedly(Exception exception, OperationId operation)
+    {
+        _retryOperation = operation;
+        IsSaving = false;
+        SaveError = _context.Strings.GetString("Error_Unexpected");
+        UiTasks.Report(exception, _context);
     }
 
     partial void OnLabelChanged(string value)
