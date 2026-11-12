@@ -549,11 +549,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         {
             case VirtualKey.Enter when !popupOpen:
                 e.Handled = true;
-                _ = CommitAsync(cell, row, move: 0, restoreFocus: true);
+                CommitAsync(cell, row, move: 0, restoreFocus: true).Forget();
                 break;
             case VirtualKey.Tab:
                 e.Handled = true;
-                _ = CommitAsync(cell, row, move: IsDown(VirtualKey.Shift) ? -1 : 1, restoreFocus: true);
+                CommitAsync(cell, row, move: IsDown(VirtualKey.Shift) ? -1 : 1, restoreFocus: true).Forget();
                 break;
             case VirtualKey.Escape when !popupOpen:
                 e.Handled = true;
@@ -623,11 +623,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             // Design §7.1: Delete… (always confirmed) and Ctrl+D Copy… for the focused record.
             case VirtualKey.Delete:
                 e.Handled = true;
-                _ = ViewModel.DeleteRowAsync(row);
+                ViewModel.DeleteRowAsync(row).Forget();
                 break;
             case VirtualKey.D when IsDown(VirtualKey.Control) && row.Model.Task is not null:
                 e.Handled = true;
-                _ = ViewModel.CopyRowAsync(row);
+                ViewModel.CopyRowAsync(row).Forget();
                 break;
             default:
                 break;
@@ -657,7 +657,9 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         }
     }
 
-    async void IGridCellHost.OnCellTapped(GridCell cell)
+    void IGridCellHost.OnCellTapped(GridCell cell) => TapCellAsync(cell).Forget();
+
+    private async Task TapCellAsync(GridCell cell)
     {
         // Same path as double-tap and F2 (BeginEdit via BeginEditAndFocus), so no second business-rule route exists.
         // Text cells keep focus-then-double-click; read-only cells and a blocked store do nothing, not even an error.
@@ -730,7 +732,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         }
 
         row.SetDraftFromText(value, ViewModel.StatusOptions, ViewModel.PriorityOptions);
-        _ = CommitAsync(cell, row, move: 0, restoreFocus: true);
+        CommitAsync(cell, row, move: 0, restoreFocus: true).Forget();
     }
 
     void IGridCellHost.OnEditorLostFocus(Control editor)
@@ -759,7 +761,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             return;
         }
 
-        _ = CommitAsync(cell, row, move: 0, restoreFocus: false);
+        CommitAsync(cell, row, move: 0, restoreFocus: false).Forget();
     }
 
     void IGridCellHost.OnRowMenuRequested(GridRowViewModel row, FrameworkElement anchor) => RowMenu(row).ShowAt(anchor);
@@ -911,7 +913,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         _editorFlyoutTarget = (row, column);
         _flyoutCloseApproved = false;
         var tapOpenedAt = openedByTap ? Environment.TickCount64 : long.MinValue;
-        save.Click += (_, _) => _ = CommitFlyoutAsync(flyout, cell, row);
+        save.Click += (_, _) => CommitFlyoutAsync(flyout, cell, row).Forget();
         cancel.Click += (_, _) => CancelFlyout(flyout, row);
 
         // Design §7.4: Ctrl+Enter saves (plain Enter inserts a line break in Notes); Esc cancels.
@@ -920,7 +922,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             if (e.Key == VirtualKey.Enter && IsDown(VirtualKey.Control))
             {
                 e.Handled = true;
-                _ = CommitFlyoutAsync(flyout, cell, row);
+                CommitFlyoutAsync(flyout, cell, row).Forget();
             }
             else if (e.Key == VirtualKey.Escape)
             {
@@ -942,7 +944,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             // The second click of the double-click that opened this flyout lands on the light-dismiss layer; keep it open.
             if (!row.IsSaving && !IsWithinDoubleClickWindow(tapOpenedAt))
             {
-                _ = CommitFlyoutAsync(flyout, cell, row);
+                CommitFlyoutAsync(flyout, cell, row).Forget();
             }
         };
         flyout.Closed += (_, _) =>
@@ -1000,7 +1002,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         if (PopupRow is { EditingColumn: { } column } row)
         {
-            _ = UseMineAsync(row, column);
+            UseMineAsync(row, column).Forget();
         }
     }
 
@@ -1340,15 +1342,15 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             menu.Items.Add(item);
         }
 
-        Item("Board_MenuOpen", "Grid_RowMenuOpenItem", () => _ = ViewModel.OpenRowAsync(row));
+        Item("Board_MenuOpen", "Grid_RowMenuOpenItem", () => ViewModel.OpenRowAsync(row).Forget());
         if (row.Model.Cr.ChangeRequestId is not null)
         {
-            Item("Board_MenuOpenCr", "Grid_RowMenuOpenCrItem", () => _ = ViewModel.OpenCrAsync(row));
+            Item("Board_MenuOpenCr", "Grid_RowMenuOpenCrItem", () => ViewModel.OpenCrAsync(row).Forget());
         }
 
         if (row.Model.Task is not null)
         {
-            Item("Board_MenuCopy", "Grid_RowMenuCopyItem", () => _ = ViewModel.CopyRowAsync(row));
+            Item("Board_MenuCopy", "Grid_RowMenuCopyItem", () => ViewModel.CopyRowAsync(row).Forget());
         }
 
         Item("Board_MenuCopyId", "Grid_RowMenuCopyIdItem", () => ClipboardText.Set(ViewModel.CopyIdText(row)));
@@ -1358,22 +1360,22 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             // B-03.6/B-05: Link to CR… is offered for every unlinked task, archived ones included.
             if (task.Cr.ChangeRequestId is null)
             {
-                Item("Grid_MenuLinkToCr", "Grid_RowMenuLinkToCrItem", () => _ = ViewModel.LinkRowAsync(row));
+                Item("Grid_MenuLinkToCr", "Grid_RowMenuLinkToCrItem", () => ViewModel.LinkRowAsync(row).Forget());
             }
 
             if (task.IsArchived)
             {
-                Item("Grid_MenuRestore", "Grid_RowMenuRestoreItem", () => _ = ViewModel.RestoreRowAsync(row));
+                Item("Grid_MenuRestore", "Grid_RowMenuRestoreItem", () => ViewModel.RestoreRowAsync(row).Forget());
             }
             else
             {
-                Item("Board_MenuAddSubtaskCard", "Grid_RowMenuAddSubtaskCardItem", () => _ = ViewModel.AddSubtaskCardAsync(row));
-                Item("Board_MenuArchive", "Grid_RowMenuArchiveItem", () => _ = ViewModel.ArchiveRowAsync(row));
+                Item("Board_MenuAddSubtaskCard", "Grid_RowMenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(row).Forget());
+                Item("Board_MenuArchive", "Grid_RowMenuArchiveItem", () => ViewModel.ArchiveRowAsync(row).Forget());
             }
         }
 
         menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Board_MenuDelete", "Grid_RowMenuDeleteItem", () => _ = ViewModel.DeleteRowAsync(row));
+        Item("Board_MenuDelete", "Grid_RowMenuDeleteItem", () => ViewModel.DeleteRowAsync(row).Forget());
         return menu;
     }
 }
