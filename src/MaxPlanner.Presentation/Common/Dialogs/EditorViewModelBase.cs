@@ -1,5 +1,6 @@
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Presentation.Common.Services;
@@ -128,6 +129,14 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
     }
 
     /// <summary>
+    /// Ctrl+Enter and the primary button. A save that throws is handled by the save itself (the editor stays open with
+    /// the unexpected-error text); anything else unexpected ends in <see cref="UiTasks.RunGuardedAsync"/>. Concurrent
+    /// runs are allowed: the command never disables anything, and <see cref="SaveAsync"/> ignores a repeat while saving.
+    /// </summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Save() => UiTasks.RunGuardedAsync(SaveAsync);
+
+    /// <summary>
     /// Esc, Cancel, an outside click or a follow-up. A draft with changes cancels the close and asks for the Save /
     /// Discard / Continue editing confirmation (design §5.8).
     /// </summary>
@@ -226,7 +235,19 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
         IsDirtyClosePromptOpen = false;
         RaiseState();
         Context.SaveStatus.Begin();
-        var (error, sequence) = await ExecuteSaveAsync(operation).ConfigureAwait(true);
+        AppError? error;
+        long sequence;
+        try
+        {
+            (error, sequence) = await ExecuteSaveAsync(operation).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Context.SaveStatus.Reject();
+            FailUnexpectedly(ex, operation);
+            return false;
+        }
+
         if (error is not null)
         {
             var failure = CommandFailure.From(error, operation, _recordKey, Context.Strings);
@@ -242,10 +263,35 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
 
         Context.SaveStatus.Complete();
         _retryOperation = null;
-        await WhenDisplayedAsync(sequence).ConfigureAwait(true);
+        try
+        {
+            await WhenDisplayedAsync(sequence).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The command committed; the next save reuses its operation, so the ledger reports that commit (T-05).
+            // Known limitation: the editor and the status bar still say the change is not saved, although it is.
+            FailUnexpectedly(ex, operation);
+            return false;
+        }
+
         IsSaving = false;
         OnSaved();
         return true;
+    }
+
+    /// <summary>
+    /// The save threw instead of returning a result: the outcome is unknown, so a retry reuses the same operation
+    /// (T-05). Saving ends, the draft and the dialog stay, and the editor shows the unexpected-error text; the failure is
+    /// logged and announced once, through <see cref="UiTasks.Report"/>.
+    /// </summary>
+    private void FailUnexpectedly(Exception exception, OperationId operation)
+    {
+        _retryOperation = operation;
+        IsSaving = false;
+        SaveError = Context.Strings.GetString("Error_Unexpected");
+        RaiseState();
+        UiTasks.Report(exception, Context);
     }
 
     /// <summary>Sends the draft as one command under <paramref name="operation"/>.</summary>

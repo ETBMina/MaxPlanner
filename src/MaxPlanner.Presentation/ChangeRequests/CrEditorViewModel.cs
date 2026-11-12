@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
@@ -10,6 +12,7 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Services;
@@ -384,6 +387,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     /// "+ Create task" (B-03.5, T-13): a saved, clean CR closes the editor and the task editor opens with the
     /// link; a new or dirty CR first shows the inline "Save and create" step.
     /// </summary>
+    [RelayCommand]
     public void BeginCreateTask()
     {
         if (!CanCreateTask)
@@ -428,6 +432,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>"Open CR-1042" beside a duplicate-number error (B-03.2).</summary>
+    [RelayCommand]
     public void OpenDuplicate()
     {
         if (DuplicateId is not null)
@@ -447,6 +452,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     /// More › Move to backlog (B-08.11): the editor closes (after the dirty prompt, so a draft is never saved
     /// implicitly) and the explicit command clears the dates and sets the backlog status.
     /// </summary>
+    [RelayCommand]
     public void RequestMoveToBacklog()
     {
         if (CanMoveToBacklog)
@@ -456,6 +462,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>More › Delete… (design §5.7): the cascade step with the counts of what goes with the CR.</summary>
+    [RelayCommand]
     public void BeginDelete()
     {
         if (!CanDelete)
@@ -469,6 +476,17 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         CurrentStep = CrEditorStep.DeleteConfirm;
         RaiseState();
     }
+
+    // The async actions as commands for the dialog's buttons. Concurrent runs are allowed, so a running command never
+    // disables its button; each method keeps its own guards.
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task OpenUrl() => UiTasks.RunGuardedAsync(OpenUrlAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task SaveAndCreateTask() => UiTasks.RunGuardedAsync(SaveAndCreateTaskAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task ConfirmDelete() => UiTasks.RunGuardedAsync(ConfirmDeleteAsync);
 
     /// <summary>
     /// "Delete CR and n tasks": sends the exact task set the step showed. When the linked tasks changed, the
@@ -495,8 +513,19 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         // The confirmation is about what is deleted, so the CR's current revision is sent: a content edit
         // elsewhere does not change what the user agreed to, while a scope change does and is refused.
-        var result = await Context.UseCases.DeleteChangeRequest.ExecuteAsync(
-            new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None).ConfigureAwait(true);
+        AppResult<CommandOutcome<CascadeDeletionSummary>> result;
+        try
+        {
+            result = await Context.UseCases.DeleteChangeRequest.ExecuteAsync(
+                new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Context.SaveStatus.Reject();
+            FailDeleteUnexpectedly(ex);
+            return false;
+        }
+
         if (!result.IsSuccess)
         {
             var failure = CommandFailure.From(result.Error!, operation, "Record_ChangeRequest", Context.Strings);
@@ -519,14 +548,33 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         }
 
         Context.SaveStatus.Complete();
-        await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
+        try
+        {
+            await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            FailDeleteUnexpectedly(ex);
+            return false;
+        }
+
         IsSaving = false;
         Context.Announce(Context.Strings.Format("CrEditor_Deleted", cr.Number, result.Value.Value.TaskCount));
         Approve();
         return true;
     }
 
+    // The delete threw: the step stays with the unexpected-error text, and the failure is logged and shown once.
+    private void FailDeleteUnexpectedly(Exception exception)
+    {
+        IsSaving = false;
+        DeleteError = Context.Strings.GetString("Error_Unexpected");
+        RaiseDeleteState();
+        UiTasks.Report(exception, Context);
+    }
+
     /// <summary>Back (Alt+Left) from an inline step.</summary>
+    [RelayCommand]
     public void StepBack()
     {
         CurrentStep = CrEditorStep.Form;
@@ -536,11 +584,14 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         RaiseDeleteState();
     }
 
+    [RelayCommand]
     public void ClearPlannedStart() => PlannedStart = null;
 
+    [RelayCommand]
     public void ClearPlannedEnd() => PlannedEnd = null;
 
     /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
+    [RelayCommand]
     public void ReviewConflict()
     {
         if (!IsConflict || Latest is not { } latest)
@@ -564,6 +615,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     }
 
     /// <summary>Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on.</summary>
+    [RelayCommand]
     public void ApplyConflictReview()
     {
         if (Latest is not { } latest)
@@ -595,12 +647,14 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         RaiseState();
     }
 
+    [RelayCommand]
     public void BeginReload()
     {
         CurrentStep = CrEditorStep.ReloadConfirm;
         RaiseState();
     }
 
+    [RelayCommand]
     public void ConfirmReload()
     {
         if (Latest is { } latest)

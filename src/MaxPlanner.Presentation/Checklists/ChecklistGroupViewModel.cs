@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -228,12 +229,14 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
 
     /// <summary>"Open task" (B-09, design §4.5): the task editor for this group's task.</summary>
     [RelayCommand]
-    private Task OpenTask() => _context.Tasks.OpenAsync(Model.Id);
+    private Task OpenTask() => UiTasks.RunGuardedAsync(() => _context.Tasks.OpenAsync(Model.Id));
 
     private bool CanAddItem() => !IsAdding;
 
-    /// <summary>Enter in the Add box, or its Add button: blank text is refused with an inline error (B-02.7).</summary>
     [RelayCommand(CanExecute = nameof(CanAddItem))]
+    private Task AddItem() => UiTasks.RunGuardedAsync(AddItemAsync);
+
+    /// <summary>Enter in the Add box, or its Add button: blank text is refused with an inline error (B-02.7).</summary>
     private Task AddItemAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;

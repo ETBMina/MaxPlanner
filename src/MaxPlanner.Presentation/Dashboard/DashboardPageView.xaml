@@ -125,7 +125,7 @@
                 AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="OnOverdueRowClick">
+                Command="{x:Bind OpenCommand}">
                 <StackPanel Spacing="2">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon
@@ -166,7 +166,7 @@
                 AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="OnUnlinkedRowClick">
+                Command="{x:Bind OpenCommand}">
                 <StackPanel Spacing="2">
                     <TextBlock
                         Style="{StaticResource BodyStrongTextBlockStyle}"

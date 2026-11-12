@@ -313,8 +313,10 @@ public sealed partial class CalendarPageViewModel : ObservableObject, IPageViewM
     [RelayCommand]
     private void Next() => GoTo(Mode == CalendarMode.Week ? Anchor.AddDays(7) : CalendarGrid.ShiftMonth(Anchor, 1));
 
-    /// <summary>Accent New CR (Ctrl+N), the CR editor's home (B-03.1).</summary>
     [RelayCommand]
+    private Task NewChangeRequest() => UiTasks.RunGuardedAsync(NewChangeRequestAsync);
+
+    /// <summary>Accent New CR (Ctrl+N), the CR editor's home (B-03.1).</summary>
     private Task NewChangeRequestAsync() => _context.ChangeRequests.NewAsync();
 
     /// <summary>Day flyout "New CR on this date".</summary>

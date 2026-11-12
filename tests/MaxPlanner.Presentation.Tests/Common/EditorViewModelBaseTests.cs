@@ -283,6 +283,88 @@ public sealed class EditorViewModelBaseTests
     }
 
     [Fact]
+    public void The_save_command_saves_and_closes_like_save_and_never_disables_itself()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        var closed = 0;
+        editor.CloseRequested += (_, _) => closed++;
+        var hold = new TaskCompletionSource<AppError?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        editor.Pending = hold.Task;
+
+        editor.SaveCommand.CanExecute(null).Should().BeTrue();
+        var save = editor.SaveCommand.ExecuteAsync(null);
+        h.PumpUntil(() => editor.Operations.Count == 1);
+        editor.SaveCommand.CanExecute(null).Should().BeTrue("the command allows concurrent runs, so its button stays as it was");
+        h.Await(editor.SaveCommand.ExecuteAsync(null));
+        editor.Operations.Should().ContainSingle("SaveAsync ignores a second save while saving");
+
+        hold.SetResult(null);
+        h.Await(save);
+        editor.Calls.Should().Equal("CommitPendingInput", "ClearFieldErrors", "TryPrepareSave", "Execute", "OnSaved");
+        closed.Should().Be(1);
+    }
+
+    [Fact]
+    public void The_save_command_on_a_failed_save_keeps_the_editor_open()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        var closed = 0;
+        editor.CloseRequested += (_, _) => closed++;
+        editor.Results.Enqueue(new StorageFailureError(StorageFailureKind.DiskFull));
+
+        h.Await(editor.SaveCommand.ExecuteAsync(null));
+
+        closed.Should().Be(0);
+        editor.SaveError.Should().Be("Not saved. The drive is full.");
+        editor.TryClose().Should().BeFalse("the draft still has changes");
+    }
+
+    [Fact]
+    [Trait("Req", "T-05")]
+    public void A_save_that_throws_ends_saving_keeps_the_draft_and_retries_under_the_same_operation()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        var announced = new List<Announcement>();
+        h.Workspace.Context.Announced += (_, a) => announced.Add(a);
+        var closed = 0;
+        editor.CloseRequested += (_, _) => closed++;
+        editor.Pending = Task.FromException<AppError?>(new InvalidOperationException("defect"));
+
+        h.Await(editor.SaveCommand.ExecuteAsync(null));
+
+        editor.IsSaving.Should().BeFalse();
+        editor.SaveError.Should().Be("Error_Unexpected");
+        editor.IsDirty.Should().BeTrue("the draft stays");
+        closed.Should().Be(0);
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+        h.Workspace.Context.SaveStatus.IsSaving.Should().BeFalse("the indicator leaves its busy state");
+        h.Workspace.Context.SaveStatus.IsFailureNoticeOpen.Should().BeTrue();
+
+        editor.Pending = null;
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+        editor.Operations.Should().HaveCount(2);
+        editor.Operations[1].Should().Be(editor.Operations[0], "a thrown save has an unknown outcome, so the retry reuses its operation");
+        closed.Should().Be(1);
+    }
+
+    [Fact]
+    public void An_editor_whose_save_threw_can_still_close()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var editor = new ProbeEditor(h.Workspace.Context) { HasChanges = true };
+        editor.Pending = Task.FromException<AppError?>(new InvalidOperationException("defect"));
+        h.Await(editor.SaveAsync()).Should().BeFalse();
+
+        editor.TryClose().Should().BeFalse("the dirty draft asks first");
+        editor.IsDirtyClosePromptOpen.Should().BeTrue();
+        editor.DiscardChanges();
+        editor.TryClose().Should().BeTrue();
+    }
+
+    [Fact]
     [Trait("Req", "B-02.8")]
     public void A_window_close_on_a_dirty_draft_stays_pending_until_the_prompt_is_answered()
     {

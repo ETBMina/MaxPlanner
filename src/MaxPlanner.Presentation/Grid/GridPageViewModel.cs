@@ -16,6 +16,7 @@ using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;
@@ -416,11 +417,13 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         UpdateState();
     }
 
+    [RelayCommand]
+    private Task NewTask() => UiTasks.RunGuardedAsync(NewTaskAsync);
+
     /// <summary>
     /// The accent New task (design §4.3) opens the same task editor as the Board's New task, in the default
     /// status. The saved task reaches the grid through the shared projection store.
     /// </summary>
-    [RelayCommand]
     private Task NewTaskAsync() => _context.Tasks.NewAsync(null);
 
     /// <summary>Archive visibility composes with the shared filters (B-10); column visibility never affects it.</summary>

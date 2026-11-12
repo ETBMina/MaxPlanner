@@ -3,6 +3,7 @@ using System.Diagnostics;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Dashboard;
 using MaxPlanner.Presentation.Grid;
@@ -313,7 +314,7 @@ public sealed partial class ShellView : UserControl
         }
 
         _preloadWorkspace = workspace;
-        _ = PreloadPagesAsync(++_preloadRun, workspace);
+        PreloadPagesAsync(++_preloadRun, workspace).Forget();
     }
 
     private bool IsPreloadCurrent(int run, WorkspaceViewModel workspace) =>

@@ -141,6 +141,23 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// A UI action failed with an unexpected exception (<see cref="Common.UiTasks.Report"/>): the indicator shows the
+    /// failure and the App InfoBar opens with <paramref name="message"/>. Commands still running are not ended here;
+    /// an action that called <see cref="Begin"/> ends its own command first.
+    /// </summary>
+    public void ShowUnexpectedFailure(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ClearResult();
+        _lastResult = SaveState.Failed;
+        CancelSavedTimer();
+        FailureMessage = message;
+        FailureDetails = null;
+        IsFailureNoticeOpen = true;
+        Refresh();
+    }
+
+    /// <summary>
     /// The command was refused by validation, so nothing was attempted against the data. The field or
     /// editor shows the error (design §5.0); the indicator keeps the last actual persistence result.
     /// </summary>
@@ -187,6 +204,8 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     private void ShowDetails() => IsFailureNoticeOpen = FailureMessage is not null;
 
     [RelayCommand]
+    private Task RunResultAction() => UiTasks.RunGuardedAsync(RunResultActionAsync);
+
     private async Task RunResultActionAsync()
     {
         var action = _resultAction;

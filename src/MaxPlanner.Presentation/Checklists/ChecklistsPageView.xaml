@@ -346,8 +346,7 @@
                             <MenuFlyoutItem
                                 x:Uid="Checklists_ReviewEdit"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ReviewEditItem_', Id), Mode=OneTime}"
-                                Click="OnReviewEditClick"
-                                Tag="{x:Bind Mode=OneTime}" />
+                                Command="{x:Bind EditCommand}" />
                             <MenuFlyoutItem
                                 x:Uid="Checklists_ItemMoveUp"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ReviewMoveUpItem_', Id), Mode=OneTime}"

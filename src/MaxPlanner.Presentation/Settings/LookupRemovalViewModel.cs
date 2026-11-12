@@ -1,10 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -116,6 +118,10 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         Usage = result.Value;
         UsageLines = Describe(result.Value);
     }
+
+    /// <summary>The primary button; concurrent runs are allowed, so the command never disables anything.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Remove() => UiTasks.RunGuardedAsync(RemoveAsync);
 
     /// <summary>Primary: removes the value with the confirmed counts. The dialog stays open on failure.</summary>
     public async Task<bool> RemoveAsync()

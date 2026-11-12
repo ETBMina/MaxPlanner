@@ -46,7 +46,7 @@
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuFlyoutItem x:Uid="ReviewEditor_MoreDelete" AutomationProperties.AutomationId="ReviewEditor_MoreDeleteItem" Click="OnDeleteClick">
+                            <MenuFlyoutItem x:Uid="ReviewEditor_MoreDelete" AutomationProperties.AutomationId="ReviewEditor_MoreDeleteItem" Command="{x:Bind ViewModel.RequestDeleteCommand}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE74D;" />
                                 </MenuFlyoutItem.Icon>
@@ -77,7 +77,7 @@
                     <Button
                         x:Uid="Conflict_ReloadButton"
                         AutomationProperties.AutomationId="Conflict_ReloadButton"
-                        Click="OnReloadClick"
+                        Command="{x:Bind ViewModel.ReloadCommand}"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}" />
                 </InfoBar.ActionButton>
             </InfoBar>
@@ -112,7 +112,7 @@
                         Grid.Column="1"
                         VerticalAlignment="Bottom"
                         AutomationProperties.AutomationId="ReviewEditor_OpenCrLink"
-                        Click="OnOpenCrClick"
+                        Command="{x:Bind ViewModel.OpenMatchingCrCommand}"
                         Content="{x:Bind ViewModel.OpenCrText, Mode=OneWay}"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasMatchingCr), Mode=OneWay}" />
                 </Grid>

@@ -8,7 +8,7 @@ using Microsoft.UI.Xaml.Input;
 namespace MaxPlanner.Presentation.SubtaskCards;
 
 /// <summary>
-/// The Subtask card editor dialog. Code-behind only forwards clicks and keys to
+/// The Subtask card editor dialog. Buttons bind commands; code-behind forwards the dialog buttons and keys to
 /// <see cref="SubtaskCardEditorViewModel"/>, keeps the Status selection in step with it, moves focus where
 /// the ViewModel asks, and uses a full-size dialog in small or short windows (design §5.0).
 /// </summary>
@@ -61,7 +61,7 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
     {
         // The dialog closes only after the save committed (the ViewModel asks for it); a failure keeps it open.
         args.Cancel = true;
-        _ = ViewModel.SaveAsync();
+        ViewModel.SaveCommand.Execute(null);
     }
 
     private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
@@ -78,7 +78,7 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
     private void OnSaveAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        _ = ViewModel.SaveAsync();
+        ViewModel.SaveCommand.Execute(null);
     }
 
     private void OnBackAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -90,23 +90,6 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
         }
     }
 
+    // Not a two-way SelectedItem: that could write null back while ItemsSource is (re)set.
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedStatus = StatusCombo.SelectedItem as StatusOption;
-
-    private void OnDeleteClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(SubtaskEditorFollowUp.Delete);
-
-    private void OnOpenParentClick(object sender, RoutedEventArgs e) => ViewModel.RequestFollowUp(SubtaskEditorFollowUp.OpenParent);
-
-    private void OnClearStartClick(object sender, RoutedEventArgs e) => ViewModel.ClearStartDate();
-
-    private void OnClearEndClick(object sender, RoutedEventArgs e) => ViewModel.ClearEndDate();
-
-    private void OnReviewConflictClick(object sender, RoutedEventArgs e) => ViewModel.ReviewConflict();
-
-    private void OnReloadClick(object sender, RoutedEventArgs e) => ViewModel.BeginReload();
-
-    private void OnConfirmReloadClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmReload();
-
-    private void OnApplyConflictClick(object sender, RoutedEventArgs e) => ViewModel.ApplyConflictReview();
-
-    private void OnStepBackClick(object sender, RoutedEventArgs e) => ViewModel.StepBack();
 }

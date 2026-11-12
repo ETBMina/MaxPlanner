@@ -9,6 +9,7 @@ using MaxPlanner.Application.Transfer.External;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
 
@@ -228,6 +229,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
 
     // ----- Source -----
     [RelayCommand]
+    private Task PickFiles() => UiTasks.RunGuardedAsync(PickFilesAsync);
+
     private async Task PickFilesAsync()
     {
         IReadOnlyList<string> extensions = IsExternal ? [".csv", ".xlsx", ".json", ".md"] : [".json", ".xlsx", ".csv", ".zip"];
@@ -247,6 +250,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     }
 
     [RelayCommand]
+    private Task PickFolder() => UiTasks.RunGuardedAsync(PickFolderAsync);
+
     private async Task PickFolderAsync()
     {
         if (await _services.Pickers.PickFolderAsync().ConfigureAwait(true) is not { } folder)
@@ -262,6 +267,8 @@ public sealed partial class ImportWizardViewModel : WizardViewModel
     }
 
     [RelayCommand]
+    private Task PickGeneralChecklist() => UiTasks.RunGuardedAsync(PickGeneralChecklistAsync);
+
     private async Task PickGeneralChecklistAsync()
     {
         var files = await _services.Pickers.PickOpenFilesAsync([".md"], allowMultiple: false).ConfigureAwait(true);

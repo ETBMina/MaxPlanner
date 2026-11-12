@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
@@ -408,6 +409,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     }
 
     /// <summary>Link to CR… (design §5.6 step 1).</summary>
+    [RelayCommand]
     public void BeginLink()
     {
         if (!CanLinkToCr)
@@ -422,6 +424,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     }
 
     /// <summary>Next: the permanence confirmation (design §5.6 step 2).</summary>
+    [RelayCommand]
     public void LinkNext()
     {
         if (CurrentStep == EditorStep.LinkPick && CrPicker.Selected is not null)
@@ -459,6 +462,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     }
 
     /// <summary>Back (Alt+Left) from an inline step.</summary>
+    [RelayCommand]
     public void StepBack()
     {
         CurrentStep = CurrentStep == EditorStep.LinkConfirm ? EditorStep.LinkPick : EditorStep.Form;
@@ -466,6 +470,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     }
 
     /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
+    [RelayCommand]
     public void ReviewConflict()
     {
         if (!IsConflict || Latest is not { } latest)
@@ -490,6 +495,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     /// Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on
     /// and taking the saved value elsewhere. Nothing is saved until the user saves again.
     /// </summary>
+    [RelayCommand]
     public void ApplyConflictReview()
     {
         if (Latest is not { } latest)
@@ -577,12 +583,14 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     }
 
     /// <summary>Reload asks first, because it discards the draft (design §5.10).</summary>
+    [RelayCommand]
     public void BeginReload()
     {
         CurrentStep = EditorStep.ReloadConfirm;
         RaiseState();
     }
 
+    [RelayCommand]
     public void ConfirmReload()
     {
         if (Latest is { } latest)
@@ -596,6 +604,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         RaiseState();
     }
 
+    [RelayCommand]
     public void ClearStartDate()
     {
         StartDate = null;
@@ -603,6 +612,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         RecomputeDirty();
     }
 
+    [RelayCommand]
     public void ClearEndDate()
     {
         EndDate = null;
@@ -678,8 +688,21 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         SubtaskCardError = null;
         var operation = OperationId.New();
         Context.SaveStatus.Begin();
-        var result = await Context.UseCases.CreateSubtaskCard.ExecuteAsync(
-            new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None).ConfigureAwait(true);
+        AppResult<CommandOutcome<SubtaskCardId>> result;
+        try
+        {
+            result = await Context.UseCases.CreateSubtaskCard.ExecuteAsync(
+                new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The indicator leaves its busy state; the box keeps its text with the unexpected-error text below it.
+            Context.SaveStatus.Reject();
+            SubtaskCardError = Context.Strings.GetString("Error_Unexpected");
+            UiTasks.Report(ex, Context);
+            return false;
+        }
+
         if (!result.IsSuccess)
         {
             var failure = CommandFailure.From(result.Error!, operation, "Record_SubtaskCard", Context.Strings);
@@ -699,6 +722,36 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
 
     public async Task<bool> RestoreAsync() =>
         CanRestore && Latest is { } task && await RunLifecycleAsync(Context.Tasks.RestoreAsync(task)).ConfigureAwait(true);
+
+    /// <summary>The link step's Link button; <see cref="ConfirmLink"/> keeps its result for callers that need it.</summary>
+    [RelayCommand]
+    private void UseSelectedCr() => ConfirmLink();
+
+    // The editor's buttons and menu items bind these commands. The async ones allow concurrent runs, so a running
+    // command never disables its button; the methods keep their own guards (CanArchive, CanRestore, IsSaving…).
+    [RelayCommand]
+    private void RequestCopy() => RequestFollowUp(EditorFollowUp.Copy);
+
+    [RelayCommand]
+    private void RequestDelete() => RequestFollowUp(EditorFollowUp.Delete);
+
+    [RelayCommand]
+    private void RequestAddSubtaskCard() => RequestFollowUp(EditorFollowUp.AddSubtaskCard);
+
+    [RelayCommand]
+    private void RequestOpenCr() => RequestFollowUp(EditorFollowUp.OpenCr);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Archive() => UiTasks.RunGuardedAsync(ArchiveAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Restore() => UiTasks.RunGuardedAsync(RestoreAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task AddSubtaskCard() => UiTasks.RunGuardedAsync(AddSubtaskCardAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task PopOut(EditorChecklistItemViewModel item) => UiTasks.RunGuardedAsync(() => PopOutAsync(item));
 
     internal static DateTimeOffset? ToPicker(DateOnly? date) => DraftDates.ToPicker(date);
 
@@ -906,10 +959,16 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     {
         IsSaving = true;
         RaiseState();
-        var succeeded = await command.ConfigureAwait(true);
-        IsSaving = false;
-        RaiseState();
-        return succeeded;
+        try
+        {
+            return await command.ConfigureAwait(true);
+        }
+        finally
+        {
+            // A command that throws ends here too, so the editor never stays busy; the command's guard reports it.
+            IsSaving = false;
+            RaiseState();
+        }
     }
 
     private void Load(TaskReadModel model)

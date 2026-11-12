@@ -21,8 +21,9 @@ public sealed partial class LookupRemovalDialog : ContentDialog
     {
         // The dialog closes only after the removal committed (the ViewModel asks for it); a failure keeps it open.
         args.Cancel = true;
-        _ = ViewModel.RemoveAsync();
+        ViewModel.RemoveCommand.Execute(null);
     }
 
+    // Not a two-way binding: the choices are built here and the view model holds a flag, not an index.
     private void OnModeChanged(object sender, SelectionChangedEventArgs e) => ViewModel.ClearInstead = ModeRadios.SelectedIndex == 1;
 }

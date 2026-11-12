@@ -5,7 +5,10 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MaxPlanner.Presentation.Tasks;
 
-/// <summary>The Copy task dialog; code-behind forwards clicks and keeps the two lookups' selections in step.</summary>
+/// <summary>
+/// The Copy task dialog. Buttons bind commands; code-behind forwards the primary button and keeps the two lookups'
+/// selections in step.
+/// </summary>
 public sealed partial class CopyTaskDialog : ContentDialog
 {
     public CopyTaskDialog(CopyTaskViewModel viewModel)
@@ -33,9 +36,10 @@ public sealed partial class CopyTaskDialog : ContentDialog
     {
         // Options, then Review, then Create copy; the ViewModel closes the dialog after a successful create.
         args.Cancel = true;
-        _ = ViewModel.PrimaryAsync();
+        ViewModel.PrimaryCommand.Execute(null);
     }
 
+    // Not two-way SelectedItem bindings: these keep the last real choice when the selection becomes null.
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (StatusCombo.SelectedItem is StatusOption option)
@@ -59,14 +63,4 @@ public sealed partial class CopyTaskDialog : ContentDialog
             ViewModel.CrPicker.Selected = choice;
         }
     }
-
-    private void OnLinkClick(object sender, RoutedEventArgs e) => ViewModel.BeginLink();
-
-    private void OnLinkNextClick(object sender, RoutedEventArgs e) => ViewModel.LinkNext();
-
-    private void OnConfirmLinkClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmLink();
-
-    private void OnClearLinkClick(object sender, RoutedEventArgs e) => ViewModel.ClearLink();
-
-    private void OnStepBackClick(object sender, RoutedEventArgs e) => ViewModel.StepBack();
 }

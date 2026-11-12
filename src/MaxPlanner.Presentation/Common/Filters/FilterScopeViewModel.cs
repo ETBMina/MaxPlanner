@@ -12,7 +12,7 @@ using MaxPlanner.Presentation.Workspace;
 namespace MaxPlanner.Presentation.Common.Filters;
 
 /// <summary>An active-filter chip (design §2.6): "Squad: Retail Cards", removable, named "Remove filter Squad: Retail Cards".</summary>
-public sealed class FilterChipViewModel
+public sealed partial class FilterChipViewModel
 {
     private readonly Action _remove;
 
@@ -35,6 +35,7 @@ public sealed class FilterChipViewModel
     /// <summary>The non-editable "From Dashboard" chip; removing it restores the page's previous filters (design §2.9).</summary>
     public bool IsDashboard { get; }
 
+    [RelayCommand]
     public void Remove() => _remove();
 }
 

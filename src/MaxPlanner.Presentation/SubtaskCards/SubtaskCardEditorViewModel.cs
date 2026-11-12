@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.SubtaskCards;
@@ -238,6 +239,13 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         CloseForFollowUp(followUp);
     }
 
+    [RelayCommand]
+    private void RequestDelete() => RequestFollowUp(SubtaskEditorFollowUp.Delete);
+
+    [RelayCommand]
+    private void RequestOpenParent() => RequestFollowUp(SubtaskEditorFollowUp.OpenParent);
+
+    [RelayCommand]
     public void ClearStartDate()
     {
         StartDate = null;
@@ -245,6 +253,7 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         RecomputeDirty();
     }
 
+    [RelayCommand]
     public void ClearEndDate()
     {
         EndDate = null;
@@ -253,6 +262,7 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
     }
 
     /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
+    [RelayCommand]
     public void ReviewConflict()
     {
         if (!IsConflict || Latest is not { } latest)
@@ -273,6 +283,7 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
     }
 
     /// <summary>Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on.</summary>
+    [RelayCommand]
     public void ApplyConflictReview()
     {
         if (Latest is not { } latest)
@@ -317,12 +328,14 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         RaiseState();
     }
 
+    [RelayCommand]
     public void BeginReload()
     {
         CurrentStep = SubtaskEditorStep.ReloadConfirm;
         RaiseState();
     }
 
+    [RelayCommand]
     public void ConfirmReload()
     {
         if (Latest is { } latest)
@@ -335,6 +348,7 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         RaiseState();
     }
 
+    [RelayCommand]
     public void StepBack()
     {
         CurrentStep = SubtaskEditorStep.Form;

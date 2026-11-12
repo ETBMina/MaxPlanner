@@ -8,8 +8,8 @@ using Microsoft.UI.Xaml.Input;
 namespace MaxPlanner.Presentation.ChangeRequests;
 
 /// <summary>
-/// The CR editor dialog. Code-behind only forwards clicks and keys to <see cref="CrEditorViewModel"/>, keeps
-/// the combo box selections in step with it (a two-way SelectedItem could run before ItemsSource), moves
+/// The CR editor dialog. Buttons bind <see cref="CrEditorViewModel"/> commands; code-behind forwards the dialog
+/// buttons and keys to it, keeps the combo box selections in step with it (a two-way SelectedItem could run before ItemsSource), moves
 /// focus where the ViewModel asks, and reflows the field pairs by width (design §5.0).
 /// </summary>
 public sealed partial class CrEditorDialog : ContentDialog
@@ -114,7 +114,7 @@ public sealed partial class CrEditorDialog : ContentDialog
     {
         // The dialog closes only after the save committed (the ViewModel asks for it); a failure keeps it open.
         args.Cancel = true;
-        _ = ViewModel.SaveAsync();
+        ViewModel.SaveCommand.Execute(null);
     }
 
     private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
@@ -133,7 +133,7 @@ public sealed partial class CrEditorDialog : ContentDialog
         if (ViewModel.IsFormStep)
         {
             args.Handled = true;
-            _ = ViewModel.SaveAsync();
+            ViewModel.SaveCommand.Execute(null);
         }
     }
 
@@ -146,23 +146,12 @@ public sealed partial class CrEditorDialog : ContentDialog
         }
     }
 
+    // Not a two-way SelectedItem: that could write null back while ItemsSource is (re)set.
     private void OnSquadSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedSquad = SquadCombo.SelectedItem as SquadOption;
 
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedStatus = StatusCombo.SelectedItem as CrStatusOption;
 
     private void OnPrioritySelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedPriority = PriorityCombo.SelectedItem as PriorityOption;
-
-    private void OnClearStartClick(object sender, RoutedEventArgs e) => ViewModel.ClearPlannedStart();
-
-    private void OnClearEndClick(object sender, RoutedEventArgs e) => ViewModel.ClearPlannedEnd();
-
-    private void OnOpenUrlClick(object sender, RoutedEventArgs e) => _ = ViewModel.OpenUrlAsync();
-
-    private void OnOpenDuplicateClick(object sender, RoutedEventArgs e) => ViewModel.OpenDuplicate();
-
-    private void OnCreateTaskClick(object sender, RoutedEventArgs e) => ViewModel.BeginCreateTask();
-
-    private void OnSaveAndCreateClick(object sender, RoutedEventArgs e) => _ = ViewModel.SaveAndCreateTaskAsync();
 
     private void OnLinkedTaskClick(object sender, ItemClickEventArgs e)
     {
@@ -171,20 +160,4 @@ public sealed partial class CrEditorDialog : ContentDialog
             ViewModel.OpenLinkedTask(row);
         }
     }
-
-    private void OnDeleteClick(object sender, RoutedEventArgs e) => ViewModel.BeginDelete();
-
-    private void OnMoveToBacklogClick(object sender, RoutedEventArgs e) => ViewModel.RequestMoveToBacklog();
-
-    private void OnConfirmDeleteClick(object sender, RoutedEventArgs e) => _ = ViewModel.ConfirmDeleteAsync();
-
-    private void OnReviewConflictClick(object sender, RoutedEventArgs e) => ViewModel.ReviewConflict();
-
-    private void OnReloadClick(object sender, RoutedEventArgs e) => ViewModel.BeginReload();
-
-    private void OnConfirmReloadClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmReload();
-
-    private void OnApplyConflictClick(object sender, RoutedEventArgs e) => ViewModel.ApplyConflictReview();
-
-    private void OnStepBackClick(object sender, RoutedEventArgs e) => ViewModel.StepBack();
 }

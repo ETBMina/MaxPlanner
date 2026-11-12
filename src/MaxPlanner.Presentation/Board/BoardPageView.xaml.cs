@@ -261,6 +261,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
     }
 
+    // Not a two-way SelectedItem: a null selection must not clear the view model's bucket.
     private void OnBucketPickerSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (BucketPicker.SelectedItem is BoardBucketViewModel bucket)
@@ -283,7 +284,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: BoardBucketViewModel bucket })
         {
-            _ = ViewModel.NewTaskAsync(bucket);
+            ViewModel.NewTaskAsync(bucket).Forget();
         }
     }
 
@@ -318,16 +319,16 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private MenuFlyout BuildMenu(BoardCardViewModel card)
     {
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Board_MenuOpen", "Board_MenuOpenItem", "", () => _ = ViewModel.OpenAsync(card)));
+        menu.Items.Add(Item("Board_MenuOpen", "Board_MenuOpenItem", "", () => ViewModel.OpenAsync(card).Forget()));
         if (card.IsSubtaskCard)
         {
-            menu.Items.Add(Item("Board_MenuOpenParent", "Board_MenuOpenParentItem", null, () => _ = ViewModel.OpenParentAsync(card)));
+            menu.Items.Add(Item("Board_MenuOpenParent", "Board_MenuOpenParentItem", null, () => ViewModel.OpenParentAsync(card).Forget()));
         }
 
         // The card's CR link is not a tab stop inside the list, so the menu is its keyboard route (design §7.3).
         if (card.HasCrReference)
         {
-            menu.Items.Add(Item("Board_MenuOpenCr", "Board_MenuOpenCrItem", null, () => _ = ViewModel.OpenCrAsync(card)));
+            menu.Items.Add(Item("Board_MenuOpenCr", "Board_MenuOpenCrItem", null, () => ViewModel.OpenCrAsync(card).Forget()));
         }
 
         var moveTo = new MenuFlyoutSubItem { Text = ResourceStrings.Shared.GetString("Board_MenuMoveTo") };
@@ -339,31 +340,31 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             // B-07: while filtered Top/Bottom address the full bucket and same-bucket reordering is off.
             var enabled = !ViewModel.IsFiltered || ViewModel.BucketOf(card) != bucket;
             target.Items.Add(Item("Board_MenuTopOfBucket", "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), null,
-                () => _ = ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top), enabled));
+                () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top).Forget(), enabled));
             target.Items.Add(Item("Board_MenuBottomOfBucket", "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), null,
-                () => _ = ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom), enabled));
+                () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom).Forget(), enabled));
 
             moveTo.Items.Add(target);
         }
 
         menu.Items.Add(moveTo);
-        menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, -1), ViewModel.CanMoveUp(card)));
-        menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, 1), ViewModel.CanMoveDown(card)));
+        menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => ViewModel.MoveWithinBucketAsync(card, -1).Forget(), ViewModel.CanMoveUp(card)));
+        menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => ViewModel.MoveWithinBucketAsync(card, 1).Forget(), ViewModel.CanMoveDown(card)));
         menu.Items.Add(new MenuFlyoutSeparator());
         if (card.IsTask)
         {
-            menu.Items.Add(Item("Board_MenuCopy", "Board_MenuCopyItem", "", () => _ = ViewModel.CopyAsync(card)));
+            menu.Items.Add(Item("Board_MenuCopy", "Board_MenuCopyItem", "", () => ViewModel.CopyAsync(card).Forget()));
         }
 
         menu.Items.Add(Item("Board_MenuCopyId", "Board_MenuCopyIdItem", "", () => ViewModel.CopyId(card)));
         if (card.IsTask)
         {
-            menu.Items.Add(Item("Board_MenuAddSubtaskCard", "Board_MenuAddSubtaskCardItem", "", () => _ = ViewModel.AddSubtaskCardAsync(card)));
-            menu.Items.Add(Item("Board_MenuArchive", "Board_MenuArchiveItem", "", () => _ = ViewModel.ArchiveAsync(card)));
+            menu.Items.Add(Item("Board_MenuAddSubtaskCard", "Board_MenuAddSubtaskCardItem", "", () => ViewModel.AddSubtaskCardAsync(card).Forget()));
+            menu.Items.Add(Item("Board_MenuArchive", "Board_MenuArchiveItem", "", () => ViewModel.ArchiveAsync(card).Forget()));
         }
 
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Board_MenuDelete", "Board_MenuDeleteItem", "", () => _ = ViewModel.DeleteAsync(card)));
+        menu.Items.Add(Item("Board_MenuDelete", "Board_MenuDeleteItem", "", () => ViewModel.DeleteAsync(card).Forget()));
         return menu;
     }
 
@@ -371,7 +372,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
         {
-            _ = ViewModel.OpenCrAsync(card);
+            ViewModel.OpenCrAsync(card).Forget();
         }
     }
 
@@ -389,12 +390,12 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
         {
-            _ = ViewModel.OpenParentAsync(card);
+            ViewModel.OpenParentAsync(card).Forget();
         }
     }
 
     // A click anywhere on the card that is not a drag or a child control's press, or UIA Invoke.
-    private void OnCardInvoked(object? sender, BoardCardViewModel card) => _ = ViewModel.OpenAsync(card);
+    private void OnCardInvoked(object? sender, BoardCardViewModel card) => ViewModel.OpenAsync(card).Forget();
 
     private static MenuFlyoutItem Item(string textKey, string automationId, string? glyph, Action action, bool enabled = true)
     {
@@ -424,11 +425,11 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         {
             case VirtualKey.Left or VirtualKey.Right when alt && shift:
                 e.Handled = true;
-                _ = ViewModel.MoveToAdjacentBucketAsync(card, e.Key == VirtualKey.Left ? -1 : 1);
+                ViewModel.MoveToAdjacentBucketAsync(card, e.Key == VirtualKey.Left ? -1 : 1).Forget();
                 break;
             case VirtualKey.Up or VirtualKey.Down when alt && shift:
                 e.Handled = true;
-                _ = ViewModel.MoveWithinBucketAsync(card, e.Key == VirtualKey.Up ? -1 : 1);
+                ViewModel.MoveWithinBucketAsync(card, e.Key == VirtualKey.Up ? -1 : 1).Forget();
                 break;
             case VirtualKey.Left or VirtualKey.Right when control:
                 e.Handled = true;
@@ -436,21 +437,21 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
                 break;
             case VirtualKey.Enter when !alt && !control && !shift:
                 e.Handled = true;
-                _ = ViewModel.OpenAsync(card);
+                ViewModel.OpenAsync(card).Forget();
                 break;
 
             // Space opens only from the card itself, so a focused checkbox on the card keeps its toggle (§7.3).
             case VirtualKey.Space when !alt && !control && !shift && e.OriginalSource is BoardCardContainer:
                 e.Handled = true;
-                _ = ViewModel.OpenAsync(card);
+                ViewModel.OpenAsync(card).Forget();
                 break;
             case VirtualKey.Delete:
                 e.Handled = true;
-                _ = ViewModel.DeleteAsync(card);
+                ViewModel.DeleteAsync(card).Forget();
                 break;
             case VirtualKey.D when control:
                 e.Handled = true;
-                _ = ViewModel.CopyAsync(card);
+                ViewModel.CopyAsync(card).Forget();
                 break;
             default:
                 break;
@@ -604,7 +605,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             return;
         }
 
-        _ = ViewModel.DropAsync(card, bucket, index);
+        ViewModel.DropAsync(card, bucket, index).Forget();
     }
 
     /// <summary>

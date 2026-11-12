@@ -93,7 +93,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: LookupSectionViewModel section })
         {
-            _ = ViewModel.AddAsync(section);
+            ViewModel.AddAsync(section).Forget();
         }
     }
 
@@ -102,7 +102,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         if (e.Key == VirtualKey.Enter && sender is FrameworkElement { DataContext: LookupSectionViewModel section })
         {
             e.Handled = true;
-            _ = ViewModel.AddAsync(section);
+            ViewModel.AddAsync(section).Forget();
         }
     }
 
@@ -128,7 +128,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         {
             case VirtualKey.Enter:
                 e.Handled = true;
-                _ = CommitRenameAsync(row, box);
+                CommitRenameAsync(row, box).Forget();
                 break;
             case VirtualKey.Escape:
                 e.Handled = true;
@@ -145,7 +145,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         // Leaving the box attempts the rename; a refused name keeps the box and its error (as in the Grid).
         if (sender is FrameworkElement { DataContext: LookupRowViewModel { IsRenaming: true, IsBusy: false, RenameError: null } row })
         {
-            _ = ViewModel.CommitRenameAsync(row);
+            ViewModel.CommitRenameAsync(row).Forget();
         }
     }
 
@@ -200,7 +200,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         _gripPressedRow = null;
         if (from >= 0 && args.Items is [LookupRowViewModel row])
         {
-            _ = ViewModel.CommitDraggedRowAsync(row, from);
+            ViewModel.CommitDraggedRowAsync(row, from).Forget();
         }
     }
 
@@ -226,14 +226,14 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         {
             var item = new ToggleMenuFlyoutItem { Text = strings.GetString(key), IsChecked = value };
             AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => _ = ViewModel.SetFlagAsync(row, flag, !value);
+            item.Click += (_, _) => ViewModel.SetFlagAsync(row, flag, !value).Forget();
             menu.Items.Add(item);
         }
 
         Item("Settings_MenuRename", "Settings_RowMenuRenameItem", () => BeginRename(button, row));
         if (row.Kind is LookupKind.TaskStatus or LookupKind.CrStatus or LookupKind.Priority or LookupKind.Person && !row.IsDefault)
         {
-            Item(row.Kind == LookupKind.Person ? "Settings_MenuMakeDefaultOwner" : "Settings_MenuSetDefault", "Settings_RowMenuSetDefaultItem", () => _ = ViewModel.SetAsDefaultAsync(row));
+            Item(row.Kind == LookupKind.Person ? "Settings_MenuMakeDefaultOwner" : "Settings_MenuSetDefault", "Settings_RowMenuSetDefaultItem", () => ViewModel.SetAsDefaultAsync(row).Forget());
         }
 
         if (row.Kind is LookupKind.TaskStatus or LookupKind.CrStatus)
@@ -251,12 +251,12 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         if (row.Kind is not (LookupKind.Person or LookupKind.Tag))
         {
             menu.Items.Add(new MenuFlyoutSeparator());
-            Item("Settings_MenuMoveUp", "Settings_RowMenuMoveUpItem", () => _ = ViewModel.MoveAsync(row, -1), row.CanMoveUp);
-            Item("Settings_MenuMoveDown", "Settings_RowMenuMoveDownItem", () => _ = ViewModel.MoveAsync(row, 1), row.CanMoveDown);
+            Item("Settings_MenuMoveUp", "Settings_RowMenuMoveUpItem", () => ViewModel.MoveAsync(row, -1).Forget(), row.CanMoveUp);
+            Item("Settings_MenuMoveDown", "Settings_RowMenuMoveDownItem", () => ViewModel.MoveAsync(row, 1).Forget(), row.CanMoveDown);
         }
 
         menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Settings_MenuRemove", "Settings_RowMenuRemoveItem", () => _ = ViewModel.RemoveAsync(row));
+        Item("Settings_MenuRemove", "Settings_RowMenuRemoveItem", () => ViewModel.RemoveAsync(row).Forget());
         menu.ShowAt(button);
     }
 
@@ -291,7 +291,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: FieldSectionViewModel section })
         {
-            _ = ViewModel.AddFieldAsync(section);
+            ViewModel.AddFieldAsync(section).Forget();
         }
     }
 
@@ -312,11 +312,11 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             menu.Items.Add(item);
         }
 
-        Item("Settings_MenuEditField", "Settings_FieldMenuEditItem", () => _ = ViewModel.EditFieldAsync(row));
-        Item("Settings_MenuMoveUp", "Settings_FieldMenuMoveUpItem", () => _ = ViewModel.MoveFieldAsync(row, -1), row.CanMoveUp);
-        Item("Settings_MenuMoveDown", "Settings_FieldMenuMoveDownItem", () => _ = ViewModel.MoveFieldAsync(row, 1), row.CanMoveDown);
+        Item("Settings_MenuEditField", "Settings_FieldMenuEditItem", () => ViewModel.EditFieldAsync(row).Forget());
+        Item("Settings_MenuMoveUp", "Settings_FieldMenuMoveUpItem", () => ViewModel.MoveFieldAsync(row, -1).Forget(), row.CanMoveUp);
+        Item("Settings_MenuMoveDown", "Settings_FieldMenuMoveDownItem", () => ViewModel.MoveFieldAsync(row, 1).Forget(), row.CanMoveDown);
         menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Settings_MenuRemoveField", "Settings_FieldMenuRemoveItem", () => _ = ViewModel.DeactivateFieldAsync(row));
+        Item("Settings_MenuRemoveField", "Settings_FieldMenuRemoveItem", () => ViewModel.DeactivateFieldAsync(row).Forget());
         menu.ShowAt(button);
     }
 

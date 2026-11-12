@@ -88,7 +88,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     {
         if (sender is CheckBox { Tag: ChecklistItemViewModel item } box && box.IsChecked != item.IsChecked)
         {
-            _ = item.ToggleAsync(box.IsChecked == true);
+            item.ToggleAsync(box.IsChecked == true).Forget();
         }
     }
 
@@ -96,7 +96,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     {
         if (sender is CheckBox { Tag: ReviewRowViewModel row } box && box.IsChecked != row.IsDone)
         {
-            _ = row.ToggleAsync(box.IsChecked == true);
+            row.ToggleAsync(box.IsChecked == true).Forget();
         }
     }
 
@@ -122,7 +122,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
                 var command = e.Key == VirtualKey.Up ? item.MoveUpCommand : item.MoveDownCommand;
                 if (command.CanExecute(null))
                 {
-                    _ = MoveAndRefocusAsync(box, item, command);
+                    MoveAndRefocusAsync(box, item, command).Forget();
                 }
 
                 break;
@@ -169,26 +169,31 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         }
     }
 
-    private async void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
+    private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor)
+        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor || e.Key is not (VirtualKey.Enter or VirtualKey.Escape))
         {
             return;
         }
 
+        e.Handled = true;
+        RenameKeyAsync(editor, item, commit: e.Key == VirtualKey.Enter).Forget();
+    }
+
+    // Escape runs before the first await, so it completes within the key event as before.
+    private async Task RenameKeyAsync(TextBox editor, ChecklistItemViewModel item, bool commit)
+    {
         try
         {
-            if (e.Key == VirtualKey.Enter)
+            if (commit)
             {
-                e.Handled = true;
                 if (await item.CommitRenameAsync().ConfigureAwait(true))
                 {
                     FocusRowCheckBox(editor);
                 }
             }
-            else if (e.Key == VirtualKey.Escape)
+            else
             {
-                e.Handled = true;
                 item.CancelRename();
                 FocusRowCheckBox(editor);
             }
@@ -246,21 +251,13 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         }
     }
 
-    private void OnReviewEditClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is MenuFlyoutItem { Tag: ReviewRowViewModel row })
-        {
-            _ = row.EditAsync();
-        }
-    }
-
     // Tapping a review's text opens View/Edit, as the ⋯ menu does.
     private void OnReviewTextTapped(object sender, TappedRoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: ReviewRowViewModel row })
         {
             e.Handled = true;
-            _ = row.EditAsync();
+            row.EditCommand.Execute(null);
         }
     }
 
@@ -276,7 +273,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         if (e.Key == VirtualKey.Enter)
         {
             e.Handled = true;
-            _ = row.EditAsync();
+            row.EditCommand.Execute(null);
         }
         else if (e.Key == VirtualKey.Delete)
         {
@@ -301,7 +298,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         confirm.Click += (_, _) =>
         {
             flyout.Hide();
-            _ = delete();
+            delete().Forget();
         };
         cancel.Click += (_, _) => flyout.Hide();
 

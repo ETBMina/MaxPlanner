@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
 
@@ -182,8 +183,10 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
 
     public void Dispose() => _commits.Dispose();
 
-    /// <summary>Enter in the Add box or its Add button. Blank text shows an inline error and creates nothing (B-09).</summary>
     [RelayCommand(CanExecute = nameof(CanAddItem))]
+    private Task AddItem() => UiTasks.RunGuardedAsync(AddItemAsync);
+
+    /// <summary>Enter in the Add box or its Add button. Blank text shows an inline error and creates nothing (B-09).</summary>
     private Task AddItemAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;
