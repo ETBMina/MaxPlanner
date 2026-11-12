@@ -76,19 +76,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     public BoardPageViewModel ViewModel { get; }
 
-    /// <summary>The priority chip style for a rank token (design §6.1); styles use theme resources, so they follow theme changes.</summary>
-    public static Style PriorityChipStyle(PriorityLevel level) =>
-        (Style)Microsoft.UI.Xaml.Application.Current.Resources[level switch
-        {
-            PriorityLevel.Level1 => "PriorityLevel1ChipStyle",
-            PriorityLevel.Level2 => "PriorityLevel2ChipStyle",
-            PriorityLevel.Lowest => "PriorityLowestChipStyle",
-            _ => "PriorityMidChipStyle",
-        }];
-
-    /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
-    public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
-
     /// <summary>The ID-row priority glyph in the priority color (design §4.2 item 3).</summary>
     public static Style PriorityGlyphStyle(PriorityLevel level) => Resource("BoardPriority" + LevelKey(level) + "GlyphStyle");
 

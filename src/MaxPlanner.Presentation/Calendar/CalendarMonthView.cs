@@ -13,31 +13,9 @@ using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using WinGrid = Microsoft.UI.Xaml.Controls.Grid;
+using MaxPlanner.Presentation.Common.Controls;
 
 namespace MaxPlanner.Presentation.Calendar;
-
-/// <summary>
-/// A bar edge handle (B-08.8): a <see cref="Thumb"/> for the drag inside a panel that shows the horizontal resize
-/// cursor (Thumb is sealed, so the cursor is set on this host).
-/// </summary>
-public sealed partial class CalendarResizeHandle : WinGrid
-{
-    public CalendarResizeHandle()
-    {
-        ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-        Width = 8;
-        Thumb = new Thumb
-        {
-            IsTabStop = false,
-            Opacity = 0,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch,
-        };
-        Children.Add(Thumb);
-    }
-
-    public Thumb Thumb { get; }
-}
 
 /// <summary>
 /// The custom Month/Week surface of design §4.4 (P1: no platform control fits). It renders a

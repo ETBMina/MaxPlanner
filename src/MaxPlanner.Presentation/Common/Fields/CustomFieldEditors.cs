@@ -2,7 +2,6 @@ using System.ComponentModel;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Presentation.Common.Controls;
-using MaxPlanner.Presentation.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;

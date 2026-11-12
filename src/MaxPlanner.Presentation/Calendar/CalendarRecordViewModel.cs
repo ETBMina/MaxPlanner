@@ -1,7 +1,6 @@
 using System.Globalization;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common;

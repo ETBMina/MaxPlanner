@@ -7,6 +7,7 @@ using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Tests.Testing;
 using MaxPlanner.Presentation.Workspace;

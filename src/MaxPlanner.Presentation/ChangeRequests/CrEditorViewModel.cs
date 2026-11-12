@@ -15,20 +15,15 @@ using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.ChangeRequests;
 
 /// <summary>A CR status offered by the CR editor's Status box.</summary>
 public sealed record CrStatusOption(CrStatusId Id, string Name)
-{
-    public override string ToString() => Name;
-}
-
-/// <summary>A squad in the CR editor's Squad box; a null ID is "General (no squad)" (D15).</summary>
-public sealed record SquadOption(SquadId? Id, string Name)
 {
     public override string ToString() => Name;
 }

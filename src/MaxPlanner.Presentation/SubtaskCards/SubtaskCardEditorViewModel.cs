@@ -11,9 +11,8 @@ using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.Options;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Grid;
-using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.SubtaskCards;

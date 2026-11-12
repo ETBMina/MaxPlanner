@@ -19,30 +19,13 @@ using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Tasks;
-
-/// <summary>A priority offered by the editors' Priority box.</summary>
-public sealed record PriorityOption(PriorityId Id, string Name, PriorityLevel Level = PriorityLevel.Mid) : IPriorityChoice
-{
-    string IPriorityChoice.DisplayName => Name;
-
-    PriorityLevel? IPriorityChoice.Level => Level;
-
-    /// <summary>The configured priorities in rank order, each with the glyph level of its rank (design §6.1).</summary>
-    public static IReadOnlyList<PriorityOption> From(WorkflowSnapshot workflow)
-    {
-        ArgumentNullException.ThrowIfNull(workflow);
-        var levels = PriorityLevels.Of(workflow.Priorities);
-        return [.. workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display, levels.GetValueOrDefault(p.Id, PriorityLevel.Mid)))];
-    }
-
-    public override string ToString() => Name;
-}
 
 /// <summary>
 /// The task editor (B-02, B-03, B-05, T-13, design §5.0–§5.1, §5.6, §5.8, §5.10). It edits a draft and never

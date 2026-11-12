@@ -9,7 +9,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     AutomationProperties.AutomationId="ReviewEditor_Dialog"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
@@ -92,7 +92,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
             </StackPanel>
 
             <StackPanel Spacing="4">
@@ -116,7 +116,7 @@
                         Content="{x:Bind ViewModel.OpenCrText, Mode=OneWay}"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasMatchingCr), Mode=OneWay}" />
                 </Grid>
-                <tasks:FieldError Text="{x:Bind ViewModel.CrNumberError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.CrNumberError, Mode=OneWay}" />
             </StackPanel>
 
             <StackPanel Spacing="4">
@@ -127,7 +127,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     MaxLength="100"
                     Text="{x:Bind ViewModel.TaskNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.TaskNumberError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.TaskNumberError, Mode=OneWay}" />
             </StackPanel>
 
             <StackPanel Spacing="4">
@@ -137,7 +137,7 @@
                     BoxAutomationId="ReviewEditor_ServicesPicker"
                     IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     ViewModel="{x:Bind ViewModel.Services, Mode=OneTime}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.ServicesError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.ServicesError, Mode=OneWay}" />
             </StackPanel>
 
             <StackPanel Spacing="4">
@@ -147,7 +147,7 @@
                     BoxAutomationId="ReviewEditor_DeveloperPicker"
                     IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     ViewModel="{x:Bind ViewModel.Developer, Mode=OneTime}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.DeveloperError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.DeveloperError, Mode=OneWay}" />
             </StackPanel>
 
             <StackPanel Spacing="4">
@@ -163,7 +163,7 @@
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                     Text="{x:Bind ViewModel.Comments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
-                <tasks:FieldError Text="{x:Bind ViewModel.CommentsError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.CommentsError, Mode=OneWay}" />
             </StackPanel>
 
             <StackPanel Spacing="2">

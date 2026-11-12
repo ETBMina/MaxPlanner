@@ -12,7 +12,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:local="using:MaxPlanner.Presentation.Common.Controls"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
+    xmlns:pickers="using:MaxPlanner.Presentation.Common.Pickers"
     IsTabStop="False">
     <StackPanel x:Name="Root" Spacing="6">
         <VisualStateManager.VisualStateGroups>
@@ -54,7 +54,7 @@
                     shows as a pill in its color, and "Add 'name'" as text.
                 -->
                 <AutoSuggestBox.ItemTemplate>
-                    <DataTemplate x:DataType="tasks:TokenSuggestion">
+                    <DataTemplate x:DataType="pickers:TokenSuggestion">
                         <Grid AutomationProperties.Name="{x:Bind Display, Mode=OneTime}" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -113,7 +113,7 @@
                 <LinedFlowLayout LineSpacing="6" MinItemSpacing="6" />
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
-                <DataTemplate x:DataType="tasks:TokenViewModel">
+                <DataTemplate x:DataType="pickers:TokenViewModel">
                     <Button
                         Padding="{x:Bind local:TokenPicker.ChipPadding(IsPerson), Mode=OneTime}"
                         Style="{x:Bind local:TokenPicker.ChipStyle(IsTag, Id), Mode=OneTime}"

@@ -9,7 +9,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
+    xmlns:dialogs="using:MaxPlanner.Presentation.Common.Dialogs"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     AutomationProperties.AutomationId="SubtaskEditor_Dialog"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
@@ -167,7 +168,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Subtitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <tasks:FieldError Text="{x:Bind ViewModel.SubtitleError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.SubtitleError, Mode=OneWay}" />
 
                 <ComboBox
                     x:Name="StatusCombo"
@@ -184,7 +185,7 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     TextWrapping="Wrap" />
-                <tasks:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
 
                 <!-- Dates: an explicit Clear is tracked for B-04 ("explicit manual clear"). -->
                 <Grid ColumnSpacing="8" RowSpacing="4">
@@ -246,7 +247,7 @@
                         Text="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
                         TextWrapping="Wrap" />
                 </Grid>
-                <tasks:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
 
                 <TextBox
                     x:Name="NotesBox"
@@ -258,7 +259,7 @@
                     IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                     Text="{x:Bind ViewModel.Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
-                <tasks:FieldError Text="{x:Bind ViewModel.NotesError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.NotesError, Mode=OneWay}" />
             </StackPanel>
 
             <!-- ===== Conflict review (design §5.10). ===== -->
@@ -278,7 +279,7 @@
                 </Grid>
                 <ItemsControl AutomationProperties.AutomationId="Conflict_Rows" ItemsSource="{x:Bind ViewModel.ConflictRows, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="tasks:ConflictRowViewModel">
+                        <DataTemplate x:DataType="dialogs:ConflictRowViewModel">
                             <Grid Padding="0,6" ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120" />
@@ -292,7 +293,7 @@
                                 <CheckBox
                                     Grid.Column="3"
                                     MinWidth="0"
-                                    AutomationProperties.AutomationId="{x:Bind tasks:TaskEditorDialog.UseMineId(Key), Mode=OneTime}"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.UseMineId(Key), Mode=OneTime}"
                                     AutomationProperties.Name="{x:Bind Field, Mode=OneTime}"
                                     IsChecked="{x:Bind UseMine, Mode=TwoWay}" />
                             </Grid>

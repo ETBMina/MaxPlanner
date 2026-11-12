@@ -9,17 +9,12 @@ using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Tasks;
 
 namespace MaxPlanner.Presentation.Grid;
-
-/// <summary>A task status offered by the Grid's Status editor.</summary>
-public sealed record StatusOption(TaskStatusId Id, string Name)
-{
-    public override string ToString() => Name;
-}
 
 /// <summary>
 /// One Grid row: a task or a Subtask card (B-07). Display values always show the committed read model; an open

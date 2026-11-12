@@ -82,7 +82,7 @@
                                     AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardPriority_', Key), Mode=OneTime}"
                                     AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
                                     FontSize="16"
-                                    Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}"
+                                    Glyph="{x:Bind common:BindFunctions.PriorityGlyph(PriorityLevel), Mode=OneWay}"
                                     Style="{x:Bind local:BoardPageView.PriorityGlyphStyle(PriorityLevel), Mode=OneWay}"
                                     ToolTipService.ToolTip="{x:Bind PriorityName, Mode=OneWay}"
                                     Visibility="{x:Bind common:BindFunctions.Visible(IsTask), Mode=OneWay}" />

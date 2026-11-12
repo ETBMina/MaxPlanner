@@ -10,8 +10,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.Settings"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     IsTabStop="False">
     <UserControl.Resources>
         <DataTemplate x:Key="FlagChipTemplate" x:DataType="x:String">
@@ -126,7 +126,7 @@
                             LostFocus="OnRenameLostFocus"
                             MaxLength="100"
                             Text="{x:Bind RenameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <tasks:FieldError Text="{x:Bind RenameError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind RenameError, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
                 <ItemsRepeater
@@ -237,7 +237,7 @@
                             AutomationProperties.AutomationId="{x:Bind AddButtonAutomationId, Mode=OneTime}"
                             Click="OnAddClick"
                             IsEnabled="{x:Bind common:BindFunctions.Not(IsAdding), Mode=OneWay}" />
-                        <tasks:FieldError Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind AddError, Mode=OneWay}" />
+                        <fields:FieldError Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind AddError, Mode=OneWay}" />
                     </Grid>
                 </StackPanel>
             </Expander>

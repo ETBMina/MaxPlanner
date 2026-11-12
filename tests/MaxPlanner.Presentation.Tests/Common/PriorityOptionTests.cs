@@ -2,7 +2,7 @@ using AwesomeAssertions;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Presentation.Common;
-using MaxPlanner.Presentation.Tasks;
+using MaxPlanner.Presentation.Common.Options;
 using MaxPlanner.Presentation.Tests.Testing;
 
 namespace MaxPlanner.Presentation.Tests.Common;

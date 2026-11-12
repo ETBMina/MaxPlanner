@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Calendar;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Filters;
 using MaxPlanner.Presentation.Common.Projections;

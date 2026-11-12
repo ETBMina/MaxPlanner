@@ -4,7 +4,7 @@
     repeats the text, so color never carries the meaning alone (P3). Theme brushes follow theme changes.
 -->
 <UserControl
-    x:Class="MaxPlanner.Presentation.Tasks.FieldError"
+    x:Class="MaxPlanner.Presentation.Common.Fields.FieldError"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     IsTabStop="False"

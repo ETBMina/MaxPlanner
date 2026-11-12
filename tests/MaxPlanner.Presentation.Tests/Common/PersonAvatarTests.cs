@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using MaxPlanner.Presentation.Common.Controls;
-using MaxPlanner.Presentation.Tasks;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Tests.Testing;
 
 namespace MaxPlanner.Presentation.Tests.Common;

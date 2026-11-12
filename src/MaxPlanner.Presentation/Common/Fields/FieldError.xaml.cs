@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace MaxPlanner.Presentation.Tasks;
+namespace MaxPlanner.Presentation.Common.Fields;
 
 /// <summary>An inline field error (design §5.0); collapsed when <see cref="Text"/> is empty.</summary>
 public sealed partial class FieldError : UserControl

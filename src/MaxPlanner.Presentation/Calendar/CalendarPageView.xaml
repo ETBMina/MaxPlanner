@@ -9,7 +9,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:filters="using:MaxPlanner.Presentation.Common.Filters"
-    xmlns:board="using:MaxPlanner.Presentation.Board"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
     xmlns:local="using:MaxPlanner.Presentation.Calendar"
@@ -42,9 +41,9 @@
                             Click="OnBacklogOpenClick"
                             Content="{x:Bind Number, Mode=OneWay}"
                             Tag="{x:Bind Mode=OneTime}" />
-                        <Border AutomationProperties.Name="{x:Bind PriorityAccessibleName, Mode=OneWay}" Style="{x:Bind board:BoardPageView.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
+                        <Border AutomationProperties.Name="{x:Bind PriorityAccessibleName, Mode=OneWay}" Style="{x:Bind common:BindFunctions.PriorityChipStyle(PriorityLevel), Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="{x:Bind board:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
+                                <FontIcon Glyph="{x:Bind common:BindFunctions.PriorityGlyph(PriorityLevel), Mode=OneWay}" Style="{StaticResource ChipGlyphStyle}" />
                                 <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind PriorityName, Mode=OneWay}" />
                             </StackPanel>
                         </Border>

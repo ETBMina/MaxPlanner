@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.UI.Xaml;
@@ -11,6 +10,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
 using WinGrid = Microsoft.UI.Xaml.Controls.Grid;
+using MaxPlanner.Presentation.Common.Options;
 
 namespace MaxPlanner.Presentation.Grid;
 
@@ -670,7 +670,7 @@ internal static class GridCellContent
                 priority.SelectedItem = row.DraftPriority;
                 priority.SelectionChanged += (_, _) =>
                 {
-                    if (priority.SelectedItem is Tasks.PriorityOption option && row.EditingColumn == GridColumns.Priority)
+                    if (priority.SelectedItem is PriorityOption option && row.EditingColumn == GridColumns.Priority)
                     {
                         row.DraftPriority = option;
                     }
