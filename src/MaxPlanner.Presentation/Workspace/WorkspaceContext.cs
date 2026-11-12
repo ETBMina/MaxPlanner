@@ -17,7 +17,7 @@ namespace MaxPlanner.Presentation.Workspace;
 /// save indicator, whether editing is currently allowed, and the dialog and announcement channels. Use it
 /// on the UI thread.
 /// </summary>
-public sealed partial class WorkspaceContext : ObservableObject
+public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer, IDialogService
 {
     private TaskCommands? _tasks;
     private ChangeRequestCommands? _changeRequests;
@@ -119,7 +119,7 @@ public sealed partial class WorkspaceContext : ObservableObject
     [ObservableProperty]
     public partial bool IsEditingBlocked { get; internal set; } = true;
 
-    /// <summary>Shows a dialog and completes when it closed. Without a dialog host (no window) nothing is shown.</summary>
+    /// <inheritdoc/>
     public Task ShowDialogAsync(IDialogViewModel viewModel)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
@@ -133,6 +133,7 @@ public sealed partial class WorkspaceContext : ObservableObject
         return request.Closed;
     }
 
+    /// <inheritdoc/>
     public void Announce(string text, bool isFailure = false) => Announced?.Invoke(this, new Announcement(text, isFailure));
 
     /// <summary>Called by the CR editor after a save was displayed (B-08.12).</summary>

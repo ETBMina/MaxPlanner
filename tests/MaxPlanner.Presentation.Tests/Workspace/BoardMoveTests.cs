@@ -43,8 +43,8 @@ public sealed class BoardMoveTests
         });
         var board = Ready(h);
         var inProgress = board.Buckets[2];
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("First"), inProgress.StatusId), TestContext.Current.CancellationToken));
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Second"), inProgress.StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("First"), inProgress.StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Second"), inProgress.StatusId), TestContext.Current.CancellationToken));
         var card = board.Buckets[0].Cards.Single();
 
         h.Await(board.DropAsync(card, inProgress, 1));
@@ -85,7 +85,7 @@ public sealed class BoardMoveTests
         });
         var board = Ready(h);
         var review = board.Buckets[3];
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Already in review"), review.StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Already in review"), review.StatusId), TestContext.Current.CancellationToken));
         var card = board.Buckets[0].Cards.Single(c => c.IsSubtaskCard);
         var parentRevision = h.Task(parent).Revision;
 
@@ -101,8 +101,8 @@ public sealed class BoardMoveTests
     public void While_searching_a_status_move_lands_at_the_top_of_the_full_bucket_and_reordering_is_refused()
     {
         using var h = Board(out var board, "Match one", "Hidden", "Match two");
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden blocker"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden newer"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden blocker"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden newer"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
         var announcements = Announcements(h);
         board.SearchText = "match";
         h.Settle();

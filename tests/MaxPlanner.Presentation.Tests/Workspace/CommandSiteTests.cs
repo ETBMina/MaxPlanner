@@ -414,7 +414,7 @@ public sealed class CommandSiteTests
     public void A_copy_after_an_unknown_outcome_or_a_throw_is_retried_under_the_same_operation()
     {
         using var h = WorkspaceHarness.Create(async s => await s.TaskAsync("Source"));
-        var copy = new CopyTaskViewModel(h.Workspace.Context, h.Store.Tasks.Items.Single());
+        var copy = new CopyTaskViewModel(h.Store, h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, h.UseCases.Tasks, h.Store.Tasks.Items.Single());
         var announced = Announcements(h);
 
         h.Coordinator.FailNext(new CommitOutcomeUnknownError(OperationId.New()));
@@ -439,7 +439,7 @@ public sealed class CommandSiteTests
         var context = h.Workspace.Context;
         var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
         var unused = workflow.TaskStatuses.First(s => s.Id != workflow.Defaults.DefaultTaskStatusId);
-        var vm = new LookupRemovalViewModel(context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, LookupKind.TaskStatus, unused.Id.Value, unused.Name.Display);
+        var vm = new LookupRemovalViewModel(context.Commands, context, context.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, LookupKind.TaskStatus, unused.Id.Value, unused.Name.Display);
         h.Await(vm.LoadAsync());
         var announced = Announcements(h);
 

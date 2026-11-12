@@ -168,8 +168,8 @@ public sealed class SliceBehaviourTests
         var edited = grid.Rows[0];
         grid.BeginEdit(edited, GridColumns.Service).Should().BeTrue();
 
-        h.External(u => u.UpdateTaskContent.ExecuteAsync(Rename(alpha, "Zulu"), default));
-        h.External(u => u.UpdateTaskContent.ExecuteAsync(Rename(charlie, "Aardvark"), default));
+        h.External(u => u.Tasks.UpdateTaskContent.ExecuteAsync(Rename(alpha, "Zulu"), default));
+        h.External(u => u.Tasks.UpdateTaskContent.ExecuteAsync(Rename(charlie, "Aardvark"), default));
 
         Titles(grid).Should().Equal(["Aardvark", "Zulu", "Bravo"], "the edited row stays where the user is typing; other rows re-sort");
         grid.Rows[1].Should().BeSameAs(edited);

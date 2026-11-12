@@ -62,7 +62,7 @@ public sealed class TaskCommands
             return;
         }
 
-        var copy = new CopyTaskViewModel(_context, source.Value);
+        var copy = new CopyTaskViewModel(_context.Store, _context.Commands, _context, _context.Strings, _context.UseCases.Tasks, source.Value);
         await _context.ShowDialogAsync(copy).ConfigureAwait(true);
         if (copy.CreatedTaskId is not null)
         {
@@ -74,7 +74,7 @@ public sealed class TaskCommands
     public async Task<bool> ArchiveAsync(TaskReadModel task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.ArchiveTask.ExecuteAsync(
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.Tasks.ArchiveTask.ExecuteAsync(
             new ArchiveTaskCommand(op, task.Id, task.Revision), CancellationToken.None))).ConfigureAwait(true);
         if (run.IsSuccess)
         {
@@ -87,7 +87,7 @@ public sealed class TaskCommands
     public async Task<bool> RestoreAsync(TaskReadModel task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.RestoreTask.ExecuteAsync(
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.Tasks.RestoreTask.ExecuteAsync(
             new RestoreTaskCommand(op, task.Id, task.Revision), CancellationToken.None))).ConfigureAwait(true);
         if (run.IsSuccess)
         {
@@ -118,7 +118,7 @@ public sealed class TaskCommands
         switch (confirmation.Result)
         {
             case ConfirmationResult.Primary:
-                var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.DeleteTask.ExecuteAsync(
+                var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_Task", op => _context.UseCases.Tasks.DeleteTask.ExecuteAsync(
                     new DeleteTaskCommand(op, task.Id, task.Revision), CancellationToken.None))).ConfigureAwait(true);
                 if (run.IsSuccess)
                 {
@@ -152,7 +152,7 @@ public sealed class TaskCommands
         var statusName = string.Empty;
         var request = CommandRequest.Announced(
             "Record_Task",
-            op => _context.UseCases.PopOutChecklistItem.ExecuteAsync(new PopOutChecklistItemCommand(op, task.Id, task.Revision, itemId, cardId), CancellationToken.None));
+            op => _context.UseCases.Checklists.PopOutChecklistItem.ExecuteAsync(new PopOutChecklistItemCommand(op, task.Id, task.Revision, itemId, cardId), CancellationToken.None));
         var run = await _context.Commands.RunAsync(request with
         {
             DisplayTimeout = PopOutDisplayTimeout,
@@ -195,7 +195,7 @@ public sealed class TaskCommands
             return false;
         }
 
-        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_SubtaskCard", op => _context.UseCases.DeleteSubtaskCard.ExecuteAsync(
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_SubtaskCard", op => _context.UseCases.SubtaskCards.DeleteSubtaskCard.ExecuteAsync(
             new DeleteSubtaskCardCommand(op, card.Id, card.Revision), CancellationToken.None))).ConfigureAwait(true);
         if (run.IsSuccess)
         {

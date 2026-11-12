@@ -198,8 +198,8 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
         var newDeveloper = developerToken is { IsNew: true } typed ? new NewPerson(new PersonId(typed.Id), typed.Name) : null;
         var draft = new ReviewDraft(Title, CrNumber, TaskNumber, [.. Services.Tokens.Select(t => t.Name)], developerToken is { } d ? new PersonId(d.Id) : null, Comments);
         var result = IsNew
-            ? await Context.UseCases.CreateReview.ExecuteAsync(new CreateReviewCommand(operation, _id, draft, newDeveloper, IsDone), CancellationToken.None).ConfigureAwait(true)
-            : await Context.UseCases.UpdateReview.ExecuteAsync(new UpdateReviewCommand(operation, _id, _base!.Revision, draft, newDeveloper, IsDone), CancellationToken.None).ConfigureAwait(true);
+            ? await Context.UseCases.Reviews.CreateReview.ExecuteAsync(new CreateReviewCommand(operation, _id, draft, newDeveloper, IsDone), CancellationToken.None).ConfigureAwait(true)
+            : await Context.UseCases.Reviews.UpdateReview.ExecuteAsync(new UpdateReviewCommand(operation, _id, _base!.Revision, draft, newDeveloper, IsDone), CancellationToken.None).ConfigureAwait(true);
         return result.IsSuccess ? (null, result.Value.CommitSequence) : (result.Error, 0);
     }
 

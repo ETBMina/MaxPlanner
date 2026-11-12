@@ -89,7 +89,7 @@ public sealed class CommandRunnerTests
         h.Settle();
 
         run.IsCompleted.Should().BeFalse("the store has not reached the sequence yet");
-        h.External(u => u.AddGeneralTodo.ExecuteAsync(
+        h.External(u => u.GeneralTodos.AddGeneralTodo.ExecuteAsync(
             new Application.Checklists.AddGeneralTodoCommand(OperationId.New(), new Domain.Identifiers.GeneralTodoId(Guid.NewGuid()), "Next"), CancellationToken.None));
         h.Await(run).IsSuccess.Should().BeTrue();
     }

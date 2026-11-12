@@ -49,7 +49,9 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly WorkspaceContext _context;
+    private readonly ICommandRunner _commands;
+    private readonly IAnnouncer _announcer;
+    private readonly ILocalizedStrings _strings;
     private readonly SettingsUseCases _useCases;
     private readonly FieldDefinition? _existing;
     private readonly string _stamp = string.Empty;
@@ -58,14 +60,23 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
     private bool _isProposingKey;
     private OperationId? _retryOperation;
 
-    private FieldDefinitionEditorViewModel(WorkspaceContext context, SettingsUseCases useCases, WorkflowSnapshot workflow, FieldTarget target, FieldDefinition? existing)
+    private FieldDefinitionEditorViewModel(
+        ICommandRunner commands,
+        IAnnouncer announcer,
+        ILocalizedStrings strings,
+        SettingsUseCases useCases,
+        WorkflowSnapshot workflow,
+        FieldTarget target,
+        FieldDefinition? existing)
     {
-        _context = context;
+        _commands = commands ?? throw new ArgumentNullException(nameof(commands));
+        _announcer = announcer ?? throw new ArgumentNullException(nameof(announcer));
+        _strings = strings ?? throw new ArgumentNullException(nameof(strings));
         _useCases = useCases;
         _existing = existing;
         Target = target;
         _id = existing?.Id ?? new FieldId(Guid.NewGuid());
-        KindChoices = [.. Enum.GetValues<FieldKind>().Select(k => context.Strings.GetString("FieldKind_" + k))];
+        KindChoices = [.. Enum.GetValues<FieldKind>().Select(k => strings.GetString("FieldKind_" + k))];
         Options = [];
         if (existing is not null)
         {
@@ -93,13 +104,13 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 
     public bool IsNew => _existing is null;
 
-    public string DialogTitle => _context.Strings.GetString(IsNew
+    public string DialogTitle => _strings.GetString(IsNew
         ? (Target == FieldTarget.Task ? "FieldDialog_TitleNewTask" : "FieldDialog_TitleNewCr")
         : "FieldDialog_TitleEdit");
 
-    public string PrimaryButtonText => _context.Strings.GetString(IsNew ? "FieldDialog_AddButton" : "FieldDialog_SaveButton");
+    public string PrimaryButtonText => _strings.GetString(IsNew ? "FieldDialog_AddButton" : "FieldDialog_SaveButton");
 
-    public string CloseButtonText => _context.Strings.GetString("Common_Cancel");
+    public string CloseButtonText => _strings.GetString("Common_Cancel");
 
     public IReadOnlyList<string> KindChoices { get; }
 
@@ -173,13 +184,15 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
     /// <summary>People and Tags fields start empty (interim: no default picker for them in release 1).</summary>
     public bool HasNoDefault => Kind is FieldKind.People or FieldKind.Tags;
 
-    public static FieldDefinitionEditorViewModel ForNew(WorkspaceContext context, SettingsUseCases useCases, WorkflowSnapshot workflow, FieldTarget target) =>
-        new(context, useCases, workflow, target, null);
+    public static FieldDefinitionEditorViewModel ForNew(
+        ICommandRunner commands, IAnnouncer announcer, ILocalizedStrings strings, SettingsUseCases useCases, WorkflowSnapshot workflow, FieldTarget target) =>
+        new(commands, announcer, strings, useCases, workflow, target, null);
 
-    public static FieldDefinitionEditorViewModel ForExisting(WorkspaceContext context, SettingsUseCases useCases, WorkflowSnapshot workflow, FieldDefinition field)
+    public static FieldDefinitionEditorViewModel ForExisting(
+        ICommandRunner commands, IAnnouncer announcer, ILocalizedStrings strings, SettingsUseCases useCases, WorkflowSnapshot workflow, FieldDefinition field)
     {
         ArgumentNullException.ThrowIfNull(field);
-        return new(context, useCases, workflow, field.Target, field);
+        return new(commands, announcer, strings, useCases, workflow, field.Target, field);
     }
 
     [RelayCommand]
@@ -208,9 +221,9 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
             return false;
         }
 
-        if (_context.IsEditingBlocked)
+        if (_commands.IsEditingBlocked)
         {
-            SaveError = _context.Strings.GetString("Error_EditingBlocked");
+            SaveError = _strings.GetString("Error_EditingBlocked");
             return false;
         }
 
@@ -224,7 +237,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
         var draft = new FieldDefinitionDraft(Label, IsRequired, defaultValue, options);
         // The dialog shows and announces a failure itself. An unknown outcome, including a throw, is retried under the
         // same operation (T-05); after a throw the dialog stays with the unexpected-error text.
-        var run = await _context.Commands.RunAsync(new CommandRequest<long>("Record_Settings", operation => _existing is null
+        var run = await _commands.RunAsync(new CommandRequest<long>("Record_Settings", operation => _existing is null
             ? _useCases.AddFieldDefinition.ExecuteAsync(new AddFieldDefinitionCommand(operation, _id, Target, Key, Kind, draft), CancellationToken.None)
             : _useCases.UpdateFieldDefinition.ExecuteAsync(new UpdateFieldDefinitionCommand(operation, _id, _stamp, draft), CancellationToken.None))
         {
@@ -236,12 +249,12 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
         switch (run.Status)
         {
             case CommandRunStatus.Succeeded:
-                _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
+                _announcer.Announce(_strings.GetString("SaveStatus_Saved"));
                 CloseRequested?.Invoke(this, EventArgs.Empty);
                 return true;
             case CommandRunStatus.Failed:
                 ShowFailure(run.Failure!.Error, run.Message!);
-                _context.Announce(run.Message!, isFailure: true);
+                _announcer.Announce(run.Message!, isFailure: true);
                 return false;
             default:
                 SaveError = run.Message;
@@ -272,7 +285,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 
     private FieldOptionRowViewModel NewOption(FieldOptionId id, string label)
     {
-        var option = new FieldOptionRowViewModel(id, label, _context.Strings.GetString("FieldDialog_RemoveOption"));
+        var option = new FieldOptionRowViewModel(id, label, _strings.GetString("FieldDialog_RemoveOption"));
         option.PropertyChanged += (_, _) => RefreshDefaultOptions();
         return option;
     }
@@ -280,7 +293,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
     private void RefreshDefaultOptions()
     {
         var selected = DefaultOptionIndex;
-        DefaultOptionChoices = [_context.Strings.GetString("Common_None"), .. Options.Select(o => o.Label)];
+        DefaultOptionChoices = [_strings.GetString("Common_None"), .. Options.Select(o => o.Label)];
         DefaultOptionIndex = selected >= 0 && selected < DefaultOptionChoices.Count ? selected : 0;
     }
 
@@ -328,7 +341,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
                 var url = HttpUrl.CreateOptional(DefaultText, "DefaultValue");
                 if (!url.IsSuccess || url.Value is null)
                 {
-                    DefaultError = _context.Strings.GetString("Error_InvalidUrl");
+                    DefaultError = _strings.GetString("Error_InvalidUrl");
                     return false;
                 }
 
@@ -337,7 +350,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
             case FieldKind.Number when !double.IsNaN(DefaultNumber):
                 if (double.IsInfinity(DefaultNumber) || Math.Abs(DefaultNumber) > (double)decimal.MaxValue)
                 {
-                    DefaultError = _context.Strings.Format("Error_Invalid", _context.Strings.GetString("Field_DefaultValue"));
+                    DefaultError = _strings.Format("Error_Invalid", _strings.GetString("Field_DefaultValue"));
                     return false;
                 }
 
@@ -364,7 +377,7 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
 
         foreach (var domainError in validation.Errors)
         {
-            var text = CommandErrorText.Describe(domainError, _context.Strings);
+            var text = CommandErrorText.Describe(domainError, _strings);
             switch (domainError.Field)
             {
                 case "Label":

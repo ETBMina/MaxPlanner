@@ -398,7 +398,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        var removal = new LookupRemovalViewModel(_context, _services.UseCases, workflow, row.Kind, row.Id, row.Name);
+        var removal = new LookupRemovalViewModel(_context.Commands, _context, _context.Strings, _services.UseCases, workflow, row.Kind, row.Id, row.Name);
         await removal.LoadAsync().ConfigureAwait(true);
         await _context.ShowDialogAsync(removal).ConfigureAwait(true);
     }
@@ -466,7 +466,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     {
         ArgumentNullException.ThrowIfNull(section);
         return _workflow is { } workflow
-            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForNew(_context, _services.UseCases, workflow, section.Target))
+            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForNew(_context.Commands, _context, _context.Strings, _services.UseCases, workflow, section.Target))
             : Task.CompletedTask;
     }
 
@@ -474,7 +474,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     {
         ArgumentNullException.ThrowIfNull(row);
         return _workflow is { } workflow && workflow.Fields.FirstOrDefault(f => f.Id == row.Id) is { } field
-            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForExisting(_context, _services.UseCases, workflow, field))
+            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForExisting(_context.Commands, _context, _context.Strings, _services.UseCases, workflow, field))
             : Task.CompletedTask;
     }
 

@@ -47,7 +47,7 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
     public ChecklistsPageViewModel(WorkspaceContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        General = new GeneralTodosViewModel(context);
+        General = new GeneralTodosViewModel(context.Store, context.UiScheduler, context.Commands, context, context.Strings, context.UseCases.GeneralTodos);
         Reviews = new ReviewsViewModel(context);
         _view = new ProjectionView<TaskReadModel, TaskId, ChecklistGroupViewModel>(
             context.Store.Tasks,

@@ -676,7 +676,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         AppResult<CommandOutcome<SubtaskCardId>> result;
         try
         {
-            result = await Context.UseCases.CreateSubtaskCard.ExecuteAsync(
+            result = await Context.UseCases.SubtaskCards.CreateSubtaskCard.ExecuteAsync(
                 new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -848,7 +848,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
 
         if (IsNew)
         {
-            var created = await useCases.CreateTask.ExecuteAsync(
+            var created = await useCases.Tasks.CreateTask.ExecuteAsync(
                 new CreateTaskCommand(operation, _taskId, content, SelectedStatus?.Id, SelectedPriority?.Id, start, end, link, checklist, lookups),
                 CancellationToken.None).ConfigureAwait(true);
             CreatedTaskId = created.IsSuccess ? created.Value.Value : null;
@@ -862,12 +862,12 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         if (IsArchived)
         {
             var linkService = task.Service is null ? Service : null;
-            var linked = await useCases.LinkTaskToChangeRequest.ExecuteAsync(
+            var linked = await useCases.Tasks.LinkTaskToChangeRequest.ExecuteAsync(
                 new LinkTaskToChangeRequestCommand(operation, task.Id, task.Revision, link!.Id, link.ExpectedRevision, linkService), CancellationToken.None).ConfigureAwait(true);
             return linked.IsSuccess ? (null, linked.Value.CommitSequence) : (linked.Error, 0);
         }
 
-        var updated = await useCases.UpdateTask.ExecuteAsync(
+        var updated = await useCases.Tasks.UpdateTask.ExecuteAsync(
             new UpdateTaskCommand(operation, task.Id, task.Revision, content, SelectedStatus?.Id ?? task.Status.Id, SelectedPriority?.Id ?? task.Priority.Id,
                 start, end, checklist, lookups, link),
             CancellationToken.None).ConfigureAwait(true);

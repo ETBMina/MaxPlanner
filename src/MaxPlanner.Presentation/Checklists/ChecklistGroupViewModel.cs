@@ -149,7 +149,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
 
             _keepVisible(Model.Id);
             item.IsPending = true;
-            ToggleError = await _queue.RunAsync(op => _context.UseCases.SetChecklistItemCompleted.ExecuteAsync(
+            ToggleError = await _queue.RunAsync(op => _context.UseCases.Checklists.SetChecklistItemCompleted.ExecuteAsync(
                 new SetChecklistItemCompletedCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), isChecked), CancellationToken.None)).ConfigureAwait(true);
             item.IsPending = false;
             if (ToggleError is not null)
@@ -171,7 +171,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         await _queue.Enqueue(async () =>
         {
             item.IsPending = true;
-            error = await _queue.RunAsync(op => _context.UseCases.RenameChecklistItem.ExecuteAsync(
+            error = await _queue.RunAsync(op => _context.UseCases.Checklists.RenameChecklistItem.ExecuteAsync(
                 new RenameChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), text), CancellationToken.None)).ConfigureAwait(true);
             item.IsPending = false;
         }).ConfigureAwait(true);
@@ -191,7 +191,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
             }
 
             item.IsPending = true;
-            ToggleError = await _queue.RunAsync(op => _context.UseCases.MoveChecklistItem.ExecuteAsync(
+            ToggleError = await _queue.RunAsync(op => _context.UseCases.Checklists.MoveChecklistItem.ExecuteAsync(
                 new MoveChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), new ChecklistItemId(anchor.Id), PlaceAfter: !up), CancellationToken.None)).ConfigureAwait(true);
             item.IsPending = false;
         });
@@ -204,7 +204,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         {
             _keepVisible(Model.Id);
             item.IsPending = true;
-            ToggleError = await _queue.RunAsync(op => _context.UseCases.DeleteChecklistItem.ExecuteAsync(
+            ToggleError = await _queue.RunAsync(op => _context.UseCases.Checklists.DeleteChecklistItem.ExecuteAsync(
                 new DeleteChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id)), CancellationToken.None)).ConfigureAwait(true);
             item.IsPending = false;
             if (ToggleError is null)
@@ -240,7 +240,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
     private Task AddItemAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;
-        NewItemError = await _queue.RunAsync(op => _context.UseCases.AddChecklistItem.ExecuteAsync(
+        NewItemError = await _queue.RunAsync(op => _context.UseCases.Checklists.AddChecklistItem.ExecuteAsync(
             new AddChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(Guid.NewGuid()), NewItemText), CancellationToken.None)).ConfigureAwait(true);
         if (NewItemError is null)
         {

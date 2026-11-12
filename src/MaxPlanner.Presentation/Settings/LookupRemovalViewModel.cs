@@ -22,16 +22,28 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly WorkspaceContext _context;
+    private readonly ICommandRunner _commands;
+    private readonly IAnnouncer _announcer;
+    private readonly ILocalizedStrings _strings;
     private readonly SettingsUseCases _useCases;
     private readonly LookupKind _kind;
     private readonly Guid _id;
     private readonly string _name;
     private OperationId? _retryOperation;
 
-    public LookupRemovalViewModel(WorkspaceContext context, SettingsUseCases useCases, WorkflowSnapshot workflow, LookupKind kind, Guid id, string name)
+    public LookupRemovalViewModel(
+        ICommandRunner commands,
+        IAnnouncer announcer,
+        ILocalizedStrings strings,
+        SettingsUseCases useCases,
+        WorkflowSnapshot workflow,
+        LookupKind kind,
+        Guid id,
+        string name)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _commands = commands ?? throw new ArgumentNullException(nameof(commands));
+        _announcer = announcer ?? throw new ArgumentNullException(nameof(announcer));
+        _strings = strings ?? throw new ArgumentNullException(nameof(strings));
         _useCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
         ArgumentNullException.ThrowIfNull(workflow);
         _kind = kind;
@@ -44,7 +56,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
     public event EventHandler? CloseRequested;
 
     /// <summary>"Remove status 'Review'?" (design §5.9).</summary>
-    public string DialogTitle => _context.Strings.Format("LookupRemove_Title_" + _kind, _name);
+    public string DialogTitle => _strings.Format("LookupRemove_Title_" + _kind, _name);
 
     public IReadOnlyList<SettingsChoice> ReplacementChoices { get; }
 
@@ -96,9 +108,9 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
     /// <summary>Design §5.9 note for statuses: "Dates are kept. This is not a status move."</summary>
     public bool ShowStatusNote => _kind is LookupKind.TaskStatus or LookupKind.CrStatus;
 
-    public string PrimaryButtonText => _context.Strings.GetString(IsUnused || ClearInstead ? "LookupRemove_RemoveButton" : "LookupRemove_RemoveAndReplaceButton");
+    public string PrimaryButtonText => _strings.GetString(IsUnused || ClearInstead ? "LookupRemove_RemoveButton" : "LookupRemove_RemoveAndReplaceButton");
 
-    public string CloseButtonText => _context.Strings.GetString("Common_Cancel");
+    public string CloseButtonText => _strings.GetString("Common_Cancel");
 
     public bool CanRemove => !IsLoading && !IsSaving && Usage is not null
         && (IsUnused || (ShowClearOption && ClearInstead) || (SelectedReplacementIndex >= 0 && SelectedReplacementIndex < ReplacementChoices.Count));
@@ -111,7 +123,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         IsLoading = false;
         if (!result.IsSuccess)
         {
-            Error = CommandErrorText.Describe(result.Error!, "Record_Settings", _context.Strings);
+            Error = CommandErrorText.Describe(result.Error!, "Record_Settings", _strings);
             return;
         }
 
@@ -131,9 +143,9 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
             return false;
         }
 
-        if (_context.IsEditingBlocked)
+        if (_commands.IsEditingBlocked)
         {
-            Error = _context.Strings.GetString("Error_EditingBlocked");
+            Error = _strings.GetString("Error_EditingBlocked");
             return false;
         }
 
@@ -143,7 +155,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         // The coordinator logs an exception and rolls the transaction back; nothing was written, so after a thrown command
         // the indicator keeps its last result, the dialog stays open with a generic message that is announced, and the
         // retry is a new operation. The dialog announces a typed failure itself, after showing it.
-        var run = await _context.Commands.RunAsync(new CommandRequest<long>("Record_Settings", operation =>
+        var run = await _commands.RunAsync(new CommandRequest<long>("Record_Settings", operation =>
             _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None))
         {
             Operation = _retryOperation,
@@ -155,14 +167,14 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         {
             case CommandRunStatus.Succeeded:
                 _retryOperation = null;
-                _context.Announce(_context.Strings.Format("LookupRemove_Done", _name));
+                _announcer.Announce(_strings.Format("LookupRemove_Done", _name));
                 CloseRequested?.Invoke(this, EventArgs.Empty);
                 return true;
             case CommandRunStatus.Failed:
                 _retryOperation = run.RetryOperation;
                 if (run.Failure!.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.LookupUsageChanged }, ..] })
                 {
-                    UsageChangedMessage = _context.Strings.GetString("LookupRemove_UsageChanged");
+                    UsageChangedMessage = _strings.GetString("LookupRemove_UsageChanged");
                     await LoadAsync().ConfigureAwait(true);
                 }
                 else
@@ -170,7 +182,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
                     Error = run.Message;
                 }
 
-                _context.Announce(run.Message!, isFailure: true);
+                _announcer.Announce(run.Message!, isFailure: true);
                 return false;
             default:
                 // A failure after the commit (the display wait) was reported by the runner; its retry reuses the operation.
@@ -182,7 +194,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
 
     private List<string> Describe(LookupUsageCounts usage)
     {
-        var strings = _context.Strings;
+        var strings = _strings;
         var lines = new List<string>();
         void Add(int count, string key)
         {

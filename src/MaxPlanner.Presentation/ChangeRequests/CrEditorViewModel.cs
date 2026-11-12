@@ -507,7 +507,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         // elsewhere does not change what the user agreed to, while a scope change does and is refused. The step
         // announces a failure itself, after showing it.
         var run = await Context.Commands.RunAsync(new CommandRequest<CascadeDeletionSummary>("Record_ChangeRequest", operation =>
-            Context.UseCases.DeleteChangeRequest.ExecuteAsync(new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None))
+            Context.UseCases.ChangeRequests.DeleteChangeRequest.ExecuteAsync(new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None))
         {
             DisplayTimeout = CommitDisplayTimeout,
         }).ConfigureAwait(true);
@@ -740,7 +740,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         if (IsNew && CreatedId is null)
         {
-            var created = await useCases.CreateChangeRequest.ExecuteAsync(
+            var created = await useCases.ChangeRequests.CreateChangeRequest.ExecuteAsync(
                 new CreateChangeRequestCommand(operation, _id, draft, SelectedStatus?.Id, newOwner, makeDefaultOwner), CancellationToken.None).ConfigureAwait(true);
             if (!created.IsSuccess)
             {
@@ -753,7 +753,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         // A status is always selected: the box offers only configured statuses and starts on the CR's own.
         var statusId = SelectedStatus?.Id ?? _base!.Status.Id;
-        var updated = await useCases.UpdateChangeRequest.ExecuteAsync(
+        var updated = await useCases.ChangeRequests.UpdateChangeRequest.ExecuteAsync(
             new UpdateChangeRequestCommand(operation, _id, _base!.Revision, draft, statusId, newOwner, makeDefaultOwner), CancellationToken.None).ConfigureAwait(true);
         return updated.IsSuccess ? (null, updated.Value.CommitSequence) : (updated.Error, 0);
     }

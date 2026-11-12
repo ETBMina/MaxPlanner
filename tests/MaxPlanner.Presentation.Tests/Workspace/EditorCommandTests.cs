@@ -206,7 +206,7 @@ public sealed class EditorCommandTests
             await s.TaskAsync("Source");
             await s.CrAsync("CR-1042", "Instant card freeze");
         });
-        var copy = new CopyTaskViewModel(h.Workspace.Context, h.Store.Tasks.Items.Single());
+        var copy = new CopyTaskViewModel(h.Store, h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, h.UseCases.Tasks, h.Store.Tasks.Items.Single());
 
         copy.BeginLinkCommand.Execute(null);
         copy.IsLinkPickStep.Should().BeTrue();

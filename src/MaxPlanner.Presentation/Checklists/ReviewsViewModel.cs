@@ -217,7 +217,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             }
 
             row.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.SetReviewDone.ExecuteAsync(
+            ActionError = await _queue.RunAsync(op => _context.UseCases.Reviews.SetReviewDone.ExecuteAsync(
                 new SetReviewDoneCommand(op, review.Id, review.Revision, isDone), CancellationToken.None)).ConfigureAwait(true);
             row.IsPending = false;
             if (ActionError is not null)
@@ -245,7 +245,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             }
 
             row.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.MoveReview.ExecuteAsync(
+            ActionError = await _queue.RunAsync(op => _context.UseCases.Reviews.MoveReview.ExecuteAsync(
                 new MoveReviewCommand(op, review.Id, review.Revision, anchor.Model.Id, PlaceAfter: !up), CancellationToken.None)).ConfigureAwait(true);
             row.IsPending = false;
         });
@@ -274,7 +274,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     {
         IsAdding = true;
         var draft = new ReviewDraft(NewItemText, CrNumber: null, TaskNumber: null, Services: [], DeveloperId: null, Comments: null);
-        NewItemError = await _queue.RunAsync(op => _context.UseCases.CreateReview.ExecuteAsync(
+        NewItemError = await _queue.RunAsync(op => _context.UseCases.Reviews.CreateReview.ExecuteAsync(
             new CreateReviewCommand(op, new ReviewItemId(Guid.NewGuid()), draft, NewDeveloper: null, IsDone: false), CancellationToken.None)).ConfigureAwait(true);
         if (NewItemError is null)
         {
@@ -293,7 +293,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        ActionError = await _queue.RunAsync(op => _context.UseCases.DeleteReview.ExecuteAsync(
+        ActionError = await _queue.RunAsync(op => _context.UseCases.Reviews.DeleteReview.ExecuteAsync(
             new DeleteReviewCommand(op, id, review.Value.Revision), CancellationToken.None)).ConfigureAwait(true);
         if (ActionError is null)
         {

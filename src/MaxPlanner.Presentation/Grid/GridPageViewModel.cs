@@ -474,22 +474,22 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         var useCases = _context.UseCases;
         AppResult<CommandOutcome<long>> result = (baseModel.Task, baseModel.Card, column) switch
         {
-            ({ } task, _, GridColumns.Title or GridColumns.Service) => await useCases.UpdateTaskContent.ExecuteAsync(
+            ({ } task, _, GridColumns.Title or GridColumns.Service) => await useCases.Tasks.UpdateTaskContent.ExecuteAsync(
                 new UpdateTaskContentCommand(operation, task.Id, task.Revision, ContentWith(task, column, row.DraftText)), CancellationToken.None),
-            (_, { } card, GridColumns.Subtitle) => await useCases.UpdateSubtaskCardContent.ExecuteAsync(
+            (_, { } card, GridColumns.Subtitle) => await useCases.SubtaskCards.UpdateSubtaskCardContent.ExecuteAsync(
                 new UpdateSubtaskCardContentCommand(operation, card.Id, card.Revision, row.DraftText, card.Notes), CancellationToken.None),
 
             // B-07: a status change from the Grid places the card at the top of the full destination bucket,
             // the same rule as the editors, so it never renumbers cards the user cannot see.
-            ({ } task, _, GridColumns.Status) => await useCases.MoveTask.ExecuteAsync(
+            ({ } task, _, GridColumns.Status) => await useCases.Tasks.MoveTask.ExecuteAsync(
                 new MoveTaskCommand(operation, task.Id, task.Revision, row.DraftStatus!.Id, BoardPlacement.Top), CancellationToken.None),
-            (_, { } card, GridColumns.Status) => await useCases.MoveSubtaskCard.ExecuteAsync(
+            (_, { } card, GridColumns.Status) => await useCases.SubtaskCards.MoveSubtaskCard.ExecuteAsync(
                 new MoveSubtaskCardCommand(operation, card.Id, card.Revision, row.DraftStatus!.Id, BoardPlacement.Top), CancellationToken.None),
 
             // Every other task cell saves the whole task with one changed field, at the revision the edit began
             // from (UpdateTask: same status, so no transition and no automatic dates, B-04).
-            ({ } task, _, _) => await useCases.UpdateTask.ExecuteAsync(TaskEdit(row, task, column, operation, customValues), CancellationToken.None),
-            (_, { } card, GridColumns.Notes or GridColumns.StartDate or GridColumns.EndDate) => await useCases.UpdateSubtaskCard.ExecuteAsync(
+            ({ } task, _, _) => await useCases.Tasks.UpdateTask.ExecuteAsync(TaskEdit(row, task, column, operation, customValues), CancellationToken.None),
+            (_, { } card, GridColumns.Notes or GridColumns.StartDate or GridColumns.EndDate) => await useCases.SubtaskCards.UpdateSubtaskCard.ExecuteAsync(
                 new UpdateSubtaskCardCommand(
                     operation,
                     card.Id,

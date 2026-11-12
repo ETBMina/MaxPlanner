@@ -40,7 +40,7 @@ public sealed class ChangeRequestCommands
     public async Task<bool> ScheduleAsync(ChangeRequestReadModel cr, DateOnly day)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ScheduleChangeRequest.ExecuteAsync(
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ChangeRequests.ScheduleChangeRequest.ExecuteAsync(
             new ScheduleChangeRequestCommand(op, cr.Id, cr.Revision, day), CancellationToken.None))).ConfigureAwait(true);
         if (run.IsSuccess)
         {
@@ -57,7 +57,7 @@ public sealed class ChangeRequestCommands
     public async Task<bool> ResizeAsync(ChangeRequestReadModel cr, DateOnly? newStart, DateOnly? newEnd)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ResizeChangeRequest.ExecuteAsync(
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ChangeRequests.ResizeChangeRequest.ExecuteAsync(
             new ResizeChangeRequestCommand(op, cr.Id, cr.Revision, newStart, newEnd), CancellationToken.None))).ConfigureAwait(true);
         if (run.IsSuccess && (newStart ?? cr.PlannedStart) is { } start && (newEnd ?? cr.PlannedEnd) is { } end)
         {
@@ -71,7 +71,7 @@ public sealed class ChangeRequestCommands
     public async Task<bool> MoveToBacklogAsync(ChangeRequestReadModel cr)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.MoveChangeRequestToBacklog.ExecuteAsync(
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ChangeRequests.MoveChangeRequestToBacklog.ExecuteAsync(
             new MoveChangeRequestToBacklogCommand(op, cr.Id, cr.Revision), CancellationToken.None))).ConfigureAwait(true);
         if (run.IsSuccess)
         {

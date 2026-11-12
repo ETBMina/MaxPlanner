@@ -443,9 +443,9 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         var model = card.Model;
         var run = await _context.Commands.RunAsync(new CommandRequest<long>(card.IsTask ? "Record_Task" : "Record_SubtaskCard", operation => model switch
         {
-            { Task: { } task } => _context.UseCases.MoveTask.ExecuteAsync(
+            { Task: { } task } => _context.UseCases.Tasks.MoveTask.ExecuteAsync(
                 new MoveTaskCommand(operation, task.Id, task.Revision, target.StatusId, placement), CancellationToken.None),
-            { Card: { } subtaskCard } => _context.UseCases.MoveSubtaskCard.ExecuteAsync(
+            { Card: { } subtaskCard } => _context.UseCases.SubtaskCards.MoveSubtaskCard.ExecuteAsync(
                 new MoveSubtaskCardCommand(operation, subtaskCard.Id, subtaskCard.Revision, target.StatusId, placement), CancellationToken.None),
             _ => throw new InvalidOperationException("A Board card is a task or a Subtask card."),
         })
