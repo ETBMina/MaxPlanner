@@ -149,34 +149,13 @@
                 A closed InfoBar stays Visible with zero height, so the Root StackPanel would still add 12 epx of spacing
                 for each one. Visibility follows IsOpen so closed bars reserve no space.
             -->
-            <InfoBar
-                x:Uid="TaskEditor_ValidationInfoBar"
-                AutomationProperties.AutomationId="TaskEditor_ValidationInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
-                Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
-
-            <!-- Save failures and the conflict of design §5.10; the draft stays. -->
-            <InfoBar
-                AutomationProperties.AutomationId="TaskEditor_ErrorInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
-                Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
-                <InfoBar.Content>
-                    <StackPanel
-                        Margin="0,0,0,12"
-                        Orientation="Horizontal"
-                        Spacing="8"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}">
-                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Command="{x:Bind ViewModel.ReviewConflictCommand}" />
-                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Command="{x:Bind ViewModel.BeginReloadCommand}" />
-                    </StackPanel>
-                </InfoBar.Content>
-            </InfoBar>
+            <dialogs:EditorMessageBars
+                AutomationPrefix="TaskEditor"
+                IsConflict="{x:Bind ViewModel.IsConflict, Mode=OneWay}"
+                ReloadCommand="{x:Bind ViewModel.BeginReloadCommand}"
+                ReviewConflictCommand="{x:Bind ViewModel.ReviewConflictCommand}"
+                SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
+                ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
 
             <InfoBar
                 AutomationProperties.AutomationId="TaskEditor_CrChangedInfoBar"

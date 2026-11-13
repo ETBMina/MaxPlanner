@@ -9,6 +9,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:dialogs="using:MaxPlanner.Presentation.Common.Dialogs"
     xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     AutomationProperties.AutomationId="ReviewEditor_Dialog"
@@ -51,31 +52,13 @@
                 </Button>
             </Grid>
 
-            <InfoBar
-                x:Uid="TaskEditor_ValidationInfoBar"
-                AutomationProperties.AutomationId="ReviewEditor_ValidationInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
-                Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
-
             <!-- A conflict keeps the draft; Reload replaces it with the saved review (design §5.10, simplified). -->
-            <InfoBar
-                AutomationProperties.AutomationId="ReviewEditor_ErrorInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
-                Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
-                <InfoBar.ActionButton>
-                    <Button
-                        x:Uid="Conflict_ReloadButton"
-                        AutomationProperties.AutomationId="Conflict_ReloadButton"
-                        Command="{x:Bind ViewModel.ReloadCommand}"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}" />
-                </InfoBar.ActionButton>
-            </InfoBar>
+            <dialogs:EditorMessageBars
+                AutomationPrefix="ReviewEditor"
+                IsConflict="{x:Bind ViewModel.IsConflict, Mode=OneWay}"
+                ReloadCommand="{x:Bind ViewModel.ReloadCommand}"
+                SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
+                ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
 
 
             <StackPanel Spacing="4">
