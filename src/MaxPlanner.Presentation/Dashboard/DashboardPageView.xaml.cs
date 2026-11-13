@@ -17,14 +17,7 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
 
         // A caption or badge that changes can change a card's height. The view and the page ViewModel share the
         // dataset's lifetime, so these subscriptions need no removal.
@@ -65,7 +58,7 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch() => false;
@@ -138,7 +131,7 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
         // T-08.1 page padding: L 32/24, M 24/16, S 16/12 (design §2.3).
         var window = PagePadding.WindowWidth(this, width);
         var inset = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= Breakpoints.Medium ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         ContentRoot.Padding = new Thickness(inset, 0, inset, 24);
 
         // Design §4.1: cards 3–6 per row at L, 2 columns at M, 1 at S.

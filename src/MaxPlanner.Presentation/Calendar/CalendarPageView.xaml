@@ -264,206 +264,202 @@
         </Grid.RowDefinitions>
 
         <!-- Page header (design §2.3): title, modes and period, search and the CR Filters flyout (B-10), filter context. -->
-        <StackPanel
+        <controls:PageHeader
             x:Name="HeaderRoot"
-            Padding="32,24,32,12"
-            Spacing="8">
-            <TextBlock
-                x:Name="PageTitle"
-                x:Uid="Calendar_PageTitle"
-                AutomationProperties.AutomationId="Calendar_PageTitle"
-                AutomationProperties.HeadingLevel="Level1"
-                Style="{StaticResource PageTitleTextStyle}" />
-            <!--
-                Design §2.3 / §4.4: mode selector then the search icon on the left; period navigation, Filters and the accent
-                New CR on the right. The search column is the star column, so the icon expands into the free space after it.
-                Below the L breakpoint the right group moves to its own row (ApplyBreakpoint) and wraps.
-            -->
-            <Grid x:Name="CommandRow" ColumnSpacing="12" RowSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <SelectorBar
-                    x:Name="ModeBar"
-                    AutomationProperties.AutomationId="Calendar_ModeBar"
-                    SelectionChanged="OnModeChanged">
-                    <SelectorBarItem
-                        x:Name="MonthItem"
-                        x:Uid="Calendar_ModeMonthItem"
-                        AutomationProperties.AutomationId="Calendar_ModeMonthItem"
-                        Tag="Month" />
-                    <SelectorBarItem
-                        x:Name="WeekItem"
-                        x:Uid="Calendar_ModeWeekItem"
-                        AutomationProperties.AutomationId="Calendar_ModeWeekItem"
-                        Tag="Week" />
-                    <SelectorBarItem
-                        x:Name="RecordsItem"
-                        x:Uid="Calendar_ModeRecordsItem"
-                        AutomationProperties.AutomationId="Calendar_ModeRecordsItem"
-                        Tag="Records" />
-                </SelectorBar>
-                <controls:ExpandingSearchBox
-                    x:Name="SearchBox"
-                    x:Uid="Calendar_Search"
-                    Grid.Column="1"
-                    AutomationIdPrefix="Calendar"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+            TitleAutomationId="Calendar_PageTitle"
+            TitleUid="Calendar_PageTitle">
+            <StackPanel Spacing="8">
                 <!--
-                    A Grid with content-sized columns, not a wrapping panel: a wrapping panel in this Auto column wrapped New CR
-                    onto a second line in Records and the row did not grow. ApplyBreakpoint re-places the children at S.
+                    Design §2.3 / §4.4: mode selector then the search icon on the left; period navigation, Filters and the accent
+                    New CR on the right. The search column is the star column, so the icon expands into the free space after it.
+                    Below the L breakpoint the right group moves to its own row (ApplyBreakpoint) and wraps.
                 -->
-                <Grid
-                    x:Name="CommandGroup"
-                    Grid.Column="2"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    ColumnSpacing="8"
-                    RowSpacing="8">
+                <Grid x:Name="CommandRow" ColumnSpacing="12" RowSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <!-- Period navigation (Month/Week only): Today, the joined ‹ › pair, then the period button with the date selector. -->
-                    <StackPanel
-                        x:Name="PeriodPanel"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Right"
-                        Orientation="Horizontal"
-                        Spacing="8"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSurfaceMode), Mode=OneWay}">
-                        <Button
-                            x:Uid="Calendar_TodayButton"
-                            AutomationProperties.AutomationId="Calendar_TodayButton"
-                            Command="{x:Bind ViewModel.GoToTodayCommand}">
-                            <Button.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="T" Modifiers="Control" />
-                            </Button.KeyboardAccelerators>
-                        </Button>
-                        <!--
-                            The arrows are one pill the height of the neighbouring buttons: a 32-epx border around two 30-epx
-                            subtle buttons and a hairline divider. Each button rounds only its outer corners.
-                        -->
-                        <Border
-                            Background="{ThemeResource ControlFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{ThemeResource ControlCornerRadius}">
-                            <StackPanel Orientation="Horizontal">
-                                <Button
-                                    Width="30"
-                                    Height="30"
-                                    MinWidth="0"
-                                    MinHeight="0"
-                                    Padding="0"
-                                    AutomationProperties.AutomationId="Calendar_PrevButton"
-                                    AutomationProperties.Name="{x:Bind ViewModel.PreviousName, Mode=OneWay}"
-                                    CornerRadius="3,0,0,3"
-                                    Command="{x:Bind ViewModel.PreviousCommand}"
-                                    Style="{StaticResource SubtleButtonStyle}"
-                                    ToolTipService.ToolTip="{x:Bind ViewModel.PreviousName, Mode=OneWay}">
-                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
-                                </Button>
-                                <Rectangle
-                                    Width="1"
-                                    Fill="{ThemeResource ControlStrokeColorDefaultBrush}" />
-                                <Button
-                                    Width="30"
-                                    Height="30"
-                                    MinWidth="0"
-                                    MinHeight="0"
-                                    Padding="0"
-                                    AutomationProperties.AutomationId="Calendar_NextButton"
-                                    AutomationProperties.Name="{x:Bind ViewModel.NextName, Mode=OneWay}"
-                                    CornerRadius="0,3,3,0"
-                                    Command="{x:Bind ViewModel.NextCommand}"
-                                    Style="{StaticResource SubtleButtonStyle}"
-                                    ToolTipService.ToolTip="{x:Bind ViewModel.NextName, Mode=OneWay}">
-                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
-                                </Button>
-                            </StackPanel>
-                        </Border>
-                        <Button
-                            x:Name="PeriodButton"
-                            AutomationProperties.AutomationId="Calendar_PeriodButton"
-                            AutomationProperties.HelpText="{x:Bind ViewModel.Text('Calendar_PeriodHelp'), Mode=OneTime}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <!-- MinWidth is set from the widest period text of the mode (ApplyPeriodWidth), so navigating never resizes the button. -->
-                                <TextBlock
-                                    x:Name="PeriodLabel"
-                                    Text="{x:Bind ViewModel.PeriodText, Mode=OneWay}"
-                                    TextAlignment="Center" />
-                                <FontIcon
-                                    AutomationProperties.AccessibilityView="Raw"
-                                    FontSize="10"
-                                    Glyph="&#xE70D;" />
-                            </StackPanel>
-                            <Button.Flyout>
-                                <Flyout x:Name="PeriodFlyout" Opening="OnPeriodFlyoutOpening">
-                                    <CalendarView
-                                        x:Name="PeriodCalendar"
-                                        AutomationProperties.AutomationId="Calendar_PeriodCalendar"
-                                        FirstDayOfWeek="Sunday"
-                                        SelectedDatesChanged="OnPeriodDateSelected"
-                                        SelectionMode="Single" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                    </StackPanel>
-                    <filters:FilterButton
-                        x:Name="CommandFilterButton"
+                    <SelectorBar
+                        x:Name="ModeBar"
+                        AutomationProperties.AutomationId="Calendar_ModeBar"
+                        SelectionChanged="OnModeChanged">
+                        <SelectorBarItem
+                            x:Name="MonthItem"
+                            x:Uid="Calendar_ModeMonthItem"
+                            AutomationProperties.AutomationId="Calendar_ModeMonthItem"
+                            Tag="Month" />
+                        <SelectorBarItem
+                            x:Name="WeekItem"
+                            x:Uid="Calendar_ModeWeekItem"
+                            AutomationProperties.AutomationId="Calendar_ModeWeekItem"
+                            Tag="Week" />
+                        <SelectorBarItem
+                            x:Name="RecordsItem"
+                            x:Uid="Calendar_ModeRecordsItem"
+                            AutomationProperties.AutomationId="Calendar_ModeRecordsItem"
+                            Tag="Records" />
+                    </SelectorBar>
+                    <controls:ExpandingSearchBox
+                        x:Name="SearchBox"
+                        x:Uid="Calendar_Search"
                         Grid.Column="1"
-                        PageKey="Calendar"
-                        Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-                    <Button
-                        x:Name="NewCrButton"
-                        x:Uid="Calendar_NewCrButton"
+                        AutomationIdPrefix="Calendar"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                    <!--
+                        A Grid with content-sized columns, not a wrapping panel: a wrapping panel in this Auto column wrapped New CR
+                        onto a second line in Records and the row did not grow. ApplyBreakpoint re-places the children at S.
+                    -->
+                    <Grid
+                        x:Name="CommandGroup"
                         Grid.Column="2"
-                        AutomationProperties.AutomationId="Calendar_NewCrButton"
-                        Command="{x:Bind ViewModel.NewChangeRequestCommand}"
-                        Style="{StaticResource AccentButtonStyle}">
-                        <Button.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="N" Modifiers="Control" />
-                        </Button.KeyboardAccelerators>
-                        <controls:NewButtonContent x:Uid="Calendar_NewCrText" />
-                    </Button>
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        ColumnSpacing="8"
+                        RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <!-- Period navigation (Month/Week only): Today, the joined ‹ › pair, then the period button with the date selector. -->
+                        <StackPanel
+                            x:Name="PeriodPanel"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSurfaceMode), Mode=OneWay}">
+                            <Button
+                                x:Uid="Calendar_TodayButton"
+                                AutomationProperties.AutomationId="Calendar_TodayButton"
+                                Command="{x:Bind ViewModel.GoToTodayCommand}">
+                                <Button.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="T" Modifiers="Control" />
+                                </Button.KeyboardAccelerators>
+                            </Button>
+                            <!--
+                                The arrows are one pill the height of the neighbouring buttons: a 32-epx border around two 30-epx
+                                subtle buttons and a hairline divider. Each button rounds only its outer corners.
+                            -->
+                            <Border
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button
+                                        Width="30"
+                                        Height="30"
+                                        MinWidth="0"
+                                        MinHeight="0"
+                                        Padding="0"
+                                        AutomationProperties.AutomationId="Calendar_PrevButton"
+                                        AutomationProperties.Name="{x:Bind ViewModel.PreviousName, Mode=OneWay}"
+                                        CornerRadius="3,0,0,3"
+                                        Command="{x:Bind ViewModel.PreviousCommand}"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.PreviousName, Mode=OneWay}">
+                                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
+                                    </Button>
+                                    <Rectangle
+                                        Width="1"
+                                        Fill="{ThemeResource ControlStrokeColorDefaultBrush}" />
+                                    <Button
+                                        Width="30"
+                                        Height="30"
+                                        MinWidth="0"
+                                        MinHeight="0"
+                                        Padding="0"
+                                        AutomationProperties.AutomationId="Calendar_NextButton"
+                                        AutomationProperties.Name="{x:Bind ViewModel.NextName, Mode=OneWay}"
+                                        CornerRadius="0,3,3,0"
+                                        Command="{x:Bind ViewModel.NextCommand}"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.NextName, Mode=OneWay}">
+                                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                            <Button
+                                x:Name="PeriodButton"
+                                AutomationProperties.AutomationId="Calendar_PeriodButton"
+                                AutomationProperties.HelpText="{x:Bind ViewModel.Text('Calendar_PeriodHelp'), Mode=OneTime}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <!-- MinWidth is set from the widest period text of the mode (ApplyPeriodWidth), so navigating never resizes the button. -->
+                                    <TextBlock
+                                        x:Name="PeriodLabel"
+                                        Text="{x:Bind ViewModel.PeriodText, Mode=OneWay}"
+                                        TextAlignment="Center" />
+                                    <FontIcon
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        FontSize="10"
+                                        Glyph="&#xE70D;" />
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <Flyout x:Name="PeriodFlyout" Opening="OnPeriodFlyoutOpening">
+                                        <CalendarView
+                                            x:Name="PeriodCalendar"
+                                            AutomationProperties.AutomationId="Calendar_PeriodCalendar"
+                                            FirstDayOfWeek="Sunday"
+                                            SelectedDatesChanged="OnPeriodDateSelected"
+                                            SelectionMode="Single" />
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                        <filters:FilterButton
+                            x:Name="CommandFilterButton"
+                            Grid.Column="1"
+                            PageKey="Calendar"
+                            Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                        <Button
+                            x:Name="NewCrButton"
+                            x:Uid="Calendar_NewCrButton"
+                            Grid.Column="2"
+                            AutomationProperties.AutomationId="Calendar_NewCrButton"
+                            Command="{x:Bind ViewModel.NewChangeRequestCommand}"
+                            Style="{StaticResource AccentButtonStyle}">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="N" Modifiers="Control" />
+                            </Button.KeyboardAccelerators>
+                            <controls:NewButtonContent x:Uid="Calendar_NewCrText" />
+                        </Button>
+                    </Grid>
                 </Grid>
-            </Grid>
-            <!--
-                The context rows take no height or stack spacing while they have nothing to show: a closed InfoBar or an
-                empty chips bar would otherwise still add its 8-epx spacing to the header.
-            -->
-            <filters:FilterChipsBar
-                x:Name="ChipsBar"
-                PageKey="Calendar"
-                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
-                Visibility="{x:Bind common:BindFunctions.VisibleAny(ViewModel.Filters.HasChips, ViewModel.Filters.IsFromDashboard, ViewModel.Filters.IsInvalidNoticeOpen), Mode=OneWay}" />
-            <!-- B-08.12: a saved CR hidden by the current filters stays discoverable. -->
-            <InfoBar
-                AutomationProperties.AutomationId="Calendar_SavedHiddenInfoBar"
-                IsOpen="{x:Bind ViewModel.IsSavedHiddenOpen, Mode=TwoWay}"
-                Message="{x:Bind ViewModel.SavedHiddenMessage, Mode=OneWay}"
-                Severity="Informational"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSavedHiddenOpen), Mode=OneWay}">
-                <InfoBar.ActionButton>
-                    <Button
-                        x:Uid="Calendar_SavedHiddenClearButton"
-                        AutomationProperties.AutomationId="Calendar_SavedHiddenClearButton"
-                        Command="{x:Bind ViewModel.ClearFiltersForSavedCommand}" />
-                </InfoBar.ActionButton>
-            </InfoBar>
-        </StackPanel>
+                <!--
+                    The context rows take no height or stack spacing while they have nothing to show: a closed InfoBar or an
+                    empty chips bar would otherwise still add its 8-epx spacing to the header.
+                -->
+                <filters:FilterChipsBar
+                    x:Name="ChipsBar"
+                    PageKey="Calendar"
+                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
+                    Visibility="{x:Bind common:BindFunctions.VisibleAny(ViewModel.Filters.HasChips, ViewModel.Filters.IsFromDashboard, ViewModel.Filters.IsInvalidNoticeOpen), Mode=OneWay}" />
+                <!-- B-08.12: a saved CR hidden by the current filters stays discoverable. -->
+                <InfoBar
+                    AutomationProperties.AutomationId="Calendar_SavedHiddenInfoBar"
+                    IsOpen="{x:Bind ViewModel.IsSavedHiddenOpen, Mode=TwoWay}"
+                    Message="{x:Bind ViewModel.SavedHiddenMessage, Mode=OneWay}"
+                    Severity="Informational"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSavedHiddenOpen), Mode=OneWay}">
+                    <InfoBar.ActionButton>
+                        <Button
+                            x:Uid="Calendar_SavedHiddenClearButton"
+                            AutomationProperties.AutomationId="Calendar_SavedHiddenClearButton"
+                            Command="{x:Bind ViewModel.ClearFiltersForSavedCommand}" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+            </StackPanel>
+        </controls:PageHeader>
 
         <!-- B-10: no matches is distinct from an empty dataset; the surface still renders (design §4.4 states). -->
         <InfoBar

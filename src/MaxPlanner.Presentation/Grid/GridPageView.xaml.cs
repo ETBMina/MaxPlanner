@@ -70,14 +70,8 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         _hoverTracker = new GridHoverTracker(Table);
         ViewModel.LayoutChanged += (_, _) => RefreshLayout();
         ((INotifyCollectionChanged)ViewModel.Rows).CollectionChanged += OnRowsChanged;
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; switching to S and back would rebuild every row.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        // A hidden page ignores its width of 0: switching to S and back would rebuild every row.
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
 
         // Runs when the dataset closes and the view is dropped; a page switch only hides the view (OnHidden).
         Unloaded += (_, _) =>
@@ -138,7 +132,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -1222,7 +1216,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         // every header sits above its column's cells.
         var window = PagePadding.WindowWidth(this, width);
         var inset = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= Breakpoints.Medium ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         HeaderBorder.Padding = new Thickness(inset, 0, 0, 0);
         Table.Padding = new Thickness(inset, 0, 0, 0);
 

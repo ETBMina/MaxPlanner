@@ -26,14 +26,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         AttachDataPage();
     }
@@ -43,7 +36,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     public SettingsPageViewModel ViewModel { get; }
 
     /// <summary>Gives the page title keyboard focus after navigation (design §7.7).</summary>
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public FrameworkElement HeaderElement => HeaderRoot;
@@ -77,7 +70,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         // card's action wraps below its text.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
+        HeaderRoot.HeaderPadding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
         CapWrapper.Padding = new Thickness(padding, 0, padding, 32);
         ErrorBar.Margin = new Thickness(padding, 0, padding, 8);
         CardsPanel.HorizontalAlignment = width >= Breakpoints.Large ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;

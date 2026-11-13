@@ -49,14 +49,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                OnWidthChanged(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, OnWidthChanged);
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         BucketPicker.SelectedItem = ViewModel.SelectedBucket;
@@ -103,7 +96,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -208,7 +201,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         if (layout.SidePadding != previous?.SidePadding || layout.HeaderTop != previous?.HeaderTop || layout.HeaderBottom != previous?.HeaderBottom)
         {
             var padding = layout.SidePadding;
-            HeaderRoot.Padding = new Thickness(padding, layout.HeaderTop, padding, layout.HeaderBottom);
+            HeaderRoot.HeaderPadding = new Thickness(padding, layout.HeaderTop, padding, layout.HeaderBottom);
 
             // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
             BucketsHost.Margin = new Thickness(padding, 0, padding - 12, 12);

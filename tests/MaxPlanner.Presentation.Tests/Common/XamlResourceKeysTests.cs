@@ -5,7 +5,7 @@ using MaxPlanner.Presentation.Common.Services;
 namespace MaxPlanner.Presentation.Tests.Common;
 
 /// <summary>
-/// The x:Uid strings that <c>ClearableDateField</c> and <c>ConflictReviewPanel</c> read in code resolve through the
+/// The x:Uid strings that <c>ClearableDateField</c>, <c>ConflictReviewPanel</c> and <c>PageHeader</c> read in code resolve through the
 /// production loader (<see cref="ResourceStrings"/>) over the built PRI to the resw text, never to the key itself.
 /// </summary>
 public sealed class XamlResourceKeysTests
@@ -30,6 +30,19 @@ public sealed class XamlResourceKeysTests
         "SubtaskEditor_ReloadMessage",
     ];
 
+    // The TitleUid and SubtitleUid that the six pages give PageHeader.
+    public static TheoryData<string> PageHeaderUids =>
+    [
+        "Board_PageTitle",
+        "Grid_PageTitle",
+        "Grid_PageSubtitle",
+        "Calendar_PageTitle",
+        "Checklists_PageTitle",
+        "Dashboard_PageTitle",
+        "Settings_PageTitle",
+        "Settings_PageSubtitle",
+    ];
+
     [Fact]
     public void The_keys_follow_the_resource_map_names_of_xuid_properties()
     {
@@ -50,6 +63,11 @@ public sealed class XamlResourceKeysTests
     [Theory]
     [MemberData(nameof(ReloadMessageUids))]
     public void A_reload_message_resolves_to_the_resw_text(string uid) =>
+        Resolve(XamlResourceKeys.Text(uid)).Should().Be(Resw.Value[uid + ".Text"]);
+
+    [Theory]
+    [MemberData(nameof(PageHeaderUids))]
+    public void A_page_headers_title_or_subtitle_resolves_to_the_resw_text(string uid) =>
         Resolve(XamlResourceKeys.Text(uid)).Should().Be(Resw.Value[uid + ".Text"]);
 
     private static string Resolve(string key)

@@ -341,15 +341,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel x:Name="HeaderRoot" Padding="32,24,32,12" Spacing="2">
-            <TextBlock
-                x:Name="PageTitle"
-                x:Uid="Settings_PageTitle"
-                AutomationProperties.AutomationId="Settings_PageTitle"
-                AutomationProperties.HeadingLevel="Level1"
-                Style="{StaticResource PageTitleTextStyle}" />
-            <TextBlock x:Uid="Settings_PageSubtitle" Style="{StaticResource PageSubtitleTextStyle}" />
-        </StackPanel>
+        <controls:PageHeader
+            x:Name="HeaderRoot"
+            SubtitleUid="Settings_PageSubtitle"
+            TitleAutomationId="Settings_PageTitle"
+            TitleUid="Settings_PageTitle" />
 
         <!-- Page InfoBar (design §2.7): a refused Settings change, for example settings changed elsewhere. -->
         <InfoBar

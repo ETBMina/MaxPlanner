@@ -58,14 +58,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         MonthView.Render(viewModel.Surface);
         viewModel.SurfaceChanged += OnSurfaceChanged;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
         SurfaceScroller.SizeChanged += (_, _) => FitSurface();
         Loaded += (_, _) => ApplyPeriodWidth();
     }
@@ -78,7 +71,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -219,7 +212,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         var wide = width >= Breakpoints.Large;
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= Breakpoints.Medium ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         _gutter = padding;
         ViewModel.SetCompact(width < Breakpoints.Medium);
         ChipsBar.IsCompact = width < Breakpoints.Medium;
