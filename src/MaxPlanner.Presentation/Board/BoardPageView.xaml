@@ -415,90 +415,83 @@
         </Grid.RowDefinitions>
 
         <!-- Page header (design §2.3): title, search and Filters (shared with the Grid, B-10), and the filter context row. -->
-        <StackPanel
+        <controls:PageHeader
             x:Name="HeaderRoot"
-            Padding="32,24,32,12"
-            Spacing="8">
-            <StackPanel Spacing="2">
-                <TextBlock
-                    x:Name="PageTitle"
-                    x:Uid="Board_PageTitle"
-                    AutomationProperties.AutomationId="Board_PageTitle"
-                    AutomationProperties.HeadingLevel="Level1"
-                    Style="{StaticResource PageTitleTextStyle}" />
-                <TextBlock
-                    AutomationProperties.AutomationId="Board_PageSubtitle"
-                    Style="{StaticResource PageSubtitleTextStyle}"
-                    Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
-            </StackPanel>
-            <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
-                <Grid ColumnSpacing="8">
+            HasSubtitle="True"
+            Subtitle="{x:Bind ViewModel.Summary, Mode=OneWay}"
+            SubtitleAutomationId="Board_PageSubtitle"
+            TitleAutomationId="Board_PageTitle"
+            TitleUid="Board_PageTitle">
+            <StackPanel Spacing="8">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <filters:FilterButton PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                        <controls:ExpandingSearchBox
+                            x:Name="SearchBox"
+                            x:Uid="Board_Search"
+                            Grid.Column="1"
+                            AutomationIdPrefix="Board"
+                            Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                    </Grid>
+                    <Button
+                        x:Uid="Board_NewTaskButton"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="Board_NewTaskButton"
+                        Command="{x:Bind ViewModel.NewTaskCommand}"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="N" Modifiers="Control" />
+                        </Button.KeyboardAccelerators>
+                        <controls:NewButtonContent x:Uid="Board_NewTaskText" />
+                    </Button>
+                </Grid>
+                <!-- Design §4.2 S: one bucket per viewport, chosen here or with the previous/next buttons. -->
+                <Grid
+                    x:Name="BucketPickerRow"
+                    ColumnSpacing="8"
+                    Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <filters:FilterButton PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-                    <controls:ExpandingSearchBox
-                        x:Name="SearchBox"
-                        x:Uid="Board_Search"
+                    <Button
+                        x:Uid="Board_PrevBucketButton"
+                        AutomationProperties.AutomationId="Board_PrevBucketButton"
+                        Command="{x:Bind ViewModel.PreviousBucketCommand}">
+                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
+                    </Button>
+                    <ComboBox
+                        x:Name="BucketPicker"
+                        x:Uid="Board_BucketPickerCombo"
                         Grid.Column="1"
-                        AutomationIdPrefix="Board"
-                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="Board_BucketPickerCombo"
+                        ItemsSource="{x:Bind ViewModel.Buckets, Mode=OneTime}"
+                        SelectionChanged="OnBucketPickerSelectionChanged" />
+                    <Button
+                        x:Uid="Board_NextBucketButton"
+                        Grid.Column="2"
+                        AutomationProperties.AutomationId="Board_NextBucketButton"
+                        Command="{x:Bind ViewModel.NextBucketCommand}">
+                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
+                    </Button>
                 </Grid>
-                <Button
-                    x:Uid="Board_NewTaskButton"
-                    Grid.Column="1"
-                    AutomationProperties.AutomationId="Board_NewTaskButton"
-                    Command="{x:Bind ViewModel.NewTaskCommand}"
-                    Style="{StaticResource AccentButtonStyle}">
-                    <Button.KeyboardAccelerators>
-                        <KeyboardAccelerator Key="N" Modifiers="Control" />
-                    </Button.KeyboardAccelerators>
-                    <controls:NewButtonContent x:Uid="Board_NewTaskText" />
-                </Button>
-            </Grid>
-            <!-- Design §4.2 S: one bucket per viewport, chosen here or with the previous/next buttons. -->
-            <Grid
-                x:Name="BucketPickerRow"
-                ColumnSpacing="8"
-                Visibility="Collapsed">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Button
-                    x:Uid="Board_PrevBucketButton"
-                    AutomationProperties.AutomationId="Board_PrevBucketButton"
-                    Command="{x:Bind ViewModel.PreviousBucketCommand}">
-                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
-                </Button>
-                <ComboBox
-                    x:Name="BucketPicker"
-                    x:Uid="Board_BucketPickerCombo"
-                    Grid.Column="1"
-                    HorizontalAlignment="Stretch"
-                    AutomationProperties.AutomationId="Board_BucketPickerCombo"
-                    ItemsSource="{x:Bind ViewModel.Buckets, Mode=OneTime}"
-                    SelectionChanged="OnBucketPickerSelectionChanged" />
-                <Button
-                    x:Uid="Board_NextBucketButton"
-                    Grid.Column="2"
-                    AutomationProperties.AutomationId="Board_NextBucketButton"
-                    Command="{x:Bind ViewModel.NextBucketCommand}">
-                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
-                </Button>
-            </Grid>
-            <filters:FilterChipsBar
-                x:Name="ChipsBar"
-                PageKey="Board"
-                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-        </StackPanel>
+                <filters:FilterChipsBar
+                    x:Name="ChipsBar"
+                    PageKey="Board"
+                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+            </StackPanel>
+        </controls:PageHeader>
 
         <controls:StateView
             x:Name="PageContent"

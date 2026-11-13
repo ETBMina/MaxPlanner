@@ -30,14 +30,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         viewModel.FocusAddBoxRequested += OnFocusAddBoxRequested;
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
     }
 
     public ChecklistsPageViewModel ViewModel { get; }
@@ -55,7 +48,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -161,23 +154,19 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         item.BeginRename();
         if (box?.Parent is Panel row && row.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBox>().FirstOrDefault() is { } editor)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                editor.Focus(FocusState.Keyboard);
-                editor.SelectAll();
-            });
+            InlineRenameEditor.FocusWhenShown(DispatcherQueue, () => editor);
         }
     }
 
     private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor || e.Key is not (VirtualKey.Enter or VirtualKey.Escape))
+        if (sender is TextBox { Tag: ChecklistItemViewModel item } editor)
         {
-            return;
+            InlineRenameEditor.HandleKey(
+                e,
+                commit: () => RenameKeyAsync(editor, item, commit: true).Forget(),
+                cancel: () => RenameKeyAsync(editor, item, commit: false).Forget());
         }
-
-        e.Handled = true;
-        RenameKeyAsync(editor, item, commit: e.Key == VirtualKey.Enter).Forget();
     }
 
     // Escape runs before the first await, so it completes within the key event as before.
@@ -450,7 +439,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         // T-08.1 / design §4.5: L 2–3 columns, M 1–2, S one full-width column; padding L 32/24, M 24/16, S 16/12.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= Breakpoints.Medium ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         GroupsRepeater.Margin = new Thickness(padding, 0, padding, 24);
         NoMatchesBar.Margin = new Thickness(padding, 0, padding, 8);
         GroupsLayout.MaxColumns = Breakpoints.BySize(width, 3, 2, 1);
