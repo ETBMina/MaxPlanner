@@ -153,14 +153,12 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         UsageChangedMessage = null;
         Guid? replacement = IsUnused || ClearInstead ? null : ReplacementChoices[SelectedReplacementIndex].Id;
 
-        // The coordinator logs an exception and rolls the transaction back; nothing was written, so after a thrown command
-        // the indicator keeps its last result, the dialog stays open with a generic message that is announced, and the
-        // retry is a new operation. The dialog announces a typed failure itself, after showing it.
+        // The dialog announces a typed failure itself, after showing it. A throw was reported by the runner; the dialog
+        // stays open with the unexpected-error text, and the retry reuses the operation, as the outcome is unknown (T-05).
         var run = await _commands.RunAsync(new CommandRequest<long>("Record_Settings", operation =>
             _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None))
         {
             Operation = _retryOperation,
-            UnexpectedFailure = CommandUnexpectedFailure.AnnounceOnly,
             DisplayTimeout = DisplayTimeout,
             Busy = busy => IsSaving = busy,
         }).ConfigureAwait(true);
@@ -186,8 +184,11 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
                 _announcer.Announce(run.Message!, isFailure: true);
                 return false;
             default:
-                // A failure after the commit (the display wait) was reported by the runner; its retry reuses the operation.
-                _retryOperation = run.Outcome is null ? null : run.RetryOperation;
+                if (run.Operation is not null)
+                {
+                    _retryOperation = run.RetryOperation;
+                }
+
                 Error = run.Message;
                 return false;
         }

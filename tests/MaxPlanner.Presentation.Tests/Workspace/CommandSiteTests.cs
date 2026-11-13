@@ -435,7 +435,8 @@ public sealed class CommandSiteTests
 
     [Fact]
     [Trait("Req", "B-04")]
-    public void A_lookup_removal_that_throws_only_announces_and_retries_as_a_new_operation()
+    [Trait("Req", "T-05")]
+    public void A_lookup_removal_that_throws_is_reported_like_every_site_and_retries_under_the_same_operation()
     {
         using var h = WorkspaceHarness.Create();
         var context = h.Workspace.Context;
@@ -448,30 +449,50 @@ public sealed class CommandSiteTests
         h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
         h.Await(vm.RemoveAsync()).Should().BeFalse();
 
+        (vm.IsSaving, vm.Error).Should().Be((false, "Error_Unexpected"));
         announced.Should().Equal(new Announcement("Error_Unexpected", true));
-        context.SaveStatus.IsFailed.Should().BeFalse("the removal dialog shows the failure itself and leaves the indicator as it was");
-        context.SaveStatus.IsFailureNoticeOpen.Should().BeFalse();
+        context.SaveStatus.IsFailed.Should().BeTrue();
+        context.SaveStatus.IsFailureNoticeOpen.Should().BeTrue();
 
         h.Await(vm.RemoveAsync()).Should().BeTrue();
-        h.Coordinator.OperationIds[^1].Should().NotBe(h.Coordinator.OperationIds[^2], "the removal does not reuse the operation of a throw");
+        h.Coordinator.OperationIds[^1].Should().Be(h.Coordinator.OperationIds[^2], "a throw leaves the outcome unknown");
     }
 
     [Fact]
     [Trait("Req", "B-16.3")]
-    public void A_subtask_card_add_in_the_task_editor_is_still_sent_while_editing_is_blocked()
+    [Trait("Req", "T-07")]
+    public void A_subtask_card_add_in_the_task_editor_is_refused_while_editing_is_blocked()
     {
-        // Pins a known T-07 defect awaiting the user's decision, not intended behaviour: this command should be refused
-        // while editing is blocked, as every other write command is.
         TaskId id = default;
         using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task"));
         using var editor = new TaskEditorViewModel(h.Workspace.Context, id, null);
+        var announced = Announcements(h);
         editor.NewSubtaskCardText = "Card";
         var calls = h.Coordinator.Calls;
         h.Workspace.Context.IsEditingBlocked = true;
 
-        h.Await(editor.AddSubtaskCardAsync()).Should().BeTrue("this command has never checked the blocked state (kept as it was)");
+        h.Await(editor.AddSubtaskCardAsync()).Should().BeFalse();
 
-        h.Coordinator.Calls.Should().Be(calls + 1);
+        h.Coordinator.Calls.Should().Be(calls, "nothing is sent while the store reloads");
+        (editor.SubtaskCardError, editor.NewSubtaskCardText).Should().Be(("Error_EditingBlocked", "Card"));
+        h.Workspace.SaveStatus.State.Should().Be(SaveState.Idle);
+        announced.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Req", "B-16.3")]
+    public void A_subtask_card_added_in_the_task_editor_clears_the_box_and_is_listed_when_it_returns()
+    {
+        TaskId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task"));
+        using var editor = new TaskEditorViewModel(h.Workspace.Context, id, null);
+        editor.NewSubtaskCardText = "Card";
+
+        h.Await(editor.AddSubtaskCardAsync()).Should().BeTrue();
+
+        (editor.SubtaskCardError, editor.NewSubtaskCardText).Should().Be(((string?)null, string.Empty));
+        h.Store.SubtaskCards.Items.Select(c => c.Subtitle).Should().Equal("Card");
+        h.Workspace.SaveStatus.State.Should().Be(SaveState.Saved);
     }
 
     // ----- The approved fix: a thrown command no longer leaves "Saving…" or a busy flag behind, and is reported once -----

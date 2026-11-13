@@ -274,36 +274,6 @@ public sealed class CommandRunnerTests
     }
 
     [Fact]
-    public void Announce_only_announces_a_thrown_command_without_reporting_it_but_still_reports_a_failed_display_wait()
-    {
-        using var h = WorkspaceHarness.Create();
-        var probe = new Probe(h);
-        var log = Configure(h);
-        try
-        {
-            var thrown = probe.Request(_ => throw new InvalidOperationException("defect")) with { UnexpectedFailure = CommandUnexpectedFailure.AnnounceOnly };
-            h.Await(probe.Runner.RunAsync(thrown)).Status.Should().Be(CommandRunStatus.Unexpected);
-
-            probe.Announced.Should().Equal(new Announcement("Error_Unexpected", true));
-            (h.Workspace.SaveStatus.IsSaving, h.Workspace.SaveStatus.IsFailed).Should().Be((false, false));
-            log.Should().BeEmpty();
-
-            var wait = probe.Request(Ok(1)) with
-            {
-                UnexpectedFailure = CommandUnexpectedFailure.AnnounceOnly,
-                WhenDisplayed = _ => throw new InvalidOperationException("wait"),
-            };
-            h.Await(probe.Runner.RunAsync(wait));
-            log.Should().Equal("wait");
-            h.Workspace.SaveStatus.IsFailed.Should().BeTrue();
-        }
-        finally
-        {
-            Reset();
-        }
-    }
-
-    [Fact]
     public void A_throw_ends_only_its_own_command_while_another_is_in_flight()
     {
         using var h = WorkspaceHarness.Create();
@@ -433,13 +403,12 @@ public sealed class CommandRunnerTests
     }
 
     [Fact]
-    public void A_cancellation_has_no_text_to_show_and_is_not_announced_even_where_throws_are_announced()
+    public void A_cancellation_has_no_text_to_show_and_is_not_announced()
     {
         using var h = WorkspaceHarness.Create();
         var probe = new Probe(h);
-        var request = probe.Request(_ => throw new OperationCanceledException()) with { UnexpectedFailure = CommandUnexpectedFailure.AnnounceOnly };
 
-        var run = h.Await(probe.Runner.RunAsync(request));
+        var run = h.Await(probe.Runner.RunAsync(probe.Request(_ => throw new OperationCanceledException())));
 
         (run.Status, run.Message).Should().Be((CommandRunStatus.Unexpected, (string?)null));
         probe.Announced.Should().BeEmpty();

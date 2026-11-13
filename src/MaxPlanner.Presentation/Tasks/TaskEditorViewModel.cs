@@ -669,36 +669,19 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
 
         SubtaskCardError = null;
 
-        // Not run through Context.Commands: this command has never checked whether editing is blocked, and the runner
-        // always does, so routing it there would change what it does while the store reloads.
-        var operation = OperationId.New();
-        Context.SaveStatus.Begin();
-        AppResult<CommandOutcome<SubtaskCardId>> result;
-        try
+        // Refused while editing is blocked (T-07). A failure is shown below the box and not announced; the box keeps its
+        // text. On success the box clears before the display wait, so the wait stays outside the run.
+        var run = await Context.Commands.RunAsync(new CommandRequest<SubtaskCardId>("Record_SubtaskCard", operation =>
+            Context.UseCases.SubtaskCards.CreateSubtaskCard.ExecuteAsync(
+                new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None))).ConfigureAwait(true);
+        if (!run.IsSuccess)
         {
-            result = await Context.UseCases.SubtaskCards.CreateSubtaskCard.ExecuteAsync(
-                new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            // The indicator leaves its busy state; the box keeps its text with the unexpected-error text below it.
-            Context.SaveStatus.Reject();
-            SubtaskCardError = Context.Strings.GetString("Error_Unexpected");
-            UiTasks.Report(ex, Context);
+            SubtaskCardError = run.Message;
             return false;
         }
 
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_SubtaskCard", Context.Strings);
-            Context.SaveStatus.Report(failure);
-            SubtaskCardError = failure.Message;
-            return false;
-        }
-
-        Context.SaveStatus.Complete();
         NewSubtaskCardText = string.Empty;
-        await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
+        await WhenDisplayedAsync(run.Outcome!.CommitSequence).ConfigureAwait(true);
         return true;
     }
 

@@ -36,19 +36,6 @@ public enum CommandFailureIndicator
     Fail,
 }
 
-/// <summary>What happens when the command itself throws.</summary>
-public enum CommandUnexpectedFailure
-{
-    /// <summary>Reported through <see cref="UiTasks.Report"/>: logged, shown in the save status, and announced.</summary>
-    Report,
-
-    /// <summary>
-    /// Only announced with the unexpected-error text; the indicator keeps its last result and nothing is logged here (the
-    /// lookup removal dialog's behaviour). A failure after the commit (the display wait) is still reported.
-    /// </summary>
-    AnnounceOnly,
-}
-
 /// <summary>The text that completes the save indicator in place of "Saved", with an optional follow-up link (design §4.5).</summary>
 public sealed record CommandResultText(string Message, string? ActionText = null, Func<Task>? Action = null);
 
@@ -71,8 +58,6 @@ public sealed record CommandRequest<T>(string RecordKey, Func<OperationId, Task<
 
     /// <summary>Announce the editing-blocked text as a failure when editing is blocked; otherwise only return it.</summary>
     public bool AnnouncesBlocked { get; init; }
-
-    public CommandUnexpectedFailure UnexpectedFailure { get; init; } = CommandUnexpectedFailure.Report;
 
     /// <summary>Waits this long at most until the commit is displayed (T-07); null does not wait.</summary>
     public TimeSpan? DisplayTimeout { get; init; }
@@ -250,7 +235,7 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             isReported = ex is not OperationCanceledException;
-            return Unexpected(request, operation, outcome, ex, ownsInFlight);
+            return Unexpected(operation, outcome, ex, ownsInFlight);
         }
         finally
         {
@@ -260,11 +245,10 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
 
     /// <summary>
     /// Ends a run that threw: the indicator leaves its in-flight state when this run still owns a count, then the failure
-    /// is reported once, or only announced under <see cref="CommandUnexpectedFailure.AnnounceOnly"/>. A cancellation is
-    /// neither reported nor announced and shows nothing inline. Nothing here throws: a failure while ending is dropped,
+    /// is reported once. A cancellation is neither reported nor announced and shows nothing inline. Nothing here throws: a failure while ending is dropped,
     /// because the original failure is the one being reported.
     /// </summary>
-    private CommandRun<T> Unexpected<T>(CommandRequest<T> request, OperationId operation, CommandOutcome<T>? outcome, Exception exception, bool ownsInFlight)
+    private CommandRun<T> Unexpected<T>(OperationId operation, CommandOutcome<T>? outcome, Exception exception, bool ownsInFlight)
     {
         if (ownsInFlight)
         {
@@ -277,14 +261,7 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
         }
 
         var message = context.Strings.GetString("Error_Unexpected");
-        if (outcome is null && request.UnexpectedFailure == CommandUnexpectedFailure.AnnounceOnly)
-        {
-            Try(() => context.Announce(message, isFailure: true));
-        }
-        else
-        {
-            Try(() => UiTasks.Report(exception, context));
-        }
+        Try(() => UiTasks.Report(exception, context));
 
         return CommandRun<T>.Unexpected(operation, outcome, message);
     }
