@@ -27,6 +27,9 @@ Read before each part. After each part, add what went wrong or worked, in one or
 - **Follow-up commits need review too.** Commits written after the independent review were only checked by the main session; say so in the report.
 - **Ask what the tests would catch.** Several gaps were tests that pinned the fakes, or passed whether or not the behaviour held.
 
+- **x:Bind turns a null string into "".** Generated setters for `string` targets write `value ?? String.Empty`, so a shared control that treats "not null" as "show" opens empty (batch 2C: both editor message bars showed on open). Every new string dependency property must treat null and empty alike. The independent review checked the null handling and missed this; only the user's launch caught it, so code that "cannot be tested without XAML" needs its decisions pulled out where a test can reach them.
+- **Refactors surface old bugs; hold them, don't slip them in.** Batches 2B–2E each found a pre-existing defect (a stuck indicator, a poisoned checklist queue, a T-07 gap, a Grid flyout that never commits on light dismiss). Ask the user each time whether to fix it in the batch or later; they chose differently case by case.
+- **Pure decision functions are the test seam for view code.** From 2C on, every show/hide, enabled-state and "which editor" decision inside a control or builder was pulled into a small WinUI-free function with tests. That is what made view refactors safe to verify without UI automation.
 - **Merging before the user ran the app stacked up risk.** Four batches were merged on tests and diff review alone. The user then asked for the working branch to be launched for their own testing before every merge; the loop now does that.
 - **An agent skips a sub-item when "no visible change" forbids it.** The shared New button was skipped because one page differed. Report such skips with the exact difference, so the user can approve the small visible change if they want the consistency.
 

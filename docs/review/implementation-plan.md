@@ -18,7 +18,7 @@ Living document for the whole-app review (architecture and MVVM, consistency, UI
 |---|---|---|---|---|
 | 0 | Baseline | Done 2026-11-11 | n/a | n/a |
 | 1 | Architecture and MVVM | Done 2026-11-11 | All nine approved 2026-11-11 | 1A, 1B, 1C, 1D merged 2026-11-12 (1290 tests); awaiting the user's manual check in the app. A-03(b), A-04, A-06 moved to part 2. |
-| 2 | Consistency and shared components | Done 2026-11-12 | Approved as proposed 2026-11-12 | Not started; each batch awaits approval |
+| 2 | Consistency and shared components | Done 2026-11-12 | Approved as proposed 2026-11-12 | 2A–2E merged 2026-11-13, each tested by the user in the app |
 | 3 | UI / UX | Not started | | |
 | 4 | Performance | Not started | | |
 
@@ -131,9 +131,9 @@ Batches for part 2. The findings are approved; each batch still needs the user's
 |---|---|---|
 | 2A | C-04, C-06, C-08, C-09, C-01(a), C-07 (helper only, same output) | Moves and small helpers; no behaviour or visual change. Approved 2026-11-12. Implemented and verified 2026-11-12 (build clean, 1295 tests): seven commits `057cdc7`..`55b04d3`, merged into `review/app-review` as `f4387ee` (same tree as the tested commit) after the user tested the branch build on fixture data on 2026-11-13. Reviewed by the main session only (moves and mechanical replacements). Skipped inside C-09: the flat list-item style, because no two sites were identical. The New button is shared by the user's decision: the Grid's icon goes from 16 to 14 to match the other pages. |
 | 2B | C-05 with A-06 | One change to how view models run commands. Approved 2026-11-13. Implemented and verified 2026-11-13 (build clean, 1356 tests, independent review on Opus found no regression; its fixes and the user's three decisions applied). Seven commits `39779c3`..`c133790` on `refs/heads/worktree-agent-adeb3e7f08af76001`; merged into `review/app-review` as `ab8a437` (same tree as the tested commit) after the user tested the branch build on 2026-11-13. |
-| 2C | C-02, C-03 | Editor dialog shell and its fields |
-| 2D | C-01(b), C-10 | Page header control; inline rename |
-| 2E | A-03(b) narrowed | Grid code-behind |
+| 2C | C-02, C-03 | Editor dialog shell and its fields. Approved 2026-11-13. Implemented and verified 2026-11-13 (build clean, 1374 tests, independent review on Opus found no regression; its follow-up pins the x:Uid resource lookups). Eight commits `1d38c59`..`1eec611` on `refs/heads/worktree-agent-a9788fd047eb64d50`. The user's first test found both editor message bars open and empty (x:Bind turns a null string into ""); fixed in `1eec611` (1380 tests); merged into `review/app-review` as `893305c` (same tree as the tested commit) after the user tested it on 2026-11-13. |
+| 2D | C-01(b), C-10 | Page header control; inline rename. Approved 2026-11-13. Implemented and verified 2026-11-13 (build clean, 1420 tests, independent review on Opus found no regression and no fixes needed). Four commits `310e697`..`8731079`, merged into `review/app-review` as `7328dde` (same tree as the verified commit) on the user's instruction on 2026-11-13. Inline rename: only the key handling and first focus are shared; the view-model rules differ in five ways and stay per page. |
+| 2E | A-03(b) narrowed | Grid code-behind. Approved 2026-11-13. Implemented and verified 2026-11-13 (build clean, 1439 tests, independent review on Opus found no regression). Three commits `1db804e`..`fe637f4`, merged into `review/app-review` as `0d50f2e` (same tree as the tested commit) after the user tested it on 2026-11-13. |
 | Part 3 | C-11, date format choices from C-07, first day of week from C-03 | Visible choices, decided with mock-ups |
 
 ## Implementation batches
@@ -185,5 +185,11 @@ Out of scope for this review; listed for the user and not acted on.
 - Found during batch 2B, not fixed:
   1. Pop out on the Checklists page sets its inline error from `SaveStatus.FailureMessage`, so a blocked or validation-refused pop-out can show a stale message from an earlier failure, or nothing (`Checklists/ChecklistGroupViewModel.cs`, around line 135).
   2. If editing is blocked when a Board card is dropped, or the reorder is refused, the card keeps `IsMoving` and stays dimmed.
+  4. Seen by the user while testing 2C (pre-existing, not changed by 2C): opening the task editor, the tag field takes focus first and looks selected, flickering for a few seconds, before focus moves to the title. The dialog focuses its first control (the tag field), and `TaskEditorDialog.OnOpened` moves focus to the title only at low dispatcher priority, which waits while other work (page preloading, the Debug build) runs. **User's decision (2026-11-13): fix in part 3** (set the initial focus directly instead of moving it after a delay).
   3. The task editor's Add Subtask card sends its command even while editing is blocked (T-07). **Fixed in batch 2B** (user approved 2026-11-13).
   3. The recovery page's four commands still end the app on an unexpected exception; no workspace is open there to show the error (ADR 0029).
+- Found during batch 2D, not fixed:
+  1. The Grid header's CommandBar sits in an Auto column, so it always gets unlimited width and its dynamic overflow never moves Show archived, Columns or Export into "…"; at the narrowest windows the actions row is clipped instead (`Grid/GridPageView.xaml`). Pre-existing; a candidate for part 3.
+  2. Settings rename: Esc while a rename is saving moves focus to the row's ⋯ button although the box stays open.
+  3. `Settings/DataPage/DataPageView` keeps its own header markup and has no width-0 guard; a candidate for the shared `PageHeader`.
+- Found during batch 2E (pre-existing, confirmed in the code before 2E): a Grid flyout editor opened by F2, double-tap, UI Automation or the reopen after a page switch never commits on light dismiss. The double-click guard uses `long.MinValue` as "not opened by tap", so `now - long.MinValue` overflows negative and every outside click counts as the second click of a double-click (`Grid/GridEditorFlyout.cs`, formerly `GridPageView.xaml.cs` ~901). One-line fix proposed. **User's decision (2026-11-13): fix in part 3.**
