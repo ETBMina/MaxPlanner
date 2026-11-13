@@ -14,6 +14,7 @@ namespace MaxPlanner.Presentation.Tests.Common;
 /// Commands that replaced click handlers on pages and dialogs (A-02): each runs the action the handler ran, and none
 /// disables its control, because none has a CanExecute rule of its own.
 /// </summary>
+[Collection(nameof(UiTasksConfiguration))]
 public sealed class BoundCommandTests
 {
     [Fact]

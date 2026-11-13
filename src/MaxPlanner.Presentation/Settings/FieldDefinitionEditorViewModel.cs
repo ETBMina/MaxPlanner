@@ -245,7 +245,12 @@ public sealed partial class FieldDefinitionEditorViewModel : ObservableObject, I
             DisplayTimeout = DisplayTimeout,
             Busy = busy => IsSaving = busy,
         }).ConfigureAwait(true);
-        _retryOperation = run.RetryOperation;
+        if (run.Operation is not null)
+        {
+            // An attempt that sent nothing keeps the operation to retry.
+            _retryOperation = run.RetryOperation;
+        }
+
         switch (run.Status)
         {
             case CommandRunStatus.Succeeded:

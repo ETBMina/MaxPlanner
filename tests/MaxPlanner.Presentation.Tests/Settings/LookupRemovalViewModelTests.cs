@@ -2,11 +2,13 @@ using AwesomeAssertions;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Domain.Workflow;
 using MaxPlanner.Presentation.Settings;
+using MaxPlanner.Presentation.Tests.Common;
 using MaxPlanner.Presentation.Tests.Testing;
 
 namespace MaxPlanner.Presentation.Tests.Settings;
 
 /// <summary>Design §5.9: the removal dialog ends every save, so it never stays on "Saving…".</summary>
+[Collection(nameof(UiTasksConfiguration))]
 [Trait("Req", "B-04")]
 public sealed class LookupRemovalViewModelTests
 {

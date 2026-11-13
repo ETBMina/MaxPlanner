@@ -198,18 +198,16 @@ internal sealed class ChecklistCommandQueue(ICommandRunner commands, string reco
     }
 
     /// <returns>
-    /// Null when committed and displayed; otherwise the text to show inline: the blocked text, or the failure text (in the
-    /// save status and announced too), or the unexpected-error text (reported by the runner).
+    /// The run: successful once committed and displayed; otherwise its <see cref="CommandRun{T}.Message"/> is the text to
+    /// show inline: the blocked text, the failure text (in the save status and announced too), the unexpected-error text
+    /// (reported by the runner), or nothing after a cancellation.
     /// </returns>
-    public async Task<string?> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command)
-    {
-        var run = await commands.RunAsync(new CommandRequest<long>(recordKey, command)
+    public Task<CommandRun<long>> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command) =>
+        commands.RunAsync(new CommandRequest<long>(recordKey, command)
         {
             FailureAnnouncement = CommandRequest.FailureText,
             DisplayTimeout = DisplayTimeout,
-        }).ConfigureAwait(true);
-        return run.Message;
-    }
+        });
 
     private static async Task RunAfterAsync(Task previous, Func<Task> command)
     {

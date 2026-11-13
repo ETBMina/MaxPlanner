@@ -17,7 +17,7 @@ namespace MaxPlanner.Presentation.Workspace;
 /// save indicator, whether editing is currently allowed, and the dialog and announcement channels. Use it
 /// on the UI thread.
 /// </summary>
-public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer, IDialogService
+public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
 {
     private TaskCommands? _tasks;
     private ChangeRequestCommands? _changeRequests;
@@ -119,7 +119,7 @@ public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer, IDi
     [ObservableProperty]
     public partial bool IsEditingBlocked { get; internal set; } = true;
 
-    /// <inheritdoc/>
+    /// <summary>Shows a dialog and completes when it closed. Without a dialog host (no window) nothing is shown.</summary>
     public Task ShowDialogAsync(IDialogViewModel viewModel)
     {
         ArgumentNullException.ThrowIfNull(viewModel);

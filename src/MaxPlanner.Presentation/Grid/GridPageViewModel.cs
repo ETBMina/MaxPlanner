@@ -221,7 +221,7 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
         }).ConfigureAwait(true);
         if (!run.IsSuccess)
         {
-            row.FailSave(run.Message!, run.Failure is { IsConflict: true }, run.RetryOperation);
+            row.FailSave(run.Message, run.Failure is { IsConflict: true }, run.RetryOperation);
             return false;
         }
 

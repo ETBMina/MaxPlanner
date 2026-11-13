@@ -122,10 +122,11 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _useCases.SetGeneralTodoCompleted.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.SetGeneralTodoCompleted.ExecuteAsync(
                 new SetGeneralTodoCompletedCommand(op, todo.Id, todo.Revision, isChecked), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             item.IsPending = false;
-            if (ActionError is not null)
+            if (!run.IsSuccess)
             {
                 item.RestoreCommitted();
             }
@@ -148,8 +149,9 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            error = await _queue.RunAsync(op => _useCases.RenameGeneralTodo.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.RenameGeneralTodo.ExecuteAsync(
                 new RenameGeneralTodoCommand(op, todo.Id, todo.Revision, text), CancellationToken.None)).ConfigureAwait(true);
+            error = run.IsSuccess ? null : run.Message ?? string.Empty;
             item.IsPending = false;
         }).ConfigureAwait(true);
         return error;
@@ -168,8 +170,9 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _useCases.MoveGeneralTodo.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.MoveGeneralTodo.ExecuteAsync(
                 new MoveGeneralTodoCommand(op, todo.Id, todo.Revision, new GeneralTodoId(anchor.Id), PlaceAfter: !up), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             item.IsPending = false;
         });
     }
@@ -185,10 +188,11 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _useCases.DeleteGeneralTodo.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.DeleteGeneralTodo.ExecuteAsync(
                 new DeleteGeneralTodoCommand(op, todo.Id, todo.Revision), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             item.IsPending = false;
-            if (ActionError is null)
+            if (run.IsSuccess)
             {
                 _announcer.Announce(_strings.Format("Checklists_ItemDeleted", item.Text));
             }
@@ -207,9 +211,10 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     private Task AddItemAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;
-        NewItemError = await _queue.RunAsync(op => _useCases.AddGeneralTodo.ExecuteAsync(
+        var run = await _queue.RunAsync(op => _useCases.AddGeneralTodo.ExecuteAsync(
             new AddGeneralTodoCommand(op, new GeneralTodoId(Guid.NewGuid()), NewItemText), CancellationToken.None)).ConfigureAwait(true);
-        if (NewItemError is null)
+        NewItemError = run.Message;
+        if (run.IsSuccess)
         {
             NewItemText = string.Empty;
         }

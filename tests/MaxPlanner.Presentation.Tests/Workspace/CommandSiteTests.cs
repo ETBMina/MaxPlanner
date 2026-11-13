@@ -9,6 +9,7 @@ using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Settings;
 using MaxPlanner.Presentation.Tasks;
+using MaxPlanner.Presentation.Tests.Common;
 using MaxPlanner.Presentation.Tests.Testing;
 using MaxPlanner.Presentation.Workspace;
 
@@ -19,6 +20,7 @@ namespace MaxPlanner.Presentation.Tests.Workspace;
 /// inline, whether it waits until the commit is displayed, and how it retries. The sites run through one command
 /// runner, and these tests pin that each kept its own visible behaviour, including where it differs from its siblings.
 /// </summary>
+[Collection(nameof(UiTasksConfiguration))]
 [Trait("Req", "T-07")]
 public sealed class CommandSiteTests
 {
@@ -458,6 +460,8 @@ public sealed class CommandSiteTests
     [Trait("Req", "B-16.3")]
     public void A_subtask_card_add_in_the_task_editor_is_still_sent_while_editing_is_blocked()
     {
+        // Pins a known T-07 defect awaiting the user's decision, not intended behaviour: this command should be refused
+        // while editing is blocked, as every other write command is.
         TaskId id = default;
         using var h = WorkspaceHarness.Create(async s => id = await s.TaskAsync("Task"));
         using var editor = new TaskEditorViewModel(h.Workspace.Context, id, null);
@@ -615,6 +619,184 @@ public sealed class CommandSiteTests
         first.IsFaulted.Should().BeTrue("the failing action's own caller still sees its exception");
         second.IsCompletedSuccessfully.Should().BeTrue();
         steps.Should().Equal("first", "second");
+    }
+
+    // ----- Throws at the remaining sites, including a display wait that fails after the commit -----
+
+    [Fact]
+    [Trait("Req", "T-05")]
+    public void An_editor_save_whose_display_wait_throws_stays_open_and_the_retry_is_recognised_as_committed()
+    {
+        ChangeRequestId cr = default;
+        using var h = WorkspaceHarness.Create(async s => cr = await s.CrAsync("CR-1", "Original"));
+        using var editor = new CrEditorViewModel(h.Workspace.Context, cr);
+        var closed = 0;
+        editor.CloseRequested += (_, _) => closed++;
+        var announced = Announcements(h);
+        editor.Title = "Renamed";
+
+        WithFailingDisplayWait(h, () => editor.SaveAsync()).Should().BeFalse();
+
+        (editor.IsSaving, editor.SaveError, closed).Should().Be((false, "Error_Unexpected", 0));
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+        h.Settle();
+        h.Store.ChangeRequests.Lookup(cr).Value.Title.Should().Be("Renamed", "the command committed before the wait failed");
+
+        h.Await(editor.SaveAsync()).Should().BeTrue();
+        h.Coordinator.OperationIds[^1].Should().Be(h.Coordinator.OperationIds[^2]);
+        closed.Should().Be(1);
+    }
+
+    [Fact]
+    [Trait("Req", "B-05")]
+    public void A_cr_delete_whose_display_wait_throws_shows_the_unexpected_text_and_ends_saving()
+    {
+        ChangeRequestId cr = default;
+        using var h = WorkspaceHarness.Create(async s => cr = await s.CrAsync("CR-1", "Original"));
+        using var editor = new CrEditorViewModel(h.Workspace.Context, cr);
+        var announced = Announcements(h);
+        editor.BeginDeleteCommand.Execute(null);
+
+        WithFailingDisplayWait(h, () => editor.ConfirmDeleteAsync()).Should().BeFalse();
+
+        (editor.DeleteError, editor.IsSaving).Should().Be(("Error_Unexpected", false));
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    [Trait("Req", "B-04")]
+    public void A_lookup_removal_whose_display_wait_throws_is_reported_and_the_retry_reuses_the_operation()
+    {
+        using var h = WorkspaceHarness.Create();
+        var context = h.Workspace.Context;
+        var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
+        var unused = workflow.TaskStatuses.First(s => s.Id != workflow.Defaults.DefaultTaskStatusId);
+        var vm = new LookupRemovalViewModel(context.Commands, context, context.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, LookupKind.TaskStatus, unused.Id.Value, unused.Name.Display);
+        h.Await(vm.LoadAsync());
+        var announced = Announcements(h);
+
+        WithFailingDisplayWait(h, () => vm.RemoveAsync()).Should().BeFalse();
+
+        (vm.IsSaving, vm.Error).Should().Be((false, "Error_Unexpected"));
+        context.SaveStatus.IsFailed.Should().BeTrue("a failure after the commit is reported");
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+
+        h.Await(vm.RemoveAsync()).Should().BeTrue();
+        h.Coordinator.OperationIds[^1].Should().Be(h.Coordinator.OperationIds[^2]);
+    }
+
+    [Fact]
+    [Trait("Req", "B-11")]
+    public void A_field_save_whose_display_wait_throws_keeps_the_dialog_and_the_retry_reuses_the_operation()
+    {
+        using var h = WorkspaceHarness.Create();
+        var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
+        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, Domain.Fields.FieldTarget.Task);
+        var closed = false;
+        vm.CloseRequested += (_, _) => closed = true;
+        vm.Label = "Cost centre";
+
+        WithFailingDisplayWait(h, () => vm.SaveAsync()).Should().BeFalse();
+
+        (vm.IsSaving, vm.SaveError, closed).Should().Be((false, "Error_Unexpected", false));
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+
+        h.Await(vm.SaveAsync()).Should().BeTrue();
+        h.Coordinator.OperationIds[^1].Should().Be(h.Coordinator.OperationIds[^2]);
+    }
+
+    [Fact]
+    [Trait("Req", "B-04")]
+    public void A_settings_rename_that_throws_ends_the_rows_busy_state_and_keeps_the_rename_open()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var settings = Settings(h);
+        var row = settings.TaskStatuses.Rows[0];
+        row.IsRenaming = true;
+        row.RenameText = "Renamed";
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(settings.CommitRenameAsync(row)).Should().BeFalse();
+
+        (row.IsBusy, row.IsRenaming, row.RenameError).Should().Be((false, true, "Error_Unexpected"));
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+    }
+
+    [Fact]
+    [Trait("Req", "B-04")]
+    public void A_settings_row_command_that_throws_ends_the_rows_busy_state_and_shows_the_page_notice()
+    {
+        using var h = WorkspaceHarness.Create();
+        using var settings = Settings(h);
+        var row = settings.TaskStatuses.Rows[0];
+        var announced = Announcements(h);
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(settings.MoveAsync(row, 1));
+
+        row.IsBusy.Should().BeFalse();
+        settings.ErrorMessage.Should().Be("Error_Unexpected", "the page notice shows the text as well as the app notice");
+        h.Workspace.SaveStatus.IsFailureNoticeOpen.Should().BeTrue();
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    [Fact]
+    [Trait("Req", "B-08")]
+    public void Calendar_cr_commands_that_throw_end_saving_and_are_each_reported_once()
+    {
+        ChangeRequestId id = default;
+        using var h = WorkspaceHarness.Create(async s => id = await s.CrAsync("CR-1", "First"));
+        var commands = h.Workspace.Context.ChangeRequests;
+        var announced = Announcements(h);
+        var day = new DateOnly(2026, 11, 20);
+
+        h.Coordinator.ThrowNext(new InvalidOperationException("schedule"));
+        h.Await(commands.ScheduleAsync(h.Store.ChangeRequests.Lookup(id).Value, day)).Should().BeFalse();
+        h.Coordinator.ThrowNext(new InvalidOperationException("resize"));
+        h.Await(commands.ResizeAsync(h.Store.ChangeRequests.Lookup(id).Value, day, day)).Should().BeFalse();
+        h.Coordinator.ThrowNext(new InvalidOperationException("backlog"));
+        h.Await(commands.MoveToBacklogAsync(h.Store.ChangeRequests.Lookup(id).Value)).Should().BeFalse();
+
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+        announced.Should().HaveCount(3).And.AllSatisfy(a => a.Should().Be(new Announcement("Error_Unexpected", true)));
+    }
+
+    [Fact]
+    [Trait("Req", "B-17")]
+    public void A_review_toggle_that_throws_ends_pending_restores_the_checkbox_and_shows_the_text()
+    {
+        using var h = WorkspaceHarness.Create(async s =>
+            (await new Application.Reviews.CreateReview(s.Coordinator).ExecuteAsync(
+                new Application.Reviews.CreateReviewCommand(OperationId.New(), new ReviewItemId(Guid.NewGuid()), new Application.Reviews.ReviewDraft("Review", null, null, [], null, null), null, false), default))
+                .IsSuccess.Should().BeTrue());
+        var reviews = h.Workspace.Checklists.Reviews;
+        h.PumpUntil(() => reviews.Open.Count == 1);
+        var row = reviews.Open.Single();
+        var notified = new List<string?>();
+        row.PropertyChanged += (_, e) => notified.Add(e.PropertyName);
+        var announced = Announcements(h);
+        h.Coordinator.ThrowNext(new InvalidOperationException("defect"));
+
+        h.Await(row.ToggleAsync(true));
+
+        (row.IsPending, row.IsDone, reviews.ActionError).Should().Be((false, false, "Error_Unexpected"));
+        notified.Should().Contain(nameof(row.IsDone), "the checkbox goes back to the committed value");
+        announced.Should().Equal(new Announcement("Error_Unexpected", true));
+    }
+
+    /// <summary>Runs <paramref name="start"/> so its command commits and the wait until it is displayed then throws.</summary>
+    private static T WithFailingDisplayWait<T>(WorkspaceHarness h, Func<Task<T>> start)
+    {
+        var hold = h.Coordinator.HoldNext();
+        var calls = h.Coordinator.Calls;
+        var task = start();
+        h.PumpUntil(() => h.Coordinator.Calls > calls);
+        h.Settle();
+        h.StoreScheduler.ThrowOnNextScheduleFromThisThread();
+        hold.SetResult();
+        return h.Await(task);
     }
 
     private static SettingsPageViewModel Settings(WorkspaceHarness h)

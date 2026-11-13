@@ -319,6 +319,133 @@ public sealed class CommandRunnerTests
         h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
     }
 
+    [Fact]
+    public void A_change_handler_that_throws_while_the_indicator_completes_does_not_end_another_commands_count()
+    {
+        using var h = WorkspaceHarness.Create();
+        var probe = new Probe(h);
+        var status = h.Workspace.SaveStatus;
+        h.Await(probe.Runner.RunAsync(probe.Request(Fails(DiskFull))));
+        status.FailureMessage.Should().NotBeNull("completing will clear it, which raises a notification");
+        var hold = new TaskCompletionSource<AppResult<CommandOutcome<int>>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = probe.Runner.RunAsync(probe.Request(_ => hold.Task));
+        var armed = true;
+        status.PropertyChanged += (_, _) =>
+        {
+            if (armed)
+            {
+                armed = false;
+                throw new InvalidOperationException("handler");
+            }
+        };
+
+        var run = h.Await(probe.Runner.RunAsync(probe.Request(Ok(1))));
+
+        run.Status.Should().Be(CommandRunStatus.Unexpected);
+        status.IsSaving.Should().BeTrue("the held command still owns its in-flight count");
+        hold.SetResult(AppResult.Success(new CommandOutcome<int>(2, 0, false)));
+        h.Await(held).IsSuccess.Should().BeTrue();
+        status.IsSaving.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_change_handler_that_throws_while_the_indicator_begins_still_ends_this_runs_count()
+    {
+        using var h = WorkspaceHarness.Create();
+        var probe = new Probe(h);
+        var status = h.Workspace.SaveStatus;
+        var armed = true;
+        status.PropertyChanged += (_, _) =>
+        {
+            if (armed)
+            {
+                armed = false;
+                throw new InvalidOperationException("handler");
+            }
+        };
+
+        var run = h.Await(probe.Runner.RunAsync(probe.Request(Ok(1))));
+
+        run.Status.Should().Be(CommandRunStatus.Unexpected);
+        probe.Operations.Should().BeEmpty("Begin threw before the command was sent");
+        status.IsSaving.Should().BeFalse();
+        var hold = new TaskCompletionSource<AppResult<CommandOutcome<int>>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = probe.Runner.RunAsync(probe.Request(_ => hold.Task));
+        status.IsSaving.Should().BeTrue();
+        hold.SetResult(AppResult.Success(new CommandOutcome<int>(2, 0, false)));
+        h.Await(held);
+        status.IsSaving.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_busy_flag_that_throws_when_set_is_reported_once_and_nothing_is_sent()
+    {
+        using var h = WorkspaceHarness.Create();
+        var probe = new Probe(h);
+        var log = Configure(h);
+        try
+        {
+            var cleared = 0;
+            var request = probe.Request(Ok(1)) with
+            {
+                Busy = busy => _ = busy ? throw new InvalidOperationException("busy") : ++cleared,
+            };
+
+            var run = h.Await(probe.Runner.RunAsync(request));
+
+            run.Status.Should().Be(CommandRunStatus.Unexpected);
+            probe.Operations.Should().BeEmpty();
+            cleared.Should().Be(1);
+            h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+            log.Should().Equal("busy");
+        }
+        finally
+        {
+            Reset();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_busy_flag_that_throws_when_cleared_never_escapes_and_is_reported_once(bool commandThrows)
+    {
+        using var h = WorkspaceHarness.Create();
+        var probe = new Probe(h);
+        var log = Configure(h);
+        try
+        {
+            var request = probe.Request(commandThrows ? _ => throw new InvalidOperationException("command") : Ok(1)) with
+            {
+                Busy = busy => _ = busy ? 0 : throw new InvalidOperationException("clear"),
+            };
+
+            var run = h.Await(probe.Runner.RunAsync(request));
+
+            run.IsSuccess.Should().Be(!commandThrows, "a failure clearing the flag does not change the run's result");
+            log.Should().Equal(commandThrows ? "command" : "clear");
+            probe.Announced.Should().ContainSingle();
+        }
+        finally
+        {
+            Reset();
+        }
+    }
+
+    [Fact]
+    public void A_cancellation_has_no_text_to_show_and_is_not_announced_even_where_throws_are_announced()
+    {
+        using var h = WorkspaceHarness.Create();
+        var probe = new Probe(h);
+        var request = probe.Request(_ => throw new OperationCanceledException()) with { UnexpectedFailure = CommandUnexpectedFailure.AnnounceOnly };
+
+        var run = h.Await(probe.Runner.RunAsync(request));
+
+        (run.Status, run.Message).Should().Be((CommandRunStatus.Unexpected, (string?)null));
+        probe.Announced.Should().BeEmpty();
+        h.Workspace.SaveStatus.IsSaving.Should().BeFalse();
+    }
+
     private static Func<OperationId, Task<AppResult<CommandOutcome<int>>>> Ok(int value, long sequence = 0) =>
         _ => Task.FromResult(AppResult.Success(new CommandOutcome<int>(value, sequence, false)));
 

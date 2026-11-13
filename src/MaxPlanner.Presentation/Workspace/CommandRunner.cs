@@ -11,10 +11,12 @@ namespace MaxPlanner.Presentation.Workspace;
 /// the commit is displayed. Use on the UI thread.
 /// </summary>
 /// <remarks>
-/// <see cref="RunAsync{T}"/> does not throw (a fatal <see cref="OutOfMemoryException"/> aside). When the command, the
-/// display wait, or the caller's completion throws, the indicator leaves its in-flight state, the busy scope ends, and
-/// the failure is reported once through <see cref="UiTasks.Report"/> (ADR 0029; a cancellation is not reported). The
-/// caller gets an <see cref="CommandRunStatus.Unexpected"/> result with the unexpected-error text to show inline.
+/// For a non-null request, <see cref="RunAsync{T}"/> does not throw (a fatal <see cref="OutOfMemoryException"/> aside).
+/// When the command, the display wait, the completion, the announcement or the busy flag throws, in this order: the
+/// indicator leaves the in-flight state this run started, the failure is reported once through
+/// <see cref="UiTasks.Report"/> (ADR 0029), the busy flag is cleared, and the caller gets an
+/// <see cref="CommandRunStatus.Unexpected"/> result with the unexpected-error text, which it then shows inline in the same
+/// UI-thread step. A cancellation ends the indicator but is not reported and has no text to show.
 /// </remarks>
 public interface ICommandRunner
 {
@@ -119,7 +121,7 @@ public enum CommandRunStatus
     /// <summary>The command returned a typed failure (<see cref="CommandRun{T}.Failure"/>).</summary>
     Failed,
 
-    /// <summary>The command, the display wait, or the completion threw; the failure was reported.</summary>
+    /// <summary>The run threw; the failure was reported (a cancellation was not).</summary>
     Unexpected,
 }
 
@@ -148,7 +150,10 @@ public sealed class CommandRun<T>
     /// <summary>The typed failure, when the status is <see cref="CommandRunStatus.Failed"/>.</summary>
     public CommandFailure? Failure { get; }
 
-    /// <summary>The text to show inline: the blocked text, the failure text, or the unexpected-error text; null on success.</summary>
+    /// <summary>
+    /// The text to show inline: the blocked text, the failure text, or the unexpected-error text; null on success and
+    /// after a cancellation (nothing to show). Test <see cref="IsSuccess"/>, not this, for success.
+    /// </summary>
     public string? Message { get; }
 
     /// <summary>
@@ -164,7 +169,7 @@ public sealed class CommandRun<T>
 
     internal static CommandRun<T> Failed(CommandFailure failure) => new(CommandRunStatus.Failed, failure.OperationId, null, failure, failure.Message);
 
-    internal static CommandRun<T> Unexpected(OperationId operation, CommandOutcome<T>? outcome, string message) =>
+    internal static CommandRun<T> Unexpected(OperationId operation, CommandOutcome<T>? outcome, string? message) =>
         new(CommandRunStatus.Unexpected, operation, outcome, null, message);
 }
 
@@ -182,7 +187,7 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
             var blocked = strings.GetString("Error_EditingBlocked");
             if (request.AnnouncesBlocked)
             {
-                context.Announce(blocked, isFailure: true);
+                Try(() => context.Announce(blocked, isFailure: true));
             }
 
             return CommandRun<T>.Blocked(blocked);
@@ -190,16 +195,24 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
 
         var status = context.SaveStatus;
         var operation = request.Operation ?? OperationId.New();
-        var isIndicatorEnded = false;
+
+        // The indicator's in-flight count: this run owns one from the moment Begin is called (Begin counts first, before
+        // it raises any notification) until an end call is made (each end call uncounts first). The flags change before
+        // the calls, so a change handler that throws inside a call never makes the catch end the indicator twice and take
+        // another command's count.
+        var ownsInFlight = false;
+        var isReported = false;
         CommandOutcome<T>? outcome = null;
-        request.Busy?.Invoke(true);
         try
         {
+            request.Busy?.Invoke(true);
+            ownsInFlight = true;
             status.Begin();
             var result = await request.Execute(operation).ConfigureAwait(true);
             if (!result.IsSuccess)
             {
                 var failure = CommandFailure.From(result.Error!, operation, request.RecordKey, strings);
+                ownsInFlight = false;
                 if (request.FailureIndicator == CommandFailureIndicator.Fail)
                 {
                     status.Fail(failure);
@@ -209,7 +222,6 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
                     status.Report(failure);
                 }
 
-                isIndicatorEnded = true;
                 if (request.FailureAnnouncement?.Invoke(failure) is { } announcement)
                 {
                     context.Announce(announcement, isFailure: true);
@@ -221,42 +233,90 @@ internal sealed class CommandRunner(WorkspaceContext context) : ICommandRunner
             outcome = result.Value;
             if (request.Completion is null)
             {
+                ownsInFlight = false;
                 status.Complete();
-                isIndicatorEnded = true;
             }
 
             await WhenDisplayedAsync(request, outcome).ConfigureAwait(true);
             if (request.Completion is { } completion)
             {
                 var text = completion(outcome);
+                ownsInFlight = false;
                 status.Complete(text.Message, text.ActionText, text.Action);
-                isIndicatorEnded = true;
             }
 
             return CommandRun<T>.Succeeded(operation, outcome);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            if (!isIndicatorEnded)
-            {
-                status.Reject();
-            }
-
-            var message = strings.GetString("Error_Unexpected");
-            if (outcome is null && request.UnexpectedFailure == CommandUnexpectedFailure.AnnounceOnly)
-            {
-                context.Announce(message, isFailure: true);
-            }
-            else
-            {
-                UiTasks.Report(ex, context);
-            }
-
-            return CommandRun<T>.Unexpected(operation, outcome, message);
+            isReported = ex is not OperationCanceledException;
+            return Unexpected(request, operation, outcome, ex, ownsInFlight);
         }
         finally
         {
+            EndBusy(request, isReported);
+        }
+    }
+
+    /// <summary>
+    /// Ends a run that threw: the indicator leaves its in-flight state when this run still owns a count, then the failure
+    /// is reported once, or only announced under <see cref="CommandUnexpectedFailure.AnnounceOnly"/>. A cancellation is
+    /// neither reported nor announced and shows nothing inline. Nothing here throws: a failure while ending is dropped,
+    /// because the original failure is the one being reported.
+    /// </summary>
+    private CommandRun<T> Unexpected<T>(CommandRequest<T> request, OperationId operation, CommandOutcome<T>? outcome, Exception exception, bool ownsInFlight)
+    {
+        if (ownsInFlight)
+        {
+            Try(context.SaveStatus.Reject);
+        }
+
+        if (exception is OperationCanceledException)
+        {
+            return CommandRun<T>.Unexpected(operation, outcome, message: null);
+        }
+
+        var message = context.Strings.GetString("Error_Unexpected");
+        if (outcome is null && request.UnexpectedFailure == CommandUnexpectedFailure.AnnounceOnly)
+        {
+            Try(() => context.Announce(message, isFailure: true));
+        }
+        else
+        {
+            Try(() => UiTasks.Report(exception, context));
+        }
+
+        return CommandRun<T>.Unexpected(operation, outcome, message);
+    }
+
+    /// <summary>
+    /// Clears the caller's busy flag. If that throws, the failure is reported, unless this run already reported one: the
+    /// user then sees one failure, and the run's result stays as it was.
+    /// </summary>
+    private void EndBusy<T>(CommandRequest<T> request, bool isReported)
+    {
+        try
+        {
             request.Busy?.Invoke(false);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            if (!isReported)
+            {
+                Try(() => UiTasks.Report(ex, context));
+            }
+        }
+    }
+
+    private static void Try(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Dropped on purpose: see the callers.
         }
     }
 

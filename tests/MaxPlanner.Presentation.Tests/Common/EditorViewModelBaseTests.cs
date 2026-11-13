@@ -12,6 +12,7 @@ namespace MaxPlanner.Presentation.Tests.Common;
 /// whose command is scripted: save and retry, the dirty-close prompt, the window-close guard, follow-ups,
 /// failures, and the commit subscription.
 /// </summary>
+[Collection(nameof(UiTasksConfiguration))]
 [Trait("Req", "B-02.8")]
 public sealed class EditorViewModelBaseTests
 {

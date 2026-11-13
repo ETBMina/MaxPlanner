@@ -354,7 +354,12 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
             return true;
         }
 
-        _retryOperation = run.RetryOperation;
+        if (run.Operation is not null)
+        {
+            // An attempt that sent nothing keeps the operation to retry.
+            _retryOperation = run.RetryOperation;
+        }
+
         if (run.Failure is not { } failure)
         {
             Error = run.Message;

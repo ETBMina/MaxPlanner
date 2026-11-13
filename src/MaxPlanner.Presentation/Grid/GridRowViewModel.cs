@@ -387,7 +387,7 @@ public sealed partial class GridRowViewModel : ProjectionItemViewModel<WorkItemR
     }
 
     /// <param name="retryOperation">T-05: the operation a retry of this same draft reuses because the outcome is unknown.</param>
-    internal void FailSave(string message, bool isConflict, OperationId? retryOperation)
+    internal void FailSave(string? message, bool isConflict, OperationId? retryOperation)
     {
         IsSaving = false;
         ErrorMessage = message;

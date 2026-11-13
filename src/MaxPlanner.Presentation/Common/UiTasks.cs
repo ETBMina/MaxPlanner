@@ -59,7 +59,9 @@ public static partial class UiTasks
     /// <summary>
     /// Logs an unexpected failure at Error (event 4002) and shows <c>Error_Unexpected</c> in the save status, with its
     /// App InfoBar, and as a screen-reader announcement. A cancellation is ignored. Open dialogs and drafts are left as
-    /// they are; an editor that catches its own failure resets its state first and passes its own context.
+    /// they are. A write command that throws is reported here by the workspace's command runner, with its own context,
+    /// after the save indicator left the run's in-flight state; the caller resets its busy state and shows the text inline
+    /// right after, in the same UI-thread step.
     /// </summary>
     /// <param name="context">The workspace to show the failure in; null uses the current one from <see cref="Configure"/>.</param>
     public static void Report(Exception exception, WorkspaceContext? context = null)
