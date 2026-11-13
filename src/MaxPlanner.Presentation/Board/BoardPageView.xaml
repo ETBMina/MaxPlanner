@@ -9,8 +9,11 @@
     xmlns:local="using:MaxPlanner.Presentation.Board"
     IsTabStop="False">
     <UserControl.Resources>
-        <!-- Design §4.2 item 6: card avatars sit side by side with a small gap, never overlapping. -->
-        <StackLayout x:Key="CardPeopleLayout" Orientation="Horizontal" Spacing="4" />
+        <!--
+            Design §4.2 item 6: card avatars sit side by side with a small gap, never overlapping. Not a StackLayout: that
+            virtualizes by viewport, so the avatars' width (and the wrapping dates beside them) changed while scrolling.
+        -->
+        <local:CardPeopleLayout x:Key="CardPeopleLayout" Spacing="4" />
         <DataTemplate x:Key="CardPersonTemplate" x:DataType="local:BoardCardPerson">
             <!-- Each avatar is its own tooltip target: the name, then the roles in secondary text (design §2.10). -->
             <controls:PersonAvatar
@@ -269,7 +272,10 @@
                                 ItemsSource="{x:Bind People, Mode=OneWay}"
                                 Layout="{StaticResource CardPeopleLayout}" />
                         </Grid>
-                        <!-- Subtask cards: the dates on the left and the avatar (the inherited CR Owner) on the right. -->
+                        <!--
+                            Subtask cards: the dates on the left and the avatar (the inherited CR Owner) on the right. The dates keep
+                            one line (trimmed, full text in the tooltip), so the card's height never follows the avatars' width.
+                        -->
                         <Grid
                             x:Name="SubtaskFooterRow"
                             x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
@@ -284,7 +290,9 @@
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
                                 Text="{x:Bind DatesText, Mode=OneWay}"
-                                TextWrapping="Wrap" />
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap"
+                                ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(DatesText), Mode=OneWay}" />
                             <ItemsRepeater
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
