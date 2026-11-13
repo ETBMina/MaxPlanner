@@ -498,7 +498,7 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
             string { Length: 0 } => none,
             string text => text,
             TaskStatusId status => _workflow.FindTaskStatus(status)?.Name.Display ?? none,
-            DateOnly date => DateText.ShortDate(date),
+            DateOnly date => DateText.RecordDate(date),
             var other => other.ToString() ?? none,
         };
     }

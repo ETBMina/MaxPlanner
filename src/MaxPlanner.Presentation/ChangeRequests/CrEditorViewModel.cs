@@ -205,7 +205,7 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
     /// <summary>The number as saved, or as typed for a new CR, for step texts ("Save CR-1042 and create a task?").</summary>
     public string DisplayNumber => Latest?.Number ?? (Number.Trim().Length > 0 ? Number.Trim() : Context.Strings.GetString("CrEditor_ThisCr"));
 
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Number { get; set; } = string.Empty;
@@ -939,7 +939,7 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
             SquadId squad => _workflow.FindSquad(squad)?.Name.Display ?? none,
             CrStatusId status => _workflow.FindCrStatus(status)?.Name.Display ?? none,
             PriorityId priority => _workflow.FindPriority(priority)?.Name.Display ?? none,
-            DateOnly date => DateText.ShortDate(date),
+            DateOnly date => DateText.RecordDate(date),
             var other => other.ToString() ?? none,
         };
     }

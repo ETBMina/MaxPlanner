@@ -2,7 +2,7 @@
 <!--
     A date field of a draft editor: the CalendarDatePicker, a Clear button beside it (an explicit clear is tracked for
     B-04, "explicit manual clear"), and an optional helper line below. Disabling the field disables both controls.
-    The first day of the week follows the system setting, as the picker's default does.
+    The first day of the week follows the app's workweek and an empty picker says "Pick a date" (DatePickers).
 -->
 <UserControl
     x:Class="MaxPlanner.Presentation.Common.Controls.ClearableDateField"
@@ -20,6 +20,7 @@
                 x:Name="Picker"
                 HorizontalAlignment="Stretch"
                 DateChanged="OnPickerDateChanged"
+                FirstDayOfWeek="{x:Bind common:DatePickers.FirstDayOfWeek, Mode=OneTime}"
                 PlaceholderText="{x:Bind common:DatePickers.Placeholder, Mode=OneTime}" />
             <Button x:Name="ClearButton" Grid.Column="1" VerticalAlignment="Bottom">
                 <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />

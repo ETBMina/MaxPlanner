@@ -169,7 +169,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
     /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -1004,7 +1004,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
         string Join(IEnumerable<string> names) => names.DefaultIfEmpty(none).Aggregate((a, b) => a + ", " + b);
         string Person(Guid id) => _workflow.FindPerson(new PersonId(id))?.Name.Display ?? _newPeople.Used([id]).Select(p => p.Name).FirstOrDefault() ?? none;
         string Tag(Guid id) => _workflow.FindTag(new TagId(id))?.Name.Display ?? _newTags.Used([id]).Select(t => t.Name).FirstOrDefault() ?? none;
-        string Date(DateOnly? date) => date is { } day ? DateText.ShortDate(day) : none;
+        string Date(DateOnly? date) => date is { } day ? DateText.RecordDate(day) : none;
         string Text(string text) => text.Length == 0 ? none : text;
         return key switch
         {
@@ -1088,9 +1088,9 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     private string DatesText(DateOnly? start, DateOnly? end) => (start, end) switch
     {
         (null, null) => string.Empty,
-        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.ShortDate(s)),
-        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.ShortDate(e)),
-        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.ShortDate(s), DateText.ShortDate(e)),
+        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.RecordDate(s)),
+        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.RecordDate(e)),
+        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.RecordDate(s), DateText.RecordDate(e)),
     };
 
     private string Helper(string key, IEnumerable<Domain.Workflow.TaskStatusDefinition> statuses)

@@ -17,10 +17,11 @@ public sealed class DateTextTests
         WithCulture(CultureInfo.InvariantCulture, () =>
         {
             DateText.ShortDate(Day).Should().Be("11/12/2026");
-            DateText.ShortDate(Moment).Should().Be("11/12/2026");
             DateText.LongDate(Day).Should().Be("Thursday, 12 November 2026");
             DateText.MonthDay(Day).Should().Be("Nov 12");
             DateText.MonthDayYear(Day).Should().Be("Nov 12, 2026");
+            DateText.RecordDate(Day).Should().Be("Nov 12, 2026");
+            DateText.RecordDate(Moment).Should().Be("Nov 12, 2026");
             DateText.MonthYear(Day).Should().Be("Nov 2026");
             DateText.LongMonthDay(Day).Should().Be("November 12");
             DateText.ShortDateTime(Moment).Should().Be("11/12/2026 15:45");
@@ -37,15 +38,23 @@ public sealed class DateTextTests
         WithCulture(culture, () =>
         {
             DateText.ShortDate(Day).Should().Be(Day.ToString("d", culture));
-            DateText.ShortDate(Moment).Should().Be(Moment.ToString("d", culture));
             DateText.LongDate(Day).Should().Be(Day.ToString("D", culture));
             DateText.MonthDay(Day).Should().Be(Day.ToString("MMM d", culture));
             DateText.MonthDayYear(Day).Should().Be(Day.ToString("MMM d, yyyy", culture));
+            DateText.RecordDate(Day).Should().Be(Day.ToString("MMM d, yyyy", culture));
             DateText.MonthYear(Day).Should().Be(Day.ToString("MMM yyyy", culture));
             DateText.LongMonthDay(Day).Should().Be(Day.ToString("M", culture));
             DateText.ShortDateTime(Moment).Should().Be(Moment.ToString("g", culture));
         });
     }
+
+    [Fact]
+    public void A_record_date_has_the_year_in_en_US() =>
+        WithCulture(CultureInfo.GetCultureInfo("en-US"), () =>
+        {
+            DateText.RecordDate(new DateOnly(2026, 11, 13)).Should().Be("Nov 13, 2026");
+            DateText.RecordDate(new DateTimeOffset(2026, 11, 13, 23, 30, 0, TimeSpan.FromHours(2))).Should().Be("Nov 13, 2026");
+        });
 
     private static void WithCulture(CultureInfo culture, Action assert)
     {

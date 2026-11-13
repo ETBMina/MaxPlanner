@@ -11,9 +11,6 @@ public static class DateText
     /// <summary>The short date ("d"), for example 11/12/2026.</summary>
     public static string ShortDate(DateOnly date) => date.ToString("d", CultureInfo.CurrentCulture);
 
-    /// <summary>The short date ("d") of a date and time, for example 11/12/2026.</summary>
-    public static string ShortDate(DateTimeOffset dateTime) => dateTime.ToString("d", CultureInfo.CurrentCulture);
-
     /// <summary>The long date ("D"), for example Thursday, November 12, 2026.</summary>
     public static string LongDate(DateOnly date) => date.ToString("D", CultureInfo.CurrentCulture);
 
@@ -22,6 +19,15 @@ public static class DateText
 
     /// <summary>The abbreviated month, day and year ("MMM d, yyyy"), for example Nov 12, 2026.</summary>
     public static string MonthDayYear(DateOnly date) => date.ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+
+    /// <summary>
+    /// A record's date shown as text (created, started, ended, planned, a date field's value), always with the year:
+    /// <see cref="MonthDayYear(DateOnly)"/>, for example Nov 12, 2026. Date pickers keep their own format.
+    /// </summary>
+    public static string RecordDate(DateOnly date) => MonthDayYear(date);
+
+    /// <summary>The <see cref="RecordDate(DateOnly)"/> of a local date and time's day, for example Nov 12, 2026.</summary>
+    public static string RecordDate(DateTimeOffset dateTime) => RecordDate(DateOnly.FromDateTime(dateTime.DateTime));
 
     /// <summary>The abbreviated month and year ("MMM yyyy"), for example Nov 2026.</summary>
     public static string MonthYear(DateOnly date) => date.ToString("MMM yyyy", CultureInfo.CurrentCulture);
