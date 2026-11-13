@@ -15,11 +15,11 @@ using MaxPlanner.Presentation.Common.Pickers;
 namespace MaxPlanner.Presentation.Tasks;
 
 /// <summary>
-/// The task editor dialog. Buttons and menu items bind <see cref="TaskEditorViewModel"/> commands; code-behind
-/// handles what needs event args or the row's item (the dialog buttons, accelerators, Enter keys, checklist rows),
-/// keeps the Status/Priority/CR selections in step with it (a two-way SelectedItem could run before
-/// ItemsSource), moves focus where the ViewModel asks, reflows the fields by width (design §5.0), shows the
-/// hover-revealed copy and checklist row actions, and turns a checklist drag into a draft move.
+/// The task editor dialog. Buttons and menu items bind <see cref="TaskEditorViewModel"/> commands, and
+/// <see cref="EditorDialogShell"/> wires the dialog buttons, Ctrl+Enter and Alt+Left; code-behind handles what needs
+/// event args or the row's item (Enter keys, checklist rows), keeps the Status/Priority/CR selections in step with it
+/// (a two-way SelectedItem could run before ItemsSource), moves focus where the ViewModel asks, reflows the fields by
+/// width (design §5.0), shows the hover-revealed copy and checklist row actions, and turns a checklist drag into a draft move.
 /// </summary>
 public sealed partial class TaskEditorDialog : ContentDialog
 {
@@ -33,16 +33,11 @@ public sealed partial class TaskEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        EditorDialogLayout.Attach(this, ApplyLayout);
+        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, ApplyLayout);
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         PriorityCombo.SelectedItem = viewModel.SelectedPriority;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        viewModel.FocusRequested += OnFocusRequested;
-        Unloaded += (_, _) =>
-        {
-            viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-            viewModel.FocusRequested -= OnFocusRequested;
-        };
+        Unloaded += (_, _) => viewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 
     public TaskEditorViewModel ViewModel { get; }
@@ -107,7 +102,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
-    private void OnFocusRequested(object? sender, string field)
+    private void OnFocusRequested(string field)
     {
         // Design §5.0: focus moves to the first invalid field.
         Control? target = field switch
@@ -157,39 +152,6 @@ public sealed partial class TaskEditorDialog : ContentDialog
             Control target = ViewModel.IsTitleEditable ? TitleBox : CloseIconButton;
             target.Focus(FocusState.Programmatic);
         });
-
-    private void OnPrimaryClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        // The dialog closes only after the save committed (the ViewModel asks for it); a failure keeps it open.
-        args.Cancel = true;
-        ViewModel.SaveCommand.Execute(null);
-    }
-
-    private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
-    {
-        if (args.Result != ContentDialogResult.None)
-        {
-            return;
-        }
-
-        // Design §5.8: while the dirty-close confirmation is open it owns the decision, so the editor stays open.
-        args.Cancel = ViewModel.IsDirtyClosePromptOpen || !ViewModel.TryClose();
-    }
-
-    private void OnSaveAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        args.Handled = true;
-        ViewModel.SaveCommand.Execute(null);
-    }
-
-    private void OnBackAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (!ViewModel.IsFormStep)
-        {
-            args.Handled = true;
-            ViewModel.StepBack();
-        }
-    }
 
     // Hide raises Closing with no result, so a dirty draft asks first, as Cancel and Esc do (design §5.8).
     private void OnCloseClick(object sender, RoutedEventArgs e) => Hide();
