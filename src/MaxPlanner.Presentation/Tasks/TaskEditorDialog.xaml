@@ -18,11 +18,9 @@
     AutomationProperties.AutomationId="TaskEditor_Dialog"
     AutomationProperties.Name="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
-    Closing="OnClosing"
     Opened="OnOpened"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
-    PrimaryButtonClick="OnPrimaryClick"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneWay}"
     Style="{StaticResource DefaultContentDialogStyle}">
     <ContentDialog.Resources>
@@ -60,11 +58,7 @@
     </ContentDialog.Resources>
     <ScrollViewer x:Name="ContentScroller" VerticalScrollBarVisibility="Auto">
         <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
-            <StackPanel.KeyboardAccelerators>
-                <!-- Design §7.2: Ctrl+Enter saves from anywhere; Alt+Left goes back on an inline step. -->
-                <KeyboardAccelerator Key="Enter" Invoked="OnSaveAccelerator" Modifiers="Control" />
-                <KeyboardAccelerator Key="Left" Invoked="OnBackAccelerator" Modifiers="Menu" />
-            </StackPanel.KeyboardAccelerators>
+            <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
 
             <!-- Top line: the task's tags (Planner-style pills with an Add tag affordance), More, and Close (design §5.1). -->
             <StackPanel Spacing="4">
@@ -155,34 +149,13 @@
                 A closed InfoBar stays Visible with zero height, so the Root StackPanel would still add 12 epx of spacing
                 for each one. Visibility follows IsOpen so closed bars reserve no space.
             -->
-            <InfoBar
-                x:Uid="TaskEditor_ValidationInfoBar"
-                AutomationProperties.AutomationId="TaskEditor_ValidationInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
-                Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
-
-            <!-- Save failures and the conflict of design §5.10; the draft stays. -->
-            <InfoBar
-                AutomationProperties.AutomationId="TaskEditor_ErrorInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
-                Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
-                <InfoBar.Content>
-                    <StackPanel
-                        Margin="0,0,0,12"
-                        Orientation="Horizontal"
-                        Spacing="8"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}">
-                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Command="{x:Bind ViewModel.ReviewConflictCommand}" />
-                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Command="{x:Bind ViewModel.BeginReloadCommand}" />
-                    </StackPanel>
-                </InfoBar.Content>
-            </InfoBar>
+            <dialogs:EditorMessageBars
+                AutomationPrefix="TaskEditor"
+                IsConflict="{x:Bind ViewModel.IsConflict, Mode=OneWay}"
+                ReloadCommand="{x:Bind ViewModel.BeginReloadCommand}"
+                ReviewConflictCommand="{x:Bind ViewModel.ReviewConflictCommand}"
+                SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
+                ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
 
             <InfoBar
                 AutomationProperties.AutomationId="TaskEditor_CrChangedInfoBar"
@@ -463,63 +436,28 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <StackPanel Spacing="4">
-                            <Grid ColumnSpacing="8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <CalendarDatePicker
-                                    x:Uid="TaskEditor_StartDate"
-                                    HorizontalAlignment="Stretch"
-                                    AutomationProperties.AutomationId="TaskEditor_StartDate"
-                                    Date="{x:Bind ViewModel.StartDate, Mode=TwoWay}"
-                                    IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                                <Button
-                                    x:Uid="TaskEditor_ClearStartDateButton"
-                                    Grid.Column="1"
-                                    VerticalAlignment="Bottom"
-                                    AutomationProperties.AutomationId="TaskEditor_ClearStartDateButton"
-                                    Command="{x:Bind ViewModel.ClearStartDateCommand}"
-                                    IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                                </Button>
-                            </Grid>
-                            <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="4">
-                            <Grid ColumnSpacing="8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <CalendarDatePicker
-                                    x:Name="EndDatePicker"
-                                    x:Uid="TaskEditor_EndDate"
-                                    HorizontalAlignment="Stretch"
-                                    AutomationProperties.AutomationId="TaskEditor_EndDate"
-                                    Date="{x:Bind ViewModel.EndDate, Mode=TwoWay}"
-                                    IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                                <Button
-                                    x:Uid="TaskEditor_ClearEndDateButton"
-                                    Grid.Column="1"
-                                    VerticalAlignment="Bottom"
-                                    AutomationProperties.AutomationId="TaskEditor_ClearEndDateButton"
-                                    Command="{x:Bind ViewModel.ClearEndDateCommand}"
-                                    IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                                </Button>
-                            </Grid>
-                            <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
+                        <controls:ClearableDateField
+                            x:Uid="TaskEditor_StartDate"
+                            ClearButtonAutomationId="TaskEditor_ClearStartDateButton"
+                            ClearButtonUid="TaskEditor_ClearStartDateButton"
+                            ClearCommand="{x:Bind ViewModel.ClearStartDateCommand}"
+                            Date="{x:Bind ViewModel.StartDate, Mode=TwoWay}"
+                            HasHelperLine="True"
+                            HelperText="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
+                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                            PickerAutomationId="TaskEditor_StartDate" />
+                        <controls:ClearableDateField
+                            x:Name="EndDateField"
+                            x:Uid="TaskEditor_EndDate"
+                            Grid.Column="1"
+                            ClearButtonAutomationId="TaskEditor_ClearEndDateButton"
+                            ClearButtonUid="TaskEditor_ClearEndDateButton"
+                            ClearCommand="{x:Bind ViewModel.ClearEndDateCommand}"
+                            Date="{x:Bind ViewModel.EndDate, Mode=TwoWay}"
+                            HasHelperLine="True"
+                            HelperText="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
+                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                            PickerAutomationId="TaskEditor_EndDate" />
                     </Grid>
                     <fields:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
                 </StackPanel>
@@ -829,66 +767,14 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- ===== Conflict review (design §5.10). ===== -->
-            <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflictReviewStep), Mode=OneWay}">
-                <TextBlock x:Uid="Conflict_ReviewHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" />
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="Conflict_FieldHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock x:Uid="Conflict_MineHeader" Grid.Column="1" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock x:Uid="Conflict_SavedHeader" Grid.Column="2" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock x:Uid="Conflict_UseMineHeader" Grid.Column="3" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                </Grid>
-                <ItemsControl AutomationProperties.AutomationId="Conflict_Rows" ItemsSource="{x:Bind ViewModel.ConflictRows, Mode=OneWay}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="dialogs:ConflictRowViewModel">
-                            <Grid Padding="0,6" ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Bind Field, Mode=OneTime}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Column="1" Text="{x:Bind Mine, Mode=OneTime}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Column="2" Text="{x:Bind Saved, Mode=OneTime}" TextWrapping="Wrap" />
-                                <CheckBox
-                                    Grid.Column="3"
-                                    MinWidth="0"
-                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.UseMineId(Key), Mode=OneTime}"
-                                    AutomationProperties.Name="{x:Bind Field, Mode=OneTime}"
-                                    IsChecked="{x:Bind UseMine, Mode=TwoWay}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
-                    <Button
-                        x:Uid="Conflict_ApplyButton"
-                        AutomationProperties.AutomationId="Conflict_ApplyButton"
-                        Command="{x:Bind ViewModel.ApplyConflictReviewCommand}"
-                        Style="{StaticResource AccentButtonStyle}" />
-                </StackPanel>
-            </StackPanel>
-
-            <!-- ===== Reload confirmation (design §5.10: Reload discards the draft after a confirmation). ===== -->
-            <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReloadConfirmStep), Mode=OneWay}">
-                <TextBlock x:Uid="Conflict_ReloadMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
-                    <Button
-                        x:Uid="Conflict_ReloadConfirmButton"
-                        AutomationProperties.AutomationId="Conflict_ReloadConfirmButton"
-                        Command="{x:Bind ViewModel.ConfirmReloadCommand}"
-                        Style="{StaticResource AccentButtonStyle}" />
-                </StackPanel>
-            </StackPanel>
+            <!-- ===== Conflict review and reload confirmation (design §5.10). ===== -->
+            <dialogs:ConflictReviewPanel
+                ApplyCommand="{x:Bind ViewModel.ApplyConflictReviewCommand}"
+                BackCommand="{x:Bind ViewModel.StepBackCommand}"
+                ConfirmReloadCommand="{x:Bind ViewModel.ConfirmReloadCommand}"
+                IsReloadStep="{x:Bind ViewModel.IsReloadConfirmStep, Mode=OneWay}"
+                IsReviewStep="{x:Bind ViewModel.IsConflictReviewStep, Mode=OneWay}"
+                Rows="{x:Bind ViewModel.ConflictRows, Mode=OneWay}" />
 
             <!-- Design §5.0 saving row: buttons disabled, ring and text shown. -->
             <StackPanel

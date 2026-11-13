@@ -14,19 +14,13 @@
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     AutomationProperties.AutomationId="SubtaskEditor_Dialog"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
-    Closing="OnClosing"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
-    PrimaryButtonClick="OnPrimaryClick"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneWay}"
     Style="{StaticResource DefaultContentDialogStyle}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Padding="0,0,12,0" Spacing="12">
-            <StackPanel.KeyboardAccelerators>
-                <!-- Design §7.2: Ctrl+Enter saves from anywhere; Alt+Left goes back on an inline step. -->
-                <KeyboardAccelerator Key="Enter" Invoked="OnSaveAccelerator" Modifiers="Control" />
-                <KeyboardAccelerator Key="Left" Invoked="OnBackAccelerator" Modifiers="Menu" />
-            </StackPanel.KeyboardAccelerators>
+        <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
+            <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
 
             <!-- Title row: "Subtask of {parent}" and the More menu (design §5.0, §5.2). -->
             <Grid ColumnSpacing="8">
@@ -60,33 +54,13 @@
                 </Button>
             </Grid>
 
-            <InfoBar
-                x:Uid="TaskEditor_ValidationInfoBar"
-                AutomationProperties.AutomationId="SubtaskEditor_ValidationInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasValidationSummary, Mode=OneWay}"
-                Message="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasValidationSummary), Mode=OneWay}" />
-
-            <InfoBar
-                AutomationProperties.AutomationId="SubtaskEditor_ErrorInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.HasSaveError, Mode=OneWay}"
-                Message="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                Severity="Error"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasSaveError), Mode=OneWay}">
-                <InfoBar.Content>
-                    <StackPanel
-                        Margin="0,0,0,12"
-                        Orientation="Horizontal"
-                        Spacing="8"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflict), Mode=OneWay}">
-                        <Button x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" Command="{x:Bind ViewModel.ReviewConflictCommand}" />
-                        <Button x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" Command="{x:Bind ViewModel.BeginReloadCommand}" />
-                    </StackPanel>
-                </InfoBar.Content>
-            </InfoBar>
+            <dialogs:EditorMessageBars
+                AutomationPrefix="SubtaskEditor"
+                IsConflict="{x:Bind ViewModel.IsConflict, Mode=OneWay}"
+                ReloadCommand="{x:Bind ViewModel.BeginReloadCommand}"
+                ReviewConflictCommand="{x:Bind ViewModel.ReviewConflictCommand}"
+                SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
+                ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
 
             <!-- B-16.6: the cards of an archived parent are read-only until it is restored. -->
             <InfoBar
@@ -188,65 +162,29 @@
                 <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
 
                 <!-- Dates: an explicit Clear is tracked for B-04 ("explicit manual clear"). -->
-                <Grid ColumnSpacing="8" RowSpacing="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <CalendarDatePicker
+                <StackPanel Spacing="4">
+                    <controls:ClearableDateField
                         x:Uid="TaskEditor_StartDate"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="SubtaskEditor_StartDate"
+                        ClearButtonAutomationId="SubtaskEditor_ClearStartDateButton"
+                        ClearButtonUid="TaskEditor_ClearStartDateButton"
+                        ClearCommand="{x:Bind ViewModel.ClearStartDateCommand}"
                         Date="{x:Bind ViewModel.StartDate, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                    <Button
-                        x:Uid="TaskEditor_ClearStartDateButton"
-                        Grid.Column="1"
-                        VerticalAlignment="Bottom"
-                        AutomationProperties.AutomationId="SubtaskEditor_ClearStartDateButton"
-                        Command="{x:Bind ViewModel.ClearStartDateCommand}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                    </Button>
-                    <TextBlock
-                        Grid.Row="1"
-                        Grid.ColumnSpan="2"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
-                        TextWrapping="Wrap" />
-                    <CalendarDatePicker
-                        x:Name="EndDatePicker"
+                        HasHelperLine="True"
+                        HelperText="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        PickerAutomationId="SubtaskEditor_StartDate" />
+                    <controls:ClearableDateField
+                        x:Name="EndDateField"
                         x:Uid="TaskEditor_EndDate"
-                        Grid.Row="2"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="SubtaskEditor_EndDate"
+                        ClearButtonAutomationId="SubtaskEditor_ClearEndDateButton"
+                        ClearButtonUid="TaskEditor_ClearEndDateButton"
+                        ClearCommand="{x:Bind ViewModel.ClearEndDateCommand}"
                         Date="{x:Bind ViewModel.EndDate, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                    <Button
-                        x:Uid="TaskEditor_ClearEndDateButton"
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        VerticalAlignment="Bottom"
-                        AutomationProperties.AutomationId="SubtaskEditor_ClearEndDateButton"
-                        Command="{x:Bind ViewModel.ClearEndDateCommand}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                    </Button>
-                    <TextBlock
-                        Grid.Row="3"
-                        Grid.ColumnSpan="2"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
-                        TextWrapping="Wrap" />
-                </Grid>
+                        HasHelperLine="True"
+                        HelperText="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        PickerAutomationId="SubtaskEditor_EndDate" />
+                </StackPanel>
                 <fields:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
 
                 <TextBox
@@ -262,66 +200,15 @@
                 <fields:FieldError Text="{x:Bind ViewModel.NotesError, Mode=OneWay}" />
             </StackPanel>
 
-            <!-- ===== Conflict review (design §5.10). ===== -->
-            <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsConflictReviewStep), Mode=OneWay}">
-                <TextBlock x:Uid="Conflict_ReviewHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" />
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="Conflict_FieldHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock x:Uid="Conflict_MineHeader" Grid.Column="1" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock x:Uid="Conflict_SavedHeader" Grid.Column="2" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock x:Uid="Conflict_UseMineHeader" Grid.Column="3" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                </Grid>
-                <ItemsControl AutomationProperties.AutomationId="Conflict_Rows" ItemsSource="{x:Bind ViewModel.ConflictRows, Mode=OneWay}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="dialogs:ConflictRowViewModel">
-                            <Grid Padding="0,6" ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Bind Field, Mode=OneTime}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Column="1" Text="{x:Bind Mine, Mode=OneTime}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Column="2" Text="{x:Bind Saved, Mode=OneTime}" TextWrapping="Wrap" />
-                                <CheckBox
-                                    Grid.Column="3"
-                                    MinWidth="0"
-                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.UseMineId(Key), Mode=OneTime}"
-                                    AutomationProperties.Name="{x:Bind Field, Mode=OneTime}"
-                                    IsChecked="{x:Bind UseMine, Mode=TwoWay}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
-                    <Button
-                        x:Uid="Conflict_ApplyButton"
-                        AutomationProperties.AutomationId="Conflict_ApplyButton"
-                        Command="{x:Bind ViewModel.ApplyConflictReviewCommand}"
-                        Style="{StaticResource AccentButtonStyle}" />
-                </StackPanel>
-            </StackPanel>
-
-            <!-- ===== Reload confirmation (design §5.10). ===== -->
-            <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsReloadConfirmStep), Mode=OneWay}">
-                <TextBlock x:Uid="SubtaskEditor_ReloadMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
-                    <Button
-                        x:Uid="Conflict_ReloadConfirmButton"
-                        AutomationProperties.AutomationId="Conflict_ReloadConfirmButton"
-                        Command="{x:Bind ViewModel.ConfirmReloadCommand}"
-                        Style="{StaticResource AccentButtonStyle}" />
-                </StackPanel>
-            </StackPanel>
+            <!-- ===== Conflict review and reload confirmation (design §5.10). ===== -->
+            <dialogs:ConflictReviewPanel
+                ApplyCommand="{x:Bind ViewModel.ApplyConflictReviewCommand}"
+                BackCommand="{x:Bind ViewModel.StepBackCommand}"
+                ConfirmReloadCommand="{x:Bind ViewModel.ConfirmReloadCommand}"
+                IsReloadStep="{x:Bind ViewModel.IsReloadConfirmStep, Mode=OneWay}"
+                IsReviewStep="{x:Bind ViewModel.IsConflictReviewStep, Mode=OneWay}"
+                ReloadMessageKey="SubtaskEditor_ReloadMessage"
+                Rows="{x:Bind ViewModel.ConflictRows, Mode=OneWay}" />
 
             <!-- Design §5.0 saving row. -->
             <StackPanel
