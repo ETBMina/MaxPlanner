@@ -13,7 +13,7 @@
         x:Name="Root"
         Padding="32,24,32,12"
         Spacing="0">
-        <Grid x:Name="TitleRow" ColumnSpacing="0">
+        <Grid x:Name="TitleRow" ColumnSpacing="0" SizeChanged="OnTitleRowSizeChanged">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />

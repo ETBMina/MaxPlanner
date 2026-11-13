@@ -35,10 +35,13 @@
             <controls:PageHeader.Actions>
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <!-- Design §2.4/§4.3: Show archived, Columns, Export…, and Reset column layout in overflow. -->
+                    <!--
+                        Design §2.4/§4.3: Show archived, Columns, Export…, and Reset column layout in overflow. The star column
+                        hands the CommandBar the width PageHeader leaves the actions, so its dynamic overflow works.
+                    -->
                     <CommandBar
                         x:Name="Commands"
                         VerticalAlignment="Center"

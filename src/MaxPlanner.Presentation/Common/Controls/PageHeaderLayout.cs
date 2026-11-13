@@ -17,6 +17,9 @@ public static class PageHeaderLayout
     /// <summary>The gap between the title block and the actions beside it.</summary>
     public const double ActionsSpacing = 12;
 
+    /// <summary>The width the title block keeps beside the actions when the row is too narrow for both.</summary>
+    public const double MinTitleBlockWidth = 160;
+
     /// <summary>
     /// Whether the header shows a subtitle line: a page asks for one, or names its resource. A bound subtitle cannot
     /// decide it by its text, because x:Bind passes a null text as an empty one and an empty line still has a height.
@@ -35,6 +38,13 @@ public static class PageHeaderLayout
     public static double BodySpacing(bool hasBody) => hasBody ? RowSpacing : 0;
 
     public static double ColumnSpacing(bool hasActions) => hasActions ? ActionsSpacing : 0;
+
+    /// <summary>
+    /// The widest the actions may be in a title row of <paramref name="rowWidth"/>: all of it but the gap and
+    /// <see cref="MinTitleBlockWidth"/>. Actions that fit keep their own width; a <c>CommandBar</c> among them gets this
+    /// limit as its available width, so its dynamic overflow moves commands into "..." instead of the row clipping them.
+    /// </summary>
+    public static double ActionsMaxWidth(double rowWidth) => Math.Max(0, rowWidth - ActionsSpacing - MinTitleBlockWidth);
 
     /// <summary>
     /// The header padding (design §2.3, T-08.1): the window's side and top insets (<see cref="PagePadding"/>), and a

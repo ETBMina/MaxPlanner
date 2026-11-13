@@ -90,7 +90,9 @@ public sealed partial class PageHeader : UserControl
 
     /// <summary>
     /// Commands beside the title block, 12 epx after it, in a column sized to them. Their host stretches to the row's
-    /// height, so commands that should line up with the title's centre set <c>VerticalAlignment="Center"</c>.
+    /// height, so commands that should line up with the title's centre set <c>VerticalAlignment="Center"</c>. In a narrow
+    /// row they get at most <see cref="PageHeaderLayout.ActionsMaxWidth"/>; a <c>CommandBar</c> that should overflow
+    /// sits in a star column of the actions so it receives that limit.
     /// </summary>
     public UIElement? Actions
     {
@@ -140,6 +142,8 @@ public sealed partial class PageHeader : UserControl
         ActionsHost.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
         TitleRow.ColumnSpacing = PageHeaderLayout.ColumnSpacing(has);
     }
+
+    private void OnTitleRowSizeChanged(object sender, SizeChangedEventArgs e) => ActionsHost.MaxWidth = PageHeaderLayout.ActionsMaxWidth(e.NewSize.Width);
 
     private void ShowBody()
     {
