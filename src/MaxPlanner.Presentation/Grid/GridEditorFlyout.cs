@@ -28,7 +28,7 @@ internal sealed class GridEditorFlyout
     private readonly ProgressRing _ring;
     private readonly Button _save;
     private readonly Button _cancel;
-    private readonly long _tapOpenedAt;
+    private readonly long? _tapOpenedAt;
     private bool _isCloseApproved;
 
     /// <summary>Builds the flyout for the cell's open edit; <see cref="Show"/> opens it.</summary>
@@ -108,7 +108,7 @@ internal sealed class GridEditorFlyout
         // A reopened flyout (after a page switch) starts from the row's current error and saving state.
         OnRowChanged(null, null);
         row.PropertyChanged += OnRowChanged;
-        _tapOpenedAt = openedByTap ? Environment.TickCount64 : long.MinValue;
+        _tapOpenedAt = openedByTap ? Environment.TickCount64 : null;
         _save.Click += (_, _) => CommitAsync().Forget();
         _cancel.Click += (_, _) => Cancel();
 

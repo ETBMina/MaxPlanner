@@ -21,6 +21,14 @@ public sealed class PageHeaderLayoutTests
     public void The_padding_follows_the_window_for_the_sides_and_top_and_the_page_for_the_bottom(double page, double window, double side, double top, double bottom) =>
         PageHeaderLayout.Padding(page, window).Should().Be(new Thickness(side, top, side, bottom));
 
+    [Theory]
+    [InlineData(1200, 1028)]
+    [InlineData(500, 328)]
+    [InlineData(172, 0)]
+    [InlineData(100, 0)]
+    public void The_actions_get_the_row_but_the_gap_and_the_title_blocks_minimum(double rowWidth, double expected) =>
+        PageHeaderLayout.ActionsMaxWidth(rowWidth).Should().Be(expected);
+
     [Fact]
     public void An_open_navigation_pane_narrows_the_page_but_keeps_the_windows_insets()
     {

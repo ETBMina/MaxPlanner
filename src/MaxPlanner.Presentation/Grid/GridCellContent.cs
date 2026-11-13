@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Options;
 using MaxPlanner.Presentation.Common.Services;
@@ -216,7 +217,7 @@ internal static class GridCellContent
                 root = priority;
                 break;
             case GridEditorKind.Date:
-                var picker = new CalendarDatePicker { Date = row.DraftDate, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Center };
+                var picker = DatePickers.Apply(new CalendarDatePicker { Date = row.DraftDate, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Center });
                 picker.DateChanged += (_, args) => row.DraftDate = args.NewDate;
                 var clear = new Button { Content = new FontIcon { Glyph = "", FontSize = 12 }, IsTabStop = false };
                 var clearName = ResourceStrings.Shared.Format("Grid_ClearDateName", column.Header);

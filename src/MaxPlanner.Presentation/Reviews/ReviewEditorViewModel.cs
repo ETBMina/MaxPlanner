@@ -80,7 +80,7 @@ public sealed partial class ReviewEditorViewModel : EditorViewModelBase<ReviewEd
 
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "ReviewEditor_CreateButton" : "TaskEditor_SaveButton");
 
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;

@@ -137,13 +137,13 @@ internal static class CustomFieldEditors
 
     private static (FrameworkElement, Control) Date(CustomFieldEditorViewModel field, string? header, string id)
     {
-        var picker = new CalendarDatePicker
+        var picker = DatePickers.Apply(new CalendarDatePicker
         {
             Header = header,
             Date = field.Date,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             IsEnabled = !field.IsReadOnly,
-        };
+        });
         var clear = new Button
         {
             Content = new FontIcon { Glyph = "", FontSize = 12 },

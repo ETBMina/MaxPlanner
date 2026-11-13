@@ -409,7 +409,7 @@
                                         <CalendarView
                                             x:Name="PeriodCalendar"
                                             AutomationProperties.AutomationId="Calendar_PeriodCalendar"
-                                            FirstDayOfWeek="Sunday"
+                                            FirstDayOfWeek="{x:Bind common:DatePickers.FirstDayOfWeek, Mode=OneTime}"
                                             SelectedDatesChanged="OnPeriodDateSelected"
                                             SelectionMode="Single" />
                                     </Flyout>

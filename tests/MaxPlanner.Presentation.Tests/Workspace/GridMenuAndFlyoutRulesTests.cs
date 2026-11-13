@@ -100,4 +100,11 @@ public sealed class GridMenuAndFlyoutRulesTests
     [InlineData(10_000, 60_000, false)]
     public void A_close_within_the_double_click_time_of_opening_is_guarded(long startedAt, long now, bool expected) =>
         GridInput.IsWithinDoubleClickWindow(startedAt, now).Should().Be(expected);
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10_000)]
+    [InlineData(long.MaxValue)]
+    public void A_flyout_not_opened_by_a_click_has_no_guard_so_light_dismiss_commits(long now) =>
+        GridInput.IsWithinDoubleClickWindow(null, now).Should().BeFalse();
 }

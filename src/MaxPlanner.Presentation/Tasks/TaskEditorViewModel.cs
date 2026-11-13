@@ -169,7 +169,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
     /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.ShortDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -295,16 +295,16 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     /// <summary>B-03.6: only an unlinked task (active or archived) can be linked, and only once (AC-29).</summary>
     public bool CanLinkToCr => !IsLinked && !IsSaving && !IsDeletedElsewhere;
 
-    public string TaskNumberText => (LinkedCr ?? PendingLink) is { } cr
-        ? cr.TaskNumber ?? Context.Strings.GetString("TaskEditor_NoTaskNumber")
-        : Context.Strings.GetString("TaskEditor_NoTaskNumber");
+    /// <summary>The CR's task number; empty when there is none (the facts strip shows "None").</summary>
+    public string TaskNumberText => (LinkedCr ?? PendingLink)?.TaskNumber ?? string.Empty;
 
     /// <summary>D15: "General" when the task is unlinked or its CR has no squad.</summary>
     public string SquadText => (LinkedCr ?? PendingLink)?.SquadName ?? (Latest ?? _base)?.Cr.SquadName ?? Context.Strings.GetString("Squad_General");
 
-    public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? Context.Strings.GetString("TaskEditor_NoOwner");
+    /// <summary>The CR owner's name; empty when there is none (the facts strip shows "None").</summary>
+    public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? string.Empty;
 
-    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
+    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar).</summary>
     public bool HasOwner => !string.IsNullOrEmpty((LinkedCr ?? PendingLink)?.OwnerName);
 
     /// <summary>The CR chosen in the link step, shown in the facts strip until Save.</summary>
@@ -1004,7 +1004,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
         string Join(IEnumerable<string> names) => names.DefaultIfEmpty(none).Aggregate((a, b) => a + ", " + b);
         string Person(Guid id) => _workflow.FindPerson(new PersonId(id))?.Name.Display ?? _newPeople.Used([id]).Select(p => p.Name).FirstOrDefault() ?? none;
         string Tag(Guid id) => _workflow.FindTag(new TagId(id))?.Name.Display ?? _newTags.Used([id]).Select(t => t.Name).FirstOrDefault() ?? none;
-        string Date(DateOnly? date) => date is { } day ? DateText.ShortDate(day) : none;
+        string Date(DateOnly? date) => date is { } day ? DateText.RecordDate(day) : none;
         string Text(string text) => text.Length == 0 ? none : text;
         return key switch
         {
@@ -1088,9 +1088,9 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     private string DatesText(DateOnly? start, DateOnly? end) => (start, end) switch
     {
         (null, null) => string.Empty,
-        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.ShortDate(s)),
-        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.ShortDate(e)),
-        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.ShortDate(s), DateText.ShortDate(e)),
+        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.RecordDate(s)),
+        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.RecordDate(e)),
+        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.RecordDate(s), DateText.RecordDate(e)),
     };
 
     private string Helper(string key, IEnumerable<Domain.Workflow.TaskStatusDefinition> statuses)

@@ -14,8 +14,7 @@ public sealed partial class ReviewEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested);
-        Opened += (_, _) => TitleBox.Focus(FocusState.Programmatic);
+        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, () => TitleBox);
     }
 
     public ReviewEditorViewModel ViewModel { get; }

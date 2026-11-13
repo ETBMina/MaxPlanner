@@ -49,6 +49,8 @@
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
             <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <!-- Design §6.3: overdue is a 3-epx caution accent on the leading edge, not a full outline. -->
+            <Thickness x:Key="CalendarOverdueBarBorderThickness">3,0,0,0</Thickness>
             <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
@@ -160,6 +162,8 @@
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
             <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <!-- Design §6.3: overdue is a 3-epx caution accent on the leading edge, not a full outline. -->
+            <Thickness x:Key="CalendarOverdueBarBorderThickness">3,0,0,0</Thickness>
             <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
@@ -274,6 +278,8 @@
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <!-- HC: every bar has a ButtonText leading stripe, so overdue keeps an outline as well to stay distinct. -->
+            <Thickness x:Key="CalendarOverdueBarBorderThickness">3,1,1,1</Thickness>
             <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="SystemColorGrayTextColorBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
@@ -848,6 +854,13 @@
         <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}" />
     </Style>
 
+    <!-- An editor fact without a value (FactValue): a muted "None" in the secondary text style, never the value style. -->
+    <Style x:Key="FactNoneTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->
     <Style x:Key="PageTitleTextStyle" BasedOn="{StaticResource TitleTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="TextWrapping" Value="NoWrap" />
@@ -894,7 +907,7 @@
     <Style x:Key="CalendarOverdueBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource CalendarOverdueBarBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CalendarOverdueBarStrokeBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{ThemeResource CalendarOverdueBarBorderThickness}" />
     </Style>
     <Style x:Key="CalendarCompletedBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource CalendarCompletedBarBackgroundBrush}" />

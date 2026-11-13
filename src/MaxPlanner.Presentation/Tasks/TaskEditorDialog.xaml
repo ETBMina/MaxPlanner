@@ -18,7 +18,6 @@
     AutomationProperties.AutomationId="TaskEditor_Dialog"
     AutomationProperties.Name="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
-    Opened="OnOpened"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneWay}"
@@ -304,7 +303,12 @@
                                 PointerEntered="OnRevealPointerEntered"
                                 PointerExited="OnRevealPointerExited"
                                 Spacing="2">
-                                <TextBlock IsTextSelectionEnabled="True" Style="{StaticResource FactValueTextStyle}" Text="{x:Bind ViewModel.TaskNumberText, Mode=OneWay}" />
+                                <controls:FactValue
+                                    VerticalAlignment="Center"
+                                    IsValueSelectable="True"
+                                    LabelUid="TaskEditor_TaskNumberLabel"
+                                    Value="{x:Bind ViewModel.TaskNumberText, Mode=OneWay}"
+                                    ValueStyle="{StaticResource FactValueTextStyle}" />
                                 <Button
                                     AutomationProperties.AutomationId="TaskEditor_CopyTaskNumberButton"
                                     AutomationProperties.Name="{x:Bind ViewModel.CopyTaskNumberName, Mode=OneWay}"
@@ -337,7 +341,12 @@
                                     Diameter="20"
                                     DisplayName="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
                                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasOwner), Mode=OneWay}" />
-                                <TextBlock Grid.Column="1" Style="{StaticResource FactValueTextStyle}" Text="{x:Bind ViewModel.OwnerText, Mode=OneWay}" />
+                                <controls:FactValue
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    LabelUid="TaskEditor_OwnerLabel"
+                                    Value="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
+                                    ValueStyle="{StaticResource FactValueTextStyle}" />
                             </Grid>
                         </StackPanel>
                     </Grid>

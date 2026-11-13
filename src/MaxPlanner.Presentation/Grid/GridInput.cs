@@ -16,9 +16,12 @@ internal static class GridInput
     public static bool IsDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 
-    public static bool IsWithinDoubleClickWindow(long startedAt) => IsWithinDoubleClickWindow(startedAt, Environment.TickCount64);
+    public static bool IsWithinDoubleClickWindow(long? startedAt) => IsWithinDoubleClickWindow(startedAt, Environment.TickCount64);
 
-    /// <param name="startedAt">When the list or flyout was opened, in <see cref="Environment.TickCount64"/> milliseconds.</param>
+    /// <param name="startedAt">
+    /// When the list or flyout was opened by a click, in <see cref="Environment.TickCount64"/> milliseconds; null when it
+    /// was opened another way (F2, double-tap, UI Automation, a reopen), which has no double-click to guard.
+    /// </param>
     /// <param name="now">The current <see cref="Environment.TickCount64"/>.</param>
-    internal static bool IsWithinDoubleClickWindow(long startedAt, long now) => now - startedAt < DoubleClickGuardMs;
+    internal static bool IsWithinDoubleClickWindow(long? startedAt, long now) => startedAt is { } at && now - at < DoubleClickGuardMs;
 }

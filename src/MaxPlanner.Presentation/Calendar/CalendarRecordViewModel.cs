@@ -83,7 +83,7 @@ public sealed class CalendarRecordViewModel : ProjectionItemViewModel<ChangeRequ
 
     protected override void OnModelUpdated(ChangeRequestReadModel previous) => OnPropertyChanged(string.Empty);
 
-    private static string Format(DateOnly? date) => date is { } d ? DateText.ShortDate(d) : string.Empty;
+    private static string Format(DateOnly? date) => date is { } d ? DateText.RecordDate(d) : string.Empty;
 
     private static string Short(DateOnly date) => DateText.MonthDay(date);
 }

@@ -232,5 +232,5 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(TagsText));
     }
 
-    private static string Format(DateOnly date) => DateText.ShortDate(date);
+    private static string Format(DateOnly date) => DateText.RecordDate(date);
 }

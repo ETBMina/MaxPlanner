@@ -160,8 +160,13 @@ public sealed partial class TokenPicker : UserControl
     /// <summary>The inline picker shows no header above its box; the header names the box for UI Automation instead.</summary>
     public static object? BoxHeader(string header, bool isInline) => isInline ? null : header;
 
-    /// <summary>The person dropdown shows the chosen person's avatar in the box.</summary>
-    public static Visibility AvatarVisibility(TokenPickerViewModel? viewModel) => viewModel?.IsSingleSelection == true ? Visibility.Visible : Visibility.Collapsed;
+    /// <summary>The person dropdown shows the chosen person's avatar in the box (<see cref="TokenPickerRules.ShowsPersonAvatar"/>).</summary>
+    public static Visibility AvatarVisibility(TokenPickerViewModel? viewModel, string shownPersonName) =>
+        BindFunctions.Visible(TokenPickerRules.ShowsPersonAvatar(viewModel?.IsSingleSelection == true, shownPersonName));
+
+    /// <summary>The person dropdown shows a neutral person outline while nobody is shown (<see cref="TokenPickerRules.ShowsEmptyPersonIcon"/>).</summary>
+    public static Visibility EmptyPersonIconVisibility(TokenPickerViewModel? viewModel, string shownPersonName) =>
+        BindFunctions.Visible(TokenPickerRules.ShowsEmptyPersonIcon(viewModel?.IsSingleSelection == true, shownPersonName));
 
     /// <summary>The box's avatar fades with the disabled box (a read-only editor).</summary>
     public static double AvatarOpacity(bool isEditable) => isEditable ? 1 : 0.4;

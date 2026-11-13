@@ -477,7 +477,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         var flyout = new Flyout { ShouldConstrainToRootBounds = true };
         var day = MonthView.FocusedDay ?? ViewModel.Today;
-        var calendar = new CalendarView { SelectionMode = CalendarViewSelectionMode.Single, FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday };
+        var calendar = DatePickers.Apply(new CalendarView { SelectionMode = CalendarViewSelectionMode.Single });
         AutomationProperties.SetAutomationId(calendar, "Calendar_ScheduleCalendar");
         calendar.SelectedDates.Add(new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue)));
         calendar.SetDisplayDate(new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue)));
