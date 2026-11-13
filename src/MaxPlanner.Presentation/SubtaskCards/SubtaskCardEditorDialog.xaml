@@ -162,65 +162,27 @@
                 <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
 
                 <!-- Dates: an explicit Clear is tracked for B-04 ("explicit manual clear"). -->
-                <Grid ColumnSpacing="8" RowSpacing="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <CalendarDatePicker
+                <StackPanel Spacing="4">
+                    <controls:ClearableDateField
                         x:Uid="TaskEditor_StartDate"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="SubtaskEditor_StartDate"
+                        ClearButtonAutomationId="SubtaskEditor_ClearStartDateButton"
+                        ClearButtonUid="TaskEditor_ClearStartDateButton"
+                        ClearCommand="{x:Bind ViewModel.ClearStartDateCommand}"
                         Date="{x:Bind ViewModel.StartDate, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                    <Button
-                        x:Uid="TaskEditor_ClearStartDateButton"
-                        Grid.Column="1"
-                        VerticalAlignment="Bottom"
-                        AutomationProperties.AutomationId="SubtaskEditor_ClearStartDateButton"
-                        Command="{x:Bind ViewModel.ClearStartDateCommand}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                    </Button>
-                    <TextBlock
-                        Grid.Row="1"
-                        Grid.ColumnSpan="2"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
-                        TextWrapping="Wrap" />
-                    <CalendarDatePicker
-                        x:Name="EndDatePicker"
+                        HelperText="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        PickerAutomationId="SubtaskEditor_StartDate" />
+                    <controls:ClearableDateField
+                        x:Name="EndDateField"
                         x:Uid="TaskEditor_EndDate"
-                        Grid.Row="2"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="SubtaskEditor_EndDate"
+                        ClearButtonAutomationId="SubtaskEditor_ClearEndDateButton"
+                        ClearButtonUid="TaskEditor_ClearEndDateButton"
+                        ClearCommand="{x:Bind ViewModel.ClearEndDateCommand}"
                         Date="{x:Bind ViewModel.EndDate, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                    <Button
-                        x:Uid="TaskEditor_ClearEndDateButton"
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        VerticalAlignment="Bottom"
-                        AutomationProperties.AutomationId="SubtaskEditor_ClearEndDateButton"
-                        Command="{x:Bind ViewModel.ClearEndDateCommand}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                    </Button>
-                    <TextBlock
-                        Grid.Row="3"
-                        Grid.ColumnSpan="2"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
-                        TextWrapping="Wrap" />
-                </Grid>
+                        HelperText="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        PickerAutomationId="SubtaskEditor_EndDate" />
+                </StackPanel>
                 <fields:FieldError Text="{x:Bind ViewModel.DateError, Mode=OneWay}" />
 
                 <TextBox

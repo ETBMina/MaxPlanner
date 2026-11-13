@@ -111,7 +111,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
             "Service" => ServiceBox,
             "Status" => StatusCombo,
             "Priority" => PriorityCombo,
-            "EndDate" => EndDatePicker,
+            "EndDate" => EndDateField.DatePicker,
             "Notes" => NotesBox,
             "ChecklistItems" => ChecklistList,
             _ => null,

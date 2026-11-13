@@ -232,49 +232,24 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <CalendarDatePicker
-                            x:Uid="CrEditor_PlannedStart"
-                            HorizontalAlignment="Stretch"
-                            AutomationProperties.AutomationId="CrEditor_PlannedStartDate"
-                            Date="{x:Bind ViewModel.PlannedStart, Mode=TwoWay}"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                        <Button
-                            x:Uid="CrEditor_ClearPlannedStartButton"
-                            Grid.Column="1"
-                            VerticalAlignment="Bottom"
-                            AutomationProperties.AutomationId="CrEditor_ClearPlannedStartButton"
-                            Command="{x:Bind ViewModel.ClearPlannedStartCommand}"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                        </Button>
-                    </Grid>
-                    <Grid x:Name="PlannedEndPanel" Grid.Column="1" ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <CalendarDatePicker
-                            x:Name="PlannedEndPicker"
-                            x:Uid="CrEditor_PlannedEnd"
-                            HorizontalAlignment="Stretch"
-                            AutomationProperties.AutomationId="CrEditor_PlannedEndDate"
-                            Date="{x:Bind ViewModel.PlannedEnd, Mode=TwoWay}"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}" />
-                        <Button
-                            x:Uid="CrEditor_ClearPlannedEndButton"
-                            Grid.Column="1"
-                            VerticalAlignment="Bottom"
-                            AutomationProperties.AutomationId="CrEditor_ClearPlannedEndButton"
-                            Command="{x:Bind ViewModel.ClearPlannedEndCommand}"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}">
-                            <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
-                        </Button>
-                    </Grid>
+                    <controls:ClearableDateField
+                        x:Uid="CrEditor_PlannedStart"
+                        ClearButtonAutomationId="CrEditor_ClearPlannedStartButton"
+                        ClearButtonUid="CrEditor_ClearPlannedStartButton"
+                        ClearCommand="{x:Bind ViewModel.ClearPlannedStartCommand}"
+                        Date="{x:Bind ViewModel.PlannedStart, Mode=TwoWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        PickerAutomationId="CrEditor_PlannedStartDate" />
+                    <controls:ClearableDateField
+                        x:Name="PlannedEndField"
+                        x:Uid="CrEditor_PlannedEnd"
+                        Grid.Column="1"
+                        ClearButtonAutomationId="CrEditor_ClearPlannedEndButton"
+                        ClearButtonUid="CrEditor_ClearPlannedEndButton"
+                        ClearCommand="{x:Bind ViewModel.ClearPlannedEndCommand}"
+                        Date="{x:Bind ViewModel.PlannedEnd, Mode=TwoWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        PickerAutomationId="CrEditor_PlannedEndDate" />
                 </Grid>
                 <TextBlock
                     AutomationProperties.AutomationId="CrEditor_PlannedCaption"

@@ -38,7 +38,7 @@ public sealed partial class CrEditorDialog : ContentDialog
         Pair(NumberPair, TaskNumberPanel, twoColumns);
         Pair(OwnerPair, SquadPanel, twoColumns);
         Pair(StatusPair, PriorityPanel, twoColumns);
-        Pair(PlannedPair, PlannedEndPanel, twoColumns);
+        Pair(PlannedPair, PlannedEndField, twoColumns);
     }
 
     private static void Pair(Microsoft.UI.Xaml.Controls.Grid pair, FrameworkElement second, bool twoColumns)
@@ -81,7 +81,7 @@ public sealed partial class CrEditorDialog : ContentDialog
             "Squad" => SquadCombo,
             "Status" => StatusCombo,
             "Priority" => PriorityCombo,
-            "PlannedEnd" => PlannedEndPicker,
+            "PlannedEnd" => PlannedEndField.DatePicker,
             "EmailSubject" => EmailSubjectBox,
             "SolutionDesignUrl" => UrlBox,
             "Description" => DescriptionBox,

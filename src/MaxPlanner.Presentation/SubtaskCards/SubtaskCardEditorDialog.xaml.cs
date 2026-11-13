@@ -41,7 +41,7 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
         {
             "Subtitle" => SubtitleBox,
             "Status" => StatusCombo,
-            "EndDate" => EndDatePicker,
+            "EndDate" => EndDateField.DatePicker,
             "Notes" => NotesBox,
             _ => null,
         };
