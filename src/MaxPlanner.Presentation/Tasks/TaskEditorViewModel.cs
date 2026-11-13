@@ -669,8 +669,8 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
 
         SubtaskCardError = null;
 
-        // Not run through Context.Commands: this command does not check whether editing is blocked, and the runner
-        // always does. Routing it there is a behaviour change waiting for a decision (review batch 2B).
+        // Not run through Context.Commands: this command has never checked whether editing is blocked, and the runner
+        // always does, so routing it there would change what it does while the store reloads.
         var operation = OperationId.New();
         Context.SaveStatus.Begin();
         AppResult<CommandOutcome<SubtaskCardId>> result;

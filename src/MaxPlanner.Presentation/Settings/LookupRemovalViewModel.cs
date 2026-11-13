@@ -152,6 +152,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         Error = null;
         UsageChangedMessage = null;
         Guid? replacement = IsUnused || ClearInstead ? null : ReplacementChoices[SelectedReplacementIndex].Id;
+
         // The coordinator logs an exception and rolls the transaction back; nothing was written, so after a thrown command
         // the indicator keeps its last result, the dialog stays open with a generic message that is announced, and the
         // retry is a new operation. The dialog announces a typed failure itself, after showing it.
