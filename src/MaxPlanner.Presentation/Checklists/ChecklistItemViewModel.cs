@@ -179,13 +179,16 @@ public sealed partial class ChecklistItemViewModel : ObservableObject
 /// through the task's revision (T-05), so a second quick command waits until the first result is displayed and
 /// then reads the new revision instead of conflicting with the first.
 /// </summary>
-internal sealed class ChecklistCommandQueue(WorkspaceContext context, string recordKey)
+internal sealed class ChecklistCommandQueue(ICommandRunner commands, string recordKey)
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
     private Task _tail = Task.CompletedTask;
 
-    /// <summary>Runs <paramref name="command"/> after the card's previous command and its store update.</summary>
+    /// <summary>
+    /// Runs <paramref name="command"/> after the card's previous command and its store update. A previous command that
+    /// failed does not stop this one: its caller already received and reported that failure.
+    /// </summary>
     public Task Enqueue(Func<Task> command)
     {
         var previous = _tail;
@@ -194,33 +197,30 @@ internal sealed class ChecklistCommandQueue(WorkspaceContext context, string rec
         return next;
     }
 
-    /// <returns>Null when committed and displayed; otherwise the failure message (also in the save status).</returns>
-    public async Task<string?> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command)
-    {
-        if (context.IsEditingBlocked)
+    /// <returns>
+    /// The run: successful once committed and displayed; otherwise its <see cref="CommandRun{T}.Message"/> is the text to
+    /// show inline: the blocked text, the failure text (in the save status and announced too), the unexpected-error text
+    /// (reported by the runner), or nothing after a cancellation.
+    /// </returns>
+    public Task<CommandRun<long>> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command) =>
+        commands.RunAsync(new CommandRequest<long>(recordKey, command)
         {
-            return context.Strings.GetString("Error_EditingBlocked");
-        }
-
-        var operation = OperationId.New();
-        context.SaveStatus.Begin();
-        var result = await command(operation).ConfigureAwait(true);
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, recordKey, context.Strings);
-            context.SaveStatus.Report(failure);
-            context.Announce(failure.Message, isFailure: true);
-            return failure.Message;
-        }
-
-        context.SaveStatus.Complete();
-        await context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        return null;
-    }
+            FailureAnnouncement = CommandRequest.FailureText,
+            DisplayTimeout = DisplayTimeout,
+        });
 
     private static async Task RunAfterAsync(Task previous, Func<Task> command)
     {
-        await previous.ConfigureAwait(true);
+        try
+        {
+            await previous.ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The previous command's own caller observed this failure and reported it (UiTasks); reporting it again
+            // here would show it twice, and rethrowing it would fail every later command on this card.
+        }
+
         await command().ConfigureAwait(true);
     }
 }

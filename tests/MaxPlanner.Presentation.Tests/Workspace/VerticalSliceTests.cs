@@ -67,7 +67,7 @@ public sealed class VerticalSliceTests
         });
         var (grid, board, _) = OpenPages(h);
         var inProgress = board.Buckets.Single(c => c.Name == "In Progress");
-        h.External(u => u.MoveTask.ExecuteAsync(
+        h.External(u => u.Tasks.MoveTask.ExecuteAsync(
             new MoveTaskCommand(OperationId.New(), inProgressAlready, 1, inProgress.StatusId, BoardPlacement.AppendToEnd), default));
         var backlog = board.Buckets.Single(c => c.Name == "Backlog");
         var stayingCard = BoardCard(board, staying.Value);
@@ -206,7 +206,7 @@ public sealed class VerticalSliceTests
         row.DraftText = "Grid draft";
 
         // Another editor renames the task after this cell started editing.
-        h.External(u => u.UpdateTaskContent.ExecuteAsync(new UpdateTaskContentCommand(OperationId.New(), task, 1,
+        h.External(u => u.Tasks.UpdateTaskContent.ExecuteAsync(new UpdateTaskContentCommand(OperationId.New(), task, 1,
             new TaskContentDraft("Renamed elsewhere", "Mobile Banking", null, null, [], null, CustomValue.NoValues)), default));
         h.Await(grid.CommitAsync(row)).Should().BeFalse();
         h.Settle();
@@ -237,7 +237,7 @@ public sealed class VerticalSliceTests
         var row = grid.Rows.Single();
         grid.BeginEdit(row, GridColumns.Service);
         row.DraftText = "Grid service";
-        h.External(u => u.UpdateTaskContent.ExecuteAsync(new UpdateTaskContentCommand(OperationId.New(), task, 1,
+        h.External(u => u.Tasks.UpdateTaskContent.ExecuteAsync(new UpdateTaskContentCommand(OperationId.New(), task, 1,
             new TaskContentDraft("Original title", "Saved service", null, null, [], null, CustomValue.NoValues)), default));
         h.Await(grid.CommitAsync(row)).Should().BeFalse();
 

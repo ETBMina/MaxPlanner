@@ -668,34 +668,20 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         }
 
         SubtaskCardError = null;
-        var operation = OperationId.New();
-        Context.SaveStatus.Begin();
-        AppResult<CommandOutcome<SubtaskCardId>> result;
-        try
+
+        // Refused while editing is blocked (T-07). A failure is shown below the box and not announced; the box keeps its
+        // text. On success the box clears before the display wait, so the wait stays outside the run.
+        var run = await Context.Commands.RunAsync(new CommandRequest<SubtaskCardId>("Record_SubtaskCard", operation =>
+            Context.UseCases.SubtaskCards.CreateSubtaskCard.ExecuteAsync(
+                new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None))).ConfigureAwait(true);
+        if (!run.IsSuccess)
         {
-            result = await Context.UseCases.CreateSubtaskCard.ExecuteAsync(
-                new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            // The indicator leaves its busy state; the box keeps its text with the unexpected-error text below it.
-            Context.SaveStatus.Reject();
-            SubtaskCardError = Context.Strings.GetString("Error_Unexpected");
-            UiTasks.Report(ex, Context);
+            SubtaskCardError = run.Message;
             return false;
         }
 
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_SubtaskCard", Context.Strings);
-            Context.SaveStatus.Report(failure);
-            SubtaskCardError = failure.Message;
-            return false;
-        }
-
-        Context.SaveStatus.Complete();
         NewSubtaskCardText = string.Empty;
-        await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
+        await WhenDisplayedAsync(run.Outcome!.CommitSequence).ConfigureAwait(true);
         return true;
     }
 
@@ -845,7 +831,7 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
 
         if (IsNew)
         {
-            var created = await useCases.CreateTask.ExecuteAsync(
+            var created = await useCases.Tasks.CreateTask.ExecuteAsync(
                 new CreateTaskCommand(operation, _taskId, content, SelectedStatus?.Id, SelectedPriority?.Id, start, end, link, checklist, lookups),
                 CancellationToken.None).ConfigureAwait(true);
             CreatedTaskId = created.IsSuccess ? created.Value.Value : null;
@@ -859,12 +845,12 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         if (IsArchived)
         {
             var linkService = task.Service is null ? Service : null;
-            var linked = await useCases.LinkTaskToChangeRequest.ExecuteAsync(
+            var linked = await useCases.Tasks.LinkTaskToChangeRequest.ExecuteAsync(
                 new LinkTaskToChangeRequestCommand(operation, task.Id, task.Revision, link!.Id, link.ExpectedRevision, linkService), CancellationToken.None).ConfigureAwait(true);
             return linked.IsSuccess ? (null, linked.Value.CommitSequence) : (linked.Error, 0);
         }
 
-        var updated = await useCases.UpdateTask.ExecuteAsync(
+        var updated = await useCases.Tasks.UpdateTask.ExecuteAsync(
             new UpdateTaskCommand(operation, task.Id, task.Revision, content, SelectedStatus?.Id ?? task.Status.Id, SelectedPriority?.Id ?? task.Priority.Id,
                 start, end, checklist, lookups, link),
             CancellationToken.None).ConfigureAwait(true);

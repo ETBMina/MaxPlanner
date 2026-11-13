@@ -195,7 +195,7 @@ public sealed class TaskEditorTests
         editor.Notes = "My notes";
 
         // Another route saves first.
-        h.External(u => u.UpdateTaskContent.ExecuteAsync(
+        h.External(u => u.Tasks.UpdateTaskContent.ExecuteAsync(
             new UpdateTaskContentCommand(OperationId.New(), id, 1, new TaskContentDraft("Theirs", "Cards API", null, null, [], null, CustomValue.NoValues)),
             TestContext.Current.CancellationToken));
         editor.Title.Should().Be("Mine", "a dirty draft is never replaced silently");
@@ -232,7 +232,7 @@ public sealed class TaskEditorTests
         _ = board.OpenAsync(board.Buckets[0].Cards.Single());
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         editor.Title = "Mine";
-        h.External(u => u.UpdateTaskContent.ExecuteAsync(
+        h.External(u => u.Tasks.UpdateTaskContent.ExecuteAsync(
             new UpdateTaskContentCommand(OperationId.New(), id, 1, new TaskContentDraft("Theirs", "Mobile Banking", null, null, [], null, CustomValue.NoValues)),
             TestContext.Current.CancellationToken));
         h.Await(editor.SaveAsync());
@@ -258,7 +258,7 @@ public sealed class TaskEditorTests
         var editor = dialogs.Next<TaskEditorViewModel>(h);
         var item = h.Task(id).ChecklistItems.Single();
 
-        h.External(u => u.SetChecklistItemCompleted.ExecuteAsync(
+        h.External(u => u.Checklists.SetChecklistItemCompleted.ExecuteAsync(
             new SetChecklistItemCompletedCommand(OperationId.New(), id, 2, item.Id, true), TestContext.Current.CancellationToken));
 
         editor.ChecklistItems.Single().IsCompleted.Should().BeTrue();
@@ -422,7 +422,7 @@ public sealed class TaskEditorTests
         var source = h.Store.Tasks.Items.Single();
         var orphan = source with { Cr = source.Cr with { ChangeRequestId = new ChangeRequestId(Guid.NewGuid()), CrNumber = "CR-9999" } };
 
-        var copy = new CopyTaskViewModel(h.Workspace.Context, orphan);
+        var copy = new CopyTaskViewModel(h.Store, h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, h.UseCases.Tasks, orphan);
 
         copy.HasPendingLink.Should().BeFalse();
         copy.LinkStateText.Should().Be("Copy_Unlinked");

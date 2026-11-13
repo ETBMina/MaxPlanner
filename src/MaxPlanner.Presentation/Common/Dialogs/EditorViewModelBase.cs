@@ -1,6 +1,7 @@
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Presentation.Common.Services;
@@ -25,7 +26,8 @@ namespace MaxPlanner.Presentation.Common.Dialogs;
 public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
     where TFollowUp : struct, Enum
 {
-    private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
+    /// <summary>How long a save waits at most until its commit is displayed (T-07).</summary>
+    protected static readonly TimeSpan CommitDisplayTimeout = TimeSpan.FromSeconds(5);
 
     private readonly string _recordKey;
     private IDisposable? _commits;
@@ -230,68 +232,50 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
             return false;
         }
 
-        var operation = _retryOperation ?? OperationId.New();
         IsSaving = true;
         IsDirtyClosePromptOpen = false;
         RaiseState();
-        Context.SaveStatus.Begin();
-        AppError? error;
-        long sequence;
-        try
-        {
-            (error, sequence) = await ExecuteSaveAsync(operation).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            Context.SaveStatus.Reject();
-            FailUnexpectedly(ex, operation);
-            return false;
-        }
 
-        if (error is not null)
+        // The editor announces a failure itself, after showing it (ShowFailure).
+        var run = await Context.Commands.RunAsync(new CommandRequest<long>(_recordKey, ExecuteAsResultAsync)
         {
-            var failure = CommandFailure.From(error, operation, _recordKey, Context.Strings);
-            Context.SaveStatus.Report(failure);
+            Operation = _retryOperation,
+            DisplayTimeout = CommitDisplayTimeout,
+        }).ConfigureAwait(true);
 
-            // T-05: only an unknown outcome is retried under the same operation; anything else is a new intent.
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            IsSaving = false;
-            ShowFailure(failure);
-            RaiseState();
-            return false;
-        }
-
-        Context.SaveStatus.Complete();
-        _retryOperation = null;
-        try
+        // T-05: only an unknown outcome is retried under the same operation; anything else is a new intent. A save that
+        // threw has an unknown outcome too, also when it committed and the display wait threw: the retry is then
+        // recognised by the ledger. Known limitation in that case: the editor and the status bar say the change is not
+        // saved, although it is. An attempt that sent nothing keeps the operation to retry.
+        if (run.Operation is not null)
         {
-            await WhenDisplayedAsync(sequence).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            // The command committed; the next save reuses its operation, so the ledger reports that commit (T-05).
-            // Known limitation: the editor and the status bar still say the change is not saved, although it is.
-            FailUnexpectedly(ex, operation);
-            return false;
+            _retryOperation = run.RetryOperation;
         }
 
         IsSaving = false;
-        OnSaved();
-        return true;
+        switch (run.Status)
+        {
+            case CommandRunStatus.Succeeded:
+                OnSaved();
+                return true;
+            case CommandRunStatus.Failed:
+                ShowFailure(run.Failure!);
+                RaiseState();
+                return false;
+            default:
+                // The save threw (the runner reported it once) or editing became blocked: the draft and the dialog stay.
+                SaveError = run.Message;
+                RaiseState();
+                return false;
+        }
     }
 
-    /// <summary>
-    /// The save threw instead of returning a result: the outcome is unknown, so a retry reuses the same operation
-    /// (T-05). Saving ends, the draft and the dialog stay, and the editor shows the unexpected-error text; the failure is
-    /// logged and announced once, through <see cref="UiTasks.Report"/>.
-    /// </summary>
-    private void FailUnexpectedly(Exception exception, OperationId operation)
+    private async Task<AppResult<CommandOutcome<long>>> ExecuteAsResultAsync(OperationId operation)
     {
-        _retryOperation = operation;
-        IsSaving = false;
-        SaveError = Context.Strings.GetString("Error_Unexpected");
-        RaiseState();
-        UiTasks.Report(exception, Context);
+        var (error, sequence) = await ExecuteSaveAsync(operation).ConfigureAwait(true);
+        return error is null
+            ? AppResult.Success(new CommandOutcome<long>(sequence, sequence, WasAlreadyApplied: false))
+            : AppResult.Failure<CommandOutcome<long>>(error);
     }
 
     /// <summary>Sends the draft as one command under <paramref name="operation"/>.</summary>
@@ -398,7 +382,7 @@ public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject,
         CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 
-    protected Task WhenDisplayedAsync(long sequence) => Context.WhenDisplayedAsync(sequence, DisplayTimeout);
+    protected Task WhenDisplayedAsync(long sequence) => Context.WhenDisplayedAsync(sequence, CommitDisplayTimeout);
 
     /// <summary>Starts following committed changes; call once, at the end of the editor's constructor.</summary>
     /// <exception cref="InvalidOperationException">The editor already follows committed changes.</exception>

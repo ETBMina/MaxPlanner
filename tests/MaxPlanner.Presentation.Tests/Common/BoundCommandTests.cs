@@ -14,6 +14,7 @@ namespace MaxPlanner.Presentation.Tests.Common;
 /// Commands that replaced click handlers on pages and dialogs (A-02): each runs the action the handler ran, and none
 /// disables its control, because none has a CanExecute rule of its own.
 /// </summary>
+[Collection(nameof(UiTasksConfiguration))]
 public sealed class BoundCommandTests
 {
     [Fact]
@@ -33,7 +34,7 @@ public sealed class BoundCommandTests
     {
         using var h = WorkspaceHarness.Create();
         var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
-        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
+        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
         var before = vm.Options.Count;
 
         vm.AddOptionCommand.Execute(null);
@@ -49,7 +50,7 @@ public sealed class BoundCommandTests
         var context = h.Workspace.Context;
         var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
         var unused = workflow.TaskStatuses.First(s => s.Id != workflow.Defaults.DefaultTaskStatusId);
-        var vm = new LookupRemovalViewModel(context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, LookupKind.TaskStatus, unused.Id.Value, unused.Name.Display);
+        var vm = new LookupRemovalViewModel(context.Commands, context, context.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, LookupKind.TaskStatus, unused.Id.Value, unused.Name.Display);
         var closed = false;
         vm.CloseRequested += (_, _) => closed = true;
         h.Await(vm.LoadAsync());
@@ -94,7 +95,7 @@ public sealed class BoundCommandTests
     {
         using var h = WorkspaceHarness.Create();
         var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
-        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
+        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
         var closed = false;
         vm.CloseRequested += (_, _) => closed = true;
         vm.Label = "Cost centre";
@@ -110,7 +111,7 @@ public sealed class BoundCommandTests
     {
         using var h = WorkspaceHarness.Create();
         var workflow = h.Await(h.Dataset.Snapshots.LoadAsync(CancellationToken.None)).Value.Workflow;
-        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
+        var vm = FieldDefinitionEditorViewModel.ForNew(h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, SettingsUseCases.Create(h.Coordinator, h.Dataset.Snapshots), workflow, FieldTarget.Task);
         var closed = false;
         vm.CloseRequested += (_, _) => closed = true;
         vm.Label = "Cost centre";

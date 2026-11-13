@@ -17,7 +17,7 @@ namespace MaxPlanner.Presentation.Workspace;
 /// save indicator, whether editing is currently allowed, and the dialog and announcement channels. Use it
 /// on the UI thread.
 /// </summary>
-public sealed partial class WorkspaceContext : ObservableObject
+public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
 {
     private TaskCommands? _tasks;
     private ChangeRequestCommands? _changeRequests;
@@ -41,6 +41,7 @@ public sealed partial class WorkspaceContext : ObservableObject
         UiScheduler = uiScheduler ?? throw new ArgumentNullException(nameof(uiScheduler));
         Strings = strings ?? throw new ArgumentNullException(nameof(strings));
         SaveStatus = saveStatus ?? throw new ArgumentNullException(nameof(saveStatus));
+        Commands = new CommandRunner(this);
     }
 
     /// <summary>
@@ -67,6 +68,9 @@ public sealed partial class WorkspaceContext : ObservableObject
     public ILocalizedStrings Strings { get; }
 
     public SaveStatusViewModel SaveStatus { get; }
+
+    /// <summary>Runs every write command with this save status and these announcements (C-05).</summary>
+    public ICommandRunner Commands { get; }
 
     public IUrlLauncher UrlLauncher { get; }
 
@@ -129,6 +133,7 @@ public sealed partial class WorkspaceContext : ObservableObject
         return request.Closed;
     }
 
+    /// <inheritdoc/>
     public void Announce(string text, bool isFailure = false) => Announced?.Invoke(this, new Announcement(text, isFailure));
 
     /// <summary>Called by the CR editor after a save was displayed (B-08.12).</summary>

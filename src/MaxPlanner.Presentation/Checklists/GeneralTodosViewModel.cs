@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -6,6 +7,7 @@ using MaxPlanner.Application.Checklists;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Checklists;
@@ -20,20 +22,35 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     /// <summary>The group key in AutomationIds (design §8.1: <c>GroupKey</c> = <c>General</c> or the TaskId).</summary>
     public const string GroupKey = "General";
 
-    private readonly WorkspaceContext _context;
+    private readonly WorkspaceProjectionStore _store;
+    private readonly IAnnouncer _announcer;
+    private readonly ILocalizedStrings _strings;
+    private readonly GeneralTodoUseCases _useCases;
     private readonly ChecklistCommandQueue _queue;
     private readonly ObservableCollection<ChecklistItemViewModel> _openItems = [];
     private readonly ObservableCollection<ChecklistItemViewModel> _completedItems = [];
     private readonly IDisposable _commits;
     private string _query = string.Empty;
 
-    public GeneralTodosViewModel(WorkspaceContext context)
+    /// <param name="uiScheduler">Where the card follows the store's committed batches.</param>
+    public GeneralTodosViewModel(
+        WorkspaceProjectionStore store,
+        IScheduler uiScheduler,
+        ICommandRunner commands,
+        IAnnouncer announcer,
+        ILocalizedStrings strings,
+        GeneralTodoUseCases useCases)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _queue = new ChecklistCommandQueue(context, "Record_GeneralTodo");
+        _store = store ?? throw new ArgumentNullException(nameof(store));
+        ArgumentNullException.ThrowIfNull(uiScheduler);
+        ArgumentNullException.ThrowIfNull(commands);
+        _announcer = announcer ?? throw new ArgumentNullException(nameof(announcer));
+        _strings = strings ?? throw new ArgumentNullException(nameof(strings));
+        _useCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
+        _queue = new ChecklistCommandQueue(commands, "Record_GeneralTodo");
         OpenItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_openItems);
         CompletedItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_completedItems);
-        _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => Sync());
+        _commits = store.Committed.ObserveOn(uiScheduler).Subscribe(_ => Sync());
         Sync();
     }
 
@@ -56,11 +73,11 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     /// <summary>Items matching the current search (the page's filtered-empty state).</summary>
     public int MatchCount => _openItems.Count + _completedItems.Count;
 
-    public string ProgressText => _context.Strings.Format("Checklists_Progress", DoneCount, TotalCount);
+    public string ProgressText => _strings.Format("Checklists_Progress", DoneCount, TotalCount);
 
     public double ProgressPercent => TotalCount == 0 ? 0 : 100.0 * DoneCount / TotalCount;
 
-    public string CompletedHeader => _context.Strings.Format("Checklists_CompletedHeader", _completedItems.Count);
+    public string CompletedHeader => _strings.Format("Checklists_CompletedHeader", _completedItems.Count);
 
     public bool HasCompleted => _completedItems.Count > 0;
 
@@ -105,16 +122,17 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.SetGeneralTodoCompleted.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.SetGeneralTodoCompleted.ExecuteAsync(
                 new SetGeneralTodoCompletedCommand(op, todo.Id, todo.Revision, isChecked), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             item.IsPending = false;
-            if (ActionError is not null)
+            if (!run.IsSuccess)
             {
                 item.RestoreCommitted();
             }
             else
             {
-                _context.Announce(_context.Strings.Format(isChecked ? "Checklists_ItemDoneAnnounced" : "Checklists_ItemNotDoneAnnounced", item.Text));
+                _announcer.Announce(_strings.Format(isChecked ? "Checklists_ItemDoneAnnounced" : "Checklists_ItemNotDoneAnnounced", item.Text));
             }
         });
     }
@@ -131,8 +149,9 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            error = await _queue.RunAsync(op => _context.UseCases.RenameGeneralTodo.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.RenameGeneralTodo.ExecuteAsync(
                 new RenameGeneralTodoCommand(op, todo.Id, todo.Revision, text), CancellationToken.None)).ConfigureAwait(true);
+            error = run.IsSuccess ? null : run.Message ?? string.Empty;
             item.IsPending = false;
         }).ConfigureAwait(true);
         return error;
@@ -151,8 +170,9 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.MoveGeneralTodo.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.MoveGeneralTodo.ExecuteAsync(
                 new MoveGeneralTodoCommand(op, todo.Id, todo.Revision, new GeneralTodoId(anchor.Id), PlaceAfter: !up), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             item.IsPending = false;
         });
     }
@@ -168,12 +188,13 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             }
 
             item.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.DeleteGeneralTodo.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _useCases.DeleteGeneralTodo.ExecuteAsync(
                 new DeleteGeneralTodoCommand(op, todo.Id, todo.Revision), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             item.IsPending = false;
-            if (ActionError is null)
+            if (run.IsSuccess)
             {
-                _context.Announce(_context.Strings.Format("Checklists_ItemDeleted", item.Text));
+                _announcer.Announce(_strings.Format("Checklists_ItemDeleted", item.Text));
             }
         });
     }
@@ -190,9 +211,10 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     private Task AddItemAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;
-        NewItemError = await _queue.RunAsync(op => _context.UseCases.AddGeneralTodo.ExecuteAsync(
+        var run = await _queue.RunAsync(op => _useCases.AddGeneralTodo.ExecuteAsync(
             new AddGeneralTodoCommand(op, new GeneralTodoId(Guid.NewGuid()), NewItemText), CancellationToken.None)).ConfigureAwait(true);
-        if (NewItemError is null)
+        NewItemError = run.Message;
+        if (run.IsSuccess)
         {
             NewItemText = string.Empty;
         }
@@ -203,11 +225,11 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
     private bool CanAddItem() => !IsAdding;
 
     private Domain.Checklists.GeneralTodo? Find(ChecklistItemViewModel item) =>
-        _context.Store.GeneralTodos.Lookup(new GeneralTodoId(item.Id)) is { HasValue: true } todo ? todo.Value : null;
+        _store.GeneralTodos.Lookup(new GeneralTodoId(item.Id)) is { HasValue: true } todo ? todo.Value : null;
 
     private void Sync()
     {
-        var all = _context.Store.GeneralTodos.Items
+        var all = _store.GeneralTodos.Items
             .OrderBy(t => t.Rank)
             .ThenBy(t => t.Id.Value)
             .ToList();
@@ -218,7 +240,7 @@ public sealed partial class GeneralTodosViewModel : ObservableObject, IChecklist
             .Where(t => _query.Length == 0 || t.Text.Value.Contains(_query, StringComparison.CurrentCultureIgnoreCase))
             .Select(t => (t.Id.Value, t.Text.Value, t.IsCompleted, t.UpdatedAtUtc.UtcTicks))
             .ToList();
-        ChecklistSections.Sync(_openItems, _completedItems, items, (id, text, done) => new ChecklistItemViewModel(id, text, done, this, _context.Strings));
+        ChecklistSections.Sync(_openItems, _completedItems, items, (id, text, done) => new ChecklistItemViewModel(id, text, done, this, _strings));
         OnPropertyChanged(nameof(CompletedHeader));
         OnPropertyChanged(nameof(HasCompleted));
         OnPropertyChanged(nameof(MatchCount));

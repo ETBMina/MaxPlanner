@@ -502,69 +502,39 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         IsSaving = true;
         DeleteError = null;
-        var operation = OperationId.New();
-        Context.SaveStatus.Begin();
 
         // The confirmation is about what is deleted, so the CR's current revision is sent: a content edit
-        // elsewhere does not change what the user agreed to, while a scope change does and is refused.
-        AppResult<CommandOutcome<CascadeDeletionSummary>> result;
-        try
+        // elsewhere does not change what the user agreed to, while a scope change does and is refused. The step
+        // announces a failure itself, after showing it.
+        var run = await Context.Commands.RunAsync(new CommandRequest<CascadeDeletionSummary>("Record_ChangeRequest", operation =>
+            Context.UseCases.ChangeRequests.DeleteChangeRequest.ExecuteAsync(new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None))
         {
-            result = await Context.UseCases.DeleteChangeRequest.ExecuteAsync(
-                new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+            DisplayTimeout = CommitDisplayTimeout,
+        }).ConfigureAwait(true);
+        IsSaving = false;
+        switch (run.Status)
         {
-            Context.SaveStatus.Reject();
-            FailDeleteUnexpectedly(ex);
-            return false;
-        }
-
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_ChangeRequest", Context.Strings);
-            Context.SaveStatus.Report(failure);
-            IsSaving = false;
-            if (result.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.CascadeScopeChanged }, ..] })
-            {
+            case CommandRunStatus.Succeeded:
+                Context.Announce(Context.Strings.Format("CrEditor_Deleted", cr.Number, run.Outcome!.Value.TaskCount));
+                Approve();
+                return true;
+            case CommandRunStatus.Failed when run.Failure!.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.CascadeScopeChanged }, ..] }:
                 ComputeDeleteScope();
                 DeleteScopeMessage = Context.Strings.GetString("CascadeDelete_ScopeChanged");
                 Context.Announce(DeleteScopeMessage, isFailure: true);
-            }
-            else
-            {
-                DeleteError = failure.Message;
-                Context.Announce(failure.Message, isFailure: true);
-            }
-
-            RaiseDeleteState();
-            return false;
+                break;
+            case CommandRunStatus.Failed:
+                DeleteError = run.Message;
+                Context.Announce(run.Message!, isFailure: true);
+                break;
+            default:
+                // The delete threw (the runner reported it once) or editing became blocked: the step stays with the text.
+                DeleteError = run.Message;
+                break;
         }
 
-        Context.SaveStatus.Complete();
-        try
-        {
-            await WhenDisplayedAsync(result.Value.CommitSequence).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            FailDeleteUnexpectedly(ex);
-            return false;
-        }
-
-        IsSaving = false;
-        Context.Announce(Context.Strings.Format("CrEditor_Deleted", cr.Number, result.Value.Value.TaskCount));
-        Approve();
-        return true;
-    }
-
-    // The delete threw: the step stays with the unexpected-error text, and the failure is logged and shown once.
-    private void FailDeleteUnexpectedly(Exception exception)
-    {
-        IsSaving = false;
-        DeleteError = Context.Strings.GetString("Error_Unexpected");
         RaiseDeleteState();
-        UiTasks.Report(exception, Context);
+        return false;
     }
 
     /// <summary>Back (Alt+Left) from an inline step.</summary>
@@ -770,7 +740,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         if (IsNew && CreatedId is null)
         {
-            var created = await useCases.CreateChangeRequest.ExecuteAsync(
+            var created = await useCases.ChangeRequests.CreateChangeRequest.ExecuteAsync(
                 new CreateChangeRequestCommand(operation, _id, draft, SelectedStatus?.Id, newOwner, makeDefaultOwner), CancellationToken.None).ConfigureAwait(true);
             if (!created.IsSuccess)
             {
@@ -783,7 +753,7 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
 
         // A status is always selected: the box offers only configured statuses and starts on the CR's own.
         var statusId = SelectedStatus?.Id ?? _base!.Status.Id;
-        var updated = await useCases.UpdateChangeRequest.ExecuteAsync(
+        var updated = await useCases.ChangeRequests.UpdateChangeRequest.ExecuteAsync(
             new UpdateChangeRequestCommand(operation, _id, _base!.Revision, draft, statusId, newOwner, makeDefaultOwner), CancellationToken.None).ConfigureAwait(true);
         return updated.IsSuccess ? (null, updated.Value.CommitSequence) : (updated.Error, 0);
     }

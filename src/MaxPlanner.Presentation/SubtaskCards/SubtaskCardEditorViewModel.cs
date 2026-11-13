@@ -373,14 +373,14 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         var end = DraftDates.Intent(DraftDates.FromPicker(EndDate), (DateOnly?)_baseValues[EndKey], _endCleared);
         if (IsNew)
         {
-            var created = await useCases.CreateSubtaskCard.ExecuteAsync(
+            var created = await useCases.SubtaskCards.CreateSubtaskCard.ExecuteAsync(
                 new CreateSubtaskCardCommand(operation, _parentId, _cardId, Subtitle, Notes, SelectedStatus?.Id, start, end), CancellationToken.None).ConfigureAwait(true);
             CreatedCardId = created.IsSuccess ? created.Value.Value : null;
             return created.IsSuccess ? (null, created.Value.CommitSequence) : (created.Error, 0);
         }
 
         var card = _base!;
-        var updated = await useCases.UpdateSubtaskCard.ExecuteAsync(
+        var updated = await useCases.SubtaskCards.UpdateSubtaskCard.ExecuteAsync(
             new UpdateSubtaskCardCommand(operation, card.Id, card.Revision, Subtitle, Notes, SelectedStatus?.Id ?? card.Status.Id, start, end),
             CancellationToken.None).ConfigureAwait(true);
         return updated.IsSuccess ? (null, updated.Value.CommitSequence) : (updated.Error, 0);

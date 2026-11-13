@@ -13,6 +13,7 @@ using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Options;
 using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Services;
+using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Tasks;
@@ -31,23 +32,37 @@ public enum CopyStep
 /// </summary>
 public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewModel, IBusyDialog
 {
-    private readonly WorkspaceContext _context;
+    private readonly WorkspaceProjectionStore _store;
+    private readonly ICommandRunner _commands;
+    private readonly IAnnouncer _announcer;
+    private readonly ILocalizedStrings _strings;
+    private readonly TaskUseCases _useCases;
     private readonly TaskReadModel _source;
     private readonly TaskId _newId = new(Guid.NewGuid());
     private readonly StatusOption? _sourceStatus;
     private readonly StatusOption? _defaultStatus;
     private OperationId? _retryOperation;
 
-    public CopyTaskViewModel(WorkspaceContext context, TaskReadModel source)
+    public CopyTaskViewModel(
+        WorkspaceProjectionStore store,
+        ICommandRunner commands,
+        IAnnouncer announcer,
+        ILocalizedStrings strings,
+        TaskUseCases useCases,
+        TaskReadModel source)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _store = store ?? throw new ArgumentNullException(nameof(store));
+        _commands = commands ?? throw new ArgumentNullException(nameof(commands));
+        _announcer = announcer ?? throw new ArgumentNullException(nameof(announcer));
+        _strings = strings ?? throw new ArgumentNullException(nameof(strings));
+        _useCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
         _source = source ?? throw new ArgumentNullException(nameof(source));
-        var workflow = context.Store.CurrentWorkflow ?? throw new InvalidOperationException("The workflow is not loaded.");
+        var workflow = store.CurrentWorkflow ?? throw new InvalidOperationException("The workflow is not loaded.");
         StatusOptions = [.. workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
         PriorityOptions = PriorityOption.From(workflow);
         _sourceStatus = StatusOptions.FirstOrDefault(o => o.Id == source.Status.Id);
         _defaultStatus = StatusOptions.FirstOrDefault(o => o.Id == workflow.Defaults.DefaultTaskStatusId);
-        CrPicker = new CrPickerViewModel(context.Store, context.Strings);
+        CrPicker = new CrPickerViewModel(store, strings);
 
         // B-06: the title is prefilled from the effective (possibly inherited) title; Service starts blank;
         // status is the configured default; priority is the source's if it still exists.
@@ -77,8 +92,8 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
 
     /// <summary>"Copy of: Card limits API · CR-1042".</summary>
     public string SourceCaption => _source.Cr.CrNumber is { } number
-        ? _context.Strings.Format("Copy_SourceCaptionLinked", _source.EffectiveTitle, number)
-        : _context.Strings.Format("Copy_SourceCaption", _source.EffectiveTitle);
+        ? _strings.Format("Copy_SourceCaptionLinked", _source.EffectiveTitle, number)
+        : _strings.Format("Copy_SourceCaption", _source.EffectiveTitle);
 
     public TaskId? CreatedTaskId { get; private set; }
 
@@ -155,12 +170,12 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
     /// <summary>A linked copy shows its CR's title, so its own title is not used (ADR 0005).</summary>
     public bool IsTitleEditable => PendingLink is null;
 
-    public string ServiceHeader => _context.Strings.GetString(PendingLink is null ? "TaskEditor_ServiceHeader" : "TaskEditor_ServiceRequiredHeader");
+    public string ServiceHeader => _strings.GetString(PendingLink is null ? "TaskEditor_ServiceHeader" : "TaskEditor_ServiceRequiredHeader");
 
-    public string PendingLinkWarning => PendingLink is { } cr ? _context.Strings.Format("TaskEditor_PendingLinkWarning", cr.Title, cr.Number) : string.Empty;
+    public string PendingLinkWarning => PendingLink is { } cr ? _strings.Format("TaskEditor_PendingLinkWarning", cr.Title, cr.Number) : string.Empty;
 
     /// <summary>"New copy will be unlinked." until a CR is chosen (B-06).</summary>
-    public string LinkStateText => PendingLink is { } cr ? _context.Strings.Format("Copy_WillLink", cr.Number) : _context.Strings.GetString("Copy_Unlinked");
+    public string LinkStateText => PendingLink is { } cr ? _strings.Format("Copy_WillLink", cr.Number) : _strings.GetString("Copy_Unlinked");
 
     public bool IsOptionsStep => CurrentStep == CopyStep.Options;
 
@@ -170,7 +185,7 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
 
     public bool IsReviewStep => CurrentStep == CopyStep.Review;
 
-    public string PrimaryButtonText => _context.Strings.GetString(CurrentStep == CopyStep.Review ? "Copy_CreateButton" : "Copy_ReviewButton");
+    public string PrimaryButtonText => _strings.GetString(CurrentStep == CopyStep.Review ? "Copy_CreateButton" : "Copy_ReviewButton");
 
     public bool CanPrimary => !IsSaving && CurrentStep is CopyStep.Options or CopyStep.Review;
 
@@ -202,18 +217,18 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
         TitleError = ServiceError = null;
         if (PendingLink is not null && string.IsNullOrWhiteSpace(Service))
         {
-            ServiceError = _context.Strings.GetString("Error_ServiceRequiredWhenLinked");
+            ServiceError = _strings.GetString("Error_ServiceRequiredWhenLinked");
             return;
         }
 
         if (PendingLink is null && string.IsNullOrWhiteSpace(Title))
         {
-            TitleError = _context.Strings.Format("Error_Required", _context.Strings.GetString("Field_Title"));
+            TitleError = _strings.Format("Error_Required", _strings.GetString("Field_Title"));
             return;
         }
 
         ReviewLines.Clear();
-        var strings = _context.Strings;
+        var strings = _strings;
         var none = strings.GetString("Common_None");
         ReviewLines.Add(strings.Format("Copy_ReviewTitle", PendingLink?.Title ?? Title.Trim()));
         ReviewLines.Add(strings.Format("Copy_ReviewService", Service.Trim().Length == 0 ? none : Service.Trim()));
@@ -266,7 +281,7 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
 
         if (string.IsNullOrWhiteSpace(Service))
         {
-            ServiceError = _context.Strings.GetString("Error_ServiceRequiredWhenLinked");
+            ServiceError = _strings.GetString("Error_ServiceRequiredWhenLinked");
             return false;
         }
 
@@ -300,15 +315,14 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
             return false;
         }
 
-        if (_context.IsEditingBlocked)
+        if (_commands.IsEditingBlocked)
         {
-            Error = _context.Strings.GetString("Error_EditingBlocked");
+            Error = _strings.GetString("Error_EditingBlocked");
             return false;
         }
 
         IsSaving = true;
         Error = null;
-        var operation = _retryOperation ?? OperationId.New();
         var options = new CopyOptions
         {
             CopyStatus = KeepCurrentStatus,
@@ -321,59 +335,58 @@ public sealed partial class CopyTaskViewModel : ObservableObject, IDialogViewMod
             CopyCustomValues = CopyCustomValues,
         };
         var link = PendingLink is { } cr ? new CrLinkTarget(cr.Id, cr.Revision) : null;
-        _context.SaveStatus.Begin();
-        AppResult<CommandOutcome<TaskId>> result;
-        try
-        {
-            result = await _context.UseCases.CopyTask.ExecuteAsync(
+
+        // The dialog shows and announces a failure itself. An unknown outcome, including a throw, is retried under the
+        // same operation (T-05); after a throw the dialog stays with the unexpected-error text.
+        var run = await _commands.RunAsync(new CommandRequest<TaskId>("Record_Task", operation =>
+            _useCases.CopyTask.ExecuteAsync(
                 new CopyTaskCommand(operation, _source.Id, _newId, PendingLink is null ? Title : null, Service, options,
                     KeepCurrentStatus ? null : SelectedStatus?.Id, SelectedPriority?.Id, link),
-                CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+                CancellationToken.None))
         {
-            // The outcome is unknown, so a retry reuses the operation (T-05); the dialog stays with the unexpected-error text.
-            _context.SaveStatus.Reject();
-            _retryOperation = operation;
-            IsSaving = false;
-            Error = _context.Strings.GetString("Error_Unexpected");
-            UiTasks.Report(ex, _context);
+            Operation = _retryOperation,
+        }).ConfigureAwait(true);
+        IsSaving = false;
+        if (run.IsSuccess)
+        {
+            CreatedTaskId = run.Outcome!.Value;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+
+        if (run.Operation is not null)
+        {
+            // An attempt that sent nothing keeps the operation to retry.
+            _retryOperation = run.RetryOperation;
+        }
+
+        if (run.Failure is not { } failure)
+        {
+            Error = run.Message;
             return false;
         }
 
-        IsSaving = false;
-        if (!result.IsSuccess)
+        Error = failure.Message;
+        if (failure.Error is ValidationFailedError validation)
         {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Task", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            Error = failure.Message;
-            if (failure.Error is ValidationFailedError validation)
+            foreach (var error in validation.Errors)
             {
-                foreach (var error in validation.Errors)
+                var text = CommandErrorText.Describe(error, _strings);
+                if (error.Field == "Title")
                 {
-                    var text = CommandErrorText.Describe(error, _context.Strings);
-                    if (error.Field == "Title")
-                    {
-                        TitleError = text;
-                    }
-                    else if (error.Field == "Service" || error.Code == DomainErrorCodes.ServiceRequiredWhenLinked)
-                    {
-                        ServiceError = text;
-                    }
+                    TitleError = text;
                 }
-
-                CurrentStep = CopyStep.Options;
+                else if (error.Field == "Service" || error.Code == DomainErrorCodes.ServiceRequiredWhenLinked)
+                {
+                    ServiceError = text;
+                }
             }
 
-            _context.Announce(failure.Message, isFailure: true);
-            return false;
+            CurrentStep = CopyStep.Options;
         }
 
-        _context.SaveStatus.Complete();
-        CreatedTaskId = result.Value.Value;
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        return true;
+        _announcer.Announce(failure.Message, isFailure: true);
+        return false;
     }
 
     private StatusOption? ResolvedStatus => KeepCurrentStatus ? _sourceStatus ?? _defaultStatus : SelectedStatus;

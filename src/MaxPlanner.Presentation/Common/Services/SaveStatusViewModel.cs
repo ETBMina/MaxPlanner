@@ -85,10 +85,11 @@ public sealed partial class SaveStatusViewModel : ObservableObject, IDisposable
     public bool IsSettled => State is SaveState.Idle or SaveState.Saved;
 
     /// <summary>Marks a command as started. Pair every call with <see cref="Complete"/> or <see cref="Fail"/>.</summary>
+    /// <remarks>The command is counted before any change notification, so a handler that throws cannot leave it uncounted.</remarks>
     public void Begin()
     {
-        ClearResult();
         _inFlight++;
+        ClearResult();
         CancelSavedTimer();
         Refresh();
     }

@@ -7,6 +7,7 @@ using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Reviews;
 using MaxPlanner.Presentation.SubtaskCards;
 using MaxPlanner.Presentation.Tasks;
+using MaxPlanner.Presentation.Tests.Common;
 using MaxPlanner.Presentation.Tests.Testing;
 
 namespace MaxPlanner.Presentation.Tests.Workspace;
@@ -15,6 +16,7 @@ namespace MaxPlanner.Presentation.Tests.Workspace;
 /// The editors' buttons bind commands (A-02). Each command runs the method the button used to call, and none has a
 /// CanExecute rule of its own: the buttons keep their IsEnabled bindings, so a command never disables a button.
 /// </summary>
+[Collection(nameof(UiTasksConfiguration))]
 public sealed class EditorCommandTests
 {
     [Fact]
@@ -206,7 +208,7 @@ public sealed class EditorCommandTests
             await s.TaskAsync("Source");
             await s.CrAsync("CR-1042", "Instant card freeze");
         });
-        var copy = new CopyTaskViewModel(h.Workspace.Context, h.Store.Tasks.Items.Single());
+        var copy = new CopyTaskViewModel(h.Store, h.Workspace.Context.Commands, h.Workspace.Context, h.Strings, h.UseCases.Tasks, h.Store.Tasks.Items.Single());
 
         copy.BeginLinkCommand.Execute(null);
         copy.IsLinkPickStep.Should().BeTrue();

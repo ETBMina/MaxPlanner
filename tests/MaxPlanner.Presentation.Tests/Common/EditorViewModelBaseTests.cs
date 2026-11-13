@@ -12,6 +12,7 @@ namespace MaxPlanner.Presentation.Tests.Common;
 /// whose command is scripted: save and retry, the dirty-close prompt, the window-close guard, follow-ups,
 /// failures, and the commit subscription.
 /// </summary>
+[Collection(nameof(UiTasksConfiguration))]
 [Trait("Req", "B-02.8")]
 public sealed class EditorViewModelBaseTests
 {
@@ -401,12 +402,12 @@ public sealed class EditorViewModelBaseTests
         editor.HasChanges = true;
         editor.IsDirty.Should().BeTrue();
 
-        h.External(u => u.CreateTask.ExecuteAsync(new Application.Tasks.CreateTaskCommand(OperationId.New(), new Domain.Identifiers.TaskId(Guid.NewGuid()),
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new Application.Tasks.CreateTaskCommand(OperationId.New(), new Domain.Identifiers.TaskId(Guid.NewGuid()),
             new Application.Tasks.TaskContentDraft("Other", "Service", null, null, [], null, Domain.Fields.CustomValue.NoValues)), TestContext.Current.CancellationToken));
         editor.Commits.Should().Be(1);
 
         editor.Dispose();
-        h.External(u => u.CreateTask.ExecuteAsync(new Application.Tasks.CreateTaskCommand(OperationId.New(), new Domain.Identifiers.TaskId(Guid.NewGuid()),
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new Application.Tasks.CreateTaskCommand(OperationId.New(), new Domain.Identifiers.TaskId(Guid.NewGuid()),
             new Application.Tasks.TaskContentDraft("More", "Service", null, null, [], null, Domain.Fields.CustomValue.NoValues)), TestContext.Current.CancellationToken));
         editor.Commits.Should().Be(1);
     }
