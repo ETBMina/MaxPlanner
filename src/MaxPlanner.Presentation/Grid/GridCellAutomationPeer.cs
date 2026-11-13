@@ -1,4 +1,5 @@
 using MaxPlanner.Presentation.Common.Services;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 
@@ -33,6 +34,13 @@ internal sealed partial class GridCellAutomationPeer(GridCell owner) : Framework
         owner.Host?.HeaderCells.FirstOrDefault(h => h.Column == owner.Column) is { } header ? [ProviderFromPeer(CreatePeerForElement(header))] : [];
 
     public IRawElementProviderSimple[] GetRowHeaderItems() => [];
+
+    /// <summary>Tells assistive technology that an edit of the cell was refused, with the error the cell shows.</summary>
+    internal static void AnnounceError(UIElement element, string message)
+    {
+        var peer = FromElement(element) ?? CreatePeerForElement(element);
+        peer?.RaiseNotificationEvent(AutomationNotificationKind.ActionAborted, AutomationNotificationProcessing.ImportantMostRecent, message, "GridCellError");
+    }
 
     public void SetValue(string value)
     {

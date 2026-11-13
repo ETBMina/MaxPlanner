@@ -1,10 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using MaxPlanner.Presentation.Common;
-using MaxPlanner.Presentation.Common.Controls;
-using MaxPlanner.Presentation.Common.Fields;
 using MaxPlanner.Presentation.Common.Services;
-using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -14,16 +11,16 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
-using Windows.UI.Core;
 using WinGrid = Microsoft.UI.Xaml.Controls.Grid;
 
 namespace MaxPlanner.Presentation.Grid;
 
 /// <summary>
 /// The Grid page view. Code-behind handles view mechanics only (AGENTS.md §4): the header cells (sort, resize,
-/// reorder, column chooser), the keyboard and pointer state machine of the cells (design §7.4), flyout editors,
-/// the frozen first column at S, focus and scroll (§7.7), and the error/conflict popup. Every decision about
-/// saving and layout belongs to <see cref="GridPageViewModel"/>.
+/// reorder, column chooser), the keyboard and pointer state machine of the cells (design §7.4), opening flyout
+/// editors, the frozen first column at S, focus and scroll (§7.7), and the error/conflict popup. The menus and the
+/// column chooser are built by <see cref="GridMenus"/> and the flyout editors by <see cref="GridEditorFlyout"/>.
+/// Every decision about saving and layout belongs to <see cref="GridPageViewModel"/>.
 /// </summary>
 public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPageView
 {
@@ -41,12 +38,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private const double ResizeStep = 16;
 
-    /// <summary>
-    /// Windows' default double-click time. A click-opened list or flyout ignores the dismissal caused by the
-    /// second click of a double-click that started it (design §4.3 single-tap editing).
-    /// </summary>
-    private const long DoubleClickGuardMs = 500;
-
     private readonly List<GridHeaderCell> _headerCells = [];
     private readonly List<GridColumnViewModel> _headerColumns = [];
     private readonly GridHoverTracker _hoverTracker;
@@ -54,10 +45,8 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     private bool _isSmall;
     private double _frozenOffset;
     private string? _draggedColumn;
-    private Flyout? _editorFlyout;
-    private (GridRowViewModel Row, GridColumnViewModel Column)? _editorFlyoutTarget;
+    private GridEditorFlyout? _editorFlyout;
     private (GridRowViewModel Row, GridColumnViewModel Column)? _hiddenFlyoutTarget;
-    private bool _flyoutCloseApproved;
     private bool _isShown;
     private ScrollViewer? _rowScroller;
     private bool _isRowThumbDragging;
@@ -187,11 +176,10 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         _isShown = false;
         CellPopup.IsOpen = false;
         _hoverTracker.Clear();
-        if (_editorFlyout is { IsOpen: true } open && _editorFlyoutTarget is { } target)
+        if (_editorFlyout is { IsOpen: true } open)
         {
-            _hiddenFlyoutTarget = target;
-            _flyoutCloseApproved = true;
-            open.Hide();
+            _hiddenFlyoutTarget = (open.Row, open.Column);
+            open.HideKeepingEdit();
         }
 
         PageContent.OnPageHidden();
@@ -260,7 +248,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         cell.ContextRequested += (_, e) =>
         {
             e.Handled = true;
-            HeaderMenu(column).ShowAt(cell);
+            GridMenus.HeaderMenu(ViewModel, column, _displayColumns.IndexOf(column), _displayColumns.Count).ShowAt(cell);
         };
 
         // Design §4.3: drag a header onto another to move the column there.
@@ -328,8 +316,8 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private void OnHeaderKeyDown(GridColumnViewModel column, KeyRoutedEventArgs e)
     {
-        var alt = IsDown(VirtualKey.Menu);
-        var ctrlShift = IsDown(VirtualKey.Control) && IsDown(VirtualKey.Shift);
+        var alt = GridInput.IsDown(VirtualKey.Menu);
+        var ctrlShift = GridInput.IsDown(VirtualKey.Control) && GridInput.IsDown(VirtualKey.Shift);
         switch (e.Key)
         {
             // Design §7.4: Enter sorts; Alt+Left/Right resizes by 16 epx; Ctrl+Shift+Left/Right moves the column.
@@ -367,55 +355,12 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         }
     }
 
-    private MenuFlyout HeaderMenu(GridColumnViewModel column)
-    {
-        var strings = ResourceStrings.Shared;
-        var menu = new MenuFlyout();
-        var index = _displayColumns.IndexOf(column);
-        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuSort"), "Grid_HeaderMenuSortItem", () => ViewModel.CycleSort(column.Key));
-        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuMoveLeft"), "Grid_HeaderMenuMoveLeftItem", () => ViewModel.MoveColumn(column.Key, -1), index > 0);
-        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuMoveRight"), "Grid_HeaderMenuMoveRightItem", () => ViewModel.MoveColumn(column.Key, 1), index < _displayColumns.Count - 1);
-        menu.Items.AddItem(strings.GetString("Grid_HeaderMenuHide"), "Grid_HeaderMenuHideItem", () => ViewModel.SetVisible(column.Key, false), _displayColumns.Count > 1);
-        return menu;
-    }
-
     private void FocusHeader(string key) => _headerCells.FirstOrDefault(h => h.Column == key)?.Focus(FocusState.Keyboard);
 
     private static string SortGlyph(GridSortDirection sort) => sort == GridSortDirection.Descending ? "" : "";
 
     // Column chooser (design §4.3): a CheckBox per column plus Reset; visibility never changes the results (B-10).
-    private void OnColumnsFlyoutOpening(object? sender, object e)
-    {
-        var strings = ResourceStrings.Shared;
-        var list = new StackPanel { Spacing = 2 };
-        foreach (var column in ViewModel.Columns)
-        {
-            var check = new CheckBox { Content = column.Header, IsChecked = column.IsVisible };
-            AutomationProperties.SetAutomationId(check, "Grid_ColumnCheck_" + column.Key);
-            check.Click += (_, _) =>
-            {
-                ViewModel.SetVisible(column.Key, check.IsChecked == true);
-                check.IsChecked = column.IsVisible;
-            };
-            list.Children.Add(check);
-        }
-
-        var reset = new Button { Content = strings.GetString("Grid_ColumnsReset") };
-        AutomationProperties.SetAutomationId(reset, "Grid_ColumnsResetButton");
-        reset.Click += (_, _) =>
-        {
-            ViewModel.ResetLayoutCommand.Execute(null);
-            ColumnsFlyout.Hide();
-        };
-        var heading = new TextBlock { Text = strings.GetString("Grid_ColumnsHeading"), Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["BodyStrongTextBlockStyle"] };
-        AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
-        var scroller = new ScrollViewer { Content = list, MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        var root = new StackPanel { Spacing = 8, MinWidth = 220 };
-        root.Children.Add(heading);
-        root.Children.Add(scroller);
-        root.Children.Add(reset);
-        ColumnsFlyout.Content = root;
-    }
+    private void OnColumnsFlyoutOpening(object? sender, object e) => ColumnsFlyout.Content = GridMenus.ColumnChooser(ViewModel, ColumnsFlyout.Hide);
 
     // ----- Viewport-pinned row scroll bar (mirrors the row list's own scroller, whose bar is hidden) -----
 
@@ -539,7 +484,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
                 break;
             case VirtualKey.Tab:
                 e.Handled = true;
-                CommitAsync(cell, row, move: IsDown(VirtualKey.Shift) ? -1 : 1, restoreFocus: true).Forget();
+                CommitAsync(cell, row, move: GridInput.IsDown(VirtualKey.Shift) ? -1 : 1, restoreFocus: true).Forget();
                 break;
             case VirtualKey.Escape when !popupOpen:
                 e.Handled = true;
@@ -579,11 +524,11 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
                 break;
             case VirtualKey.Home:
                 e.Handled = true;
-                FocusCell(IsDown(VirtualKey.Control) && ViewModel.Rows.Count > 0 ? ViewModel.Rows[0] : row, keys[0]);
+                FocusCell(GridInput.IsDown(VirtualKey.Control) && ViewModel.Rows.Count > 0 ? ViewModel.Rows[0] : row, keys[0]);
                 break;
             case VirtualKey.End:
                 e.Handled = true;
-                FocusCell(IsDown(VirtualKey.Control) && ViewModel.Rows.Count > 0 ? ViewModel.Rows[^1] : row, keys[^1]);
+                FocusCell(GridInput.IsDown(VirtualKey.Control) && ViewModel.Rows.Count > 0 ? ViewModel.Rows[^1] : row, keys[^1]);
                 break;
             case VirtualKey.Up when rowIndex > 0:
                 e.Handled = true;
@@ -611,7 +556,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
                 e.Handled = true;
                 ViewModel.DeleteRowAsync(row).Forget();
                 break;
-            case VirtualKey.D when IsDown(VirtualKey.Control) && row.Model.Task is not null:
+            case VirtualKey.D when GridInput.IsDown(VirtualKey.Control) && row.Model.Task is not null:
                 e.Handled = true;
                 ViewModel.CopyRowAsync(row).Forget();
                 break;
@@ -750,7 +695,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         CommitAsync(cell, row, move: 0, restoreFocus: false).Forget();
     }
 
-    void IGridCellHost.OnRowMenuRequested(GridRowViewModel row, FrameworkElement anchor) => RowMenu(row).ShowAt(anchor);
+    void IGridCellHost.OnRowMenuRequested(GridRowViewModel row, FrameworkElement anchor) => GridMenus.RowMenu(ViewModel, row).ShowAt(anchor);
 
     private static bool StartsByTyping(string column) => column is GridColumns.Title or GridColumns.Subtitle or GridColumns.Service || GridColumns.IsCustom(column);
 
@@ -805,7 +750,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         if (row.IsEditing && row.HasError)
         {
             ShowPopup(row);
-            Announce(FindCell(row, column) ?? cell, row.ErrorMessage!);
+            GridCellAutomationPeer.AnnounceError(FindCell(row, column) ?? cell, row.ErrorMessage!);
             if (restoreFocus)
             {
                 FocusEditorSoon(row, column, selectAll: false);
@@ -823,163 +768,17 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
             return;
         }
 
-        var strings = ResourceStrings.Shared;
-        Control focus;
-        FrameworkElement editor;
-        switch (column.EditorKind)
-        {
-            case GridEditorKind.People or GridEditorKind.Tags when row.DraftTokens is { } tokens:
-                var picker = new TokenPicker { ViewModel = tokens, Header = column.Header, BoxAutomationId = "Grid_CellEditor", MinWidth = 280 };
-                editor = picker;
-                focus = picker;
-                picker.Loaded += (_, _) => picker.FocusBox();
-                break;
-            case GridEditorKind.Custom when row.DraftCustom is { } custom:
-                (editor, focus) = CustomFieldEditors.Create(custom, "Grid", showHeader: true);
-                break;
-            default:
-                var notes = new TextBox
-                {
-                    Header = column.Header,
-                    Text = row.DraftText,
-                    AcceptsReturn = true,
-                    TextWrapping = TextWrapping.Wrap,
-                    MinHeight = 96,
-                    MaxHeight = 320,
-                    Width = 360,
-                    MaxLength = Domain.Common.DomainLimits.LongText,
-                };
-                ScrollViewer.SetVerticalScrollBarVisibility(notes, ScrollBarVisibility.Auto);
-                AutomationProperties.SetAutomationId(notes, "Grid_CellEditor");
-                notes.TextChanged += (_, _) => row.DraftText = notes.Text;
-                editor = notes;
-                focus = notes;
-                break;
-        }
-
-        var error = new TextBlock { Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["ErrorCaptionTextStyle"], MaxWidth = 360 };
-        AutomationProperties.SetLiveSetting(error, AutomationLiveSetting.Assertive);
-        AutomationProperties.SetAutomationId(error, "Grid_CellError");
-        var ring = new ProgressRing { Width = 16, Height = 16, IsActive = false };
-        var save = new Button { Content = strings.GetString("Grid_FlyoutSave"), Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["AccentButtonStyle"] };
-        var cancel = new Button { Content = strings.GetString("Common_Cancel") };
-        AutomationProperties.SetAutomationId(save, "Grid_FlyoutSaveButton");
-        AutomationProperties.SetAutomationId(cancel, "Grid_FlyoutCancelButton");
-        ToolTipService.SetToolTip(save, strings.GetString("Grid_FlyoutSaveTooltip"));
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
-        buttons.Children.Add(ring);
-        buttons.Children.Add(save);
-        buttons.Children.Add(cancel);
-        var root = new StackPanel { Spacing = 8 };
-        root.Children.Add(editor);
-        root.Children.Add(error);
-        root.Children.Add(buttons);
-
-        var flyout = new Flyout { Content = root, Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft, ShouldConstrainToRootBounds = true };
-        void Refresh(object? sender, PropertyChangedEventArgs? e)
-        {
-            // An edit that ended elsewhere (a commit started before the page was hidden and this flyout reopened)
-            // leaves nothing to edit here.
-            if (row.EditingColumn != column.Key && flyout.IsOpen)
-            {
-                _flyoutCloseApproved = true;
-                flyout.Hide();
-                return;
-            }
-
-            error.Text = row.ErrorMessage ?? string.Empty;
-            ring.IsActive = row.IsSaving;
-            save.IsEnabled = cancel.IsEnabled = !row.IsSaving;
-        }
-
-        // A reopened flyout (OnShown) starts from the row's current error and saving state.
-        Refresh(null, null);
-        row.PropertyChanged += Refresh;
+        var flyout = new GridEditorFlyout(ViewModel, cell, row, column, openedByTap, FocusCell, OnEditorFlyoutClosed);
         _editorFlyout = flyout;
-        _editorFlyoutTarget = (row, column);
-        _flyoutCloseApproved = false;
-        var tapOpenedAt = openedByTap ? Environment.TickCount64 : long.MinValue;
-        save.Click += (_, _) => CommitFlyoutAsync(flyout, cell, row).Forget();
-        cancel.Click += (_, _) => CancelFlyout(flyout, row);
-
-        // Design §7.4: Ctrl+Enter saves (plain Enter inserts a line break in Notes); Esc cancels.
-        root.PreviewKeyDown += (sender, e) =>
-        {
-            if (e.Key == VirtualKey.Enter && IsDown(VirtualKey.Control))
-            {
-                e.Handled = true;
-                CommitFlyoutAsync(flyout, cell, row).Forget();
-            }
-            else if (e.Key == VirtualKey.Escape)
-            {
-                e.Handled = true;
-                CancelFlyout(flyout, row);
-            }
-        };
-
-        // Light dismiss is leaving the cell: B-07 attempts a commit; a failure keeps the flyout and its error.
-        flyout.Closing += (sender, args) =>
-        {
-            if (_flyoutCloseApproved)
-            {
-                return;
-            }
-
-            args.Cancel = true;
-
-            // The second click of the double-click that opened this flyout lands on the light-dismiss layer; keep it open.
-            if (!row.IsSaving && !IsWithinDoubleClickWindow(tapOpenedAt))
-            {
-                CommitFlyoutAsync(flyout, cell, row).Forget();
-            }
-        };
-        flyout.Closed += (_, _) =>
-        {
-            row.PropertyChanged -= Refresh;
-            if (ReferenceEquals(_editorFlyout, flyout))
-            {
-                _editorFlyout = null;
-                _editorFlyoutTarget = null;
-            }
-
-            cell.Focus(FocusState.Programmatic);
-        };
-        flyout.Opened += (_, _) => CustomFieldEditors.Focus(focus);
-        flyout.ShowAt(cell);
+        flyout.Show();
     }
 
-    private async Task CommitFlyoutAsync(Flyout flyout, GridCell cell, GridRowViewModel row)
+    private void OnEditorFlyoutClosed(GridEditorFlyout flyout)
     {
-        if (row.IsSaving)
+        if (ReferenceEquals(_editorFlyout, flyout))
         {
-            return;
+            _editorFlyout = null;
         }
-
-        var column = row.EditingColumn ?? cell.Column;
-        if (await ViewModel.CommitAsync(row))
-        {
-            _flyoutCloseApproved = true;
-            flyout.Hide();
-            FocusCell(row, column);
-            return;
-        }
-
-        if (row.ErrorMessage is { } message)
-        {
-            Announce(cell, message);
-        }
-    }
-
-    private void CancelFlyout(Flyout flyout, GridRowViewModel row)
-    {
-        if (row.IsSaving)
-        {
-            return;
-        }
-
-        ViewModel.CancelEdit(row);
-        _flyoutCloseApproved = true;
-        flyout.Hide();
     }
 
     // ----- Popup, focus, and helpers -----
@@ -1099,12 +898,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         PopupDraftText = ViewModel.FormatYourDraft(row.DraftValue);
     }
 
-    private static void Announce(UIElement element, string message)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(element) ?? FrameworkElementAutomationPeer.CreatePeerForElement(element);
-        peer?.RaiseNotificationEvent(AutomationNotificationKind.ActionAborted, AutomationNotificationProcessing.ImportantMostRecent, message, "GridCellError");
-    }
-
     private void FocusEditorSoon(GridRowViewModel row, string column, bool selectAll, bool openPicker = false)
     {
         // The editor is created when the row's editing state changes; focus it after that layout pass.
@@ -1137,8 +930,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         });
     }
 
-    private static bool IsWithinDoubleClickWindow(long startedAt) => Environment.TickCount64 - startedAt < DoubleClickGuardMs;
-
     /// <summary>
     /// Opens a ComboBox list or calendar for a single-tap edit. The second click of a double-click lands on the
     /// popup's light-dismiss layer and would close the list just opened, so the first close inside the
@@ -1148,7 +939,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     {
         var openedAt = Environment.TickCount64;
         var column = row.EditingColumn;
-        bool IsStrayClose() => IsWithinDoubleClickWindow(openedAt) && row.EditingColumn == column && !row.IsSaving && !IsDown(VirtualKey.Escape);
+        bool IsStrayClose() => GridInput.IsWithinDoubleClickWindow(openedAt) && row.EditingColumn == column && !row.IsSaving && !GridInput.IsDown(VirtualKey.Escape);
 
         switch (editor)
         {
@@ -1235,9 +1026,6 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
     private static Control? FindEditor(DependencyObject cell) =>
         FindDescendant<Control>(cell, c => c is TextBox or ComboBox or CalendarDatePicker or NumberBox);
 
-    private static bool IsDown(VirtualKey key) =>
-        InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
-
     private static bool IsWithin(DependencyObject element, DependencyObject ancestor)
     {
         for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
@@ -1290,7 +1078,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         return null;
     }
 
-    // ----- Row menu (design §4.3): Open, Open CR, Copy…, Link to CR…, Add Subtask card, Archive/Restore, Delete…. -----
+    // ----- Row menu (design §4.3; its items are built by GridMenus.RowMenu) -----
     private void OnRowContextRequested(UIElement sender, ContextRequestedEventArgs args)
     {
         var element = args.OriginalSource as DependencyObject;
@@ -1305,7 +1093,7 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         }
 
         args.Handled = true;
-        var menu = RowMenu(row);
+        var menu = GridMenus.RowMenu(ViewModel, row);
         if (args.TryGetPosition(container, out var point))
         {
             menu.ShowAt(container, point);
@@ -1314,46 +1102,5 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
         {
             menu.ShowAt(container);
         }
-    }
-
-    private MenuFlyout RowMenu(GridRowViewModel row)
-    {
-        var strings = ResourceStrings.Shared;
-        var menu = new MenuFlyout();
-        menu.Items.AddItem(strings.GetString("Board_MenuOpen"), "Grid_RowMenuOpenItem", () => ViewModel.OpenRowAsync(row).Forget());
-        if (row.Model.Cr.ChangeRequestId is not null)
-        {
-            menu.Items.AddItem(strings.GetString("Board_MenuOpenCr"), "Grid_RowMenuOpenCrItem", () => ViewModel.OpenCrAsync(row).Forget());
-        }
-
-        if (row.Model.Task is not null)
-        {
-            menu.Items.AddItem(strings.GetString("Board_MenuCopy"), "Grid_RowMenuCopyItem", () => ViewModel.CopyRowAsync(row).Forget());
-        }
-
-        menu.Items.AddItem(strings.GetString("Board_MenuCopyId"), "Grid_RowMenuCopyIdItem", () => ClipboardText.Set(ViewModel.CopyIdText(row)));
-        if (row.Model.Task is { } task)
-        {
-
-            // B-03.6/B-05: Link to CR… is offered for every unlinked task, archived ones included.
-            if (task.Cr.ChangeRequestId is null)
-            {
-                menu.Items.AddItem(strings.GetString("Grid_MenuLinkToCr"), "Grid_RowMenuLinkToCrItem", () => ViewModel.LinkRowAsync(row).Forget());
-            }
-
-            if (task.IsArchived)
-            {
-                menu.Items.AddItem(strings.GetString("Grid_MenuRestore"), "Grid_RowMenuRestoreItem", () => ViewModel.RestoreRowAsync(row).Forget());
-            }
-            else
-            {
-                menu.Items.AddItem(strings.GetString("Board_MenuAddSubtaskCard"), "Grid_RowMenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(row).Forget());
-                menu.Items.AddItem(strings.GetString("Board_MenuArchive"), "Grid_RowMenuArchiveItem", () => ViewModel.ArchiveRowAsync(row).Forget());
-            }
-        }
-
-        menu.Items.AddSeparator();
-        menu.Items.AddItem(strings.GetString("Board_MenuDelete"), "Grid_RowMenuDeleteItem", () => ViewModel.DeleteRowAsync(row).Forget());
-        return menu;
     }
 }
