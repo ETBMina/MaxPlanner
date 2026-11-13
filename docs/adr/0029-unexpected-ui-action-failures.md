@@ -20,7 +20,8 @@ Option 1.
 - **What is recorded:** log event 4002 at Error, with the exception.
 - **Not failures:** `OperationCanceledException` is ignored.
 - **Never caught:** fatal exceptions (`OutOfMemoryException`), following the existing `catch (Exception ex) when (ex is not OutOfMemoryException)` pattern.
-- **Editors and dialogs reset themselves first:** when a save throws, the editor ends its saving state, shows the text as its save error, keeps the draft, and can be closed. The retry reuses the same operation ID, because the outcome is unknown (T-05).
+- **Editors and dialogs recover in the same step:** when a save throws, the editor ends its saving state, shows the text as its save error, keeps the draft, and can be closed. The report and this reset happen in one synchronous UI-thread step, so no frame shows one without the other; since batch 2B the shared command runner reports first and the caller resets after. The retry reuses the same operation ID, because the outcome is unknown (T-05).
+- **Write commands go through the shared command runner** (`MaxPlanner.Presentation.Workspace.CommandRunner`, batch 2B): it ends the save status and the caller's busy flag on every path and makes the single report.
 - **No workspace open** (startup, recovery): the failure is only logged.
 - **`App.OnUnhandledException` is unchanged.** Exceptions that reach it (synchronous handler code, anything outside this handler) still end the app. The handler does not rely on it.
 

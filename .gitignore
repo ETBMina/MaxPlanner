@@ -32,3 +32,6 @@ publish-*/
 # WinApp CLI local state
 .winapp/
 AppX/
+
+# Claude Code agent worktrees (project skills under .claude/skills are tracked)
+.claude/worktrees/

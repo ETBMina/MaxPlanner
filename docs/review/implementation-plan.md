@@ -4,7 +4,8 @@ Living document for the whole-app review (architecture and MVVM, consistency, UI
 
 ## Rules
 
-- Review is done by Fable with the `winui:winui-code-review` skill. Code is written by Opus through the `winui:winui-dev` agent.
+- Review is done with the `winui:winui-code-review` skill. Code is written by Opus through the `winui:winui-dev` agent. Parts 0–2A were reviewed by Fable; from batch 2B on (2026-11-13, user's decision) Fable is no longer used, and the main session and the independent reviews run on Opus.
+- Before a batch is merged, its build is launched on fixture data so the user can test it.
 - `design.md`, the requirements and the ADRs are open to challenge. Still fixed: portable unpackaged ZIP, pinned .NET / Windows App SDK versions, approval before any new library.
 - Three gates per part: the user approves findings by ID, approves each batch before it is implemented, and confirms before the next part's review starts.
 - Refactors keep behaviour unchanged. Approved departures from an ADR or `design.md` are recorded in the same batch.
@@ -17,7 +18,7 @@ Living document for the whole-app review (architecture and MVVM, consistency, UI
 |---|---|---|---|---|
 | 0 | Baseline | Done 2026-11-11 | n/a | n/a |
 | 1 | Architecture and MVVM | Done 2026-11-11 | All nine approved 2026-11-11 | 1A, 1B, 1C, 1D merged 2026-11-12 (1290 tests); awaiting the user's manual check in the app. A-03(b), A-04, A-06 moved to part 2. |
-| 2 | Consistency and shared components | Not started | | |
+| 2 | Consistency and shared components | Done 2026-11-12 | Approved as proposed 2026-11-12 | Not started; each batch awaits approval |
 | 3 | UI / UX | Not started | | |
 | 4 | Performance | Not started | | |
 
@@ -88,6 +89,53 @@ What already holds (no action):
 
 Not reviewed in depth in part 1: Calendar, Settings and Filter view models (metrics only); they are read closely in part 2.
 
+### Part 2 — Consistency and shared components (reviewed 2026-11-12, awaiting decisions)
+
+Verdict: the visual building blocks are already shared well (one theme dictionary with 404 keys, no colour literals outside it, shared `StateView`, `ExpandingSearchBox`, `FilterButton`, `TokenPicker`, `TagPill`, avatars). The duplication is in scaffolding: page and dialog shells, the save sequence in view models, and shared types that live in feature folders.
+
+Method: file inventory, pattern counts and side-by-side diffs of the page views, the editor dialogs and the view models, on `review/app-review` after batches 1A–1D. The app was not launched.
+
+| ID | Severity | Finding | Evidence | Proposed change | Effort | Risk and cost | Decision |
+|---|---|---|---|---|---|---|---|
+| C-01 | Medium | The page scaffold is repeated on six pages: the header block (title, subtitle, padding `32,24,32,12`), the `IPageView` members, and the size-changed guard that calls `ApplyBreakpoint`. The breakpoints 640 and 1008 are written as literals about 25 times in 12 files, while `PagePadding`, `BoardLayout` and `EditorDialogSizing` each define them again. | `Board/`, `Grid/`, `Calendar/`, `Checklists/`, `Dashboard/`, `Settings/` `*PageView.xaml(.cs)`; `Calendar/CalendarPageView.xaml.cs:220-253`; `Common/PagePadding.cs:16-22` | (a) One `Breakpoints` type with the two widths and a width-class helper. (b) A `PageHeader` control with title, subtitle and content slots, and a small page-view helper for the size-changed guard. | (a) S, (b) M | (a) Very low. (b) Low–Medium: header layout differs per page at narrow widths. Not on a hot path, so one extra control level costs nothing measurable. | |
+| C-02 | High | The editor dialog shell is copied across the four editors (and partly Copy task and the field dialog): identical `OnPrimaryClick`, `OnClosing`, `OnSaveAccelerator`, `OnBackAccelerator` in code-behind; the title row with the More menu; the validation and error InfoBars; and the conflict-review and reload-confirm steps (71 lines of XAML that differ in 2 lines between Subtask card and CR, 10 against Task). The matching step logic (`ReviewConflict`, `ApplyConflictReview`, `BeginReload`, `ConfirmReload`, `StepBack`) is still repeated in three view models after batch 1B. | `SubtaskCards/SubtaskCardEditorDialog.xaml:265-335`, `ChangeRequests/CrEditorDialog.xaml:513-583`, `Tasks/TaskEditorDialog.xaml:832-902`; the four `*EditorDialog.xaml.cs` | A `ConflictReviewPanel` and an `EditorMessageBars` user control; extend `EditorDialogLayout.Attach` to wire the four shared handlers; move the conflict step state into `EditorViewModelBase`. | M–L | Medium. Dialogs only, so the extra user-control level has no hot-path cost. AutomationIds must stay as they are. | |
+| C-03 | Low–Medium | The clearable date field (picker, clear button, helper text) is repeated six times in three editors, about 22 lines each. First day of week is forced to Sunday on the Dashboard and Calendar pickers (3 places) and left to the system setting in the editors and the month-view flyout. | `Tasks/TaskEditorDialog.xaml:457-520`, `ChangeRequests/CrEditorDialog.xaml:265-305`, `SubtaskCards/SubtaskCardEditorDialog.xaml:200-240`; `Dashboard/DashboardPageView.xaml:261,268`, `Calendar/CalendarPageView.xaml:418` | A `ClearableDateField` control; one first-day-of-week rule for every date picker. | S–M | Low. Which first day to use is a visible choice and needs the user's decision. | |
+| C-04 | Medium | Shared types live in feature folders, so `Common` depends on `Tasks` and features reference each other sideways (12 such references): `Tasks/Pickers.cs` (the view model of `Common/Controls/TokenPicker`), `Tasks/FieldError` (used by 8 files), `Tasks.ConflictRowViewModel` (3 editors), `Grid.StatusOption` (used by Tasks and SubtaskCards), `PriorityOption` inside `TaskEditorViewModel.cs`, `SquadOption` inside `CrEditorViewModel.cs`. | `Common/Controls/TokenPicker.xaml.cs`, `Grid/GridRowViewModel.cs:19`, `Tasks/TaskEditorViewModel.cs:30`, `ChangeRequests/CrEditorViewModel.cs:31` | Move them to `Common` (pickers, fields, options), one type per file, and add an architecture test: `Common` must not reference a feature namespace. | S | Very low: moves and namespace updates only. | |
+| C-05 | Medium | The "run one command" sequence (editing-blocked check, new operation ID, save status begin, execute, map the failure, report, announce, wait until displayed) is written 11 times. Three are near-identical private `RunAsync` helpers. Each handles a thrown exception differently, which is why busy flags and the "Saving…" indicator can stick (noticed in batch 1C). | `Tasks/TaskCommands.cs:206-240`, `Checklists/ChecklistItemViewModel.cs:196-220`, `Settings/SettingsPageViewModel.cs:593-617`, `Board/BoardPageViewModel.cs:442-480`, `Grid/GridPageViewModel.cs:209-235`, plus 6 more | One command runner on the workspace context that owns the sequence and the exception handling. This is where A-06 fits: the context exposes narrow interfaces (`ICommandRunner`, `IAnnouncer`, `IDialogService`) and the use cases are grouped by feature. | M | Medium: every write path goes through it, but each has tests. Fixes the stuck-indicator bug in one place, which is a behaviour change to approve. | |
+| C-06 | Low | The three Data wizards copy the same `StepTemplate` and `StepListStyle` verbatim. | `Settings/DataPage/ExportWizardView.xaml`, `ImportWizardView.xaml`, `RestoreWizardView.xaml` (resources) | Shared resources or a small `WizardHost` control for the step list and footer. | S | Low. | |
+| C-07 | Low–Medium | Dates are formatted at about 40 call sites with five formats (`d`, `D`, `MMM d`, `MMM d, yyyy`, `MMM yyyy`) and no shared formatter. `MMM d` fixes the month-day order regardless of the user's culture. | View models and controls across Board, Calendar, Checklists, Dashboard, Grid | One `DateText` helper with named formats (short, long, compact). Which format each surface shows is decided in part 3. | S | Low. Replacing `MMM d` with a culture-aware pattern changes text in some regions. | |
+| C-08 | Low | Context menus built in code repeat the same local `Item(key, id, action, enabled)` helper (3 copies) and 18 `new MenuFlyout…` sites in 5 files. | `Grid/GridPageView.xaml.cs:380,1337`, `Settings/SettingsPageView.xaml.cs:307`, Board and Calendar builders | One small menu-builder helper. | S | Very low. | |
+| C-09 | Low | Small XAML repeats: the accent "New …" button with icon, text and Ctrl+N (4 pages); a flat `ListViewItem` style (3+ places); 330 `FontIcon` size literals (14: 177, 12: 125, 16: 28). | Page views and dialogs | Named styles and icon-size resources in `AppResources.xaml`. | S | Very low; resource lookups only. | |
+| C-10 | Low | In-place rename is implemented twice, each with its own key handling. | `Checklists/ChecklistsPageView.xaml.cs`, `Settings/SettingsPageView.xaml.cs`, `Settings/SettingsRows.cs` | A shared inline-rename helper. Optional. | S–M | Low–Medium: focus handling is fragile. | |
+| C-11 | Medium (UX) | Two filter experiences: the Dashboard uses inline combo boxes with From/To date pickers; Board, Grid and Calendar use the Filters button with chips and a custom range calendar. | `Dashboard/DashboardPageView.xaml:36-80`, `Common/Filters/FilterButton.xaml` | Decide in part 3 with mock-ups; no code proposal here. | — | — | |
+
+**Decision (user, 2026-11-12): approved as proposed.** C-01 to C-10 are approved for batches 2A–2E; C-11 and the visible choices from C-03 and C-07 go to part 3; A-04 is dropped; A-03(b) is narrowed as described below; A-06 is done inside C-05.
+
+Where the deferred part 1 findings land:
+
+- **A-06** (`WorkspaceContext`): becomes part of C-05.
+- **A-04** (Board drag controller, shell page preloader): no shared component comes out of it. Only the Board has auto-scroll and an insertion line; Calendar, Settings, the task editor checklist and the Grid header use simpler drops or the built-in `ListView` reorder. Recommendation: lowest priority, Board-only, or drop it.
+- **A-03(b)** (`TaskGrid` control): the Grid already has its own controls (`Grid/GridControls.cs`, 14 types in 1,009 lines) and nothing else reuses a grid. Recommendation: narrow it to (1) one type per file for `GridControls.cs` and (2) moving the header menu, column chooser, row menu and editor flyout builders out of `GridPageView.xaml.cs` into view-side classes. No new control.
+
+Duplication to keep:
+
+- `EditorChecklistItemViewModel` (a draft row in the task editor) and `ChecklistItemViewModel` (a live row that commits each change) look alike but follow different save rules.
+- Board card, Calendar record and Dashboard row templates: each is on a list hot path with different content. A shared card control would add template depth per item for little gain.
+- The two filter scopes already share `FilterScopeViewModel`.
+
+Not reviewed in depth: `Settings/DataPage/ImportWizardViewModel.cs` (918 lines) and the bodies of the Calendar and Settings view models were surveyed for structure and patterns, not read line by line. Visual consistency on screen belongs to part 3.
+
+Batches for part 2. The findings are approved; each batch still needs the user's go-ahead before it is implemented:
+
+| Batch | Findings | Why together |
+|---|---|---|
+| 2A | C-04, C-06, C-08, C-09, C-01(a), C-07 (helper only, same output) | Moves and small helpers; no behaviour or visual change. Approved 2026-11-12. Implemented and verified 2026-11-12 (build clean, 1295 tests): seven commits `057cdc7`..`55b04d3`, merged into `review/app-review` as `f4387ee` (same tree as the tested commit) after the user tested the branch build on fixture data on 2026-11-13. Reviewed by the main session only (moves and mechanical replacements). Skipped inside C-09: the flat list-item style, because no two sites were identical. The New button is shared by the user's decision: the Grid's icon goes from 16 to 14 to match the other pages. |
+| 2B | C-05 with A-06 | One change to how view models run commands. Approved 2026-11-13. Implemented and verified 2026-11-13 (build clean, 1356 tests, independent review on Opus found no regression; its fixes and the user's three decisions applied). Seven commits `39779c3`..`c133790` on `refs/heads/worktree-agent-adeb3e7f08af76001`; merged into `review/app-review` as `ab8a437` (same tree as the tested commit) after the user tested the branch build on 2026-11-13. |
+| 2C | C-02, C-03 | Editor dialog shell and its fields |
+| 2D | C-01(b), C-10 | Page header control; inline rename |
+| 2E | A-03(b) narrowed | Grid code-behind |
+| Part 3 | C-11, date format choices from C-07, first day of week from C-03 | Visible choices, decided with mock-ups |
+
 ## Implementation batches
 
 Part 1. All nine findings are approved; each batch still needs the user's go-ahead before it is implemented. Batches run in this order, one at a time on `review/app-review`, because 1B, 1C, 1E, 1F and 1G touch the same Presentation files.
@@ -95,8 +143,8 @@ Part 1. All nine findings are approved; each batch still needs the user's go-ahe
 | Batch | Findings | Why here | Approved | Status |
 |---|---|---|---|---|
 | 1A | A-03(a), A-07, A-08, A-09 | Small, low risk, no behaviour change. A-08's test guards the later batches. | 2026-11-11 | Implemented and verified 2026-11-12 (build clean, 1176 tests). Committed as `11c61c1`; awaiting the user's manual check. Also removed the one violation A-08 found: `ShellViewModel` used `InfoBarSeverity`. |
-| 1B | A-01 | One refactor across the four editors | 2026-11-12 | Implemented and verified 2026-11-12 (build clean, 1257 tests, independent review found no regression). Commits `286ab98` and `b0c86bc`, merged into `review/app-review` as `1d3b78c` (same tree as the tested commit). Not run in the app. |
-| 1C | A-02 | After 1B, so commands are added once in the shared editor base | 2026-11-12 | Implemented and verified 2026-11-12 (build clean, 1290 tests). Five commits `d163f08`..`9aa8257`, merged into `review/app-review` as `965f24e` (same tree as the tested commit). Independent review covered the first three commits only; the failure handling (ADR 0029, commits `f764ce7`, `9aa8257`) was reviewed by the main session only. Not run in the app. |
+| 1B | A-01 | One refactor across the four editors | 2026-11-12 | Implemented and verified 2026-11-12 (build clean, 1257 tests, independent review found no regression). Commits `286ab98` and `b0c86bc`, merged into `review/app-review` as `1d3b78c` (same tree as the tested commit). |
+| 1C | A-02 | After 1B, so commands are added once in the shared editor base | 2026-11-12 | Implemented and verified 2026-11-12 (build clean, 1290 tests). Five commits `d163f08`..`9aa8257`, merged into `review/app-review` as `965f24e` (same tree as the tested commit). Independent review covered the first three commits only; the failure handling (ADR 0029, commits `f764ce7`, `9aa8257`) was reviewed by the main session only. |
 | 1D | A-05 | Desktop/Infrastructure only, tests first. Touches no Presentation file, so it may run in its own worktree beside 1A, 1B or 1C. | 2026-11-11 | Implemented and verified 2026-11-12 (build clean, 1203 tests, independent review done, one regression fixed). Commits `461a63e` and `55368fb`, merged into `review/app-review` as `8d8342d` (combined result: build clean, 1223 tests). ADR 0015 and `docs/requirements-traceability.md` (T-09) updated. Not launched in the app. |
 
 Moved to part 2 on 2026-11-12 (user's decision). The findings stay approved; they are folded into the part 2 batches where they fit instead of running as standalone refactors:
@@ -132,6 +180,10 @@ Out of scope for this review; listed for the user and not acted on.
   1. If a save command throws instead of returning an error, `IsSaving` stays true and the editor cannot be closed (`Common/Dialogs/EditorViewModelBase.cs`, `SaveDraftAsync`). **Fixed in batch 1C** as part of ADR 0029.
   2. In the review editor a later non-conflict failure clears the conflict flag; the other three editors keep it.
 - Found during batch 1C, not fixed:
-  1. `ChecklistCommandQueue.RunAfterAsync` awaits the previous command's task, so after one checklist action throws, every later action on that card rethrows the same exception.
-  2. Actions that predate batch 1C leave their busy flag (`IsAdding`) and the save status in-flight count set after a throw, so the status bar can keep showing "Saving…".
+  1. `ChecklistCommandQueue.RunAfterAsync` awaits the previous command's task, so after one checklist action throws, every later action on that card rethrows the same exception. **Fixed in batch 2B.**
+  2. Actions that predate batch 1C leave their busy flag (`IsAdding`) and the save status in-flight count set after a throw, so the status bar can keep showing "Saving…". **Fixed in batch 2B** (command runner).
+- Found during batch 2B, not fixed:
+  1. Pop out on the Checklists page sets its inline error from `SaveStatus.FailureMessage`, so a blocked or validation-refused pop-out can show a stale message from an earlier failure, or nothing (`Checklists/ChecklistGroupViewModel.cs`, around line 135).
+  2. If editing is blocked when a Board card is dropped, or the reorder is refused, the card keeps `IsMoving` and stays dimmed.
+  3. The task editor's Add Subtask card sends its command even while editing is blocked (T-07). **Fixed in batch 2B** (user approved 2026-11-13).
   3. The recovery page's four commands still end the app on an unexpected exception; no workspace is open there to show the error (ADR 0029).
