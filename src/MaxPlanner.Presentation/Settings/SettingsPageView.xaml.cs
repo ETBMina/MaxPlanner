@@ -112,24 +112,17 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
     private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: LookupRowViewModel row } box)
+        if (sender is FrameworkElement { DataContext: LookupRowViewModel row } box)
         {
-            return;
-        }
-
-        switch (e.Key)
-        {
-            case VirtualKey.Enter:
-                e.Handled = true;
-                CommitRenameAsync(row, box).Forget();
-                break;
-            case VirtualKey.Escape:
-                e.Handled = true;
-                row.CancelRename();
-                FocusMenuButton(box, row);
-                break;
-            default:
-                break;
+            InlineRenameEditor.HandleKey(
+                e,
+                commit: () => CommitRenameAsync(row, box).Forget(),
+                cancel: () =>
+                {
+                    // The menu button takes focus even while a running rename ignores the cancel.
+                    row.CancelRename();
+                    FocusMenuButton(box, row);
+                });
         }
     }
 
@@ -248,14 +241,9 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         row.BeginRename();
         var container = FindAncestor<Microsoft.UI.Xaml.Controls.Grid>(anchor);
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            if (container is not null && FindDescendants<TextBox>(container).FirstOrDefault(b => AutomationProperties.GetAutomationId(b) == row.RenameAutomationId) is { } box)
-            {
-                box.Focus(FocusState.Keyboard);
-                box.SelectAll();
-            }
-        });
+        InlineRenameEditor.FocusWhenShown(
+            DispatcherQueue,
+            () => container is null ? null : FindDescendants<TextBox>(container).FirstOrDefault(b => AutomationProperties.GetAutomationId(b) == row.RenameAutomationId));
     }
 
     private static void FocusMenuButton(FrameworkElement inside, LookupRowViewModel row)

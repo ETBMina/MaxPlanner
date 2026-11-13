@@ -154,23 +154,19 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         item.BeginRename();
         if (box?.Parent is Panel row && row.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBox>().FirstOrDefault() is { } editor)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                editor.Focus(FocusState.Keyboard);
-                editor.SelectAll();
-            });
+            InlineRenameEditor.FocusWhenShown(DispatcherQueue, () => editor);
         }
     }
 
     private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor || e.Key is not (VirtualKey.Enter or VirtualKey.Escape))
+        if (sender is TextBox { Tag: ChecklistItemViewModel item } editor)
         {
-            return;
+            InlineRenameEditor.HandleKey(
+                e,
+                commit: () => RenameKeyAsync(editor, item, commit: true).Forget(),
+                cancel: () => RenameKeyAsync(editor, item, commit: false).Forget());
         }
-
-        e.Handled = true;
-        RenameKeyAsync(editor, item, commit: e.Key == VirtualKey.Enter).Forget();
     }
 
     // Escape runs before the first await, so it completes within the key event as before.
