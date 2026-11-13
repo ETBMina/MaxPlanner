@@ -88,9 +88,9 @@
                 </AutoSuggestBox.ItemTemplate>
             </AutoSuggestBox>
             <!--
-                The chosen person's avatar inside the box's left padding, which OnBoxLoaded widens; the generic person
-                glyph while the user types or nobody is chosen. Bottom-aligned so it centers on the text box below any
-                header. Decorative: the box's accessible name carries the person.
+                The chosen person's avatar inside the box's left padding, which OnBoxLoaded widens; a neutral person
+                outline, not a coloured avatar, while the user types or nobody is chosen. Bottom-aligned so it centers on
+                the text box below any header. Decorative: the box's accessible name carries the person.
             -->
             <local:PersonAvatar
                 Margin="10,0,0,6"
@@ -101,7 +101,20 @@
                 IsDecorative="True"
                 IsHitTestVisible="False"
                 Opacity="{x:Bind local:TokenPicker.AvatarOpacity(IsEditable), Mode=OneWay}"
-                Visibility="{x:Bind local:TokenPicker.AvatarVisibility(ViewModel), Mode=OneWay}" />
+                Visibility="{x:Bind local:TokenPicker.AvatarVisibility(ViewModel, ViewModel.ShownPersonName), Mode=OneWay}" />
+            <FontIcon
+                Width="20"
+                Height="20"
+                Margin="10,0,0,6"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                AutomationProperties.AccessibilityView="Raw"
+                FontSize="{StaticResource BodyIconSize}"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Glyph="&#xE77B;"
+                IsHitTestVisible="False"
+                Opacity="{x:Bind local:TokenPicker.AvatarOpacity(IsEditable), Mode=OneWay}"
+                Visibility="{x:Bind local:TokenPicker.EmptyPersonIconVisibility(ViewModel, ViewModel.ShownPersonName), Mode=OneWay}" />
         </Grid>
         <!-- Chips wrap; each is a Button so Enter, Space, Delete, and UIA Invoke remove it. Tag chips are pills in the tag's color. -->
         <ItemsRepeater

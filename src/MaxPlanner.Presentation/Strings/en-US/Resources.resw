@@ -611,6 +611,14 @@
   <data name="Common_None" xml:space="preserve">
     <value>None</value>
   </data>
+  <data name="Common_NoneValueName" xml:space="preserve">
+    <value>{0}: none</value>
+    <comment>The accessible name of an empty fact in an editor, for example "Task number: none". {0} is the fact's label.</comment>
+  </data>
+  <data name="Common_DatePlaceholder" xml:space="preserve">
+    <value>Pick a date</value>
+    <comment>The placeholder of every date picker while it has no date.</comment>
+  </data>
   <data name="Field_StartDate" xml:space="preserve">
     <value>Start date</value>
   </data>
@@ -991,12 +999,6 @@
   </data>
   <data name="TaskEditor_DeletedElsewhere" xml:space="preserve">
     <value>This task was deleted elsewhere. Your changes can't be saved.</value>
-  </data>
-  <data name="TaskEditor_NoOwner" xml:space="preserve">
-    <value>No owner</value>
-  </data>
-  <data name="TaskEditor_NoTaskNumber" xml:space="preserve">
-    <value>No task number</value>
   </data>
   <data name="TaskEditor_PendingLinkWarning" xml:space="preserve">
     <value>This link is permanent. When you save, the title becomes '{0}' and the task number, squad and owner come from {1}.</value>

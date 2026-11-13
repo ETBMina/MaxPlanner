@@ -8,6 +8,7 @@
     x:Class="MaxPlanner.Presentation.Common.Controls.ClearableDateField"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
     IsTabStop="False">
     <StackPanel Spacing="4">
         <Grid ColumnSpacing="8">
@@ -15,7 +16,11 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <CalendarDatePicker x:Name="Picker" HorizontalAlignment="Stretch" DateChanged="OnPickerDateChanged" />
+            <CalendarDatePicker
+                x:Name="Picker"
+                HorizontalAlignment="Stretch"
+                DateChanged="OnPickerDateChanged"
+                PlaceholderText="{x:Bind common:DatePickers.Placeholder, Mode=OneTime}" />
             <Button x:Name="ClearButton" Grid.Column="1" VerticalAlignment="Bottom">
                 <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
             </Button>

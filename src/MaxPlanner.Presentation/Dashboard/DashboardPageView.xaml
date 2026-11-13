@@ -250,6 +250,7 @@
                         AutomationProperties.AutomationId="Dashboard_PeriodFrom"
                         Date="{x:Bind PeriodField.From, Mode=TwoWay}"
                         FirstDayOfWeek="Sunday"
+                        PlaceholderText="{x:Bind common:DatePickers.Placeholder, Mode=OneTime}"
                         Visibility="{x:Bind common:BindFunctions.Visible(PeriodField.IsCustom), Mode=OneWay}" />
                     <CalendarDatePicker
                         x:Uid="Dashboard_PeriodTo"
@@ -257,6 +258,7 @@
                         AutomationProperties.AutomationId="Dashboard_PeriodTo"
                         Date="{x:Bind PeriodField.To, Mode=TwoWay}"
                         FirstDayOfWeek="Sunday"
+                        PlaceholderText="{x:Bind common:DatePickers.Placeholder, Mode=OneTime}"
                         Visibility="{x:Bind common:BindFunctions.Visible(PeriodField.IsCustom), Mode=OneWay}" />
                     <!-- The panel gives each child its line's height, so Bottom lines the link up with the boxes, not the headers. -->
                     <HyperlinkButton

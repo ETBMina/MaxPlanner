@@ -114,6 +114,7 @@
                 x:Uid="FieldDialog_DefaultDatePicker"
                 AutomationProperties.AutomationId="FieldDialog_DefaultDatePicker"
                 Date="{x:Bind ViewModel.DefaultDate, Mode=TwoWay}"
+                PlaceholderText="{x:Bind common:DatePickers.Placeholder, Mode=OneTime}"
                 Visibility="{x:Bind ViewModel.DefaultIsDate, Mode=OneWay}" />
             <ComboBox
                 x:Uid="FieldDialog_DefaultOptionCombo"

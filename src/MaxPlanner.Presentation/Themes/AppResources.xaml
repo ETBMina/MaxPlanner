@@ -854,6 +854,13 @@
         <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}" />
     </Style>
 
+    <!-- An editor fact without a value (FactValue): a muted "None" in the secondary text style, never the value style. -->
+    <Style x:Key="FactNoneTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->
     <Style x:Key="PageTitleTextStyle" BasedOn="{StaticResource TitleTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="TextWrapping" Value="NoWrap" />

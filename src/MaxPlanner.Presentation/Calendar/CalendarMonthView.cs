@@ -727,8 +727,8 @@ public sealed partial class CalendarMonthView : UserControl
         }
 
         var flyout = new Flyout { ShouldConstrainToRootBounds = true };
-        var startPicker = new CalendarDatePicker { Header = viewModel.Text("Calendar_PlannedStartHeader"), Date = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue)), FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday };
-        var endPicker = new CalendarDatePicker { Header = viewModel.Text("Calendar_PlannedEndHeader"), Date = new DateTimeOffset(end.ToDateTime(TimeOnly.MinValue)), FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday };
+        var startPicker = DatePickers.Apply(new CalendarDatePicker { Header = viewModel.Text("Calendar_PlannedStartHeader"), Date = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue)), FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday });
+        var endPicker = DatePickers.Apply(new CalendarDatePicker { Header = viewModel.Text("Calendar_PlannedEndHeader"), Date = new DateTimeOffset(end.ToDateTime(TimeOnly.MinValue)), FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday });
         AutomationProperties.SetAutomationId(startPicker, "Calendar_EditStartDate");
         AutomationProperties.SetAutomationId(endPicker, "Calendar_EditEndDate");
         var error = new TextBlock { Style = StyleOf("ErrorCaptionTextStyle"), Visibility = Visibility.Collapsed };

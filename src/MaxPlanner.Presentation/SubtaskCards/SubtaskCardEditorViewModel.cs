@@ -132,18 +132,19 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
 
     public string ParentTitle => Parent?.EffectiveTitle ?? Latest?.ParentTitle ?? string.Empty;
 
-    public string ParentService => Parent?.Service ?? Context.Strings.GetString("Common_None");
+    // The info area shows "None" for an empty value (FactValue).
+    public string ParentService => Parent?.Service ?? string.Empty;
 
-    public string CrNumberText => Parent?.Cr.CrNumber ?? Context.Strings.GetString("Grid_NoCr");
+    public string CrNumberText => Parent?.Cr.CrNumber ?? string.Empty;
 
-    public string TaskNumberText => Parent?.Cr.TaskNumber ?? Context.Strings.GetString("TaskEditor_NoTaskNumber");
+    public string TaskNumberText => Parent?.Cr.TaskNumber ?? string.Empty;
 
     /// <summary>D15: "General" when the parent is unlinked or its CR has no squad.</summary>
     public string SquadText => Parent?.Cr.SquadName ?? Context.Strings.GetString("Squad_General");
 
-    public string OwnerText => Parent?.Cr.OwnerName ?? Context.Strings.GetString("TaskEditor_NoOwner");
+    public string OwnerText => Parent?.Cr.OwnerName ?? string.Empty;
 
-    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
+    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar).</summary>
     public bool HasOwner => !string.IsNullOrEmpty(Parent?.Cr.OwnerName);
 
     /// <summary>B-04 helpers come from the status flags, never from labels.</summary>

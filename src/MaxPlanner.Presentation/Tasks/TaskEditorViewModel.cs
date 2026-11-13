@@ -295,16 +295,16 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     /// <summary>B-03.6: only an unlinked task (active or archived) can be linked, and only once (AC-29).</summary>
     public bool CanLinkToCr => !IsLinked && !IsSaving && !IsDeletedElsewhere;
 
-    public string TaskNumberText => (LinkedCr ?? PendingLink) is { } cr
-        ? cr.TaskNumber ?? Context.Strings.GetString("TaskEditor_NoTaskNumber")
-        : Context.Strings.GetString("TaskEditor_NoTaskNumber");
+    /// <summary>The CR's task number; empty when there is none (the facts strip shows "None").</summary>
+    public string TaskNumberText => (LinkedCr ?? PendingLink)?.TaskNumber ?? string.Empty;
 
     /// <summary>D15: "General" when the task is unlinked or its CR has no squad.</summary>
     public string SquadText => (LinkedCr ?? PendingLink)?.SquadName ?? (Latest ?? _base)?.Cr.SquadName ?? Context.Strings.GetString("Squad_General");
 
-    public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? Context.Strings.GetString("TaskEditor_NoOwner");
+    /// <summary>The CR owner's name; empty when there is none (the facts strip shows "None").</summary>
+    public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? string.Empty;
 
-    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
+    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar).</summary>
     public bool HasOwner => !string.IsNullOrEmpty((LinkedCr ?? PendingLink)?.OwnerName);
 
     /// <summary>The CR chosen in the link step, shown in the facts strip until Save.</summary>
