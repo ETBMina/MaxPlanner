@@ -19,7 +19,8 @@ public static class EditorDialogShell
     /// <param name="keyScope">The element that holds the dialog's content; it owns the Ctrl+Enter and Alt+Left accelerators.</param>
     /// <param name="focusField">Moves focus to the control of a field key the editor asks for.</param>
     /// <param name="firstField">
-    /// The control that takes the dialog's first focus, read when the dialog places it; null leaves the dialog's own choice.
+    /// The editor's first field, where the first Tab goes from the dialog's neutral first focus; read at that Tab. Null
+    /// lets that Tab go to the first focusable element.
     /// </param>
     /// <param name="onLayout">Runs after each resize with the window size (see <see cref="EditorDialogLayout.Attach"/>).</param>
     /// <param name="saveFromFormStepOnly">
@@ -103,14 +104,15 @@ public static class EditorDialogShell
         dialog.Unloaded += (_, _) => editor.FocusRequested -= OnFocusRequested;
     }
 
-    // ContentDialog places its own first focus (its first focusable element: a tag field or a chrome button) as it opens,
-    // after Opened has run, so focusing the first field in Opened is undone and a later Focus call flickers. Instead,
-    // every focus change while the dialog opens is redirected to the first field in GettingFocus, before any element
-    // shows focus; the redirect keeps the dialog's programmatic focus state. The device a focus change reports is ignored
-    // (the dialog's own first focus can report the mouse, touch or keyboard that opened it): FirstFocusWindow ends the
-    // redirect at the first new user input on the dialog, when the editor asks for a field, or once the open has settled
-    // (the first queued low-priority item after Opened). A press is seen after the pressed control took focus, so the
-    // first press during that short time still lands on the first field.
+    // Editors open with no visible focus (owner decision): focus sits on the dialog itself, made a tab stop without system
+    // focus visuals for the opening only, so there is no caret and no highlighted field, and a screen reader announces the
+    // dialog by its own name. ContentDialog places its own first focus (its first focusable element: a tag field or a
+    // chrome button) as it opens, after Opened has run; every focus change while it opens is redirected to the dialog in
+    // GettingFocus, before any element shows focus, whatever device it reports (FirstFocusWindow). The opening ends at the
+    // first new user input on the dialog, when the editor asks for a field, or at the first queued low-priority item after
+    // Opened. A press is seen after the pressed control took focus, so a press during that short time still lands on the
+    // dialog. When focus leaves the dialog, the first Tab goes to the first field, and the dialog leaves the Tab cycle
+    // again, so later Tab and Shift+Tab cycle the fields as before.
     private static FirstFocus AttachFirstFocus(ContentDialog dialog, Func<Control?> firstField)
     {
         var state = new FirstFocus(dialog, firstField);
@@ -128,12 +130,19 @@ public static class EditorDialogShell
         private readonly ContentDialog _dialog;
         private readonly Func<Control?> _firstField;
         private readonly FirstFocusWindow _window = new();
-        private bool _isDetached;
+        private readonly bool _wasTabStop;
+        private readonly bool _usedSystemFocusVisuals;
+        private bool _isInputDetached;
+        private bool _isNeutralReleased;
 
         public FirstFocus(ContentDialog dialog, Func<Control?> firstField)
         {
             _dialog = dialog;
             _firstField = firstField;
+            _wasTabStop = dialog.IsTabStop;
+            _usedSystemFocusVisuals = dialog.UseSystemFocusVisuals;
+            dialog.IsTabStop = true;
+            dialog.UseSystemFocusVisuals = false;
             PointerPressedHandler = new PointerEventHandler((_, _) => OnInput(FirstFocusInput.PointerPressed, false));
             PointerReleasedHandler = new PointerEventHandler((_, _) => OnInput(FirstFocusInput.PointerReleased, false));
             KeyDownHandler = new KeyEventHandler((_, e) => OnInput(FirstFocusInput.KeyDown, e.KeyStatus.WasKeyDown));
@@ -150,39 +159,81 @@ public static class EditorDialogShell
 
         public void OnGettingFocus(UIElement sender, GettingFocusEventArgs args)
         {
-            if (_firstField() is { } target && _window.ShouldRedirect(ReferenceEquals(args.NewFocusedElement, target)))
+            if (_window.ShouldRedirect(ReferenceEquals(args.NewFocusedElement, _dialog)))
             {
-                args.TrySetNewFocusedElement(target);
+                args.TrySetNewFocusedElement(_dialog);
+                return;
             }
+
+            if (!ReferenceEquals(args.OldFocusedElement, _dialog) || ReferenceEquals(args.NewFocusedElement, _dialog))
+            {
+                return;
+            }
+
+            // Focus leaves the neutral first focus: the first Tab goes to the first field; a click, Shift+Tab, an arrow
+            // or a field-error focus request keeps its own target.
+            if (FirstFocusWindow.GoesToFirstField(MoveOf(args.Direction)) && _firstField() is { } first)
+            {
+                args.TrySetNewFocusedElement(first);
+            }
+
+            // The dialog still has focus during GettingFocus, so it leaves the Tab cycle once focus has moved.
+            _dialog.DispatcherQueue.TryEnqueue(ReleaseNeutral);
         }
 
         public void End()
         {
             _window.Close();
-            Detach();
+            DetachInput();
+
+            // A redirect that did not take leaves the dialog unfocused; it must not stay in the Tab cycle.
+            if (_dialog.FocusState == FocusState.Unfocused)
+            {
+                ReleaseNeutral();
+            }
         }
+
+        private static FirstFocusMove MoveOf(FocusNavigationDirection direction) => direction switch
+        {
+            FocusNavigationDirection.None => FirstFocusMove.None,
+            FocusNavigationDirection.Next => FirstFocusMove.Next,
+            FocusNavigationDirection.Previous => FirstFocusMove.Previous,
+            _ => FirstFocusMove.Directional,
+        };
 
         private void OnInput(FirstFocusInput input, bool isKeyRepeat)
         {
             if (_window.OnInput(input, isKeyRepeat))
             {
-                Detach();
+                DetachInput();
             }
         }
 
-        private void Detach()
+        private void DetachInput()
         {
-            if (_isDetached)
+            if (_isInputDetached)
             {
                 return;
             }
 
-            _isDetached = true;
-            _dialog.GettingFocus -= OnGettingFocus;
+            _isInputDetached = true;
             _dialog.RemoveHandler(UIElement.PointerPressedEvent, PointerPressedHandler);
             _dialog.RemoveHandler(UIElement.PointerReleasedEvent, PointerReleasedHandler);
             _dialog.RemoveHandler(UIElement.KeyDownEvent, KeyDownHandler);
             _dialog.RemoveHandler(UIElement.KeyUpEvent, KeyUpHandler);
+        }
+
+        private void ReleaseNeutral()
+        {
+            if (_isNeutralReleased || _window.IsOpen)
+            {
+                return;
+            }
+
+            _isNeutralReleased = true;
+            _dialog.GettingFocus -= OnGettingFocus;
+            _dialog.IsTabStop = _wasTabStop;
+            _dialog.UseSystemFocusVisuals = _usedSystemFocusVisuals;
         }
     }
 }

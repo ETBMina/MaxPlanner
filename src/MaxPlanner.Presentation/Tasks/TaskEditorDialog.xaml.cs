@@ -102,14 +102,12 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
-    // The tag field would otherwise take the first focus and look active while the user has not touched it. The Close
-    // button shows no focus visual for the dialog's programmatic focus.
+    // The dialog opens with no visible focus; the first Tab goes here, not to the tag field that comes first in the tree.
     private Control? FirstField() =>
         TaskEditorFocusRules.FirstFieldKey(ViewModel.IsTitleEditable, ViewModel.CanEditFields, ViewModel.IsUnlinkedWithoutPending) switch
         {
             "Title" => TitleBox,
             "Service" => ServiceBox,
-            TaskEditorFocusRules.CloseButtonKey => CloseIconButton,
             _ => null,
         };
 
