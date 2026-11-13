@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
@@ -44,7 +43,7 @@ public enum SubtaskEditorFollowUp
 /// silently: a save against a newer revision is a conflict, reviewed field by field or reloaded (B-02.9).</para>
 /// <para>B-16.6: while the parent is archived the card is read-only.</para>
 /// </remarks>
-public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<SubtaskEditorFollowUp>
+public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModelBase<SubtaskEditorFollowUp>, IInlineStepEditor
 {
     private const string SubtitleKey = "Subtitle";
     private const string StatusKey = "Status";
@@ -61,7 +60,6 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
     ];
 
     private readonly WorkflowSnapshot _workflow;
-    private readonly ObservableCollection<ConflictRowViewModel> _conflictRows = [];
     private readonly SubtaskCardId _cardId;
     private readonly TaskId _parentId;
     private SubtaskCardReadModel? _base;
@@ -77,7 +75,6 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         _cardId = cardId ?? new SubtaskCardId(Guid.NewGuid());
         _parentId = parentId;
         StatusOptions = [.. _workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
-        ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
         Parent = Lookup(context.Store.Tasks.Lookup(parentId));
 
         if (IsNew)
@@ -119,8 +116,6 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
     public TaskId ParentTaskId => _parentId;
 
     public IReadOnlyList<StatusOption> StatusOptions { get; }
-
-    public ReadOnlyObservableCollection<ConflictRowViewModel> ConflictRows { get; }
 
     /// <summary>The committed card now (null for a new card or after a deletion elsewhere).</summary>
     public SubtaskCardReadModel? Latest { get; private set; }
@@ -260,37 +255,49 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         RecomputeDirty();
     }
 
-    /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
+    /// <summary>Back (Alt+Left) from an inline step.</summary>
     [RelayCommand]
-    public void ReviewConflict()
+    public void StepBack()
     {
-        if (!IsConflict || Latest is not { } latest)
+        CurrentStep = SubtaskEditorStep.Form;
+        RaiseState();
+    }
+
+    partial void OnSubtitleChanged(string value) => RecomputeDirty();
+
+    partial void OnSelectedStatusChanged(StatusOption? value) => RecomputeDirty();
+
+    partial void OnStartDateChanged(DateTimeOffset? value) => RecomputeDirty();
+
+    partial void OnEndDateChanged(DateTimeOffset? value) => RecomputeDirty();
+
+    partial void OnNotesChanged(string value) => RecomputeDirty();
+
+    protected override void OnSavingChanged() => RaiseState();
+
+    protected override IReadOnlyList<ConflictRowViewModel>? BuildConflictRows()
+    {
+        if (Latest is not { } latest)
         {
-            return;
+            return null;
         }
 
         var mine = Capture();
         var saved = ValuesOf(latest);
-        _conflictRows.Clear();
-        foreach (var key in mine.Keys.Where(k => !mine.SameAs(saved, k)))
-        {
-            _conflictRows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), Describe(mine, key), Describe(saved, key)));
-        }
-
-        CurrentStep = SubtaskEditorStep.ConflictReview;
-        RaiseState();
+        return
+        [
+            .. mine.Keys.Where(k => !mine.SameAs(saved, k))
+                .Select(key => new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), Describe(mine, key), Describe(saved, key))),
+        ];
     }
 
-    /// <summary>Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on.</summary>
-    [RelayCommand]
-    public void ApplyConflictReview()
+    protected override bool ApplyReviewToDraft(IReadOnlySet<string> keep)
     {
         if (Latest is not { } latest)
         {
-            return;
+            return false;
         }
 
-        var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
         Load(latest);
         IsLoading = true;
@@ -320,51 +327,23 @@ public sealed partial class SubtaskCardEditorViewModel : EditorViewModelBase<Sub
         }
 
         IsLoading = false;
-        EndConflict();
-        _conflictRows.Clear();
-        CurrentStep = SubtaskEditorStep.Form;
-        RecomputeDirty();
-        RaiseState();
+        return true;
     }
 
-    [RelayCommand]
-    public void BeginReload()
-    {
-        CurrentStep = SubtaskEditorStep.ReloadConfirm;
-        RaiseState();
-    }
-
-    [RelayCommand]
-    public void ConfirmReload()
+    protected override void ReloadLatest()
     {
         if (Latest is { } latest)
         {
             Load(latest);
         }
-
-        EndConflict();
-        CurrentStep = SubtaskEditorStep.Form;
-        RaiseState();
     }
 
-    [RelayCommand]
-    public void StepBack()
+    protected override void ShowConflictStep(ConflictStep conflictStep) => CurrentStep = conflictStep switch
     {
-        CurrentStep = SubtaskEditorStep.Form;
-        RaiseState();
-    }
-
-    partial void OnSubtitleChanged(string value) => RecomputeDirty();
-
-    partial void OnSelectedStatusChanged(StatusOption? value) => RecomputeDirty();
-
-    partial void OnStartDateChanged(DateTimeOffset? value) => RecomputeDirty();
-
-    partial void OnEndDateChanged(DateTimeOffset? value) => RecomputeDirty();
-
-    partial void OnNotesChanged(string value) => RecomputeDirty();
-
-    protected override void OnSavingChanged() => RaiseState();
+        ConflictStep.Review => SubtaskEditorStep.ConflictReview,
+        ConflictStep.ReloadConfirm => SubtaskEditorStep.ReloadConfirm,
+        _ => SubtaskEditorStep.Form,
+    };
 
     protected override async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation)
     {

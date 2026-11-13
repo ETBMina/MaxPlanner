@@ -23,7 +23,7 @@ namespace MaxPlanner.Presentation.Common.Dialogs;
 /// operation ID that is reused only after an unknown outcome (T-05).</para>
 /// </remarks>
 /// <typeparam name="TFollowUp">What the editor asks for after it closes; its default value is "none".</typeparam>
-public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
+public abstract partial class EditorViewModelBase<TFollowUp> : ObservableObject, IDialogViewModel, IEditorDialogViewModel, IDisposable
     where TFollowUp : struct, Enum
 {
     /// <summary>How long a save waits at most until its commit is displayed (T-07).</summary>

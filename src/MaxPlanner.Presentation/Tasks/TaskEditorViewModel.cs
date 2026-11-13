@@ -39,7 +39,7 @@ namespace MaxPlanner.Presentation.Tasks;
 /// always show its current committed state (T-13). A link chosen here is pending until Save and is permanent
 /// once saved; there is no unlink or change (B-03.7, AC-29).</para>
 /// </remarks>
-public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFollowUp>
+public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<EditorFollowUp>, IInlineStepEditor
 {
     private static readonly string[] StateProperties =
     [
@@ -58,7 +58,6 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     private readonly NewNameRegistry _newTags = new();
     private readonly ObservableCollection<EditorChecklistItemViewModel> _checklist = [];
     private readonly ObservableCollection<EditorSubtaskCardViewModel> _subtaskCards = [];
-    private readonly ObservableCollection<ConflictRowViewModel> _conflictRows = [];
     private readonly TaskId _taskId;
     private readonly WorkflowSnapshot _workflow;
     private TaskReadModel? _base;
@@ -93,7 +92,6 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         CustomFields.Changed += OnDraftChanged;
         ChecklistItems = new ReadOnlyObservableCollection<EditorChecklistItemViewModel>(_checklist);
         SubtaskCards = new ReadOnlyObservableCollection<EditorSubtaskCardViewModel>(_subtaskCards);
-        ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
         _checklist.CollectionChanged += OnChecklistChanged;
         CrPicker = new CrPickerViewModel(context.Store, context.Strings);
 
@@ -160,8 +158,6 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
     public ReadOnlyObservableCollection<EditorChecklistItemViewModel> ChecklistItems { get; }
 
     public ReadOnlyObservableCollection<EditorSubtaskCardViewModel> SubtaskCards { get; }
-
-    public ReadOnlyObservableCollection<ConflictRowViewModel> ConflictRows { get; }
 
     public CrPickerViewModel CrPicker { get; }
 
@@ -451,41 +447,32 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         RaiseState();
     }
 
-    /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
-    [RelayCommand]
-    public void ReviewConflict()
+    protected override IReadOnlyList<ConflictRowViewModel>? BuildConflictRows()
     {
-        if (!IsConflict || Latest is not { } latest)
+        if (Latest is not { } latest)
         {
-            return;
+            return null;
         }
 
         var mine = Capture();
         var saved = ValuesOf(latest);
-        _conflictRows.Clear();
+        var rows = new List<ConflictRowViewModel>();
         foreach (var key in DraftValues.Keys.Where(k => !mine.SameAs(saved, k)))
         {
             var (mineText, savedText) = key == "CustomFields" ? (CustomFields.DisplayText(None), SavedCustomFieldsText(latest)) : (Describe(mine, key), Describe(saved, key));
-            _conflictRows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), mineText, savedText));
+            rows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), mineText, savedText));
         }
 
-        CurrentStep = EditorStep.ConflictReview;
-        RaiseState();
+        return rows;
     }
 
-    /// <summary>
-    /// Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on
-    /// and taking the saved value elsewhere. Nothing is saved until the user saves again.
-    /// </summary>
-    [RelayCommand]
-    public void ApplyConflictReview()
+    protected override bool ApplyReviewToDraft(IReadOnlySet<string> keep)
     {
         if (Latest is not { } latest)
         {
-            return;
+            return false;
         }
 
-        var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
         var mineTokens = (Designer.Tokens.ToList(), Developer.Tokens.ToList(), Tags.Tokens.ToList());
         var mineChecklist = _checklist.Select(i => (i.Id, i.Text, i.IsCompleted, i.IsNew)).ToList();
@@ -557,35 +544,24 @@ public sealed partial class TaskEditorViewModel : EditorViewModelBase<EditorFoll
         }
 
         IsLoading = false;
-        EndConflict();
-        _conflictRows.Clear();
-        CurrentStep = EditorStep.Form;
-        RecomputeDirty();
-        RaiseState();
+        return true;
     }
 
-    /// <summary>Reload asks first, because it discards the draft (design §5.10).</summary>
-    [RelayCommand]
-    public void BeginReload()
-    {
-        CurrentStep = EditorStep.ReloadConfirm;
-        RaiseState();
-    }
-
-    [RelayCommand]
-    public void ConfirmReload()
+    protected override void ReloadLatest()
     {
         if (Latest is { } latest)
         {
             PendingLink = null;
             Load(latest);
         }
-
-        EndConflict();
-        CurrentStep = EditorStep.Form;
-        RaiseState();
     }
 
+    protected override void ShowConflictStep(ConflictStep conflictStep) => CurrentStep = conflictStep switch
+    {
+        ConflictStep.Review => EditorStep.ConflictReview,
+        ConflictStep.ReloadConfirm => EditorStep.ReloadConfirm,
+        _ => EditorStep.Form,
+    };
     [RelayCommand]
     public void ClearStartDate()
     {

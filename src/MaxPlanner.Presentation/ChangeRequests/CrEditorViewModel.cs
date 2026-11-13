@@ -65,7 +65,7 @@ public enum CrEditorFollowUp
 /// task IDs it showed is sent; if the set changed meanwhile, the deletion is refused and the step shows the
 /// new counts for a new confirmation (AC-30).</para>
 /// </remarks>
-public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFollowUp>
+public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEditorFollowUp>, IInlineStepEditor
 {
     private const string NumberKey = "Number";
     private const string TaskNumberKey = "TaskNumber";
@@ -94,7 +94,6 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     private readonly WorkflowSnapshot _workflow;
     private readonly NewNameRegistry _newPeople = new();
     private readonly ObservableCollection<LinkedTaskRowViewModel> _linkedTasks = [];
-    private readonly ObservableCollection<ConflictRowViewModel> _conflictRows = [];
     private readonly ChangeRequestId _id;
     private ChangeRequestReadModel? _base;
     private DraftSnapshot _baseValues;
@@ -126,7 +125,6 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         CustomFields = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, context.Strings);
         CustomFields.Changed += OnCustomFieldsChanged;
         LinkedTasks = new ReadOnlyObservableCollection<LinkedTaskRowViewModel>(_linkedTasks);
-        ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
 
         if (IsNew)
         {
@@ -196,8 +194,6 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     public CustomFieldsEditorViewModel CustomFields { get; }
 
     public ReadOnlyObservableCollection<LinkedTaskRowViewModel> LinkedTasks { get; }
-
-    public ReadOnlyObservableCollection<ConflictRowViewModel> ConflictRows { get; }
 
     /// <summary>The committed CR now (null for a new CR or after a deletion elsewhere).</summary>
     public ChangeRequestReadModel? Latest { get; private set; }
@@ -554,40 +550,34 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
     [RelayCommand]
     public void ClearPlannedEnd() => PlannedEnd = null;
 
-    /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
-    [RelayCommand]
-    public void ReviewConflict()
+    protected override IReadOnlyList<ConflictRowViewModel>? BuildConflictRows()
     {
-        if (!IsConflict || Latest is not { } latest)
+        if (Latest is not { } latest)
         {
-            return;
+            return null;
         }
 
         var mine = Capture();
         var saved = ValuesOf(latest);
-        _conflictRows.Clear();
+        var rows = new List<ConflictRowViewModel>();
         foreach (var key in mine.Keys.Where(k => !mine.SameAs(saved, k)))
         {
             var (mineText, savedText) = key == CustomFieldsKey
                 ? (CustomFields.DisplayText(None), SavedCustomFieldsText(latest))
                 : (Describe(mine, key), Describe(saved, key));
-            _conflictRows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), mineText, savedText));
+            rows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), mineText, savedText));
         }
 
-        CurrentStep = CrEditorStep.ConflictReview;
-        RaiseState();
+        return rows;
     }
 
-    /// <summary>Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on.</summary>
-    [RelayCommand]
-    public void ApplyConflictReview()
+    protected override bool ApplyReviewToDraft(IReadOnlySet<string> keep)
     {
         if (Latest is not { } latest)
         {
-            return;
+            return false;
         }
 
-        var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
         var mineOwner = Owner.Tokens.Select(t => (t.Id, t.Name, t.IsNew)).ToList();
         _ = CustomFields.TryBuild(latest.CustomValues, out var mineCustom);
@@ -604,32 +594,23 @@ public sealed partial class CrEditorViewModel : EditorViewModelBase<CrEditorFoll
         }
 
         IsLoading = false;
-        EndConflict();
-        _conflictRows.Clear();
-        CurrentStep = CrEditorStep.Form;
-        RecomputeDirty();
-        RaiseState();
+        return true;
     }
 
-    [RelayCommand]
-    public void BeginReload()
-    {
-        CurrentStep = CrEditorStep.ReloadConfirm;
-        RaiseState();
-    }
-
-    [RelayCommand]
-    public void ConfirmReload()
+    protected override void ReloadLatest()
     {
         if (Latest is { } latest)
         {
             Load(latest);
         }
-
-        EndConflict();
-        CurrentStep = CrEditorStep.Form;
-        RaiseState();
     }
+
+    protected override void ShowConflictStep(ConflictStep conflictStep) => CurrentStep = conflictStep switch
+    {
+        ConflictStep.Review => CrEditorStep.ConflictReview,
+        ConflictStep.ReloadConfirm => CrEditorStep.ReloadConfirm,
+        _ => CrEditorStep.Form,
+    };
 
     partial void OnNumberChanged(string value)
     {
