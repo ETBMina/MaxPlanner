@@ -117,7 +117,15 @@ public sealed partial class CustomFieldEditorViewModel : ObservableObject
         };
     }
 
-    /// <summary>The draft as display text (conflict review and the Grid cell's draft value).</summary>
+    /// <summary>
+    /// The draft as text for the conflict review (design §5.10): <see cref="DisplayText"/>, but a date as a record date
+    /// with the year, like the editors' own date fields there.
+    /// </summary>
+    public string ReviewText => Kind == FieldKind.Date
+        ? DraftDates.FromPicker(Date) is { } day ? DateText.RecordDate(day) : string.Empty
+        : DisplayText;
+
+    /// <summary>The draft as display text (the Grid cell's draft value, which a short date can be typed back into).</summary>
     public string DisplayText => Kind switch
     {
         FieldKind.Number => double.IsNaN(Number) ? string.Empty : Number.ToString("G", CultureInfo.CurrentCulture),

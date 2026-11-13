@@ -908,8 +908,6 @@
         <Setter Property="Background" Value="{ThemeResource CalendarOverdueBarBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CalendarOverdueBarStrokeBrush}" />
         <Setter Property="BorderThickness" Value="{ThemeResource CalendarOverdueBarBorderThickness}" />
-        <!-- Square on the accent's (leading) edge; FlowDirection mirrors both in RTL. -->
-        <Setter Property="CornerRadius" Value="0,4,4,0" />
     </Style>
     <Style x:Key="CalendarCompletedBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource CalendarCompletedBarBackgroundBrush}" />

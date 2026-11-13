@@ -105,51 +105,84 @@ public static class EditorDialogShell
 
     // ContentDialog places its own first focus (its first focusable element: a tag field or a chrome button) as it opens,
     // after Opened has run, so focusing the first field in Opened is undone and a later Focus call flickers. Instead,
-    // every focus change the dialog makes by itself while it opens is redirected to the first field in GettingFocus,
-    // before any element shows focus; the redirect keeps the dialog's programmatic focus state. It ends once the open
-    // has settled (the first queued low-priority item after Opened), at the first focus the user moves (a pointer, or a
-    // key that navigates), or when the editor asks for a field.
+    // every focus change while the dialog opens is redirected to the first field in GettingFocus, before any element
+    // shows focus; the redirect keeps the dialog's programmatic focus state. The device a focus change reports is ignored
+    // (the dialog's own first focus can report the mouse, touch or keyboard that opened it): FirstFocusWindow ends the
+    // redirect at the first new user input on the dialog, when the editor asks for a field, or once the open has settled
+    // (the first queued low-priority item after Opened). A press is seen after the pressed control took focus, so the
+    // first press during that short time still lands on the first field.
     private static FirstFocus AttachFirstFocus(ContentDialog dialog, Func<Control?> firstField)
     {
         var state = new FirstFocus(dialog, firstField);
         dialog.GettingFocus += state.OnGettingFocus;
+        dialog.AddHandler(UIElement.PointerPressedEvent, state.PointerPressedHandler, true);
+        dialog.AddHandler(UIElement.PointerReleasedEvent, state.PointerReleasedHandler, true);
+        dialog.AddHandler(UIElement.KeyDownEvent, state.KeyDownHandler, true);
+        dialog.AddHandler(UIElement.KeyUpEvent, state.KeyUpHandler, true);
         dialog.Opened += (_, _) => dialog.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, state.End);
         return state;
     }
 
-    private sealed class FirstFocus(ContentDialog dialog, Func<Control?> firstField)
+    private sealed class FirstFocus
     {
-        private bool _isEnded;
+        private readonly ContentDialog _dialog;
+        private readonly Func<Control?> _firstField;
+        private readonly FirstFocusWindow _window = new();
+        private bool _isDetached;
+
+        public FirstFocus(ContentDialog dialog, Func<Control?> firstField)
+        {
+            _dialog = dialog;
+            _firstField = firstField;
+            PointerPressedHandler = new PointerEventHandler((_, _) => OnInput(FirstFocusInput.PointerPressed, false));
+            PointerReleasedHandler = new PointerEventHandler((_, _) => OnInput(FirstFocusInput.PointerReleased, false));
+            KeyDownHandler = new KeyEventHandler((_, e) => OnInput(FirstFocusInput.KeyDown, e.KeyStatus.WasKeyDown));
+            KeyUpHandler = new KeyEventHandler((_, _) => OnInput(FirstFocusInput.KeyUp, false));
+        }
+
+        public PointerEventHandler PointerPressedHandler { get; }
+
+        public PointerEventHandler PointerReleasedHandler { get; }
+
+        public KeyEventHandler KeyDownHandler { get; }
+
+        public KeyEventHandler KeyUpHandler { get; }
 
         public void OnGettingFocus(UIElement sender, GettingFocusEventArgs args)
         {
-            if (IsUserMove(args))
-            {
-                End();
-                return;
-            }
-
-            if (firstField() is { } target && !ReferenceEquals(args.NewFocusedElement, target))
+            if (_firstField() is { } target && _window.ShouldRedirect(ReferenceEquals(args.NewFocusedElement, target)))
             {
                 args.TrySetNewFocusedElement(target);
             }
         }
 
-        // A pointer, or a key that navigates (Tab, arrows); the dialog's own programmatic focus is neither.
-        private static bool IsUserMove(GettingFocusEventArgs args) => args.InputDevice switch
-        {
-            FocusInputDeviceKind.Mouse or FocusInputDeviceKind.Touch or FocusInputDeviceKind.Pen => true,
-            FocusInputDeviceKind.Keyboard or FocusInputDeviceKind.GameController => args.Direction != FocusNavigationDirection.None,
-            _ => false,
-        };
-
         public void End()
         {
-            if (!_isEnded)
+            _window.Close();
+            Detach();
+        }
+
+        private void OnInput(FirstFocusInput input, bool isKeyRepeat)
+        {
+            if (_window.OnInput(input, isKeyRepeat))
             {
-                _isEnded = true;
-                dialog.GettingFocus -= OnGettingFocus;
+                Detach();
             }
+        }
+
+        private void Detach()
+        {
+            if (_isDetached)
+            {
+                return;
+            }
+
+            _isDetached = true;
+            _dialog.GettingFocus -= OnGettingFocus;
+            _dialog.RemoveHandler(UIElement.PointerPressedEvent, PointerPressedHandler);
+            _dialog.RemoveHandler(UIElement.PointerReleasedEvent, PointerReleasedHandler);
+            _dialog.RemoveHandler(UIElement.KeyDownEvent, KeyDownHandler);
+            _dialog.RemoveHandler(UIElement.KeyUpEvent, KeyUpHandler);
         }
     }
 }
