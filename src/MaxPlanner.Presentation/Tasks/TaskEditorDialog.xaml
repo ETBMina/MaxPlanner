@@ -18,7 +18,6 @@
     AutomationProperties.AutomationId="TaskEditor_Dialog"
     AutomationProperties.Name="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
-    Opened="OnOpened"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneWay}"

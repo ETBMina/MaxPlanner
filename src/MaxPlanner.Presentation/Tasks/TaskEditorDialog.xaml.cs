@@ -33,7 +33,7 @@ public sealed partial class TaskEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, ApplyLayout);
+        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, FirstField, ApplyLayout);
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         PriorityCombo.SelectedItem = viewModel.SelectedPriority;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -102,6 +102,15 @@ public sealed partial class TaskEditorDialog : ContentDialog
         }
     }
 
+    // The tag field would otherwise take the first focus and look active while the user has not touched it.
+    private Control? FirstField() =>
+        TaskEditorFocusRules.FirstFieldKey(ViewModel.IsTitleEditable, ViewModel.CanEditFields, ViewModel.IsUnlinkedWithoutPending) switch
+        {
+            "Title" => TitleBox,
+            "Service" => ServiceBox,
+            _ => null,
+        };
+
     private void OnFocusRequested(string field)
     {
         // Design §5.0: focus moves to the first invalid field.
@@ -141,17 +150,6 @@ public sealed partial class TaskEditorDialog : ContentDialog
             DispatcherQueue.TryEnqueue(() => target.Focus(FocusState.Programmatic));
         }
     }
-
-    // The dialog would focus its first control, the tag field, which then looks active while the user has not touched
-    // it. An editable title takes focus instead, as in Planner; otherwise the Close button, which shows no focus
-    // visual for a programmatic focus.
-    // The dialog places its own initial focus after Opened, so this runs at low priority, once that has happened.
-    private void OnOpened(ContentDialog sender, ContentDialogOpenedEventArgs args) =>
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
-        {
-            Control target = ViewModel.IsTitleEditable ? TitleBox : CloseIconButton;
-            target.Focus(FocusState.Programmatic);
-        });
 
     // Hide raises Closing with no result, so a dirty draft asks first, as Cancel and Esc do (design §5.8).
     private void OnCloseClick(object sender, RoutedEventArgs e) => Hide();

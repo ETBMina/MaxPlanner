@@ -17,10 +17,9 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested);
+        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, () => SubtitleBox);
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        Opened += (_, _) => SubtitleBox.Focus(FocusState.Programmatic);
         Unloaded += (_, _) => viewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 
