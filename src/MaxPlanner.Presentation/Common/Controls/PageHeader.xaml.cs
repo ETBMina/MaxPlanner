@@ -88,7 +88,10 @@ public sealed partial class PageHeader : UserControl
         set => SetValue(SubtitleAutomationIdProperty, value);
     }
 
-    /// <summary>Commands beside the title block, vertically centred on it, 12 epx after it.</summary>
+    /// <summary>
+    /// Commands beside the title block, 12 epx after it, in a column sized to them. Their host stretches to the row's
+    /// height, so commands that should line up with the title's centre set <c>VerticalAlignment="Center"</c>.
+    /// </summary>
     public UIElement? Actions
     {
         get => (UIElement?)GetValue(ActionsProperty);
