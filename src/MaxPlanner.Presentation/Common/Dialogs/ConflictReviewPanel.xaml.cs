@@ -12,7 +12,7 @@ namespace MaxPlanner.Presentation.Common.Dialogs;
 public sealed partial class ConflictReviewPanel : UserControl
 {
     /// <summary>The reload message most editors use.</summary>
-    public const string DefaultReloadMessageKey = "Conflict_ReloadMessage";
+    public const string DefaultReloadMessageKey = EditorControlRules.DefaultReloadMessageKey;
 
     public static readonly DependencyProperty IsReviewStepProperty = Register(nameof(IsReviewStep), typeof(bool), false);
 
@@ -79,9 +79,9 @@ public sealed partial class ConflictReviewPanel : UserControl
     /// The <c>x:Uid</c> of the reload message, whose <c>.Text</c> resource is shown; <see cref="DefaultReloadMessageKey"/>
     /// unless the editor names the record, for example <c>CrEditor_ReloadMessage</c>.
     /// </summary>
-    public string ReloadMessageKey
+    public string? ReloadMessageKey
     {
-        get => (string)GetValue(ReloadMessageKeyProperty);
+        get => (string?)GetValue(ReloadMessageKeyProperty);
         set => SetValue(ReloadMessageKeyProperty, value);
     }
 
@@ -98,10 +98,11 @@ public sealed partial class ConflictReviewPanel : UserControl
         ApplyButton.Command = ApplyCommand;
         ReloadConfirmButton.Command = ConfirmReloadCommand;
 
-        if (!string.Equals(_shownReloadMessageKey, ReloadMessageKey, StringComparison.Ordinal))
+        var reloadMessageKey = EditorControlRules.ReloadMessageKeyOrDefault(ReloadMessageKey);
+        if (!string.Equals(_shownReloadMessageKey, reloadMessageKey, StringComparison.Ordinal))
         {
-            ReloadMessageText.Text = ResourceStrings.Shared.GetString(XamlResourceKeys.Text(ReloadMessageKey));
-            _shownReloadMessageKey = ReloadMessageKey;
+            ReloadMessageText.Text = ResourceStrings.Shared.GetString(XamlResourceKeys.Text(reloadMessageKey));
+            _shownReloadMessageKey = reloadMessageKey;
         }
 
         ReviewStep.Visibility = Visible(IsReviewStep);

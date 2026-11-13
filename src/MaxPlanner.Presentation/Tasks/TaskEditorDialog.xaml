@@ -442,6 +442,7 @@
                             ClearButtonUid="TaskEditor_ClearStartDateButton"
                             ClearCommand="{x:Bind ViewModel.ClearStartDateCommand}"
                             Date="{x:Bind ViewModel.StartDate, Mode=TwoWay}"
+                            HasHelperLine="True"
                             HelperText="{x:Bind ViewModel.StartHelper, Mode=OneWay}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             PickerAutomationId="TaskEditor_StartDate" />
@@ -453,6 +454,7 @@
                             ClearButtonUid="TaskEditor_ClearEndDateButton"
                             ClearCommand="{x:Bind ViewModel.ClearEndDateCommand}"
                             Date="{x:Bind ViewModel.EndDate, Mode=TwoWay}"
+                            HasHelperLine="True"
                             HelperText="{x:Bind ViewModel.EndHelper, Mode=OneWay}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             PickerAutomationId="TaskEditor_EndDate" />

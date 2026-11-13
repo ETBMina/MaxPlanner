@@ -25,6 +25,9 @@ public sealed partial class ClearableDateField : UserControl
     public static readonly DependencyProperty HelperTextProperty = DependencyProperty.Register(
         nameof(HelperText), typeof(string), typeof(ClearableDateField), new PropertyMetadata(null, (d, _) => ((ClearableDateField)d).ShowHelper()));
 
+    public static readonly DependencyProperty HasHelperLineProperty = DependencyProperty.Register(
+        nameof(HasHelperLine), typeof(bool), typeof(ClearableDateField), new PropertyMetadata(false, (d, _) => ((ClearableDateField)d).ShowHelper()));
+
     public static readonly DependencyProperty PickerAutomationIdProperty = DependencyProperty.Register(
         nameof(PickerAutomationId), typeof(string), typeof(ClearableDateField), new PropertyMetadata(null, (d, e) => AutomationProperties.SetAutomationId(((ClearableDateField)d).Picker, (string?)e.NewValue ?? string.Empty)));
 
@@ -57,11 +60,21 @@ public sealed partial class ClearableDateField : UserControl
         set => SetValue(ClearCommandProperty, value);
     }
 
-    /// <summary>The caption below the field; null leaves no helper line, while an empty text keeps an empty one.</summary>
+    /// <summary>The caption below the field, shown when <see cref="HasHelperLine"/> is on.</summary>
     public string? HelperText
     {
         get => (string?)GetValue(HelperTextProperty);
         set => SetValue(HelperTextProperty, value);
+    }
+
+    /// <summary>
+    /// Whether the field has a helper line below it. The line keeps its place while <see cref="HelperText"/> is empty;
+    /// it is a separate switch because x:Bind passes a null text as an empty one.
+    /// </summary>
+    public bool HasHelperLine
+    {
+        get => (bool)GetValue(HasHelperLineProperty);
+        set => SetValue(HasHelperLineProperty, value);
     }
 
     public string? PickerAutomationId
@@ -108,7 +121,7 @@ public sealed partial class ClearableDateField : UserControl
     private void ShowHelper()
     {
         HelperTextBlock.Text = HelperText ?? string.Empty;
-        HelperTextBlock.Visibility = HelperText is null ? Visibility.Collapsed : Visibility.Visible;
+        HelperTextBlock.Visibility = HasHelperLine ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ShowClearButtonText()

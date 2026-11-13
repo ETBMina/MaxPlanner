@@ -41,14 +41,14 @@ public sealed partial class EditorMessageBars : UserControl
         set => SetValue(AutomationPrefixProperty, value);
     }
 
-    /// <summary>"Fix 2 fields to save"; the validation bar is open while it is not null.</summary>
+    /// <summary>"Fix 2 fields to save"; the validation bar is open while it has text.</summary>
     public string? ValidationSummary
     {
         get => (string?)GetValue(ValidationSummaryProperty);
         set => SetValue(ValidationSummaryProperty, value);
     }
 
-    /// <summary>The save failure; the error bar is open while it is not null.</summary>
+    /// <summary>The save failure; the error bar is open while it has text.</summary>
     public string? SaveError
     {
         get => (string?)GetValue(SaveErrorProperty);
@@ -83,8 +83,8 @@ public sealed partial class EditorMessageBars : UserControl
 
     private void Apply()
     {
-        var hasSummary = ValidationSummary is not null;
-        var hasError = SaveError is not null;
+        var hasSummary = EditorControlRules.IsMessageShown(ValidationSummary);
+        var hasError = EditorControlRules.IsMessageShown(SaveError);
 
         AutomationProperties.SetAutomationId(ValidationBar, AutomationPrefix + "_ValidationInfoBar");
         ValidationBar.Message = ValidationSummary;
