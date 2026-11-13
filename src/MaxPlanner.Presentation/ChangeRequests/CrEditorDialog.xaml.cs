@@ -18,7 +18,7 @@ public sealed partial class CrEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        // Ctrl+Enter is left unhandled on the save-and-create and delete steps.
+        // Ctrl+Enter is left unhandled on every inline step (save and create, delete, conflict review, reload).
         EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, ApplyLayout, saveFromFormStepOnly: true);
         SquadCombo.SelectedItem = viewModel.SelectedSquad;
         StatusCombo.SelectedItem = viewModel.SelectedStatus;

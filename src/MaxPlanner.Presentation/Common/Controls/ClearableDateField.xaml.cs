@@ -34,10 +34,6 @@ public sealed partial class ClearableDateField : UserControl
     public static readonly DependencyProperty ClearButtonUidProperty = DependencyProperty.Register(
         nameof(ClearButtonUid), typeof(string), typeof(ClearableDateField), new PropertyMetadata(null, (d, _) => ((ClearableDateField)d).ShowClearButtonText()));
 
-    // The resources of an x:Uid's attached properties, named "{uid}/{property path}" in the resource map.
-    private const string AutomationNameResource = "/[using:Microsoft.UI.Xaml.Automation]AutomationProperties/Name";
-    private const string ToolTipResource = "/[using:Microsoft.UI.Xaml.Controls]ToolTipService/ToolTip";
-
     public ClearableDateField() => InitializeComponent();
 
     /// <summary>The picker's header, usually from the field's <c>x:Uid</c> (<c>{uid}.Header</c>).</summary>
@@ -124,7 +120,7 @@ public sealed partial class ClearableDateField : UserControl
             return;
         }
 
-        AutomationProperties.SetName(ClearButton, ResourceStrings.Shared.GetString(uid + AutomationNameResource));
-        ToolTipService.SetToolTip(ClearButton, ResourceStrings.Shared.GetString(uid + ToolTipResource));
+        AutomationProperties.SetName(ClearButton, ResourceStrings.Shared.GetString(XamlResourceKeys.AutomationName(uid)));
+        ToolTipService.SetToolTip(ClearButton, ResourceStrings.Shared.GetString(XamlResourceKeys.ToolTip(uid)));
     }
 }

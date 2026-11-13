@@ -20,7 +20,7 @@
     Style="{StaticResource DefaultContentDialogStyle}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
-            <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
+            <!-- EditorDialogShell adds the Ctrl+Enter accelerator here (design §7.2); the review editor has no inline steps. -->
 
             <!-- Title row: caption and the More menu (design §5.4: Delete…). -->
             <Grid ColumnSpacing="8">
@@ -59,7 +59,6 @@
                 ReloadCommand="{x:Bind ViewModel.ReloadCommand}"
                 SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
                 ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
-
 
             <StackPanel Spacing="4">
                 <TextBox

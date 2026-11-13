@@ -562,6 +562,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
         ConflictStep.ReloadConfirm => EditorStep.ReloadConfirm,
         _ => EditorStep.Form,
     };
+
     [RelayCommand]
     public void ClearStartDate()
     {

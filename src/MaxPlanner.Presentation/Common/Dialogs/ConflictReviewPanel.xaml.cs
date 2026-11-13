@@ -100,8 +100,7 @@ public sealed partial class ConflictReviewPanel : UserControl
 
         if (!string.Equals(_shownReloadMessageKey, ReloadMessageKey, StringComparison.Ordinal))
         {
-            // The resource of an x:Uid property is named "{uid}/{property}" in the resource map.
-            ReloadMessageText.Text = ResourceStrings.Shared.GetString(ReloadMessageKey + "/Text");
+            ReloadMessageText.Text = ResourceStrings.Shared.GetString(XamlResourceKeys.Text(ReloadMessageKey));
             _shownReloadMessageKey = ReloadMessageKey;
         }
 
