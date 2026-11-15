@@ -33,7 +33,9 @@ public sealed partial class TokenPicker : UserControl
         nameof(BoxAutomationId), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty, (d, e) =>
         {
             var picker = (TokenPicker)d;
-            AutomationProperties.SetAutomationId(picker.Box, (string)e.NewValue);
+            var id = (string)e.NewValue;
+            AutomationProperties.SetAutomationId(picker.Box, id);
+            AutomationProperties.SetAutomationId(picker.AddButton, string.IsNullOrEmpty(id) ? string.Empty : id + "_AddButton");
             picker.RebuildInlineChips();
         }));
 
@@ -42,6 +44,12 @@ public sealed partial class TokenPicker : UserControl
 
     public static readonly DependencyProperty IsInlineProperty = DependencyProperty.Register(
         nameof(IsInline), typeof(bool), typeof(TokenPicker), new PropertyMetadata(false, (d, _) => ((TokenPicker)d).ApplyInline()));
+
+    public static readonly DependencyProperty IsInputOnDemandProperty = DependencyProperty.Register(
+        nameof(IsInputOnDemand), typeof(bool), typeof(TokenPicker), new PropertyMetadata(false, (d, _) => ((TokenPicker)d).UpdateInlineInput()));
+
+    public static readonly DependencyProperty AddLabelProperty = DependencyProperty.Register(
+        nameof(AddLabel), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty));
 
     public static readonly DependencyProperty PlaceholderProperty = DependencyProperty.Register(
         nameof(Placeholder), typeof(string), typeof(TokenPicker), new PropertyMetadata(string.Empty));
@@ -59,6 +67,10 @@ public sealed partial class TokenPicker : UserControl
     private TextBox? _textBox;
     private string _lastQuery = string.Empty;
     private bool _isPointerOverField;
+    private bool _isInputRevealed;
+
+    // Inline mode keeps AddButton and BoxHost as the last two children of the field's flow, after the chips.
+    private const int TrailingChildren = 2;
 
     public TokenPicker()
     {
@@ -124,6 +136,24 @@ public sealed partial class TokenPicker : UserControl
         set => SetValue(IsInlineProperty, value);
     }
 
+    /// <summary>
+    /// With <see cref="IsInline"/>: the search input is hidden until the user asks for it. An Add button after the last
+    /// chip (labelled <see cref="AddLabel"/>), a press on the field, or <see cref="FocusBox"/> reveals and focuses it, and
+    /// it hides again when focus leaves it with no text in it (<see cref="TokenPickerRules.ShowsInlineInput"/>).
+    /// </summary>
+    public bool IsInputOnDemand
+    {
+        get => (bool)GetValue(IsInputOnDemandProperty);
+        set => SetValue(IsInputOnDemandProperty, value);
+    }
+
+    /// <summary>The visible label and accessible name of the <see cref="IsInputOnDemand"/> Add button, for example "Add tag".</summary>
+    public string AddLabel
+    {
+        get => (string)GetValue(AddLabelProperty);
+        set => SetValue(AddLabelProperty, value);
+    }
+
     /// <summary>The box's placeholder, for example "Search for a tag"; empty uses the ViewModel's.</summary>
     public string Placeholder
     {
@@ -148,12 +178,14 @@ public sealed partial class TokenPicker : UserControl
         // second call before that GotFocus (a flyout's Opened, then the picker's Loaded) keeps the mark.
         var wasMarked = _isFocusingProgrammatically;
         _isFocusingProgrammatically = wasMarked || !_hasFocusWithin;
+        RevealInput();
         var focused = Box.Focus(FocusState.Programmatic);
         if (!focused)
         {
             _isFocusingProgrammatically = wasMarked;
         }
 
+        SettleRevealedInput(focused);
         return focused;
     }
 
@@ -203,6 +235,7 @@ public sealed partial class TokenPicker : UserControl
     {
         var entered = !_hasFocusWithin;
         _hasFocusWithin = true;
+        _isInputRevealed = true;
         if (!entered)
         {
             return;
@@ -233,6 +266,10 @@ public sealed partial class TokenPicker : UserControl
                 _isFocusingProgrammatically = false;
                 _ignoreNextEmptyText = false;
                 Box.IsSuggestionListOpen = false;
+
+                // An on-demand input left empty hides again behind its Add button.
+                _isInputRevealed = false;
+                UpdateInlineInput();
 
                 // Design §5.0: leaving the person dropdown commits an emptied box or an exact name and restores the
                 // chosen person over any other text.
@@ -390,6 +427,7 @@ public sealed partial class TokenPicker : UserControl
         }
 
         RebuildInlineChips();
+        UpdateInlineInput();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -414,6 +452,7 @@ public sealed partial class TokenPicker : UserControl
                 }
 
                 _lastQuery = viewModel.Query;
+                UpdateInlineInput();
                 break;
         }
     }
@@ -608,7 +647,9 @@ public sealed partial class TokenPicker : UserControl
             return;
         }
 
+        Root.Children.Remove(AddButton);
         Root.Children.Remove(BoxHost);
+        InlineFlow.Children.Add(AddButton);
         InlineFlow.Children.Add(BoxHost);
         var clear = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         foreach (var key in BoxChromeKeys)
@@ -637,9 +678,58 @@ public sealed partial class TokenPicker : UserControl
             return;
         }
 
-        BoxHost.Visibility = IsEditable ? Visibility.Visible : Visibility.Collapsed;
+        UpdateInlineInput();
         RebuildInlineChips();
         UpdateFieldState();
+    }
+
+    // The inline input and the Add button: an always-on input shows while editable; an on-demand one while revealed or
+    // holding text, with the Add button in its place otherwise.
+    private void UpdateInlineInput()
+    {
+        if (!IsInline)
+        {
+            return;
+        }
+
+        var inputShown = TokenPickerRules.ShowsInlineInput(IsEditable, IsInputOnDemand, _isInputRevealed, ViewModel?.Query);
+        BoxHost.Visibility = inputShown ? Visibility.Visible : Visibility.Collapsed;
+        AddButton.Visibility = TokenPickerRules.ShowsAddButton(IsEditable, IsInputOnDemand, inputShown) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // Shows a hidden on-demand input so it can take focus. It may never have been measured, so the layout is updated to
+    // apply its template first. The Add button stays until the input has focus (SettleRevealedInput), so focus never
+    // falls out of the field in between.
+    private void RevealInput()
+    {
+        if (!IsInline || !IsInputOnDemand || !IsEditable || BoxHost.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
+        _isInputRevealed = true;
+        BoxHost.Visibility = Visibility.Visible;
+        BoxHost.UpdateLayout();
+    }
+
+    // After a reveal: the Add button gives way to the focused input, or, when focus did not move, the input hides again.
+    private void SettleRevealedInput(bool focused)
+    {
+        if (!focused && !_hasFocusWithin)
+        {
+            _isInputRevealed = false;
+        }
+
+        UpdateInlineInput();
+    }
+
+    // The Add button reveals the input and focuses it the way the button was used, so the suggestions open as on any
+    // entry into the field (a UI Automation invoke counts as the keyboard).
+    private void OnAddClick(object sender, RoutedEventArgs e)
+    {
+        var state = AddButton.FocusState == FocusState.Pointer ? FocusState.Pointer : FocusState.Keyboard;
+        RevealInput();
+        SettleRevealedInput(Box.Focus(state));
     }
 
     private void RebuildInlineChips()
@@ -649,8 +739,8 @@ public sealed partial class TokenPicker : UserControl
             return;
         }
 
-        // The box stays the last child; the chips before it are replaced.
-        while (InlineFlow.Children.Count > 1)
+        // The Add button and the box stay the last children; the chips before them are replaced.
+        while (InlineFlow.Children.Count > TrailingChildren)
         {
             InlineFlow.Children.RemoveAt(0);
         }
@@ -682,10 +772,11 @@ public sealed partial class TokenPicker : UserControl
                 var hadFocus = XamlRoot is not null && IsWithin(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject, chip);
                 InlineFlow.Children.RemoveAt(e.OldStartingIndex);
 
-                // A chip removed from the keyboard hands focus to the input, so the next key still lands in the field.
+                // A chip removed from the keyboard hands focus to the input, so the next key still lands in the field; a
+                // hidden on-demand input hands it to its Add button instead.
                 if (hadFocus && IsEditable)
                 {
-                    Box.Focus(FocusState.Keyboard);
+                    _ = BoxHost.Visibility == Visibility.Visible ? Box.Focus(FocusState.Keyboard) : AddButton.Focus(FocusState.Programmatic);
                 }
 
                 break;
@@ -764,7 +855,8 @@ public sealed partial class TokenPicker : UserControl
     {
         if (IsEditable && e.OriginalSource is DependencyObject source && !IsWithinChip(source) && !BoxHasFocus())
         {
-            Box.Focus(FocusState.Pointer);
+            RevealInput();
+            SettleRevealedInput(Box.Focus(FocusState.Pointer));
         }
     }
 

@@ -155,8 +155,35 @@
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
         <!--
-            Inline mode (the task editor's tags): IsInline moves BoxHost into this field as its last child; the chips are
-            created in front of it from the ViewModel's tokens, so chips and input flow on the same wrapping lines.
+            IsInputOnDemand: the inline field hides its search input until this Add button (after the last chip) or a
+            press on the field reveals and focuses it; it hides again once focus leaves it empty. The accessible name is
+            the visible label; the AutomationId is {BoxAutomationId}_AddButton.
+        -->
+        <Button
+            x:Name="AddButton"
+            Padding="6,4"
+            VerticalAlignment="Center"
+            AutomationProperties.Name="{x:Bind AddLabel, Mode=OneWay}"
+            Click="OnAddClick"
+            Style="{StaticResource SubtleButtonStyle}"
+            Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <FontIcon
+                    VerticalAlignment="Center"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="{StaticResource CaptionIconSize}"
+                    Glyph="&#xE710;" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind AddLabel, Mode=OneWay}" />
+            </StackPanel>
+        </Button>
+        <!--
+            Inline mode (the task editor's tags): IsInline moves AddButton and BoxHost into this field as its last two
+            children; the chips are created in front of them from the ViewModel's tokens, so chips and input flow on the
+            same wrapping lines.
         -->
         <Border
             x:Name="InlineField"
