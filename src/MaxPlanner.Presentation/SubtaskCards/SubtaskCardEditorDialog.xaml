@@ -78,116 +78,123 @@
 
             <!-- ===== Form step ===== -->
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
-                <!-- Header (shared with the Task and CR editors): the card's own subtitle as the heading, edited in place. -->
+                <!--
+                    Header (design U-06: the card reads like a task card). The heading is the parent task's title, read-only
+                    in the task editor's inherited-title style, and is the Open parent link; its accessible name and the
+                    heading text's name are "Subtask of {parent}". Under it, marked with ↳, the card's own subtitle, edited
+                    in place as a secondary title line. The first Tab goes to the subtitle.
+                -->
                 <StackPanel Spacing="4">
-                    <TextBox
-                        x:Name="SubtitleBox"
-                        x:Uid="SubtaskEditor_SubtitleBox"
-                        AutomationProperties.AutomationId="SubtaskEditor_SubtitleBox"
-                        AutomationProperties.IsRequiredForForm="True"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                        MaxLength="250"
-                        Style="{StaticResource EditorTitleTextBoxStyle}"
-                        Text="{x:Bind ViewModel.Subtitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <HyperlinkButton
+                        Padding="0"
+                        HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="SubtaskEditor_OpenParentLink"
+                        AutomationProperties.Name="{x:Bind ViewModel.Caption, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.RequestOpenParentCommand}"
+                        IsEnabled="{x:Bind ViewModel.CanOpenParent, Mode=OneWay}">
+                        <TextBlock
+                            AutomationProperties.AutomationId="SubtaskEditor_Caption"
+                            AutomationProperties.HeadingLevel="Level1"
+                            AutomationProperties.Name="{x:Bind ViewModel.Caption, Mode=OneWay}"
+                            FontWeight="SemiBold"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            Text="{x:Bind ViewModel.ParentTitle, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </HyperlinkButton>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            VerticalAlignment="Top"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource EditorSubtitleMarkerTextStyle}"
+                            Text="↳" />
+                        <TextBox
+                            x:Name="SubtitleBox"
+                            x:Uid="SubtaskEditor_SubtitleBox"
+                            Grid.Column="1"
+                            AutomationProperties.AutomationId="SubtaskEditor_SubtitleBox"
+                            AutomationProperties.IsRequiredForForm="True"
+                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                            MaxLength="250"
+                            Style="{StaticResource EditorSubtitleTextBoxStyle}"
+                            Text="{x:Bind ViewModel.Subtitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
                     <fields:FieldError Text="{x:Bind ViewModel.SubtitleError, Mode=OneWay}" />
                 </StackPanel>
 
                 <!--
-                    Info box (design §5.2): the parent task, a link that opens it, then the read-only values that come from
-                    the parent and its CR (T-13), and when the card was created. Four columns, two at the narrow width.
+                    Info box (design §5.2): the read-only values that come from the parent and its CR (T-13), and when the
+                    card was created. Four columns, two at the narrow width.
                 -->
                 <Border AutomationProperties.AutomationId="SubtaskEditor_ParentCard" Style="{StaticResource EditorInfoBoxStyle}">
-                    <StackPanel Spacing="12">
-                        <Grid ColumnSpacing="6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <!-- The heading reads "Subtask of {parent}", as the old caption did; the link carries the same name. -->
-                            <TextBlock
-                                x:Uid="SubtaskEditor_ParentHeader"
-                                VerticalAlignment="Center"
-                                AutomationProperties.AutomationId="SubtaskEditor_Caption"
-                                AutomationProperties.HeadingLevel="Level2"
-                                AutomationProperties.Name="{x:Bind ViewModel.Caption, Mode=OneWay}"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource BodyTextBlockStyle}" />
-                            <HyperlinkButton
-                                Grid.Column="1"
-                                Padding="0"
-                                VerticalAlignment="Center"
-                                AutomationProperties.AutomationId="SubtaskEditor_OpenParentLink"
-                                AutomationProperties.Name="{x:Bind ViewModel.Caption, Mode=OneWay}"
-                                Command="{x:Bind ViewModel.RequestOpenParentCommand}"
-                                FontWeight="SemiBold"
-                                IsEnabled="{x:Bind ViewModel.CanOpenParent, Mode=OneWay}">
-                                <TextBlock Text="{x:Bind ViewModel.ParentTitle, Mode=OneWay}" TextWrapping="Wrap" />
-                            </HyperlinkButton>
-                        </Grid>
-                        <dialogs:EditorFactsPanel x:Name="FactsPanel">
-                            <StackPanel Spacing="2">
-                                <TextBlock x:Uid="SubtaskEditor_ServiceLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                    <dialogs:EditorFactsPanel x:Name="FactsPanel">
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="SubtaskEditor_ServiceLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <controls:FactValue
+                                IsValueSelectable="True"
+                                LabelUid="SubtaskEditor_ServiceLabel"
+                                Value="{x:Bind ViewModel.ParentService, Mode=OneWay}"
+                                ValueAutomationId="SubtaskEditor_ParentService"
+                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="SubtaskEditor_CrNumberLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <controls:FactValue
+                                IsValueSelectable="True"
+                                LabelUid="SubtaskEditor_CrNumberLabel"
+                                Value="{x:Bind ViewModel.CrNumberText, Mode=OneWay}"
+                                ValueAutomationId="SubtaskEditor_CrNumber"
+                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="TaskEditor_TaskNumberLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <controls:FactValue
+                                IsValueSelectable="True"
+                                LabelUid="TaskEditor_TaskNumberLabel"
+                                Value="{x:Bind ViewModel.TaskNumberText, Mode=OneWay}"
+                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="TaskEditor_SquadLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <TextBlock Style="{StaticResource EditorFactValueTextStyle}" Text="{x:Bind ViewModel.SquadText, Mode=OneWay}" />
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="TaskEditor_OwnerLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <controls:PersonAvatar
+                                    Margin="0,0,6,0"
+                                    VerticalAlignment="Center"
+                                    Diameter="20"
+                                    DisplayName="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasOwner), Mode=OneWay}" />
                                 <controls:FactValue
-                                    IsValueSelectable="True"
-                                    LabelUid="SubtaskEditor_ServiceLabel"
-                                    Value="{x:Bind ViewModel.ParentService, Mode=OneWay}"
-                                    ValueAutomationId="SubtaskEditor_ParentService"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    LabelUid="TaskEditor_OwnerLabel"
+                                    Value="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
                                     ValueStyle="{StaticResource EditorFactValueTextStyle}" />
-                            </StackPanel>
-                            <StackPanel Spacing="2">
-                                <TextBlock x:Uid="SubtaskEditor_CrNumberLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
-                                <controls:FactValue
-                                    IsValueSelectable="True"
-                                    LabelUid="SubtaskEditor_CrNumberLabel"
-                                    Value="{x:Bind ViewModel.CrNumberText, Mode=OneWay}"
-                                    ValueAutomationId="SubtaskEditor_CrNumber"
-                                    ValueStyle="{StaticResource EditorFactValueTextStyle}" />
-                            </StackPanel>
-                            <StackPanel Spacing="2">
-                                <TextBlock x:Uid="TaskEditor_TaskNumberLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
-                                <controls:FactValue
-                                    IsValueSelectable="True"
-                                    LabelUid="TaskEditor_TaskNumberLabel"
-                                    Value="{x:Bind ViewModel.TaskNumberText, Mode=OneWay}"
-                                    ValueStyle="{StaticResource EditorFactValueTextStyle}" />
-                            </StackPanel>
-                            <StackPanel Spacing="2">
-                                <TextBlock x:Uid="TaskEditor_SquadLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
-                                <TextBlock Style="{StaticResource EditorFactValueTextStyle}" Text="{x:Bind ViewModel.SquadText, Mode=OneWay}" />
-                            </StackPanel>
-                            <StackPanel Spacing="2">
-                                <TextBlock x:Uid="TaskEditor_OwnerLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <controls:PersonAvatar
-                                        Margin="0,0,6,0"
-                                        VerticalAlignment="Center"
-                                        Diameter="20"
-                                        DisplayName="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
-                                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasOwner), Mode=OneWay}" />
-                                    <controls:FactValue
-                                        Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        LabelUid="TaskEditor_OwnerLabel"
-                                        Value="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
-                                        ValueStyle="{StaticResource EditorFactValueTextStyle}" />
-                                </Grid>
-                            </StackPanel>
-                            <!-- A new card has no creation date yet, so the fact is left out. -->
-                            <StackPanel Spacing="2" Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsNew), Mode=OneTime}">
-                                <TextBlock x:Uid="EditorFacts_CreatedLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
-                                <controls:FactValue
-                                    IsValueSelectable="True"
-                                    LabelUid="EditorFacts_CreatedLabel"
-                                    Value="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
-                                    ValueAutomationId="SubtaskEditor_Created"
-                                    ValueStyle="{StaticResource EditorFactValueTextStyle}" />
-                            </StackPanel>
-                        </dialogs:EditorFactsPanel>
-                    </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                        <!-- A new card has no creation date yet, so the fact is left out. -->
+                        <StackPanel Spacing="2" Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsNew), Mode=OneTime}">
+                            <TextBlock x:Uid="EditorFacts_CreatedLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <controls:FactValue
+                                IsValueSelectable="True"
+                                LabelUid="EditorFacts_CreatedLabel"
+                                Value="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
+                                ValueAutomationId="SubtaskEditor_Created"
+                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                        </StackPanel>
+                    </dialogs:EditorFactsPanel>
                 </Border>
 
                 <ComboBox

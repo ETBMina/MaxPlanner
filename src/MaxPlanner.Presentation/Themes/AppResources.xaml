@@ -876,6 +876,14 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <!-- The Subtask card's own subtitle under the parent title (U-06): a secondary title line, smaller than the heading. -->
+    <Style x:Key="EditorSubtitleTextBoxStyle" BasedOn="{StaticResource EditorInlineTextBoxStyle}" TargetType="TextBox">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="EditorSubtitleMarkerTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="16" />
+    </Style>
     <Style x:Key="EditorRecordKindTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         <Setter Property="TextWrapping" Value="NoWrap" />

@@ -1252,9 +1252,6 @@
   <data name="SubtaskEditor_ParentArchivedInfoBar.Message" xml:space="preserve">
     <value>Its Subtask cards are read-only. Restore the task to edit them.</value>
   </data>
-  <data name="SubtaskEditor_ParentHeader.Text" xml:space="preserve">
-    <value>Subtask of</value>
-  </data>
   <data name="SubtaskEditor_ServiceLabel.Text" xml:space="preserve">
     <value>Service</value>
   </data>
