@@ -776,7 +776,7 @@ public sealed partial class TokenPicker : UserControl
                 // hidden on-demand input hands it to its Add button instead.
                 if (hadFocus && IsEditable)
                 {
-                    _ = BoxHost.Visibility == Visibility.Visible ? Box.Focus(FocusState.Keyboard) : AddButton.Focus(FocusState.Programmatic);
+                    _ = BoxHost.Visibility == Visibility.Visible ? Box.Focus(FocusState.Keyboard) : AddButton.Focus(FocusState.Keyboard);
                 }
 
                 break;
@@ -880,7 +880,9 @@ public sealed partial class TokenPicker : UserControl
             return;
         }
 
-        var focused = XamlRoot is not null && IsWithin(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject, InlineField);
+        // The Add button draws its own focus rectangle, so focus on it does not also give the field its focused look.
+        var focusedElement = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        var focused = IsWithin(focusedElement, InlineField) && !IsWithin(focusedElement, AddButton);
         var state = !IsEditable ? "FieldNormal" : focused ? "FieldFocused" : _isPointerOverField ? "FieldPointerOver" : "FieldNormal";
         VisualStateManager.GoToState(this, state, true);
     }

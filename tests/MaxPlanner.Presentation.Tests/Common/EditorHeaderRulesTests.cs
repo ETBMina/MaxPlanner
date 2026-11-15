@@ -34,6 +34,21 @@ public sealed class EditorHeaderRulesTests
         EditorFactsLayout.Column(index, columns).Should().Be(column);
     }
 
+    [Fact]
+    public void A_hidden_fact_takes_no_cell_and_the_facts_after_it_close_up()
+    {
+        // A new Subtask card: Service, CR number, Task number, Squad, Owner shown, Created hidden.
+        EditorFactsLayout.Cells([true, true, true, true, true, false], 4).Should().Equal(
+            (0, 0), (0, 1), (0, 2), (0, 3), (1, 0), null);
+
+        // A hidden fact in the middle leaves no gap: the next shown fact takes its cell.
+        EditorFactsLayout.Cells([true, false, true, true], 2).Should().Equal((0, 0), null, (0, 1), (1, 0));
+    }
+
+    [Fact]
+    public void With_every_fact_hidden_no_cell_is_used() =>
+        EditorFactsLayout.Cells([false, false], 4).Should().HaveCount(2).And.AllSatisfy(cell => cell.Should().BeNull());
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]

@@ -37,7 +37,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock
                     VerticalAlignment="Center"
-                    AutomationProperties.AutomationId="SubtaskEditor_Caption"
+                    AutomationProperties.AutomationId="SubtaskEditor_RecordKind"
                     Style="{StaticResource EditorRecordKindTextStyle}"
                     Text="{x:Bind ViewModel.DialogTitle, Mode=OneTime}" />
                 <Button
@@ -85,7 +85,7 @@
                         x:Uid="SubtaskEditor_SubtitleBox"
                         AutomationProperties.AutomationId="SubtaskEditor_SubtitleBox"
                         AutomationProperties.IsRequiredForForm="True"
-                        IsReadOnly="{x:Bind common:BindFunctions.Not(ViewModel.CanEditFields), Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                         MaxLength="250"
                         Style="{StaticResource EditorTitleTextBoxStyle}"
                         Text="{x:Bind ViewModel.Subtitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -103,9 +103,13 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
+                            <!-- The heading reads "Subtask of {parent}", as the old caption did; the link carries the same name. -->
                             <TextBlock
                                 x:Uid="SubtaskEditor_ParentHeader"
                                 VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="SubtaskEditor_Caption"
+                                AutomationProperties.HeadingLevel="Level2"
+                                AutomationProperties.Name="{x:Bind ViewModel.Caption, Mode=OneWay}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource BodyTextBlockStyle}" />
                             <HyperlinkButton
@@ -113,7 +117,7 @@
                                 Padding="0"
                                 VerticalAlignment="Center"
                                 AutomationProperties.AutomationId="SubtaskEditor_OpenParentLink"
-                                AutomationProperties.Name="{x:Bind ViewModel.ParentTitle, Mode=OneWay}"
+                                AutomationProperties.Name="{x:Bind ViewModel.Caption, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.RequestOpenParentCommand}"
                                 FontWeight="SemiBold"
                                 IsEnabled="{x:Bind ViewModel.CanOpenParent, Mode=OneWay}">

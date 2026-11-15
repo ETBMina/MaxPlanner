@@ -99,7 +99,7 @@
                         x:Uid="CrEditor_TitleBox"
                         AutomationProperties.AutomationId="CrEditor_TitleBox"
                         AutomationProperties.IsRequiredForForm="True"
-                        IsReadOnly="{x:Bind common:BindFunctions.Not(ViewModel.CanEditFields), Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                         MaxLength="250"
                         Style="{StaticResource EditorTitleTextBoxStyle}"
                         Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />

@@ -69,6 +69,18 @@ public sealed class EditorHeaderTests
     }
 
     [Fact]
+    public void A_subtask_cards_caption_names_its_parent_apart_from_the_record_kind()
+    {
+        SubtaskCardId card = default;
+        using var h = WorkspaceHarness.Create(async s => card = await s.CardAsync(await s.TaskAsync("Card limits API"), "Design review"));
+        h.Strings.With("Board_SubtaskOf", "Subtask of {0}").With("SubtaskEditor_Title", "Subtask card");
+        using var editor = SubtaskCardEditorViewModel.ForCard(h.Workspace.Context, card);
+
+        editor.DialogTitle.Should().Be("Subtask card");
+        editor.Caption.Should().Be("Subtask of Card limits API");
+    }
+
+    [Fact]
     public void A_new_subtask_card_shows_the_new_card_kind_and_no_creation_day()
     {
         TaskId parent = default;

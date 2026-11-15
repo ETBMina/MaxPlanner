@@ -53,7 +53,7 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
 
     private static readonly string[] StateProperties =
     [
-        nameof(CreatedText), nameof(ParentTitle), nameof(ParentService), nameof(CrNumberText), nameof(TaskNumberText), nameof(SquadText),
+        nameof(CreatedText), nameof(Caption), nameof(ParentTitle), nameof(ParentService), nameof(CrNumberText), nameof(TaskNumberText), nameof(SquadText),
         nameof(OwnerText), nameof(HasOwner), nameof(IsReadOnly), nameof(IsParentArchived), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete),
         nameof(IsFormStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep), nameof(HasValidationSummary), nameof(HasSaveError),
         nameof(CanOpenParent),
@@ -129,6 +129,9 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
 
     /// <summary>The info box's Created fact, "Oct 6, 2026"; empty for a new card (the fact is hidden).</summary>
     public string CreatedText => _base is { } b ? DateText.RecordDate(b.CreatedAtUtc.ToLocalTime()) : string.Empty;
+
+    /// <summary>"Subtask of Card limits API": the accessible name of the info box's first line and its Open parent link.</summary>
+    public string Caption => Context.Strings.Format("Board_SubtaskOf", ParentTitle);
 
     public string ParentTitle => Parent?.EffectiveTitle ?? Latest?.ParentTitle ?? string.Empty;
 

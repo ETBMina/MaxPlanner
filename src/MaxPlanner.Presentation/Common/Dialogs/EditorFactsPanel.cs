@@ -19,8 +19,9 @@ public sealed partial class EditorFactsPanel : Panel
     private const double ColumnSpacing = 16;
     private const double RowSpacing = 12;
 
-    // Each row's height from the last measure; arrange places by them.
+    // Each child's cell and each row's height from the last measure; arrange places by them.
     private readonly List<double> _rowHeights = [];
+    private (int Row, int Column)?[] _cells = [];
 
     /// <summary>The number of columns; at least one.</summary>
     public int Columns
@@ -34,27 +35,26 @@ public sealed partial class EditorFactsPanel : Panel
         var columns = Math.Max(1, Columns);
         var infinite = double.IsInfinity(availableSize.Width);
         var cellWidth = infinite ? double.PositiveInfinity : CellWidth(availableSize.Width, columns);
+        _cells = EditorFactsLayout.Cells(Children.Select(c => c.Visibility != Visibility.Collapsed).ToArray(), columns);
         _rowHeights.Clear();
         double widest = 0;
-        var index = 0;
-        foreach (var child in Children)
+        for (var i = 0; i < Children.Count; i++)
         {
-            if (child.Visibility == Visibility.Collapsed)
+            var child = Children[i];
+            if (_cells[i] is not { } cell)
             {
                 child.Measure(default);
                 continue;
             }
 
             child.Measure(new Size(cellWidth, double.PositiveInfinity));
-            var row = EditorFactsLayout.Row(index, columns);
-            if (row == _rowHeights.Count)
+            if (cell.Row == _rowHeights.Count)
             {
                 _rowHeights.Add(0);
             }
 
-            _rowHeights[row] = Math.Max(_rowHeights[row], child.DesiredSize.Height);
+            _rowHeights[cell.Row] = Math.Max(_rowHeights[cell.Row], child.DesiredSize.Height);
             widest = Math.Max(widest, child.DesiredSize.Width);
-            index++;
         }
 
         var height = _rowHeights.Count == 0 ? 0 : _rowHeights.Sum() + (RowSpacing * (_rowHeights.Count - 1));
@@ -66,32 +66,22 @@ public sealed partial class EditorFactsPanel : Panel
     {
         var columns = Math.Max(1, Columns);
         var cellWidth = CellWidth(finalSize.Width, columns);
-        var index = 0;
-        double top = 0;
-        var currentRow = 0;
-        foreach (var child in Children)
+        var tops = new double[_rowHeights.Count];
+        for (var r = 1; r < tops.Length; r++)
         {
-            if (child.Visibility == Visibility.Collapsed)
+            tops[r] = tops[r - 1] + _rowHeights[r - 1] + RowSpacing;
+        }
+
+        for (var i = 0; i < Children.Count; i++)
+        {
+            var child = Children[i];
+            if (i >= _cells.Length || _cells[i] is not { } cell || cell.Row >= tops.Length)
             {
                 child.Arrange(default);
                 continue;
             }
 
-            var row = EditorFactsLayout.Row(index, columns);
-            if (row >= _rowHeights.Count)
-            {
-                child.Arrange(default);
-                continue;
-            }
-
-            for (; currentRow < row; currentRow++)
-            {
-                top += _rowHeights[currentRow] + RowSpacing;
-            }
-
-            var left = EditorFactsLayout.Column(index, columns) * (cellWidth + ColumnSpacing);
-            child.Arrange(new Rect(left, top, cellWidth, _rowHeights[row]));
-            index++;
+            child.Arrange(new Rect(cell.Column * (cellWidth + ColumnSpacing), tops[cell.Row], cellWidth, _rowHeights[cell.Row]));
         }
 
         return finalSize;
@@ -111,6 +101,29 @@ public static class EditorFactsLayout
 
     /// <summary>Design §5.1: four columns at L (window width), two below.</summary>
     public static int Columns(double windowWidth) => windowWidth >= Breakpoints.Large ? WideColumns : NarrowColumns;
+
+    /// <summary>
+    /// The cell of each fact in reading order. A hidden fact gets none and takes no cell, so the shown facts after it
+    /// close up and leave no gap.
+    /// </summary>
+    /// <param name="isShown">For each fact in order, whether it is shown.</param>
+    /// <param name="columns">The number of columns; below one counts as one.</param>
+    public static (int Row, int Column)?[] Cells(IReadOnlyList<bool> isShown, int columns)
+    {
+        ArgumentNullException.ThrowIfNull(isShown);
+        var cells = new (int Row, int Column)?[isShown.Count];
+        var index = 0;
+        for (var i = 0; i < isShown.Count; i++)
+        {
+            if (isShown[i])
+            {
+                cells[i] = (Row(index, columns), Column(index, columns));
+                index++;
+            }
+        }
+
+        return cells;
+    }
 
     /// <summary>The row of the shown fact at <paramref name="index"/> (reading order, collapsed facts not counted).</summary>
     public static int Row(int index, int columns) => index / Math.Max(1, columns);
