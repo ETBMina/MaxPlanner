@@ -12,18 +12,25 @@
     xmlns:dialogs="using:MaxPlanner.Presentation.Common.Dialogs"
     xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.ChangeRequests"
-    Title="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     AutomationProperties.AutomationId="CrEditor_Dialog"
+    AutomationProperties.Name="{x:Bind ViewModel.DialogTitle, Mode=OneWay}"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneWay}"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText, Mode=OneWay}"
     Style="{StaticResource DefaultContentDialogStyle}">
+    <ContentDialog.Resources>
+        <!--
+            No dialog Title: the record kind is the caption of the first row, and DialogTitle names the dialog for UI
+            Automation instead. The template keeps the empty title's bottom margin, so it is zeroed here.
+        -->
+        <Thickness x:Key="ContentDialogTitleMargin">0</Thickness>
+    </ContentDialog.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
             <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
 
-            <!-- Title row: caption and the More menu (design §5.3: Move to backlog, Delete…; CRs are not archived). -->
+            <!-- Top line: the record kind and the More menu (design §5.3: Move to backlog, Delete…; CRs are not archived). -->
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -31,9 +38,9 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock
                     VerticalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind ViewModel.Caption, Mode=OneWay}" />
+                    AutomationProperties.AutomationId="CrEditor_RecordKind"
+                    Style="{StaticResource EditorRecordKindTextStyle}"
+                    Text="{x:Bind ViewModel.DialogTitle, Mode=OneTime}" />
                 <Button
                     x:Uid="CrEditor_MoreMenu"
                     Grid.Column="1"
@@ -82,6 +89,46 @@
             <!-- ===== Form step ===== -->
             <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
 
+                <!--
+                    Header (shared with the Task and Subtask card editors): the CR's title as the heading, edited in place.
+                    It comes before the CR number in reading order, but the first Tab still goes to the CR number.
+                -->
+                <StackPanel Spacing="4">
+                    <TextBox
+                        x:Name="TitleBox"
+                        x:Uid="CrEditor_TitleBox"
+                        AutomationProperties.AutomationId="CrEditor_TitleBox"
+                        AutomationProperties.IsRequiredForForm="True"
+                        IsReadOnly="{x:Bind common:BindFunctions.Not(ViewModel.CanEditFields), Mode=OneWay}"
+                        MaxLength="250"
+                        Style="{StaticResource EditorTitleTextBoxStyle}"
+                        Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock
+                        x:Uid="CrEditor_TitleHelper"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        TextWrapping="Wrap" />
+                    <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
+                </StackPanel>
+
+                <!-- Info box: the CR's read-only facts. A new CR has none yet, so the box is left out. -->
+                <Border
+                    AutomationProperties.AutomationId="CrEditor_InfoBox"
+                    Style="{StaticResource EditorInfoBoxStyle}"
+                    Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsNew), Mode=OneTime}">
+                    <dialogs:EditorFactsPanel x:Name="FactsPanel">
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="EditorFacts_CreatedLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <controls:FactValue
+                                IsValueSelectable="True"
+                                LabelUid="EditorFacts_CreatedLabel"
+                                Value="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
+                                ValueAutomationId="CrEditor_Created"
+                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                        </StackPanel>
+                    </dialogs:EditorFactsPanel>
+                </Border>
+
                 <!-- Group 1: CR number · Task number. -->
                 <Grid x:Name="NumberPair" ColumnSpacing="24" RowSpacing="12">
                     <Grid.ColumnDefinitions>
@@ -128,25 +175,7 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Group 2: Title. -->
-                <StackPanel Spacing="4">
-                    <TextBox
-                        x:Name="TitleBox"
-                        x:Uid="CrEditor_TitleBox"
-                        AutomationProperties.AutomationId="CrEditor_TitleBox"
-                        AutomationProperties.IsRequiredForForm="True"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                        MaxLength="250"
-                        Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock
-                        x:Uid="CrEditor_TitleHelper"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        TextWrapping="Wrap" />
-                    <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
-                </StackPanel>
-
-                <!-- Group 3: Owner · Squad. -->
+                <!-- Group 3: Owner · Squad (group 2, Title, is the header above). -->
                 <Grid x:Name="OwnerPair" ColumnSpacing="24" RowSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

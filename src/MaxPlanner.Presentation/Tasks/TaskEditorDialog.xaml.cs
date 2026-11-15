@@ -45,12 +45,12 @@ public sealed partial class TaskEditorDialog : ContentDialog
     public static string CrName(string number, string title, string secondary) => number + ", " + title + ", " + secondary;
 
     // Design §5.0 width rules: the fields sit side by side only when the window leaves room, and stack in one column
-    // otherwise (the facts strip keeps two). S or a short window gets a full-size dialog so Save and Cancel stay
+    // otherwise (the info box keeps two). S or a short window gets a full-size dialog so Save and Cancel stay
     // reachable (T-08.1).
     private void ApplyLayout(Windows.Foundation.Size size)
     {
         var wide = size.Width >= Breakpoints.Large;
-        Reflow(FactsGrid, wide ? 4 : 2);
+        FactsPanel.Columns = EditorFactsLayout.Columns(size.Width);
         Reflow(WorkflowFields, wide ? 3 : 1);
         Reflow(PeopleFields, wide ? 2 : 1);
         Reflow(DateFields, wide ? 2 : 1);

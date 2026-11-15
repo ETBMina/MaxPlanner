@@ -51,7 +51,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
         nameof(TaskNumberToCopy), nameof(CanCopyTaskNumber), nameof(CopyTaskNumberName),
         nameof(CanEditFields), nameof(CanSave), nameof(CanArchive), nameof(CanRestore), nameof(CanAddSubtaskCard), nameof(CanPopOut),
         nameof(IsFormStep), nameof(IsLinkPickStep), nameof(IsLinkConfirmStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
-        nameof(Caption), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
+        nameof(CreatedText), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
     ];
 
     private readonly NewNameRegistry _newPeople = new();
@@ -168,8 +168,8 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
 
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
-    /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    /// <summary>The info box's Created fact, "Oct 6, 2026"; empty for a new task (the fact is hidden).</summary>
+    public string CreatedText => _base is { } b ? DateText.RecordDate(b.CreatedAtUtc.ToLocalTime()) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;

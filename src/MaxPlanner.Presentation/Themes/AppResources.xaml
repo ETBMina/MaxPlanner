@@ -861,6 +861,38 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!--
+        The record editors' shared header (Task, CR, Subtask card; design §5.0): a small record-kind caption ("Task",
+        "Change request", "Subtask card"), the record's own title as a large heading edited in place, and an info box of
+        read-only facts (label over value) on a secondary card background, laid out by EditorFactsPanel.
+    -->
+    <!-- A text box that edits in place: no border or fill at rest; the template's hover and focus states add them. -->
+    <Style x:Key="EditorInlineTextBoxStyle" BasedOn="{StaticResource DefaultTextBoxStyle}" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style x:Key="EditorTitleTextBoxStyle" BasedOn="{StaticResource EditorInlineTextBoxStyle}" TargetType="TextBox">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="EditorRecordKindTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style x:Key="EditorInfoBoxStyle" BasedOn="{StaticResource SecondaryCardBorderStyle}" TargetType="Border">
+        <Setter Property="Padding" Value="12" />
+    </Style>
+    <Style x:Key="EditorFactLabelTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="EditorFactValueTextStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->
     <Style x:Key="PageTitleTextStyle" BasedOn="{StaticResource TitleTextBlockStyle}" TargetType="TextBlock">
         <Setter Property="TextWrapping" Value="NoWrap" />

@@ -1253,7 +1253,7 @@
     <value>Its Subtask cards are read-only. Restore the task to edit them.</value>
   </data>
   <data name="SubtaskEditor_ParentHeader.Text" xml:space="preserve">
-    <value>Parent task</value>
+    <value>Subtask of</value>
   </data>
   <data name="SubtaskEditor_ServiceLabel.Text" xml:space="preserve">
     <value>Service</value>
@@ -1261,7 +1261,10 @@
   <data name="SubtaskEditor_CrNumberLabel.Text" xml:space="preserve">
     <value>CR number</value>
   </data>
-  <data name="SubtaskEditor_SubtitleBox.Header" xml:space="preserve">
+  <data name="SubtaskEditor_SubtitleBox.PlaceholderText" xml:space="preserve">
+    <value>Subtitle *</value>
+  </data>
+  <data name="SubtaskEditor_SubtitleBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Subtitle *</value>
   </data>
   <data name="SubtaskEditor_StatusCombo.Header" xml:space="preserve">
@@ -1348,7 +1351,10 @@
   <data name="CrEditor_TaskNumberBox.Header" xml:space="preserve">
     <value>Task number</value>
   </data>
-  <data name="CrEditor_TitleBox.Header" xml:space="preserve">
+  <data name="CrEditor_TitleBox.PlaceholderText" xml:space="preserve">
+    <value>Title *</value>
+  </data>
+  <data name="CrEditor_TitleBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Title *</value>
   </data>
   <data name="CrEditor_TitleHelper.Text" xml:space="preserve">
@@ -4233,6 +4239,12 @@
   </data>
   <data name="TaskEditor_TagsPicker.FieldToolTip" xml:space="preserve">
     <value>Search for a tag to apply to the task</value>
+  </data>
+  <data name="TaskEditor_TagsPicker.AddLabel" xml:space="preserve">
+    <value>Add tag</value>
+  </data>
+  <data name="EditorFacts_CreatedLabel.Text" xml:space="preserve">
+    <value>Created</value>
   </data>
   <data name="TaskEditor_CloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Close</value>

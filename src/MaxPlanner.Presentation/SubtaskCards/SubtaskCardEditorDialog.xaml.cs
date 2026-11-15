@@ -9,7 +9,8 @@ namespace MaxPlanner.Presentation.SubtaskCards;
 /// <summary>
 /// The Subtask card editor dialog. Buttons bind <see cref="SubtaskCardEditorViewModel"/> commands, and
 /// <see cref="EditorDialogShell"/> wires the dialog buttons and keys; code-behind keeps the Status selection in step with it, moves focus where
-/// the ViewModel asks, and uses a full-size dialog in small or short windows (design §5.0).
+/// the ViewModel asks, and sets the info box's columns by width; <see cref="EditorDialogLayout"/> uses a full-size dialog in
+/// small or short windows (design §5.0).
 /// </summary>
 public sealed partial class SubtaskCardEditorDialog : ContentDialog
 {
@@ -17,7 +18,7 @@ public sealed partial class SubtaskCardEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, () => SubtitleBox);
+        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, () => SubtitleBox, size => FactsPanel.Columns = EditorFactsLayout.Columns(size.Width));
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         Unloaded += (_, _) => viewModel.PropertyChanged -= OnViewModelPropertyChanged;
