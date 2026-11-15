@@ -20,6 +20,14 @@ public sealed partial class TokenFieldPanel : Panel
 
     public double InputMinWidth { get; set; } = 140;
 
+    /// <summary>
+    /// The least height of a line, so chips on a line without the input are centred in the same height the input line
+    /// has (the field's 32 epx less its border), whether or not the input is shown.
+    /// </summary>
+    public double MinLineHeight { get; set; }
+
+    private static double LineHeight(double tallestChild, double minLineHeight) => TokenPickerRules.FieldLineHeight(tallestChild, minLineHeight);
+
     protected override Size MeasureOverride(Size availableSize)
     {
         _slots.Clear();
@@ -68,13 +76,13 @@ public sealed partial class TokenFieldPanel : Panel
             lineHeight = Math.Max(lineHeight, child.DesiredSize.Height);
         }
 
-        _lineHeights.Add(lineHeight);
+        _lineHeights.Add(LineHeight(lineHeight, MinLineHeight));
         var height = _lineHeights.Sum() + (Spacing * (_lineHeights.Count - 1));
         return new Size(double.IsInfinity(width) ? widest : width, height);
 
         void NewLine()
         {
-            _lineHeights.Add(lineHeight);
+            _lineHeights.Add(LineHeight(lineHeight, MinLineHeight));
             line++;
             x = 0;
             lineHeight = 0;

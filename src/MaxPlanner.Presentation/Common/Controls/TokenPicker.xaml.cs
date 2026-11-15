@@ -68,6 +68,10 @@ public sealed partial class TokenPicker : UserControl
     private string _lastQuery = string.Empty;
     private bool _isPointerOverField;
     private bool _isInputRevealed;
+    private PendingReveal? _pendingReveal;
+
+    // The inline field's line height: its 32 epx minimum less the 1 epx border above and below.
+    private const double InlineLineHeight = 30;
 
     public TokenPicker()
     {
@@ -95,6 +99,8 @@ public sealed partial class TokenPicker : UserControl
         Unloaded += (_, _) =>
         {
             DetachPressRoot();
+            Box.LayoutUpdated -= OnRevealLayoutUpdated;
+            _pendingReveal = null;
             if (!IsLoaded)
             {
                 Observe(null);
@@ -183,14 +189,20 @@ public sealed partial class TokenPicker : UserControl
         // second call before that GotFocus (a flyout's Opened, then the picker's Loaded) keeps the mark.
         var wasMarked = _isFocusingProgrammatically;
         _isFocusingProgrammatically = wasMarked || !_hasFocusWithin;
-        RevealInput();
+
+        // A hidden on-demand input is revealed first and focused once its text box exists (RevealAndFocusInput).
+        if (IsInline && IsInputOnDemand && IsEditable && BoxHost.Visibility == Visibility.Collapsed)
+        {
+            RevealAndFocusInput(FocusState.Programmatic);
+            return true;
+        }
+
         var focused = Box.Focus(FocusState.Programmatic);
         if (!focused)
         {
             _isFocusingProgrammatically = wasMarked;
         }
 
-        SettleRevealedInput(focused);
         return focused;
     }
 
@@ -214,7 +226,12 @@ public sealed partial class TokenPicker : UserControl
             throw new InvalidOperationException("The field is read-only.");
         }
 
-        FocusBox();
+        if (BoxHost.Visibility == Visibility.Collapsed)
+        {
+            RevealAndFocusInput(FocusState.Programmatic, value ?? string.Empty);
+            return;
+        }
+
         viewModel.Query = value ?? string.Empty;
     }
 
@@ -490,6 +507,21 @@ public sealed partial class TokenPicker : UserControl
         ApplyMode();
     }
 
+    // The inline field's input is as tall as a line of chips (InlineLineHeight), so the field keeps its 32 epx whether
+    // or not the input shows, and chips, icon and input share one vertical centre: one epx less padding above and below
+    // than a standalone text box, whose own 32 epx include a border the field draws instead.
+    private void FindInnerTextBox()
+    {
+        _textBox ??= FindTextBox(Box);
+        if (_textBox is not null && IsInline)
+        {
+            _textBox.MinHeight = InlineLineHeight;
+            _textBox.ClearValue(Control.PaddingProperty);
+            var padding = _textBox.Padding;
+            _textBox.Padding = new Thickness(padding.Left, Math.Max(0, padding.Top - 1), padding.Right, Math.Max(0, padding.Bottom - 1));
+        }
+    }
+
     // The person dropdown: a chevron for the query button, room for the avatar before the name, and the choice in the
     // accessible name. A chip picker keeps the plain box.
     private void ApplyMode()
@@ -504,6 +536,12 @@ public sealed partial class TokenPicker : UserControl
                 var padding = _textBox.Padding;
                 _textBox.Padding = new Thickness(padding.Left + AvatarInset, padding.Top, padding.Right, padding.Bottom);
             }
+        }
+
+        // The inline field's input keeps its line height and padding (FindInnerTextBox).
+        if (IsInline)
+        {
+            FindInnerTextBox();
         }
 
         UpdateAccessibleName();
@@ -689,6 +727,8 @@ public sealed partial class TokenPicker : UserControl
 
         BoxHost.Resources["TextControlBorderThemeThickness"] = new Thickness(0);
         BoxHost.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(0);
+        InlineFlow.MinLineHeight = InlineLineHeight;
+        FindInnerTextBox();
         InlineField.Visibility = Visibility.Visible;
         UpdateInlineState();
         UpdateAccessibleName();
@@ -734,45 +774,76 @@ public sealed partial class TokenPicker : UserControl
 
         var inputShown = TokenPickerRules.ShowsInlineInput(IsEditable, IsInputOnDemand, _isInputRevealed, ViewModel?.Query);
         BoxHost.Visibility = inputShown ? Visibility.Visible : Visibility.Collapsed;
-        IsTabStop = TokenPickerRules.IsFieldTabStop(IsEditable, IsInputOnDemand, inputShown);
+
+        // While a reveal waits for the input to take focus, the field keeps it (and stays a tab stop), so focus never
+        // falls out of the field in between.
+        IsTabStop = TokenPickerRules.IsFieldTabStop(IsEditable, IsInputOnDemand, inputShown && _pendingReveal is null);
         ProtectedCursor = IsEditable && IsInputOnDemand ? InputSystemCursor.Create(InputSystemCursorShape.Hand) : null;
     }
 
-    // Shows a hidden on-demand input so it can take focus. It may never have been measured, so the layout is updated to
-    // apply its template (and find its inner text box) first. The picker stays a tab stop until the input has focus
-    // (SettleRevealedInput), so focus never falls out of the field in between.
-    private void RevealInput()
+    // Reveals the hidden on-demand input and puts keyboard focus in its inner text box, so a caret shows and typing goes
+    // there; queryStart (a typed character, a UI Automation value) becomes the search text once it has focus.
+    // The box may never have been templated or measured while it was collapsed, and an AutoSuggestBox takes focus only
+    // through its inner text box, so focus is set on that text box once it exists and is loaded: now if it already is,
+    // otherwise after the next layout pass (TokenPickerRules.NextRevealStep).
+    private void RevealAndFocusInput(FocusState state, string queryStart = "")
     {
-        if (!IsInline || !IsInputOnDemand || !IsEditable || BoxHost.Visibility == Visibility.Visible)
+        if (!IsInline || !IsEditable)
         {
             return;
         }
 
         _isInputRevealed = true;
         BoxHost.Visibility = Visibility.Visible;
-        BoxHost.UpdateLayout();
-        _textBox ??= FindTextBox(Box);
+        _pendingReveal = new PendingReveal(state, queryStart);
+        TryFocusRevealedInput();
     }
 
-    // After a reveal: the picker stops being a tab stop once the input has focus, or, when focus did not move, the input
-    // hides again.
-    private void SettleRevealedInput(bool focused)
+    private void TryFocusRevealedInput()
     {
-        if (!focused && !_hasFocusWithin)
+        if (_pendingReveal is not { } pending)
         {
-            _isInputRevealed = false;
+            return;
         }
 
-        UpdateInlineInput();
+        Box.LayoutUpdated -= OnRevealLayoutUpdated;
+        Box.ApplyTemplate();
+        FindInnerTextBox();
+        var focused = _textBox is { IsLoaded: true } textBox && textBox.Focus(pending.State);
+        switch (TokenPickerRules.NextRevealStep(focused, pending.Attempt))
+        {
+            case InputRevealStep.Focused:
+                _pendingReveal = null;
+                UpdateInlineInput();
+                StartQuery(pending.QueryStart);
+                break;
+            case InputRevealStep.WaitForLayout:
+                _pendingReveal = pending with { Attempt = pending.Attempt + 1 };
+                Box.LayoutUpdated += OnRevealLayoutUpdated;
+                break;
+            default:
+                // Focus never moved: the input hides again unless focus reached it some other way.
+                _pendingReveal = null;
+                _isInputRevealed = _hasFocusWithin;
+                _isFocusingProgrammatically = false;
+                UpdateInlineInput();
+                break;
+        }
     }
 
-    // Reveals the input from the keyboard, so the suggestions open as on any keyboard entry into the field.
-    private bool RevealFromKeyboard()
+    private void OnRevealLayoutUpdated(object? sender, object e) => TryFocusRevealedInput();
+
+    // Text typed on the field (or set through UI Automation) starts the search, with the caret after it.
+    private void StartQuery(string text)
     {
-        RevealInput();
-        var focused = Box.Focus(FocusState.Keyboard);
-        SettleRevealedInput(focused);
-        return focused;
+        if (text.Length == 0 || ViewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        viewModel.Query = text;
+        Box.IsSuggestionListOpen = viewModel.Suggestions.Count > 0;
+        DispatcherQueue.TryEnqueue(() => _textBox?.Select(_textBox.Text.Length, 0));
     }
 
     // Enter on the focused field (the picker itself, while the input is hidden) reveals the input, as a click does.
@@ -782,7 +853,7 @@ public sealed partial class TokenPicker : UserControl
         if (ReferenceEquals(e.OriginalSource, this) && IsTabStop && e.Key == VirtualKey.Enter)
         {
             e.Handled = true;
-            _ = RevealFromKeyboard();
+            RevealAndFocusInput(FocusState.Keyboard);
             return;
         }
 
@@ -793,20 +864,17 @@ public sealed partial class TokenPicker : UserControl
     // does; Space only reveals it (TokenPickerRules.QueryStart).
     private void OnFieldCharacterReceived(UIElement sender, CharacterReceivedRoutedEventArgs e)
     {
-        if (!ReferenceEquals(e.OriginalSource, this) || !IsTabStop || !TokenPickerRules.RevealsInput(e.Character) || ViewModel is not { } viewModel)
+        if (!ReferenceEquals(e.OriginalSource, this) || !IsTabStop || !TokenPickerRules.RevealsInput(e.Character))
         {
             return;
         }
 
         e.Handled = true;
-        var start = TokenPickerRules.QueryStart(e.Character);
-        if (RevealFromKeyboard() && start.Length > 0)
-        {
-            viewModel.Query = start;
-            Box.IsSuggestionListOpen = viewModel.Suggestions.Count > 0;
-            DispatcherQueue.TryEnqueue(() => _textBox?.Select(_textBox.Text.Length, 0));
-        }
+        RevealAndFocusInput(FocusState.Keyboard, TokenPickerRules.QueryStart(e.Character));
     }
+
+    // A reveal waiting for its input to take focus: how, what to type, and how many tries so far.
+    private sealed record PendingReveal(FocusState State, string QueryStart, int Attempt = 0);
 
     private void RebuildInlineChips()
     {
@@ -931,8 +999,7 @@ public sealed partial class TokenPicker : UserControl
     {
         if (IsEditable && e.OriginalSource is DependencyObject source && !IsWithinChip(source) && !BoxHasFocus())
         {
-            RevealInput();
-            SettleRevealedInput(Box.Focus(FocusState.Pointer));
+            RevealAndFocusInput(FocusState.Pointer);
         }
     }
 

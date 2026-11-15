@@ -1,5 +1,18 @@
 namespace MaxPlanner.Presentation.Common.Controls;
 
+/// <summary>What a reveal of an on-demand input does after one try to focus its text box.</summary>
+public enum InputRevealStep
+{
+    /// <summary>The text box has keyboard focus (a caret): the reveal is done.</summary>
+    Focused,
+
+    /// <summary>The text box does not exist or is not loaded yet: try again after the next layout pass.</summary>
+    WaitForLayout,
+
+    /// <summary>Focus still did not move after every try: hide the input again.</summary>
+    GiveUp,
+}
+
 /// <summary>
 /// The display decisions of <see cref="TokenPicker"/>, kept free of WinUI so tests can check them. Names arrive through
 /// <c>x:Bind</c>, which turns a null string into an empty one, so null and empty mean the same.
@@ -32,6 +45,31 @@ public static class TokenPickerRules
     /// </summary>
     public static bool IsFieldTabStop(bool isEditable, bool isInputOnDemand, bool isInputShown) =>
         isEditable && isInputOnDemand && !isInputShown;
+
+    /// <summary>
+    /// How many times a reveal tries to focus the input's text box: now, then after up to nine layout passes (any layout
+    /// pass in the window counts, and the text box loads a pass or two after it is templated).
+    /// </summary>
+    public const int RevealFocusAttempts = 10;
+
+    /// <summary>
+    /// The order of a reveal: the input is made visible first, then its text box is focused; a box that was collapsed
+    /// may not be templated or loaded yet, so a failed try waits for the next layout pass, and gives up after
+    /// <see cref="RevealFocusAttempts"/> tries.
+    /// </summary>
+    /// <param name="focused">This try gave the text box focus.</param>
+    /// <param name="attempt">The zero-based number of this try.</param>
+    public static InputRevealStep NextRevealStep(bool focused, int attempt) =>
+        focused ? InputRevealStep.Focused
+        : attempt + 1 < RevealFocusAttempts ? InputRevealStep.WaitForLayout
+        : InputRevealStep.GiveUp;
+
+    /// <summary>
+    /// A line of the inline field is as tall as its tallest child and never less than <paramref name="minLineHeight"/>,
+    /// so chips on a line without the input are centred in the input's height and the field does not change height
+    /// when the input shows.
+    /// </summary>
+    public static double FieldLineHeight(double tallestChild, double minLineHeight) => Math.Max(tallestChild, minLineHeight);
 
     /// <summary>A printable character typed on the focused field (Space included) reveals the input; control keys do not.</summary>
     public static bool RevealsInput(char character) => !char.IsControl(character);

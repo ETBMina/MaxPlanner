@@ -89,6 +89,30 @@ public sealed class EditorHeaderRulesTests
     public void The_tag_field_itself_is_the_tab_stop_while_its_on_demand_input_is_hidden(bool isEditable, bool isInputOnDemand, bool isInputShown, bool isTabStop) =>
         TokenPickerRules.IsFieldTabStop(isEditable, isInputOnDemand, isInputShown).Should().Be(isTabStop);
 
+    [Fact]
+    public void A_reveal_focuses_at_once_when_the_text_box_is_ready() =>
+        TokenPickerRules.NextRevealStep(focused: true, attempt: 0).Should().Be(InputRevealStep.Focused);
+
+    [Fact]
+    public void A_reveal_whose_text_box_is_not_ready_waits_for_layout_then_gives_up()
+    {
+        for (var attempt = 0; attempt < TokenPickerRules.RevealFocusAttempts - 1; attempt++)
+        {
+            TokenPickerRules.NextRevealStep(focused: false, attempt).Should().Be(InputRevealStep.WaitForLayout);
+        }
+
+        TokenPickerRules.NextRevealStep(focused: false, TokenPickerRules.RevealFocusAttempts - 1).Should().Be(InputRevealStep.GiveUp);
+        TokenPickerRules.NextRevealStep(focused: true, TokenPickerRules.RevealFocusAttempts - 1).Should().Be(InputRevealStep.Focused);
+    }
+
+    [Theory]
+    [InlineData(20, 30, 30)]
+    [InlineData(30, 30, 30)]
+    [InlineData(34, 30, 34)]
+    [InlineData(0, 30, 30)]
+    public void A_tag_field_line_is_never_lower_than_the_input_line(double tallestChild, double minLineHeight, double lineHeight) =>
+        TokenPickerRules.FieldLineHeight(tallestChild, minLineHeight).Should().Be(lineHeight);
+
     [Theory]
     [InlineData('f', true, "f")]
     [InlineData('7', true, "7")]
