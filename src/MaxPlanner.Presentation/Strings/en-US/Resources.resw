@@ -4232,13 +4232,10 @@
     <value>Title</value>
   </data>
   <data name="TaskEditor_TagsPicker.Placeholder" xml:space="preserve">
-    <value>Search for a tag</value>
+    <value>Add tag</value>
   </data>
   <data name="TaskEditor_TagsPicker.FieldToolTip" xml:space="preserve">
     <value>Search for a tag to apply to the task</value>
-  </data>
-  <data name="TaskEditor_TagsPicker.AddLabel" xml:space="preserve">
-    <value>Add tag</value>
   </data>
   <data name="EditorFacts_CreatedLabel.Text" xml:space="preserve">
     <value>Created</value>

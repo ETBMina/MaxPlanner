@@ -42,32 +42,24 @@
             <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
 
             <!--
-                Top line: the task's tags (Planner-style pills), More, and Close (design §5.1). The tag search box is hidden
-                until the Add tag button after the last pill (or a press on the line) reveals it; it hides again once
-                focus leaves it empty (TokenPicker.IsInputOnDemand).
+                Top line: the task's tags (Planner-style pills), More, and Close (design §5.1). The tag line (icon, pills,
+                empty space) is one field: a press anywhere outside a pill, or a key on the focused field, reveals the
+                search box with its "Add tag" placeholder; it hides again once focus leaves it empty
+                (TokenPicker.IsInputOnDemand).
             -->
             <StackPanel Spacing="4">
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <FontIcon
-                        Margin="0,8,0,0"
-                        VerticalAlignment="Top"
-                        AutomationProperties.AccessibilityView="Raw"
-                        FontSize="{StaticResource StandardIconSize}"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Glyph="&#xE8EC;"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}" />
                     <controls:TokenPicker
                         x:Name="TagsPicker"
                         x:Uid="TaskEditor_TagsPicker"
-                        Grid.Column="1"
                         VerticalAlignment="Top"
                         BoxAutomationId="TaskEditor_TagsPicker"
+                        FieldGlyph="&#xE8EC;"
                         IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                         IsInline="True"
                         IsInputOnDemand="True"
@@ -75,7 +67,7 @@
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}" />
                     <Button
                         x:Uid="TaskEditor_MoreMenu"
-                        Grid.Column="2"
+                        Grid.Column="1"
                         VerticalAlignment="Top"
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_MoreMenu"
@@ -120,7 +112,7 @@
                     <Button
                         x:Name="CloseIconButton"
                         x:Uid="TaskEditor_CloseButton"
-                        Grid.Column="3"
+                        Grid.Column="2"
                         VerticalAlignment="Top"
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_CloseButton"

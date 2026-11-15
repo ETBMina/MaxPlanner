@@ -155,35 +155,10 @@
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
         <!--
-            IsInputOnDemand: the inline field hides its search input until this Add button (after the last chip) or a
-            press on the field reveals and focuses it; it hides again once focus leaves it empty. The accessible name is
-            the visible label; the AutomationId is {BoxAutomationId}_AddButton.
-        -->
-        <Button
-            x:Name="AddButton"
-            Padding="6,4"
-            VerticalAlignment="Center"
-            AutomationProperties.Name="{x:Bind AddLabel, Mode=OneWay}"
-            Click="OnAddClick"
-            Style="{StaticResource SubtleButtonStyle}"
-            Visibility="Collapsed">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <FontIcon
-                    VerticalAlignment="Center"
-                    AutomationProperties.AccessibilityView="Raw"
-                    FontSize="{StaticResource CaptionIconSize}"
-                    Glyph="&#xE710;" />
-                <TextBlock
-                    VerticalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind AddLabel, Mode=OneWay}" />
-            </StackPanel>
-        </Button>
-        <!--
-            Inline mode (the task editor's tags): IsInline moves AddButton and BoxHost into this field as its last two
-            children; the chips are created in front of them from the ViewModel's tokens, so chips and input flow on the
-            same wrapping lines.
+            Inline mode (the task editor's tags): IsInline moves BoxHost into this field as its last child; the chips are
+            created in front of it from the ViewModel's tokens, so chips and input flow on the same wrapping lines. The
+            whole field (FieldGlyph, chips, empty space) is one target: hover fills it, a press outside a chip reveals the
+            input. With IsInputOnDemand the input stays hidden until then, and the picker itself is the field's tab stop.
         -->
         <Border
             x:Name="InlineField"
@@ -193,15 +168,27 @@
             BorderBrush="Transparent"
             BorderThickness="{ThemeResource TextControlBorderThemeThickness}"
             CornerRadius="{ThemeResource ControlCornerRadius}"
-            GotFocus="OnFieldFocusChanged"
-            LostFocus="OnFieldFocusChanged"
             PointerCanceled="OnFieldPointerExited"
             PointerEntered="OnFieldPointerEntered"
             PointerExited="OnFieldPointerExited"
             Tapped="OnFieldTapped"
             ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(FieldToolTip), Mode=OneWay}"
             Visibility="Collapsed">
-            <local:TokenFieldPanel x:Name="InlineFlow" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <FontIcon
+                    Margin="4,8,8,0"
+                    VerticalAlignment="Top"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="{StaticResource StandardIconSize}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Glyph="{x:Bind FieldGlyph, Mode=OneWay}"
+                    Visibility="{x:Bind local:TokenPicker.GlyphVisibility(FieldGlyph), Mode=OneWay}" />
+                <local:TokenFieldPanel x:Name="InlineFlow" Grid.Column="1" />
+            </Grid>
         </Border>
     </StackPanel>
 </UserControl>

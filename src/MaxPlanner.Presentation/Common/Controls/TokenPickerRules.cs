@@ -26,7 +26,17 @@ public static class TokenPickerRules
     public static bool ShowsInlineInput(bool isEditable, bool isInputOnDemand, bool isRevealed, string? query) =>
         isEditable && (!isInputOnDemand || isRevealed || !string.IsNullOrEmpty(query));
 
-    /// <summary>An on-demand inline field shows its Add button in place of the hidden input, and only while editable.</summary>
-    public static bool ShowsAddButton(bool isEditable, bool isInputOnDemand, bool isInputShown) =>
+    /// <summary>
+    /// While an editable on-demand field hides its input, the field itself is its one tab stop (the input is the tab stop
+    /// once shown; a read-only field has none).
+    /// </summary>
+    public static bool IsFieldTabStop(bool isEditable, bool isInputOnDemand, bool isInputShown) =>
         isEditable && isInputOnDemand && !isInputShown;
+
+    /// <summary>A printable character typed on the focused field (Space included) reveals the input; control keys do not.</summary>
+    public static bool RevealsInput(char character) => !char.IsControl(character);
+
+    /// <summary>The text a revealing character starts the query with: the character itself, or nothing for white space.</summary>
+    public static string QueryStart(char character) =>
+        char.IsWhiteSpace(character) || char.IsControl(character) ? string.Empty : character.ToString();
 }

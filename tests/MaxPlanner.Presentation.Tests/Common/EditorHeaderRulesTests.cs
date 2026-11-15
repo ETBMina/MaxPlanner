@@ -86,6 +86,19 @@ public sealed class EditorHeaderRulesTests
     [InlineData(true, true, true, false)]
     [InlineData(true, false, false, false)]
     [InlineData(false, true, false, false)]
-    public void The_add_tag_button_stands_in_for_a_hidden_on_demand_input(bool isEditable, bool isInputOnDemand, bool isInputShown, bool shown) =>
-        TokenPickerRules.ShowsAddButton(isEditable, isInputOnDemand, isInputShown).Should().Be(shown);
+    public void The_tag_field_itself_is_the_tab_stop_while_its_on_demand_input_is_hidden(bool isEditable, bool isInputOnDemand, bool isInputShown, bool isTabStop) =>
+        TokenPickerRules.IsFieldTabStop(isEditable, isInputOnDemand, isInputShown).Should().Be(isTabStop);
+
+    [Theory]
+    [InlineData('f', true, "f")]
+    [InlineData('7', true, "7")]
+    [InlineData(' ', true, "")]
+    [InlineData('\r', false, "")]
+    [InlineData('\t', false, "")]
+    [InlineData('\b', false, "")]
+    public void A_typed_character_reveals_the_tag_input_and_starts_the_query(char character, bool reveals, string queryStart)
+    {
+        TokenPickerRules.RevealsInput(character).Should().Be(reveals);
+        TokenPickerRules.QueryStart(character).Should().Be(queryStart);
+    }
 }
