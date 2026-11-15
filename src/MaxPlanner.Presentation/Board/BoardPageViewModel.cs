@@ -183,11 +183,11 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private readonly ObservableCollection<BoardBucketViewModel> _buckets = [];
     private readonly IDisposable _workflowSubscription;
     private readonly IDisposable _commits;
-    private readonly Action<string> _copyText;
+    private readonly Func<string, bool> _copyText;
     private Dictionary<PriorityId, PriorityLevel> _priorityLevels = [];
 
-    /// <param name="copyText">Puts text on the clipboard; tests pass a recorder.</param>
-    public BoardPageViewModel(WorkspaceContext context, Action<string>? copyText = null)
+    /// <param name="copyText">Puts text on the clipboard and says whether it took it; tests pass a recorder.</param>
+    public BoardPageViewModel(WorkspaceContext context, Func<string, bool>? copyText = null)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _copyText = copyText ?? ClipboardText.Set;
@@ -333,8 +333,21 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         return CopyIdFormatter.Apply(_context.Store.CurrentWorkflow?.Defaults.CopyIdFormat, card.Model.CopyIdValues);
     }
 
-    /// <summary>Card ⋯ › Copy ID and the card's Task chip (design §4.2): copies the ID text, with no confirmation.</summary>
-    public void CopyId(BoardCardViewModel card) => _copyText(CopyIdText(card));
+    /// <summary>
+    /// Card ⋯ › Copy ID and the card's Task chip (design §4.2): copies the ID text and announces "Copied {id}". Returns
+    /// whether it was copied, so the chip can show its "Copied" hint.
+    /// </summary>
+    public bool CopyId(BoardCardViewModel card)
+    {
+        var text = CopyIdText(card);
+        if (!CopyFeedbackRules.ShowsFeedback(text, _copyText(text)))
+        {
+            return false;
+        }
+
+        _context.Announce(_context.Strings.Format("Copy_Announcement", text));
+        return true;
+    }
 
     public Task CopyAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
 

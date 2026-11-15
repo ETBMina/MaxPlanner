@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Services;
 using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 using Microsoft.UI.Input;
@@ -354,13 +355,13 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
     }
 
-    // The Task chip copies the card's ID like the menu's Copy ID (design §4.2 item 3). The chip handles the press, so the
-    // card neither opens nor starts a drag.
+    // The Task chip copies the card's ID like the menu's Copy ID (design §4.2 item 3) and shows "Copied" at the chip. The
+    // chip handles the press, so the card neither opens nor starts a drag.
     private void OnCardTaskChipClick(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
+        if (sender is FrameworkElement { DataContext: BoardCardViewModel card } chip && ViewModel.CopyId(card))
         {
-            ViewModel.CopyId(card);
+            CopyFeedback.Show(chip);
         }
     }
 

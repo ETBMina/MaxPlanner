@@ -4258,6 +4258,14 @@
   <data name="TaskEditor_CopyTaskNumberName" xml:space="preserve">
     <value>Copy task number {0}</value>
   </data>
+  <data name="Copy_Hint" xml:space="preserve">
+    <value>Copied</value>
+    <comment>Shown briefly at a copy button after it copied a CR or task number.</comment>
+  </data>
+  <data name="Copy_Announcement" xml:space="preserve">
+    <value>Copied {0}</value>
+    <comment>Announced to screen readers after a copy; {0} is the copied text.</comment>
+  </data>
   <data name="TaskEditor_ChecklistHeading" xml:space="preserve">
     <value>Checklist</value>
   </data>

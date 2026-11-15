@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using MaxPlanner.Presentation.Common;
+using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -154,10 +155,18 @@ public sealed partial class TaskEditorDialog : ContentDialog
     // Hide raises Closing with no result, so a dirty draft asks first, as Cancel and Esc do (design §5.8).
     private void OnCloseClick(object sender, RoutedEventArgs e) => Hide();
 
-    // The plain numbers, not the configured Copy ID format.
-    private void OnCopyCrNumberClick(object sender, RoutedEventArgs e) => ClipboardText.Set(ViewModel.CrNumberToCopy);
+    // The plain numbers, not the configured Copy ID format. A copy shows "Copied" at the button and is announced.
+    private void OnCopyCrNumberClick(object sender, RoutedEventArgs e) => Copy(sender, ViewModel.CrNumberToCopy);
 
-    private void OnCopyTaskNumberClick(object sender, RoutedEventArgs e) => ClipboardText.Set(ViewModel.TaskNumberToCopy);
+    private void OnCopyTaskNumberClick(object sender, RoutedEventArgs e) => Copy(sender, ViewModel.TaskNumberToCopy);
+
+    private void Copy(object sender, string text)
+    {
+        if (ViewModel.ReportCopied(text, ClipboardText.Set(text)) && sender is FrameworkElement button)
+        {
+            CopyFeedback.Show(button);
+        }
+    }
 
     private void OnRevealPointerEntered(object sender, PointerRoutedEventArgs e)
     {

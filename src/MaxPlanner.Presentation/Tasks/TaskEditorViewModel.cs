@@ -325,6 +325,21 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
 
     public string CopyTaskNumberName => CanCopyTaskNumber ? Context.Strings.Format("TaskEditor_CopyTaskNumberName", TaskNumberToCopy) : string.Empty;
 
+    /// <summary>
+    /// After a copy button put <paramref name="copiedText"/> on the clipboard (<paramref name="reachedClipboard"/>):
+    /// announces "Copied RP-116" and returns true, so the button shows its "Copied" hint; otherwise does nothing.
+    /// </summary>
+    public bool ReportCopied(string copiedText, bool reachedClipboard)
+    {
+        if (!CopyFeedbackRules.ShowsFeedback(copiedText, reachedClipboard))
+        {
+            return false;
+        }
+
+        Context.Announce(Context.Strings.Format("Copy_Announcement", copiedText));
+        return true;
+    }
+
     /// <summary>"Checklist (2 of 4 items done)", or "Checklist" while it is empty.</summary>
     public string ChecklistHeading => _checklist.Count == 0
         ? Context.Strings.GetString("TaskEditor_ChecklistHeading")
