@@ -46,13 +46,14 @@
                                 <RowDefinition Height="*" MinHeight="8" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
+                            <!-- The label and the caption show their full text as a tooltip only while trimmed. -->
                             <TextBlock
                                 MaxLines="1"
                                 Style="{StaticResource BodyStrongTextBlockStyle}"
                                 Text="{x:Bind Label, Mode=OneTime}"
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="NoWrap"
-                                ToolTipService.ToolTip="{x:Bind Label, Mode=OneTime}" />
+                                IsTextTrimmedChanged="OnTextTrimmedChanged" />
                             <TextBlock
                                 Grid.Row="1"
                                 Margin="0,8,0,0"
@@ -66,6 +67,7 @@
                                     Text="{x:Bind Caption, Mode=OneWay}"
                                     TextTrimming="CharacterEllipsis"
                                     TextWrapping="Wrap"
+                                    IsTextTrimmedChanged="OnTextTrimmedChanged"
                                     Visibility="{x:Bind common:BindFunctions.Visible(HasCaption), Mode=OneWay}" />
                                 <!-- Design §6.3: "Needs attention" is a Warning glyph plus text, never color alone. -->
                                 <StackPanel
@@ -84,18 +86,20 @@
                     </Button>
                     <!--
                         The Reviews card's caption line: "done this week" and "done this month" are links of their own (never nested
-                        in the card button), in the caption's place and size at the bottom of the card.
+                        in the card button), in the caption's place and size at the bottom of the card. Each link is 24 epx high
+                        (4 epx above and below its text), and the margin is 4 epx smaller, so the text stays where a caption sits.
                     -->
                     <ItemsControl
                         Grid.Row="1"
-                        Margin="16,0,16,12"
+                        Margin="16,0,16,8"
                         IsTabStop="False"
                         ItemsSource="{x:Bind Links, Mode=OneTime}"
                         Visibility="{x:Bind common:BindFunctions.Visible(HasLinks), Mode=OneTime}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="local:DashboardLinkViewModel">
                                 <HyperlinkButton
-                                    Padding="0"
+                                    MinHeight="24"
+                                    Padding="0,4"
                                     AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
                                     Command="{x:Bind Command, Mode=OneTime}">
                                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Text, Mode=OneWay}" />
@@ -275,6 +279,7 @@
                         Command="{x:Bind ViewModel.ClearFiltersCommand}" />
                     <!-- The filters' scope, behind an info button instead of a paragraph under the row (U-05). -->
                     <Button
+                        x:Name="FilterInfoButton"
                         x:Uid="Dashboard_FilterInfoButton"
                         Padding="8"
                         VerticalAlignment="Bottom"
@@ -283,8 +288,10 @@
                         BorderThickness="0">
                         <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE946;" />
                         <Button.Flyout>
-                            <Flyout>
+                            <!-- The flyout has nothing to focus, so opening it raises the text as a Narrator notification. -->
+                            <Flyout Opened="OnFilterInfoOpened">
                                 <TextBlock
+                                    x:Name="FilterScopeText"
                                     x:Uid="Dashboard_FilterScopeCaption"
                                     MaxWidth="360"
                                     AutomationProperties.AutomationId="Dashboard_FilterScopeText"

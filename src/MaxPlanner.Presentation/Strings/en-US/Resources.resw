@@ -2884,8 +2884,8 @@
     <value>About the filters</value>
   </data>
   <data name="Dashboard_FilterInfoButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Squad, Priority and CR Owner apply to tasks, Subtask cards and CRs. Active date keeps the records active during the range (from their start date to their end date, or still open) and also applies to open reviews.</value>
-    <comment>Same text as Dashboard_FilterScopeCaption.Text, which the button's flyout shows.</comment>
+    <value>About the filters</value>
+    <comment>The info button's tooltip; its flyout shows Dashboard_FilterScopeCaption.Text.</comment>
   </data>
   <data name="Dashboard_FilterScopeCaption.Text" xml:space="preserve">
     <value>Squad, Priority and CR Owner apply to tasks, Subtask cards and CRs. Active date keeps the records active during the range (from their start date to their end date, or still open) and also applies to open reviews.</value>

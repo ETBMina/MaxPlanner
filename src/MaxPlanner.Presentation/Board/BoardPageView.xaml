@@ -74,23 +74,25 @@
                     </Grid>
                     <StackPanel Padding="12,8,12,12" Spacing="8">
                         <!--
-                            Items 3 and 4: the ID row, the "Moving" caption and the title share one grid, so the ⋯ button (without a
-                            strip) sits at the end of the ID row, or of the title row on a Subtask card that has no ID chips: never on a
-                            line of its own. Collapsed rows take no space (their spacing is their own bottom margin).
+                            Items 3 and 4 (BoardCardLayout): the ID row, an 8-epx gap, the "Moving" caption and the title share one
+                            grid, so the ⋯ button (without a strip) sits at the end of the ID row, or of the title row on a Subtask card
+                            that has no ID chips: never on a line of its own. Column 1 holds only the button and has no spacing of its
+                            own (the button's left margin), so it takes no width while the button is collapsed, and the title spans it
+                            unless the button is in its row.
                         -->
-                        <Grid ColumnSpacing="4">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="{x:Bind local:BoardPageView.CardIdRowGap(HasIdRow), Mode=OneWay}" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <local:BoardChipRow
                                 MinHeight="20"
-                                Margin="0,0,0,8"
                                 Spacing="6"
                                 Visibility="{x:Bind common:BindFunctions.Visible(HasIdRow), Mode=OneWay}">
                                 <!-- Each priority level has its own glyph, so color is never the only cue. -->
@@ -136,7 +138,7 @@
                             <Button
                                 Grid.Column="1"
                                 Grid.Row="{x:Bind local:BoardPageView.CardMenuRow(HasIdRow), Mode=OneWay}"
-                                VerticalAlignment="Top"
+                                Margin="4,0,0,0"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
                                 AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
                                 Click="OnCardMenuButtonClick"
@@ -147,7 +149,8 @@
                             </Button>
                             <TextBlock
                                 x:Uid="Board_MovingCaption"
-                                Grid.Row="1"
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
                                 Margin="0,0,0,8"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
@@ -155,7 +158,8 @@
                             <!-- Item 4 (tasks): the effective title. -->
                             <TextBlock
                                 x:Name="TaskTitle"
-                                Grid.Row="2"
+                                Grid.Row="3"
+                                Grid.ColumnSpan="{x:Bind local:BoardPageView.CardTitleColumnSpan(HasIdRow), Mode=OneWay}"
                                 x:Load="{x:Bind IsTask, Mode=OneWay}"
                                 MaxLines="3"
                                 Style="{StaticResource BodyStrongTextBlockStyle}"
@@ -169,7 +173,8 @@
                             -->
                             <HyperlinkButton
                                 x:Name="SubtaskParentLink"
-                                Grid.Row="2"
+                                Grid.Row="3"
+                                Grid.ColumnSpan="{x:Bind local:BoardPageView.CardTitleColumnSpan(HasIdRow), Mode=OneWay}"
                                 x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
                                 Padding="0"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"

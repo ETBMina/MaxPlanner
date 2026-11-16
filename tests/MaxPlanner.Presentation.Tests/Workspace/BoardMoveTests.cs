@@ -180,16 +180,19 @@ public sealed class BoardMoveTests
         h.Settle();
 
         shell.StatusSummary.Should().BeEmpty("unfiltered, the status would repeat the subtitle");
+        shell.HasStatusSummary.Should().BeFalse("the empty status text is collapsed, with no tooltip");
 
         board.SearchText = "limits";
         h.Settle();
 
         shell.StatusSummary.Should().Be(board.Summary).And.NotBe(board.Subtitle);
+        shell.HasStatusSummary.Should().BeTrue();
 
         board.SearchText = string.Empty;
         h.Settle();
 
         shell.StatusSummary.Should().BeEmpty();
+        shell.HasStatusSummary.Should().BeFalse();
     }
 
     [Fact]

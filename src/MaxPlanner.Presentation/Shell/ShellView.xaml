@@ -192,7 +192,8 @@
                         Text="{x:Bind ViewModel.StatusSummary, Mode=OneWay}"
                         TextTrimming="CharacterEllipsis"
                         TextWrapping="NoWrap"
-                        ToolTipService.ToolTip="{x:Bind ViewModel.StatusSummary, Mode=OneWay}" />
+                        ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(ViewModel.StatusSummary), Mode=OneWay}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasStatusSummary), Mode=OneWay}" />
                     <StackPanel
                         Grid.Column="1"
                         VerticalAlignment="Center"

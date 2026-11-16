@@ -25,6 +25,9 @@ public static class BindFunctions
     /// <summary>A tooltip only when there is text: an empty string would still open an empty tooltip.</summary>
     public static object? ToolTipOrNull(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
+    /// <summary>The full text as a tooltip only while the TextBlock trims it (bind to its <c>IsTextTrimmed</c>).</summary>
+    public static object? ToolTipWhenTrimmed(bool isTrimmed, string? text) => isTrimmed ? ToolTipOrNull(text) : null;
+
     /// <summary>A repeated item's AutomationId: <c>{prefix}{Guid:N}</c> (design §8.1).</summary>
     public static string RecordId(string prefix, Guid id) => prefix + id.ToString("N");
 
