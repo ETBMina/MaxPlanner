@@ -756,7 +756,7 @@
   <data name="Checklists_OpenTaskName" xml:space="preserve">
     <value>Open task {0}</value>
   </data>
-  <data name="Checklists_OpenTaskLink.Content" xml:space="preserve">
+  <data name="Checklists_OpenTaskLinkText.Text" xml:space="preserve">
     <value>Open task</value>
   </data>
   <data name="Copy_Created" xml:space="preserve">
