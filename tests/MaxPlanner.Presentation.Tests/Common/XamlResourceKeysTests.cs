@@ -43,6 +43,21 @@ public sealed class XamlResourceKeysTests
         "Settings_PageSubtitle",
     ];
 
+    // The LabelUid that the editors' info boxes give FactValue, which reads it to name an empty value ("Created: none").
+    public static TheoryData<string> FactLabelUids =>
+    [
+        "EditorFacts_CreatedLabel",
+        "TaskEditor_TaskNumberLabel",
+        "TaskEditor_OwnerLabel",
+        "SubtaskEditor_ServiceLabel",
+        "SubtaskEditor_CrNumberLabel",
+    ];
+
+    [Theory]
+    [MemberData(nameof(FactLabelUids))]
+    public void A_fact_label_resolves_to_the_resw_text(string uid) =>
+        Resolve(XamlResourceKeys.Text(uid)).Should().Be(Resw.Value[uid + ".Text"]);
+
     [Fact]
     public void The_keys_follow_the_resource_map_names_of_xuid_properties()
     {

@@ -51,7 +51,7 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
         nameof(TaskNumberToCopy), nameof(CanCopyTaskNumber), nameof(CopyTaskNumberName),
         nameof(CanEditFields), nameof(CanSave), nameof(CanArchive), nameof(CanRestore), nameof(CanAddSubtaskCard), nameof(CanPopOut),
         nameof(IsFormStep), nameof(IsLinkPickStep), nameof(IsLinkConfirmStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
-        nameof(Caption), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
+        nameof(CreatedText), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
     ];
 
     private readonly NewNameRegistry _newPeople = new();
@@ -168,8 +168,8 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
 
     public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
-    /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    /// <summary>The info box's Created fact, "Oct 6, 2026"; empty for a new task (the fact is hidden).</summary>
+    public string CreatedText => _base is { } b ? DateText.RecordDate(b.CreatedAtUtc.ToLocalTime()) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -324,6 +324,21 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     public bool CanCopyTaskNumber => TaskNumberToCopy.Length > 0;
 
     public string CopyTaskNumberName => CanCopyTaskNumber ? Context.Strings.Format("TaskEditor_CopyTaskNumberName", TaskNumberToCopy) : string.Empty;
+
+    /// <summary>
+    /// After a copy button put <paramref name="copiedText"/> on the clipboard (<paramref name="reachedClipboard"/>):
+    /// announces "Copied RP-116" and returns true, so the button shows its "Copied" hint; otherwise does nothing.
+    /// </summary>
+    public bool ReportCopied(string copiedText, bool reachedClipboard)
+    {
+        if (!CopyFeedbackRules.ShowsFeedback(copiedText, reachedClipboard))
+        {
+            return false;
+        }
+
+        Context.Announce(Context.Strings.Format("Copy_Announcement", copiedText));
+        return true;
+    }
 
     /// <summary>"Checklist (2 of 4 items done)", or "Checklist" while it is empty.</summary>
     public string ChecklistHeading => _checklist.Count == 0

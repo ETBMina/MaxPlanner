@@ -2,8 +2,8 @@
 <!--
     Task editor (design §5.1) on the native ContentDialog [gallery-contentdialog-1, -2]. Nested decisions (link
     picker, permanence, conflict review, reload) are inline steps of this one dialog; dialogs never stack (§5.0).
-    Form layout, top to bottom: tag line with More and Close, title, CR facts strip, fields, checklist, Subtask cards,
-    notes, custom fields.
+    Form layout, top to bottom: tag line with More and Close, record kind and title, info box (CR facts and Created),
+    fields, checklist, Subtask cards, notes, custom fields.
 -->
 <ContentDialog
     x:Class="MaxPlanner.Presentation.Tasks.TaskEditorDialog"
@@ -28,24 +28,6 @@
             The template keeps the empty title's bottom margin, so it is zeroed here to leave no gap at the top.
         -->
         <Thickness x:Key="ContentDialogTitleMargin">0</Thickness>
-        <!-- A text box that edits in place: no border or fill at rest; the template's hover and focus states add them. -->
-        <Style x:Key="InlineTextBoxStyle" BasedOn="{StaticResource DefaultTextBoxStyle}" TargetType="TextBox">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-        </Style>
-        <Style x:Key="TitleTextBoxStyle" BasedOn="{StaticResource InlineTextBoxStyle}" TargetType="TextBox">
-            <Setter Property="FontSize" Value="20" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-        </Style>
-        <Style x:Key="FactLabelTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
-        </Style>
-        <Style x:Key="FactValueTextStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
         <Style x:Key="CopyNumberButtonStyle" BasedOn="{StaticResource SubtleButtonStyle}" TargetType="Button">
             <Setter Property="Padding" Value="5" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -59,36 +41,33 @@
         <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
             <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
 
-            <!-- Top line: the task's tags (Planner-style pills with an Add tag affordance), More, and Close (design §5.1). -->
+            <!--
+                Top line: the task's tags (Planner-style pills), More, and Close (design §5.1). The tag line (icon, pills,
+                empty space) is one field: a press anywhere outside a pill, or a key on the focused field, reveals the
+                search box with its "Add tag" placeholder; it hides again once focus leaves it empty
+                (TokenPicker.IsInputOnDemand).
+            -->
             <StackPanel Spacing="4">
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <FontIcon
-                        Margin="0,8,0,0"
-                        VerticalAlignment="Top"
-                        AutomationProperties.AccessibilityView="Raw"
-                        FontSize="{StaticResource StandardIconSize}"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Glyph="&#xE8EC;"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}" />
                     <controls:TokenPicker
                         x:Name="TagsPicker"
                         x:Uid="TaskEditor_TagsPicker"
-                        Grid.Column="1"
                         VerticalAlignment="Top"
                         BoxAutomationId="TaskEditor_TagsPicker"
+                        FieldGlyph="&#xE8EC;"
                         IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                         IsInline="True"
+                        IsInputOnDemand="True"
                         ViewModel="{x:Bind ViewModel.Tags, Mode=OneWay}"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}" />
                     <Button
                         x:Uid="TaskEditor_MoreMenu"
-                        Grid.Column="2"
+                        Grid.Column="1"
                         VerticalAlignment="Top"
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_MoreMenu"
@@ -133,7 +112,7 @@
                     <Button
                         x:Name="CloseIconButton"
                         x:Uid="TaskEditor_CloseButton"
-                        Grid.Column="3"
+                        Grid.Column="2"
                         VerticalAlignment="Top"
                         Style="{StaticResource SubtleButtonStyle}"
                         AutomationProperties.AutomationId="TaskEditor_CloseButton"
@@ -191,8 +170,15 @@
 
             <!-- ===== Form step ===== -->
             <StackPanel Spacing="16" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
-                <!-- Title: the task's own title, or (B-02.3) the linked or link-pending CR's title, read-only. -->
+                <!--
+                    Header (shared with the CR and Subtask card editors): the record kind as a small caption, then the
+                    title: the task's own, or (B-02.3) the linked or link-pending CR's title, read-only.
+                -->
                 <StackPanel Spacing="4">
+                    <TextBlock
+                        AutomationProperties.AutomationId="TaskEditor_RecordKind"
+                        Style="{StaticResource EditorRecordKindTextStyle}"
+                        Text="{x:Bind ViewModel.DialogTitle, Mode=OneTime}" />
                     <TextBox
                         x:Name="TitleBox"
                         x:Uid="TaskEditor_TitleBox"
@@ -200,7 +186,7 @@
                         AutomationProperties.IsRequiredForForm="True"
                         IsReadOnly="{x:Bind common:BindFunctions.Not(ViewModel.IsTitleEditable), Mode=OneWay}"
                         MaxLength="250"
-                        Style="{StaticResource TitleTextBoxStyle}"
+                        Style="{StaticResource EditorTitleTextBoxStyle}"
                         Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsUnlinkedWithoutPending), Mode=OneWay}" />
                     <TextBlock
@@ -213,30 +199,17 @@
                         TextWrapping="Wrap"
                         Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.ShowInheritedTitle), Mode=OneWay}" />
                     <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.Caption, Mode=OneWay}" />
                 </StackPanel>
 
                 <!--
-                    Facts strip: the CR and what the task inherits from it (B-02.3, T-13). Four columns, two at the narrow
-                    width (ApplyLayout). The copy buttons copy the plain number and show on hover or keyboard focus.
+                    Info box: the CR and what the task inherits from it (B-02.3, T-13), then when the task was created.
+                    Four columns, two at the narrow width (ApplyLayout). The copy buttons copy the plain number and show on
+                    hover or keyboard focus.
                 -->
-                <Border Padding="12" AutomationProperties.AutomationId="TaskEditor_FactsStrip" Style="{StaticResource SecondaryCardBorderStyle}">
-                    <Grid x:Name="FactsGrid" ColumnSpacing="16" RowSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
+                <Border AutomationProperties.AutomationId="TaskEditor_FactsStrip" Style="{StaticResource EditorInfoBoxStyle}">
+                    <dialogs:EditorFactsPanel x:Name="FactsPanel">
                         <StackPanel Spacing="2">
-                            <TextBlock x:Uid="TaskEditor_CrNumberLabel" Style="{StaticResource FactLabelTextStyle}" />
+                            <TextBlock x:Uid="TaskEditor_CrNumberLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
                             <StackPanel
                                 Background="Transparent"
                                 GotFocus="OnRevealFocusChanged"
@@ -262,7 +235,7 @@
                                 </HyperlinkButton>
                                 <TextBlock
                                     IsTextSelectionEnabled="True"
-                                    Style="{StaticResource FactValueTextStyle}"
+                                    Style="{StaticResource EditorFactValueTextStyle}"
                                     Text="{x:Bind ViewModel.PendingCrNumber, Mode=OneWay}"
                                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasPendingLink), Mode=OneWay}" />
                                 <Button
@@ -292,8 +265,8 @@
                                 Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsUnlinkedWithoutPending), Mode=OneWay}" />
                         </StackPanel>
 
-                        <StackPanel Grid.Column="1" Spacing="2">
-                            <TextBlock x:Uid="TaskEditor_TaskNumberLabel" Style="{StaticResource FactLabelTextStyle}" />
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="TaskEditor_TaskNumberLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
                             <StackPanel
                                 Background="Transparent"
                                 GotFocus="OnRevealFocusChanged"
@@ -308,7 +281,7 @@
                                     IsValueSelectable="True"
                                     LabelUid="TaskEditor_TaskNumberLabel"
                                     Value="{x:Bind ViewModel.TaskNumberText, Mode=OneWay}"
-                                    ValueStyle="{StaticResource FactValueTextStyle}" />
+                                    ValueStyle="{StaticResource EditorFactValueTextStyle}" />
                                 <Button
                                     AutomationProperties.AutomationId="TaskEditor_CopyTaskNumberButton"
                                     AutomationProperties.Name="{x:Bind ViewModel.CopyTaskNumberName, Mode=OneWay}"
@@ -323,13 +296,13 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="2" Spacing="2">
-                            <TextBlock x:Uid="TaskEditor_SquadLabel" Style="{StaticResource FactLabelTextStyle}" />
-                            <TextBlock Style="{StaticResource FactValueTextStyle}" Text="{x:Bind ViewModel.SquadText, Mode=OneWay}" />
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="TaskEditor_SquadLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <TextBlock Style="{StaticResource EditorFactValueTextStyle}" Text="{x:Bind ViewModel.SquadText, Mode=OneWay}" />
                         </StackPanel>
 
-                        <StackPanel Grid.Column="3" Spacing="2">
-                            <TextBlock x:Uid="TaskEditor_OwnerLabel" Style="{StaticResource FactLabelTextStyle}" />
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="TaskEditor_OwnerLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -346,10 +319,21 @@
                                     VerticalAlignment="Center"
                                     LabelUid="TaskEditor_OwnerLabel"
                                     Value="{x:Bind ViewModel.OwnerText, Mode=OneWay}"
-                                    ValueStyle="{StaticResource FactValueTextStyle}" />
+                                    ValueStyle="{StaticResource EditorFactValueTextStyle}" />
                             </Grid>
                         </StackPanel>
-                    </Grid>
+
+                        <!-- A new task has no creation date yet, so the fact is left out. -->
+                        <StackPanel Spacing="2" Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsNew), Mode=OneTime}">
+                            <TextBlock x:Uid="EditorFacts_CreatedLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                            <controls:FactValue
+                                IsValueSelectable="True"
+                                LabelUid="EditorFacts_CreatedLabel"
+                                Value="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
+                                ValueAutomationId="TaskEditor_Created"
+                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                        </StackPanel>
+                    </dialogs:EditorFactsPanel>
                 </Border>
 
                 <!-- Fields: three rows of columns, one column at the narrow width (ApplyLayout). Errors sit under their fields. -->
@@ -560,7 +544,7 @@
                                         AutomationProperties.Name="{x:Bind Text, Mode=OneWay}"
                                         IsReadOnly="{x:Bind common:BindFunctions.Not(CanEdit), Mode=OneWay}"
                                         MaxLength="2000"
-                                        Style="{StaticResource InlineTextBoxStyle}"
+                                        Style="{StaticResource EditorInlineTextBoxStyle}"
                                         Text="{x:Bind Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                     <StackPanel
                                         Grid.Column="3"
@@ -631,7 +615,7 @@
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
                             KeyDown="OnAddChecklistKeyDown"
                             MaxLength="2000"
-                            Style="{StaticResource InlineTextBoxStyle}"
+                            Style="{StaticResource EditorInlineTextBoxStyle}"
                             Text="{x:Bind ViewModel.NewChecklistText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <fields:FieldError Text="{x:Bind ViewModel.ChecklistError, Mode=OneWay}" />

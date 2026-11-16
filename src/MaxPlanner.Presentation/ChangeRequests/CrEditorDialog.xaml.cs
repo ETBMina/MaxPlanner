@@ -34,6 +34,7 @@ public sealed partial class CrEditorDialog : ContentDialog
     private void ApplyLayout(Windows.Foundation.Size size)
     {
         var twoColumns = size.Width >= Breakpoints.Large;
+        FactsPanel.Columns = EditorFactsLayout.Columns(size.Width);
         Pair(NumberPair, TaskNumberPanel, twoColumns);
         Pair(OwnerPair, SquadPanel, twoColumns);
         Pair(StatusPair, PriorityPanel, twoColumns);

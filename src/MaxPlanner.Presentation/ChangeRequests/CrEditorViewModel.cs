@@ -83,7 +83,7 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
 
     private static readonly string[] StateProperties =
     [
-        nameof(Caption), nameof(IsReadOnly), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(CanCreateTask),
+        nameof(CreatedText), nameof(IsReadOnly), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(CanCreateTask),
         nameof(IsFormStep), nameof(IsSaveAndCreateStep), nameof(IsDeleteStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
         nameof(HasValidationSummary), nameof(HasSaveError), nameof(IsOverdue), nameof(OverdueMessage), nameof(LinkedTasksHeader),
         nameof(HasLinkedTasks), nameof(TaskNumberHelper), nameof(SaveAndCreatePrompt), nameof(ShowMakeDefaultOwner), nameof(MakeDefaultOwnerText),
@@ -205,7 +205,8 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
     /// <summary>The number as saved, or as typed for a new CR, for step texts ("Save CR-1042 and create a task?").</summary>
     public string DisplayNumber => Latest?.Number ?? (Number.Trim().Length > 0 ? Number.Trim() : Context.Strings.GetString("CrEditor_ThisCr"));
 
-    public string Caption => _base is { } b ? Context.Strings.Format("TaskEditor_CreatedCaption", DateText.RecordDate(b.CreatedAtUtc.ToLocalTime())) : string.Empty;
+    /// <summary>The info box's Created fact, "Oct 6, 2026"; empty for a new CR (the info box is hidden).</summary>
+    public string CreatedText => _base is { } b ? DateText.RecordDate(b.CreatedAtUtc.ToLocalTime()) : string.Empty;
 
     [ObservableProperty]
     public partial string Number { get; set; } = string.Empty;

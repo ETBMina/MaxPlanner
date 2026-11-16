@@ -21,15 +21,15 @@
                 <VisualState x:Name="FieldNormal" />
                 <VisualState x:Name="FieldPointerOver">
                     <VisualState.Setters>
-                        <Setter Target="InlineField.Background" Value="{ThemeResource TextControlBackgroundPointerOver}" />
-                        <Setter Target="InlineField.BorderBrush" Value="{ThemeResource TextControlBorderBrushPointerOver}" />
+                        <Setter Target="InlineFieldChrome.Background" Value="{ThemeResource TextControlBackgroundPointerOver}" />
+                        <Setter Target="InlineFieldChrome.BorderBrush" Value="{ThemeResource TextControlBorderBrushPointerOver}" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="FieldFocused">
                     <VisualState.Setters>
-                        <Setter Target="InlineField.Background" Value="{ThemeResource TextControlBackgroundFocused}" />
-                        <Setter Target="InlineField.BorderBrush" Value="{ThemeResource TextControlBorderBrushFocused}" />
-                        <Setter Target="InlineField.BorderThickness" Value="{ThemeResource TextControlBorderThemeThicknessFocused}" />
+                        <Setter Target="InlineFieldChrome.Background" Value="{ThemeResource TextControlBackgroundFocused}" />
+                        <Setter Target="InlineFieldChrome.BorderBrush" Value="{ThemeResource TextControlBorderBrushFocused}" />
+                        <Setter Target="InlineFieldChrome.BorderThickness" Value="{ThemeResource TextControlBorderThemeThicknessFocused}" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -156,25 +156,48 @@
         </ItemsRepeater>
         <!--
             Inline mode (the task editor's tags): IsInline moves BoxHost into this field as its last child; the chips are
-            created in front of it from the ViewModel's tokens, so chips and input flow on the same wrapping lines.
+            created in front of it from the ViewModel's tokens, so chips and input flow on the same wrapping lines. The
+            whole field (FieldGlyph, chips, empty space) is one target: hover fills it, a press outside a chip reveals the
+            input. With IsInputOnDemand the input stays hidden until then, and the picker itself is the field's tab stop.
         -->
-        <Border
+        <!--
+            As in the TextBox template, the fill and border are a separate layer behind the content, so the thicker
+            focused underline never changes the layout: the content keeps a 1 epx inset on every side, each line is at
+            least 30 epx (TokenFieldPanel.MinLineHeight), and the field stays 32 epx for one line, focused or not.
+        -->
+        <Grid
             x:Name="InlineField"
             MinHeight="32"
-            Padding="4,0,0,0"
             Background="Transparent"
-            BorderBrush="Transparent"
-            BorderThickness="{ThemeResource TextControlBorderThemeThickness}"
-            CornerRadius="{ThemeResource ControlCornerRadius}"
-            GotFocus="OnFieldFocusChanged"
-            LostFocus="OnFieldFocusChanged"
             PointerCanceled="OnFieldPointerExited"
             PointerEntered="OnFieldPointerEntered"
             PointerExited="OnFieldPointerExited"
             Tapped="OnFieldTapped"
             ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(FieldToolTip), Mode=OneWay}"
             Visibility="Collapsed">
-            <local:TokenFieldPanel x:Name="InlineFlow" />
-        </Border>
+            <Border
+                x:Name="InlineFieldChrome"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="{ThemeResource TextControlBorderThemeThickness}"
+                CornerRadius="{ThemeResource ControlCornerRadius}"
+                IsHitTestVisible="False" />
+            <Grid Margin="5,1,1,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <!-- Centred in the first 30 epx line, so it stays beside the first line of chips when they wrap. -->
+                <FontIcon
+                    Margin="4,7,8,0"
+                    VerticalAlignment="Top"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="{StaticResource StandardIconSize}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Glyph="{x:Bind FieldGlyph, Mode=OneWay}"
+                    Visibility="{x:Bind local:TokenPicker.GlyphVisibility(FieldGlyph), Mode=OneWay}" />
+                <local:TokenFieldPanel x:Name="InlineFlow" Grid.Column="1" />
+            </Grid>
+        </Grid>
     </StackPanel>
 </UserControl>
