@@ -45,6 +45,9 @@ Max Planner is a native Windows planning app (CRs, tasks, Board, Grid, Calendar,
 - View models run every write command through the shared `ICommandRunner` (`WorkspaceContext.Commands`), not through their own save-status and announcement code. The runner owns the editing-blocked check, the save indicator, the display wait and failure reporting (ADR 0029).
 - Editor dialogs are built from the shared pieces, not copied per dialog: `EditorDialogShell` (buttons, keys, close guard, focus requests), `EditorMessageBars`, `ConflictReviewPanel` with `ConflictEditorViewModelBase`, and `ClearableDateField`.
 - Pages use the shared `PageHeader` and `PageLayout.OnWidthChanged`. Window breakpoints come from `Breakpoints` and display dates go through `DateText`; no breakpoint or date-format literals.
+- A missing value displays as "None" through `FactValue`, and editor detail boxes use `EditorFactsPanel`.
+- Header rows that can collapse are stacked with `StackPanel Spacing`, not `Grid RowSpacing`: a Grid keeps the spacing above a collapsed row.
+- Inside an item template of a virtualized list, wrapping rows (such as the avatars on a card) use a non-virtualizing layout. A virtualizing layout there causes layout cycles while the list scrolls.
 - In view code, a show/hide, enabled-state or choice decision inside a control or view builder lives in a small WinUI-free function with a test. It treats a null and an empty string the same, because `x:Bind` turns a null string into an empty one.
 - One ordered SQLite writer. Transaction bodies are synchronous: no `await` inside a transaction (ADR 0009).
 - Committed changes reach every page through the shared projection store, and incremental updates keep focus, selection, scroll, and drafts (ADR 0010).
