@@ -161,6 +161,35 @@ public sealed class BoardMoveTests
 
         board.Buckets[0].Cards.Select(c => c.Title).Should().BeEquivalentTo(["Card limits API", "Rounding fix"]);
         board.Summary.Should().Be("Filtered: 2 of 3 cards");
+        board.Subtitle.Should().NotContain("Filtered", "design §2.8 (U-10): the subtitle keeps the unfiltered count");
+    }
+
+    [Fact]
+    [Trait("Req", "B-07")]
+    public void The_status_bar_shows_the_filtered_count_only_while_the_board_is_filtered()
+    {
+        using var h = WorkspaceHarness.Create(async s =>
+        {
+            await s.TaskAsync("Card limits API");
+            await s.TaskAsync("Unrelated");
+        });
+        var board = Ready(h);
+        using var shell = new MaxPlanner.Presentation.Shell.ShellViewModel(new FakeStrings(), new FakeDataFolder(), new FakePreferencesStore());
+        shell.AttachWorkspace(h.Workspace);
+        shell.NavigateTo(MaxPlanner.Presentation.Shell.AppPage.Board);
+        h.Settle();
+
+        shell.StatusSummary.Should().BeEmpty("unfiltered, the status would repeat the subtitle");
+
+        board.SearchText = "limits";
+        h.Settle();
+
+        shell.StatusSummary.Should().Be(board.Summary).And.NotBe(board.Subtitle);
+
+        board.SearchText = string.Empty;
+        h.Settle();
+
+        shell.StatusSummary.Should().BeEmpty();
     }
 
     [Fact]

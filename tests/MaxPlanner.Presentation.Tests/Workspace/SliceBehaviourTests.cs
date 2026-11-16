@@ -206,7 +206,8 @@ public sealed class SliceBehaviourTests
         h.Store.ActiveCacheSubscriptions.Should().Be(afterFirstCycle);
         (h.Workspace.Board, h.Workspace.Grid, h.Workspace.Checklists).Should().Be(pages, "page ViewModels are retained, never recreated");
         preferences.Current.ActivePage.Should().Be("checklists");
-        shell.StatusSummary.Should().Be(h.Workspace.Checklists.Summary);
+        h.Workspace.Checklists.Subtitle.Should().NotBeEmpty();
+        shell.StatusSummary.Should().BeEmpty("design §2.8 (U-10): the Checklists status would only repeat its subtitle");
 
         shell.DetachWorkspace();
         h.Workspace.Dispose();

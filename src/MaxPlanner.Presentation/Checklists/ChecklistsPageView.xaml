@@ -486,7 +486,7 @@
         <controls:PageHeader
             x:Name="HeaderRoot"
             HasSubtitle="True"
-            Subtitle="{x:Bind ViewModel.Summary, Mode=OneWay}"
+            Subtitle="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
             SubtitleAutomationId="Checklists_PageSubtitle"
             TitleAutomationId="Checklists_PageTitle"
             TitleUid="Checklists_PageTitle">
