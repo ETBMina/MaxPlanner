@@ -155,40 +155,43 @@
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
                                 Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
-                            <!-- Item 4 (tasks): the effective title. -->
-                            <TextBlock
-                                x:Name="TaskTitle"
-                                Grid.Row="3"
-                                Grid.ColumnSpan="{x:Bind local:BoardPageView.CardTitleColumnSpan(HasIdRow), Mode=OneWay}"
-                                x:Load="{x:Bind IsTask, Mode=OneWay}"
-                                MaxLines="3"
-                                Style="{StaticResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind Title, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="Wrap"
-                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
                             <!--
-                                Item 4 (Subtask cards, B-16.5): the parent task's title in the same title style, as the link to the
-                                parent; the card menu's Open parent task is its keyboard route.
+                                Item 4: the title. Its span is bound on this always-loaded panel, never on the x:Load'ed titles inside:
+                                an attached property bound on an x:Load element is applied from a deferred value that starts at 0, and
+                                Grid.ColumnSpan 0 kept the title from loading at all (XamlBindingRulesTests).
                             -->
-                            <HyperlinkButton
-                                x:Name="SubtaskParentLink"
-                                Grid.Row="3"
-                                Grid.ColumnSpan="{x:Bind local:BoardPageView.CardTitleColumnSpan(HasIdRow), Mode=OneWay}"
-                                x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
-                                Padding="0"
-                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
-                                AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
-                                Click="OnCardParentLinkClick"
-                                IsTabStop="False"
-                                ToolTipService.ToolTip="{x:Bind ParentTitle, Mode=OneWay}">
+                            <Grid Grid.Row="3" Grid.ColumnSpan="{x:Bind local:BoardPageView.CardTitleColumnSpan(HasIdRow), Mode=OneWay}">
+                                <!-- Tasks: the effective title. -->
                                 <TextBlock
+                                    x:Name="TaskTitle"
+                                    x:Load="{x:Bind IsTask, Mode=OneWay}"
                                     MaxLines="3"
                                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                                    Text="{x:Bind ParentTitle, Mode=OneWay}"
+                                    Text="{x:Bind Title, Mode=OneWay}"
                                     TextTrimming="CharacterEllipsis"
-                                    TextWrapping="Wrap" />
-                            </HyperlinkButton>
+                                    TextWrapping="Wrap"
+                                    ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                                <!--
+                                    Subtask cards (B-16.5): the parent task's title in the same title style, as the link to the parent;
+                                    the card menu's Open parent task is its keyboard route.
+                                -->
+                                <HyperlinkButton
+                                    x:Name="SubtaskParentLink"
+                                    x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
+                                    Padding="0"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
+                                    AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                    Click="OnCardParentLinkClick"
+                                    IsTabStop="False"
+                                    ToolTipService.ToolTip="{x:Bind ParentTitle, Mode=OneWay}">
+                                    <TextBlock
+                                        MaxLines="3"
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind ParentTitle, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="Wrap" />
+                                </HyperlinkButton>
+                            </Grid>
                         </Grid>
                         <!-- Item 5: the neutral Service chip (only its icon is accent) and the Squad chip, on both card kinds. -->
                         <local:BoardChipRow>
