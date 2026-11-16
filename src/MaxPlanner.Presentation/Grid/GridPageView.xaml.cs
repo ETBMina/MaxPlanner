@@ -225,8 +225,8 @@ public sealed partial class GridPageView : UserControl, IGridCellHost, Shell.IPa
 
     private GridHeaderCell CreateHeaderCell(GridColumnViewModel column)
     {
-        var cell = new GridHeaderCell { Column = column.Key, Padding = new Thickness(8, 0, 0, 0), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, CanDrag = true, AllowDrop = true };
-        var text = new TextBlock { Text = column.Header, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+        var cell = new GridHeaderCell { Column = column.Key, Padding = new Thickness(8, 0, 0, 0), CanDrag = true, AllowDrop = true };
+        var text = new TextBlock { Text = column.Header, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["TableHeaderTextStyle"] };
         var glyph = new FontIcon { FontSize = 12, Glyph = SortGlyph(column.Sort), Visibility = column.Sort == GridSortDirection.None ? Visibility.Collapsed : Visibility.Visible };
         AutomationProperties.SetAccessibilityView(glyph, AccessibilityView.Raw);
         var grip = GridHeaderGrip.Create(ResourceStrings.Shared.Format("Grid_ResizeColumnName", column.Header), delta => ViewModel.SetWidth(column.Key, column.Width + delta));

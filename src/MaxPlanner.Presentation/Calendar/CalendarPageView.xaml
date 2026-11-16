@@ -112,10 +112,10 @@
         <!-- Records row at L/M (design §4.4): every column; the table scrolls horizontally when narrower. -->
         <DataTemplate x:Key="RecordRowTemplate" x:DataType="local:CalendarRecordViewModel">
             <Grid
-                MinHeight="40"
                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Calendar_RecordRow_', Id), Mode=OneTime}"
                 AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
                 ColumnSpacing="8"
+                Style="{StaticResource TableRowStyle}"
                 Tag="{x:Bind Mode=OneTime}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110" />
@@ -130,7 +130,7 @@
                     <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="44" />
                 </Grid.ColumnDefinitions>
-                <TextBlock VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <TextBlock VerticalAlignment="Center" Text="{x:Bind Number, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
                 <Grid Grid.Column="2" VerticalAlignment="Center" ColumnSpacing="6">
                     <Grid.ColumnDefinitions>
@@ -680,14 +680,14 @@
                         VerticalScrollBarVisibility="Disabled"
                         VerticalScrollMode="Disabled"
                         Visibility="Collapsed">
-                        <Grid Width="1420" RowSpacing="4">
+                        <Grid Width="1420">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
+                            <Border Padding="12,0,12,0" Style="{StaticResource TableHeaderBorderStyle}">
                             <Grid
                                 x:Name="RecordsHeader"
-                                Padding="12,0,12,0"
                                 AutomationProperties.AutomationId="Calendar_RecordsHeader"
                                 ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
@@ -704,6 +704,7 @@
                                     <ColumnDefinition Width="44" />
                                 </Grid.ColumnDefinitions>
                             </Grid>
+                            </Border>
                             <ListView
                                 x:Name="RecordsList"
                                 x:Uid="Calendar_RecordsList"

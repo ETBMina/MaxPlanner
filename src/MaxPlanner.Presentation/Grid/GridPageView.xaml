@@ -166,8 +166,7 @@
                         <Border
                             x:Name="HeaderBorder"
                             Padding="32,0,0,0"
-                            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                            BorderThickness="0,0,0,1">
+                            Style="{StaticResource TableHeaderBorderStyle}">
                             <local:GridHeaderPanel x:Name="HeaderRow" />
                         </Border>
 
@@ -189,9 +188,9 @@
                                 <Style TargetType="local:GridRowContainer">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                     <Setter Property="Padding" Value="0" />
-                                    <Setter Property="MinHeight" Value="44" />
+                                    <Setter Property="MinHeight" Value="{StaticResource TableRowHeight}" />
                                     <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
-                                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                    <Setter Property="BorderThickness" Value="{StaticResource TableDividerThickness}" />
                                     <Setter Property="IsTabStop" Value="False" />
                                 </Style>
                             </local:GridTable.ItemContainerStyle>
