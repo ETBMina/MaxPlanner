@@ -377,7 +377,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         SetCard(OverdueCrs, result.OverdueCrs, s.GetString("Dashboard_OverdueCaption"), "Dashboard_OpensRecords", s.GetString("Dashboard_OverdueCrs"));
         OverdueCrs.HasBadge = result.OverdueCrs.Count > 0;
         SetCard(ActiveSubtaskCards, result.ActiveSubtaskCards, s.GetString("Dashboard_ActiveCardsCaption"), "Dashboard_OpensGrid", s.GetString("Dashboard_ActiveSubtaskCards"));
-        SetCard(Reviews, result.Reviews.Open, s.Format("Dashboard_ReviewsCaption", Count(result.Reviews.DoneThisWeek.Count), Count(result.Reviews.DoneThisMonth.Count)), "Dashboard_OpensReviews", s.GetString("Dashboard_DrillOpenReviews"));
+        // The Reviews card's caption line is its two links (done this week / this month), so the button has none.
+        SetCard(Reviews, result.Reviews.Open, string.Empty, "Dashboard_OpensReviews", s.GetString("Dashboard_DrillOpenReviews"));
         _doneThisWeek.Text = s.Format("Dashboard_ReviewsWeekLink", Count(result.Reviews.DoneThisWeek.Count));
         _doneThisMonth.Text = s.Format("Dashboard_ReviewsMonthLink", Count(result.Reviews.DoneThisMonth.Count));
 
