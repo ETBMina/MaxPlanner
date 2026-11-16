@@ -53,7 +53,7 @@ public static class GridColumns
 
     public static double DefaultWidth(string key) => key switch
     {
-        Kind => 132,
+        Kind => 76,
         CrNumber or TaskNumber => 112,
         Squad or Owner => 140,
         Title => 280,

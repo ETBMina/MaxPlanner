@@ -14,7 +14,7 @@ public sealed partial class GridCell : ContentControl
     public static readonly DependencyProperty ColumnProperty = DependencyProperty.Register(
         nameof(Column), typeof(string), typeof(GridCell), new PropertyMetadata(string.Empty));
 
-    private Border? _pickerAffordance;
+    private FrameworkElement? _pickerAffordance;
     private bool _isPointerOver;
 
     public GridCell()
@@ -122,10 +122,10 @@ public sealed partial class GridCell : ContentControl
         }
 
         affordance.Opacity = GridCellContent.IsPickerAffordanceShown(_isPointerOver, FocusState) ? 1 : 0;
-        if (!_isPointerOver)
+        if (!_isPointerOver && affordance is Border square)
         {
             // The square's own pointer-over or pressed look never outlives the cell's hover.
-            GridCellContent.ResetPickerAffordance(affordance);
+            GridCellContent.ResetPickerAffordance(square);
         }
     }
 }

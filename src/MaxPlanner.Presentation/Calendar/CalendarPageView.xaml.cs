@@ -267,7 +267,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
             var label = ViewModel.Text(key);
             var isSorted = ViewModel.SortColumn == column;
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            content.Children.Add(new TextBlock { Text = label, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["CaptionTextBlockStyle"], TextTrimming = TextTrimming.CharacterEllipsis });
+            content.Children.Add(new TextBlock { Text = label, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["TableHeaderTextStyle"] });
             if (isSorted)
             {
                 content.Children.Add(new FontIcon { Glyph = ViewModel.IsSortDescending ? "" : "", FontSize = 10 }.Hidden());
@@ -278,7 +278,8 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
                 Content = content,
                 Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 BorderThickness = new Thickness(0),
-                Padding = new Thickness(0, 4, 0, 4),
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
             };
