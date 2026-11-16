@@ -517,11 +517,9 @@
     <value>{0}, Tags: {1}</value>
     <comment>Board card accessible name while its tag strip shows. {0} = the card summary, {1} = the tag names.</comment>
   </data>
-  <data name="Board_SubtaskGlyph.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Subtask card</value>
-  </data>
-  <data name="Board_SubtaskGlyph.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Subtask card</value>
+  <data name="Board_SubtaskSubtitleLine" xml:space="preserve">
+    <value>↳ {0}</value>
+    <comment>A Subtask card's footer line on the Board. {0} = the card's own subtitle.</comment>
   </data>
   <data name="Board_DatesStarted" xml:space="preserve">
     <value>Started {0}</value>

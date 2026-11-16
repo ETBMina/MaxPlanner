@@ -28,7 +28,9 @@ public sealed class BoardCardViewModelTests
         .With("Board_NoChecklist", "No checklist")
         .With("Board_CopyIdChipName", "Copy ID for Task {0}")
         .With("TaskEditor_OpenCrName", "Open {0}")
-        .With("Board_CrReferenceWithTask", "{0} · Task {1}");
+        .With("Board_CrReferenceWithTask", "{0} · Task {1}")
+        .With("Board_SubtaskOf", "Subtask of {0}")
+        .With("Board_SubtaskSubtitleLine", "↳ {0}");
 
     [Fact]
     public void A_task_with_tags_shows_the_strip_while_the_setting_is_on()
@@ -143,6 +145,56 @@ public sealed class BoardCardViewModelTests
         card.HasCrReference.Should().BeTrue();
         card.HasTaskNumber.Should().BeTrue();
         card.AccessibleName.Should().Be("Subtask card Rollout, subtask of Card freeze, To do, Tags: Zain");
+    }
+
+    [Fact]
+    public void A_subtask_card_shows_its_parents_title_as_the_title_and_its_subtitle_in_the_footer()
+    {
+        var card = ViewModel(Card(parentTags: [], cr: Linked("CR-1067", null)));
+
+        card.ParentTitle.Should().Be("Card freeze", "design §4.2 (U-06): the parent task's title is the card's title row");
+        card.SubtitleLine.Should().Be("↳ Rollout");
+        card.Title.Should().Be("Rollout", "the subtitle stays the card's own name (menu button, tooltip)");
+        card.SubtaskOfText.Should().Be("Subtask of Card freeze");
+        card.AccessibleName.Should().Be("Subtask card Rollout, subtask of Card freeze, To do");
+    }
+
+    [Fact]
+    public void A_task_has_no_parent_title_or_subtitle_line()
+    {
+        var card = ViewModel(Task());
+
+        card.ParentTitle.Should().BeEmpty();
+        card.SubtitleLine.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Every_task_has_an_id_row_for_its_priority_glyph()
+    {
+        ViewModel(Task(cr: Unlinked)).HasIdRow.Should().BeTrue();
+        ViewModel(Task(cr: Linked("CR-1067", "INT-7625"))).HasIdRow.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_subtask_card_has_an_id_row_only_when_linked()
+    {
+        ViewModel(Card(parentTags: [], cr: Linked("CR-1067", null))).HasIdRow.Should().BeTrue();
+        ViewModel(Card(parentTags: [], cr: Unlinked)).HasIdRow
+            .Should().BeFalse("design §4.2 (U-06): no ID chips, so the ⋯ button moves to the end of the title row");
+    }
+
+    [Fact]
+    public void Linking_a_subtask_cards_parent_shows_the_id_row_and_renaming_it_updates_the_title()
+    {
+        var original = Card(parentTags: []);
+        var card = ViewModel(original);
+        var changed = Changes(card);
+
+        card.Update(WorkItemRecord.From(original with { ParentTitle = "Renamed", Cr = Linked("CR-1067", null), Revision = 2 }));
+
+        card.HasIdRow.Should().BeTrue();
+        card.ParentTitle.Should().Be("Renamed");
+        changed.Should().Contain([nameof(BoardCardViewModel.HasIdRow), nameof(BoardCardViewModel.ParentTitle), nameof(BoardCardViewModel.SubtitleLine)]);
     }
 
     [Fact]

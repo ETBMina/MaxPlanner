@@ -23,7 +23,6 @@
             <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemFillColorCautionBrush" />
-            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
             <!-- Board cards (design §4.2): the priority glyph by configured rank, the CR/Task chips, and the neutral chips. -->
@@ -136,7 +135,6 @@
             <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemFillColorCautionBrush" />
-            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
             <!-- Board cards (design §4.2): the priority glyph by configured rank, the CR/Task chips, and the neutral chips. -->
@@ -251,7 +249,6 @@
             <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemColorButtonTextColorBrush" />
-            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <!-- Board cards: no priority colors in High Contrast; the glyph carries the level. Chips are links (HotLight) and ButtonFace chips. -->
