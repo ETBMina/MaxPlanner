@@ -104,11 +104,8 @@
                     </Button>
                 </Grid>
             </controls:PageHeader.Actions>
-            <Grid RowSpacing="8">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <!-- A StackPanel, not a Grid with RowSpacing: the spacing is skipped while the chips bar is collapsed. -->
+            <StackPanel Spacing="8">
                 <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
@@ -123,12 +120,13 @@
                         AutomationIdPrefix="Grid"
                         Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
                 </Grid>
+                <!-- Collapsed while empty: its closed InfoBars would otherwise leave a gap under the Filters row. -->
                 <filters:FilterChipsBar
                     x:Name="ChipsBar"
-                    Grid.Row="1"
                     PageKey="Grid"
-                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-            </Grid>
+                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.Filters.HasBarContent), Mode=OneWay}" />
+            </StackPanel>
         </controls:PageHeader>
 
         <controls:StateView
