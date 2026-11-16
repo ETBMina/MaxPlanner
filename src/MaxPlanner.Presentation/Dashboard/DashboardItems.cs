@@ -69,7 +69,11 @@ public sealed partial class DashboardCardViewModel : ObservableObject
     public partial string Value { get; internal set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCaption))]
     public partial string Caption { get; internal set; } = string.Empty;
+
+    /// <summary>A card without a definition caption (Completed tasks, Reviews) leaves the caption line out.</summary>
+    public bool HasCaption => !string.IsNullOrEmpty(Caption);
 
     [ObservableProperty]
     public partial bool HasBadge { get; internal set; }

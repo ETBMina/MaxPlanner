@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Preferences;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Workspace;
@@ -71,9 +72,16 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial AppPage CurrentPage { get; private set; }
 
-    /// <summary>The current page's status-bar summary (design §2.8); empty for pages not built yet.</summary>
+    /// <summary>
+    /// The current page's status-bar text (design §2.8): empty for pages not built yet, and when it would only repeat the
+    /// page subtitle (<see cref="PageStatusText"/>).
+    /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusSummary))]
     public partial string StatusSummary { get; private set; } = string.Empty;
+
+    /// <summary>The status text shows only with text, so neither an empty tooltip nor an empty UIA element appears.</summary>
+    public bool HasStatusSummary => !string.IsNullOrEmpty(StatusSummary);
 
     /// <summary>A Dashboard drill-down context can be popped (TitleBar Back, Alt+Left; design §2.9).</summary>
     [ObservableProperty]
@@ -285,14 +293,14 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
             page.PropertyChanged += OnPagePropertyChanged;
         }
 
-        StatusSummary = page?.Summary ?? string.Empty;
+        StatusSummary = page is null ? string.Empty : PageStatusText.ForStatusBar(page.Summary, page.Subtitle);
     }
 
     private void OnPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(IPageViewModel.Summary) && sender is IPageViewModel page)
+        if ((e.PropertyName is nameof(IPageViewModel.Summary) or nameof(IPageViewModel.Subtitle)) && sender is IPageViewModel page)
         {
-            StatusSummary = page.Summary;
+            StatusSummary = PageStatusText.ForStatusBar(page.Summary, page.Subtitle);
         }
     }
 

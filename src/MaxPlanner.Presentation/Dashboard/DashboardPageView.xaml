@@ -16,9 +16,10 @@
         <DataTemplate x:Key="CardTemplate" x:DataType="local:DashboardCardViewModel">
             <Border Padding="0" Style="{StaticResource CardBorderStyle}">
                 <!--
-                    Cards share the tallest card's height (see FitCardHeight). The button fills the star row so its
-                    hover, pressed and focus visuals cover the card down to the links row, not just its text, and its
-                    content spreads over that height (see the spacer rows below).
+                    One anatomy for every card (design §4.1): the label at the top, the number at the same height in every card
+                    (the label keeps one line), and the caption at the bottom. Cards share the tallest card's height (see
+                    FitCardHeight), so a one- or two-line caption never moves the number. The button fills the card's star row,
+                    so its hover, pressed and focus visuals cover the whole card above any links row.
                 -->
                 <Grid>
                     <Grid.RowDefinitions>
@@ -38,32 +39,36 @@
                         BorderThickness="0"
                         Command="{x:Bind DrillDownCommand, Mode=OneTime}"
                         CornerRadius="7">
-                        <!--
-                            Label, value and caption share the card's extra height in equal star gaps (4 epx minimum, the
-                            old stack spacing), so a card at its natural height looks as before. With review links below
-                            the button a trailing gap of the same size separates the caption from them; without links
-                            the caption ends at the bottom padding.
-                        -->
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" MinHeight="4" />
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" MinHeight="4" />
+                                <RowDefinition Height="*" MinHeight="8" />
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="{x:Bind local:DashboardPageView.TrailingGap(HasLinks), Mode=OneTime}" />
                             </Grid.RowDefinitions>
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Label, Mode=OneTime}" />
+                            <!-- The label and the caption show their full text as a tooltip only while trimmed. -->
                             <TextBlock
-                                Grid.Row="2"
+                                MaxLines="1"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Label, Mode=OneTime}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap"
+                                IsTextTrimmedChanged="OnTextTrimmedChanged" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Margin="0,8,0,0"
                                 Style="{StaticResource TitleLargeTextBlockStyle}"
                                 Text="{x:Bind Value, Mode=OneWay}" />
-                            <StackPanel Grid.Row="4" Spacing="4">
+                            <StackPanel Grid.Row="3" Spacing="4">
                                 <TextBlock
+                                    MaxLines="2"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Style="{StaticResource CaptionTextBlockStyle}"
                                     Text="{x:Bind Caption, Mode=OneWay}"
-                                    TextWrapping="Wrap" />
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="Wrap"
+                                    IsTextTrimmedChanged="OnTextTrimmedChanged"
+                                    Visibility="{x:Bind common:BindFunctions.Visible(HasCaption), Mode=OneWay}" />
                                 <!-- Design §6.3: "Needs attention" is a Warning glyph plus text, never color alone. -->
                                 <StackPanel
                                     Orientation="Horizontal"
@@ -79,25 +84,31 @@
                             </StackPanel>
                         </Grid>
                     </Button>
-                    <!-- Secondary metrics (reviews done this week/month) are links of their own, never nested in the card button. -->
+                    <!--
+                        The Reviews card's caption line: "done this week" and "done this month" are links of their own (never nested
+                        in the card button), in the caption's place and size at the bottom of the card. Each link is 24 epx high
+                        (4 epx above and below its text), and the margin is 4 epx smaller, so the text stays where a caption sits.
+                    -->
                     <ItemsControl
                         Grid.Row="1"
-                        Margin="12,0,12,8"
+                        Margin="16,0,16,8"
                         IsTabStop="False"
                         ItemsSource="{x:Bind Links, Mode=OneTime}"
                         Visibility="{x:Bind common:BindFunctions.Visible(HasLinks), Mode=OneTime}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="local:DashboardLinkViewModel">
                                 <HyperlinkButton
-                                    Padding="4,2"
+                                    MinHeight="24"
+                                    Padding="0,4"
                                     AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
-                                    Command="{x:Bind Command, Mode=OneTime}"
-                                    Content="{x:Bind Text, Mode=OneWay}" />
+                                    Command="{x:Bind Command, Mode=OneTime}">
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Text, Mode=OneWay}" />
+                                </HyperlinkButton>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <controls:WrapPanel Spacing="4" />
+                                <controls:WrapPanel Spacing="12" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
@@ -266,6 +277,28 @@
                         VerticalAlignment="Bottom"
                         AutomationProperties.AutomationId="Dashboard_ClearFiltersLink"
                         Command="{x:Bind ViewModel.ClearFiltersCommand}" />
+                    <!-- The filters' scope, behind an info button instead of a paragraph under the row (U-05). -->
+                    <Button
+                        x:Name="FilterInfoButton"
+                        x:Uid="Dashboard_FilterInfoButton"
+                        Padding="8"
+                        VerticalAlignment="Bottom"
+                        AutomationProperties.AutomationId="Dashboard_FilterInfoButton"
+                        Background="Transparent"
+                        BorderThickness="0">
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE946;" />
+                        <Button.Flyout>
+                            <!-- The flyout has nothing to focus, so opening it raises the text as a Narrator notification. -->
+                            <Flyout Opened="OnFilterInfoOpened">
+                                <TextBlock
+                                    x:Name="FilterScopeText"
+                                    x:Uid="Dashboard_FilterScopeCaption"
+                                    MaxWidth="360"
+                                    AutomationProperties.AutomationId="Dashboard_FilterScopeText"
+                                    TextWrapping="Wrap" />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                 </controls:WrapPanel>
                 <TextBlock
                     AutomationProperties.LiveSetting="Assertive"
@@ -274,11 +307,6 @@
                     Text="{x:Bind PeriodField.Error, Mode=OneWay}"
                     TextWrapping="Wrap"
                     Visibility="{x:Bind common:BindFunctions.Visible(PeriodField.HasError), Mode=OneWay}" />
-                <TextBlock
-                    x:Uid="Dashboard_FilterScopeCaption"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    TextWrapping="Wrap" />
             </StackPanel>
         </controls:PageHeader>
 

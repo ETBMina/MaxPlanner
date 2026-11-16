@@ -47,8 +47,20 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
     /// <summary>The effective (possibly inherited) title for a task; the subtitle for a Subtask card.</summary>
     public string Title => Model.Task?.EffectiveTitle ?? Model.Card!.Subtitle;
 
-    /// <summary>"Subtask of Card limits API" (B-16.5).</summary>
+    /// <summary>"Subtask of Card limits API" (B-16.5): the accessible name of a Subtask card's title link.</summary>
     public string SubtaskOfText => Model.Card is { } card ? _strings.Format("Board_SubtaskOf", card.ParentTitle) : string.Empty;
+
+    /// <summary>A Subtask card's title row: its parent task's title, the link to the parent (design §4.2); empty for a task.</summary>
+    public string ParentTitle => Model.Card?.ParentTitle ?? string.Empty;
+
+    /// <summary>"↳ Rollout": a Subtask card's footer line, its own subtitle (design §4.2); empty for a task.</summary>
+    public string SubtitleLine => Model.Card is { } card ? _strings.Format("Board_SubtaskSubtitleLine", card.Subtitle) : string.Empty;
+
+    /// <summary>
+    /// The ID row shows on every task (its priority glyph) and on a linked Subtask card (its CR chip); an unlinked
+    /// Subtask card has none, and its ⋯ button then sits at the end of the title row (design §4.2).
+    /// </summary>
+    public bool HasIdRow => IsTask || HasCrReference;
 
     public string Service => (Model.Task is { } task ? task.Service : Model.Card!.ParentService) ?? string.Empty;
 
@@ -94,9 +106,6 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
 
     public bool HasPeople => People.Count > 0;
 
-    /// <summary>The Subtask card's last row shows when it has dates or the inherited CR Owner.</summary>
-    public bool HasSubtaskFooter => HasDates || HasPeople;
-
     /// <summary>
     /// The tag strip's tags (design §4.2 item 2): the task's own Tags, or a Subtask card's parent Tags, in tag order.
     /// Replaced only when a tag or its name changes, so other updates keep the strip as it is.
@@ -128,23 +137,6 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
 
     public double ChecklistPercent => Model.Task is { ChecklistTotal: > 0 } task ? 100.0 * task.ChecklistDone / task.ChecklistTotal : 0;
 
-    public string DatesText
-    {
-        get
-        {
-            var (start, end) = Model.Task is { } task ? (task.StartDate, task.EndDate) : (Model.Card!.StartDate, Model.Card.EndDate);
-            return (start, end) switch
-            {
-                (null, null) => string.Empty,
-                ({ } s, null) => _strings.Format("Board_DatesStarted", Format(s)),
-                (null, { } e) => _strings.Format("Board_DatesEnded", Format(e)),
-                ({ } s, { } e) => _strings.Format("Board_DatesRange", Format(s), Format(e)),
-            };
-        }
-    }
-
-    public bool HasDates => DatesText.Length > 0;
-
     /// <summary>The concise card summary of design §8.2, used as the card's accessible name; it adds the tags while the strip shows.</summary>
     public string AccessibleName
     {
@@ -173,6 +165,8 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(IsSubtaskCard));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(SubtaskOfText));
+        OnPropertyChanged(nameof(ParentTitle));
+        OnPropertyChanged(nameof(SubtitleLine));
         OnPropertyChanged(nameof(Service));
         OnPropertyChanged(nameof(HasService));
         OnPropertyChanged(nameof(CrReference));
@@ -182,6 +176,7 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(HasTaskNumber));
         OnPropertyChanged(nameof(TaskNumber));
         OnPropertyChanged(nameof(CopyIdName));
+        OnPropertyChanged(nameof(HasIdRow));
         OnPropertyChanged(nameof(PriorityText));
         OnPropertyChanged(nameof(PriorityLevel));
         OnPropertyChanged(nameof(PriorityName));
@@ -194,9 +189,6 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(ChecklistCountText));
         OnPropertyChanged(nameof(ChecklistText));
         OnPropertyChanged(nameof(ChecklistPercent));
-        OnPropertyChanged(nameof(DatesText));
-        OnPropertyChanged(nameof(HasDates));
-        OnPropertyChanged(nameof(HasSubtaskFooter));
         OnPropertyChanged(nameof(AccessibleName));
         OnPropertyChanged(nameof(MenuButtonName));
     }
@@ -231,6 +223,4 @@ public sealed partial class BoardCardViewModel : ProjectionItemViewModel<WorkIte
         OnPropertyChanged(nameof(HasTagStrip));
         OnPropertyChanged(nameof(TagsText));
     }
-
-    private static string Format(DateOnly date) => DateText.RecordDate(date);
 }

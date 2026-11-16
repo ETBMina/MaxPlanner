@@ -210,13 +210,19 @@
                         Style="{StaticResource CaptionTextBlockStyle}"
                         Text="{x:Bind Reference, Mode=OneWay}"
                         TextWrapping="Wrap" />
-                    <!-- B-09: each task group offers Open task (design §4.5). -->
+                    <!--
+                        B-09: each task group offers Open task (design §4.5). The text is underlined, so it reads as a link even
+                        when the accent color is close to the text color; the negative margin keeps it in line with the text above
+                        while the padding gives the hover plate room.
+                    -->
                     <HyperlinkButton
-                        x:Uid="Checklists_OpenTaskLink"
-                        Padding="0"
+                        Margin="-4,-2"
+                        Padding="4,2"
                         AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_OpenTaskLink_', Key.Value), Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind OpenTaskName, Mode=OneWay}"
-                        Command="{x:Bind OpenTaskCommand}" />
+                        Command="{x:Bind OpenTaskCommand}">
+                        <TextBlock x:Uid="Checklists_OpenTaskLinkText" TextDecorations="Underline" />
+                    </HyperlinkButton>
                     <StackPanel Spacing="4">
                         <TextBlock
                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_Progress_', Key.Value), Mode=OneTime}"
@@ -308,9 +314,14 @@
                     IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}"
                     KeyDown="OnReviewKeyDown"
                     Tag="{x:Bind Mode=OneTime}" />
+                <!--
+                    Top-aligned, 6 epx down: the first text line is centred on the check box (32 epx high, box centred), so a
+                    two-line row keeps its box beside the title, and a one-line row looks as before.
+                -->
                 <StackPanel
                     Grid.Column="1"
-                    VerticalAlignment="Center"
+                    Margin="0,6,0,0"
+                    VerticalAlignment="Top"
                     Background="Transparent"
                     Spacing="2"
                     Tag="{x:Bind Mode=OneTime}"
@@ -475,7 +486,7 @@
         <controls:PageHeader
             x:Name="HeaderRoot"
             HasSubtitle="True"
-            Subtitle="{x:Bind ViewModel.Summary, Mode=OneWay}"
+            Subtitle="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
             SubtitleAutomationId="Checklists_PageSubtitle"
             TitleAutomationId="Checklists_PageTitle"
             TitleUid="Checklists_PageTitle">

@@ -209,8 +209,13 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     [ObservableProperty]
     public partial ViewState State { get; private set; } = ViewState.Loading;
 
+    /// <summary>The status-bar text: "Filtered: 12 of 40 cards" while filters or search narrow the Board, else the subtitle (design §2.8).</summary>
     [ObservableProperty]
     public partial string Summary { get; private set; } = string.Empty;
+
+    /// <summary>"40 cards in 8 buckets": the page subtitle, always the unfiltered count.</summary>
+    [ObservableProperty]
+    public partial string Subtitle { get; private set; } = string.Empty;
 
     /// <summary>The shared Board/Grid task scope: search, filters, chips, and the Dashboard context (B-10).</summary>
     public TaskFilterScopeViewModel Filters { get; }
@@ -550,15 +555,14 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         var initialized = _buckets.Count > 0 && _buckets.All(c => c.IsInitialized);
         var cards = _buckets.Sum(c => c.Cards.Count);
         State = initialized ? ViewState.Populated : ViewState.Loading;
-        if (IsFiltered)
-        {
-            var total = _context.Store.Tasks.Items.Count(t => !t.IsArchived) + _context.Store.SubtaskCards.Items.Count(c => !c.IsParentArchived);
-            Summary = _context.Strings.Format("Board_SummaryFiltered", cards, total);
-            return;
-        }
-
-        Summary = cards == 0
+        // The subtitle always counts every active card; the status bar adds the filtered count only while filtered,
+        // because an unfiltered status would repeat the subtitle (U-10, PageStatusText).
+        var total = IsFiltered
+            ? _context.Store.Tasks.Items.Count(t => !t.IsArchived) + _context.Store.SubtaskCards.Items.Count(c => !c.IsParentArchived)
+            : cards;
+        Subtitle = total == 0
             ? _context.Strings.GetString("Board_SummaryEmpty")
-            : _context.Strings.Format(cards == 1 ? "Board_SummaryOne" : "Board_Summary", cards, _buckets.Count);
+            : _context.Strings.Format(total == 1 ? "Board_SummaryOne" : "Board_Summary", total, _buckets.Count);
+        Summary = IsFiltered ? _context.Strings.Format("Board_SummaryFiltered", cards, total) : Subtitle;
     }
 }

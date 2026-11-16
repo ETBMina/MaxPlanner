@@ -94,8 +94,13 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
     [ObservableProperty]
     public partial ViewState State { get; private set; } = ViewState.Loading;
 
+    /// <summary>"General to-dos, checklist items of active tasks and reviews · 21 open": the page subtitle.</summary>
     [ObservableProperty]
-    public partial string Summary { get; private set; } = string.Empty;
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial string Subtitle { get; private set; } = string.Empty;
+
+    /// <summary>The status bar has nothing to add to the subtitle, so it shows nothing (design §2.8, U-10).</summary>
+    public string Summary => Subtitle;
 
     /// <summary>Open items across General to-dos, active task groups and reviews (subtitle and nav badge).</summary>
     [ObservableProperty]
@@ -364,7 +369,7 @@ public sealed partial class ChecklistsPageViewModel : ObservableObject, IPageVie
         var strings = _context.Strings;
         HasNoMatches = query.Length > 0 && matches == 0 && Groups.Count == 0;
         NoMatchesText = strings.Format("Checklists_NoMatches", query);
-        Summary = strings.Format(OpenCount == 1 ? "Checklists_SummaryOne" : "Checklists_Summary", OpenCount);
+        Subtitle = strings.Format(OpenCount == 1 ? "Checklists_SummaryOne" : "Checklists_Summary", OpenCount);
     }
 
     /// <summary>B-09: task groups are ordered newest parent first, then ID.</summary>

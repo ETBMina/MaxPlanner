@@ -1,5 +1,6 @@
 using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 
 namespace MaxPlanner.Presentation.Dashboard;
@@ -11,6 +12,8 @@ namespace MaxPlanner.Presentation.Dashboard;
 /// </summary>
 public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 {
+    // The six card templates are created once (the view lives as long as the dataset), so the set stays small.
+    private readonly HashSet<TextBlock> _trimWatched = [];
     private bool _isCardFitPending;
 
     public DashboardPageView(DashboardPageViewModel viewModel)
@@ -69,8 +72,28 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public void OnHidden() => PageContent.OnPageHidden();
 
-    /// <summary>The card's last gap: a share of the spare height above the review links, or nothing without links.</summary>
-    public static GridLength TrailingGap(bool hasLinks) => hasLinks ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+    // A card label or caption shows its full text as a tooltip only while trimmed. The first change also watches the
+    // text, so a caption that changes while it stays trimmed keeps a current tooltip.
+    private void OnTextTrimmedChanged(TextBlock sender, IsTextTrimmedChangedEventArgs args)
+    {
+        if (_trimWatched.Add(sender))
+        {
+            sender.RegisterPropertyChangedCallback(TextBlock.TextProperty, (d, _) => UpdateTrimmedToolTip((TextBlock)d));
+        }
+
+        UpdateTrimmedToolTip(sender);
+    }
+
+    private static void UpdateTrimmedToolTip(TextBlock text) =>
+        ToolTipService.SetToolTip(text, BindFunctions.ToolTipWhenTrimmed(text.IsTextTrimmed, text.Text));
+
+    // The flyout's text is not focusable, so Narrator would not read it on open: announce it from the info button.
+    private void OnFilterInfoOpened(object? sender, object e)
+    {
+        var peer = FrameworkElementAutomationPeer.FromElement(FilterInfoButton) ?? FrameworkElementAutomationPeer.CreatePeerForElement(FilterInfoButton);
+        peer?.RaiseNotificationEvent(
+            AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, FilterScopeText.Text, "DashboardFilterInfo");
+    }
 
     private void OnCardPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args) => ScheduleCardHeightFit();
 

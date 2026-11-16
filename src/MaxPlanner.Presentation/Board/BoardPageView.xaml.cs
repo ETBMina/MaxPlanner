@@ -91,6 +91,15 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <summary>Design §4.2: 60% opacity while the card is being moved; the "Moving" caption says it in text.</summary>
     public static double MovingOpacity(bool isMoving) => isMoving ? 0.6 : 1.0;
 
+    /// <summary>The card body's ⋯ button row (<see cref="BoardCardLayout.MenuRow"/>).</summary>
+    public static int CardMenuRow(bool hasIdRow) => BoardCardLayout.MenuRow(hasIdRow);
+
+    /// <summary>The title's column span (<see cref="BoardCardLayout.TitleColumnSpan"/>).</summary>
+    public static int CardTitleColumnSpan(bool hasIdRow) => BoardCardLayout.TitleColumnSpan(hasIdRow);
+
+    /// <summary>The gap row below the ID row (<see cref="BoardCardLayout.IdRowGap"/>).</summary>
+    public static GridLength CardIdRowGap(bool hasIdRow) => new(BoardCardLayout.IdRowGap(hasIdRow));
+
     /// <inheritdoc/>
     public FrameworkElement HeaderElement => HeaderRoot;
 
