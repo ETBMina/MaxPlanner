@@ -19,7 +19,7 @@ Living document for the whole-app review (architecture and MVVM, consistency, UI
 | 0 | Baseline | Done 2026-11-11 | n/a | n/a |
 | 1 | Architecture and MVVM | Done 2026-11-11 | All nine approved 2026-11-11 | 1A, 1B, 1C, 1D merged 2026-11-12 (1290 tests); awaiting the user's manual check in the app. A-03(b), A-04, A-06 moved to part 2. |
 | 2 | Consistency and shared components | Done 2026-11-12 | Approved as proposed 2026-11-12 | 2A–2E merged 2026-11-13, each tested by the user in the app |
-| 3 | UI / UX | Not started | | |
+| 3 | UI / UX | Done 2026-11-13 | All fourteen decided 2026-11-13 (four with changes, see the table) | Not started; each batch awaits approval |
 | 4 | Performance | Not started | | |
 
 ## Part 0 — Baseline
@@ -136,6 +136,55 @@ Batches for part 2. The findings are approved; each batch still needs the user's
 | 2E | A-03(b) narrowed | Grid code-behind. Approved 2026-11-13. Implemented and verified 2026-11-13 (build clean, 1439 tests, independent review on Opus found no regression). Three commits `1db804e`..`fe637f4`, merged into `review/app-review` as `0d50f2e` (same tree as the tested commit) after the user tested it on 2026-11-13. |
 | Part 3 | C-11, date format choices from C-07, first day of week from C-03 | Visible choices, decided with mock-ups |
 
+### Part 3 — UI / UX (reviewed 2026-11-13, decided 2026-11-13)
+
+Verdict: the app already looks like a Windows 11 app: Mica, the navigation pane, theme brushes everywhere, a High Contrast dictionary, accent buttons used once per page, InfoBars for status. The findings are about focus on open, three editors that each introduce themselves differently, empty values styled as real values, a few loud or cramped spots, and two table styles.
+
+Method: the current build (`0d50f2e`) launched on the scale-0.03 fixture; all six pages, the Task, CR and Subtask card editors on existing records, the Filters flyout and a sub-menu, the Grid column chooser, Calendar Week and Records, and light theme. Screenshots in `docs/review/part3/screens/`. Not captured: the review editor on an existing record, the Data page wizards, context menus (the capture tool did not show the popup), narrow windows after part 2 (the part 0 set covers narrow before it).
+
+| ID | Severity | Finding | Evidence | Proposed change | Effort | Risk | Decision |
+|---|---|---|---|---|---|---|---|
+| U-01 | High | Editors do not reliably land focus where they mean to. WinUI places its own first focus after `Opened`, which overrides the editor: the task editor's tag field takes focus and flickers (seen by the user), the Subtask card editor ends on its ⋯ button instead of Subtitle, and a task with a read-only title opens with a focus ring on the Close (×) button. The CR editor happens to keep its focus. | `editor-subtask-existing.png`, `editor-task-existing.png`; `TaskEditorDialog.OnOpened`, `SubtaskCardEditorDialog.xaml.cs:23`, `CrEditorDialog.xaml.cs:27`, `ReviewEditorDialog.xaml.cs:18` | One initial-focus rule in `EditorDialogShell`: each editor names its first field, the shell sets it before the dialog's own focus pass (and never on a chrome button). | S–M | Low || Approved (2026-11-13), then changed by the user while testing 3A: editors open with no visible focus (focus on the content, no caret or highlight); the first Tab goes to the first field. |
+| U-02 | Medium | The three editors introduce themselves three ways. Task: a tag search strip on top, the CR title as heading, a facts bar (CR number, Task number, Squad, Owner). CR: "Change request" heading, Created, ⋯. Subtask card: "Subtask card" heading, a parent caption, ⋯, then a "Parent task" card with five facts in a different layout. | `editor-task-existing.png`, `editor-cr-existing.png`, `editor-subtask-existing.png` | One header pattern: record kind as a caption, the record's title as the heading, ⋯ at the right, then one read-only facts bar in the same style for every editor. Tags move below the heading on the task editor. Mock-up 1. | M | Medium (XAML in 3 editors, AutomationIds kept) || Approved with changes (2026-11-13): build on the task editor, the most recent one; keep tags at the top but show the tag search only on demand, not always; put the Created date in the info (facts) box. |
+| U-03 | Medium | Empty values look like values: "No task number" in the bold value style, an orange person icon on an empty Designer ("Choose a person"), and the date pickers' default lower-case "select a date". | `editor-task-existing.png`, `editor-subtask-existing.png` | Empty facts as a secondary "None" (or an em dash); a neutral outline person icon for an empty picker; the date placeholder from `.resw` ("Pick a date"). | S | Low || Approved as proposed (2026-11-13) |
+| U-04 | Medium | Overdue CR bars on the Calendar carry a warning glyph, the word "Overdue" and a full caution-colour outline. In dark the outline is the loudest thing on the page; in light the yellow outline on a pale fill is faint. | `page-calendar.png`, `light-calendar.png`; `Themes/AppResources.xaml:894-898` | Keep the glyph and text; replace the full outline with a 3 px caution accent on the bar's leading edge, as completed bars use a neutral one. Mock-up 2. | S | Low || Approved as proposed (2026-11-13) |
+| U-05 | Medium | Dashboard cards: the big numbers do not line up across cards (a longer caption pushes "29" up), the Reviews card sits alone on a second row with its own layout and says "30 done this week" twice, and a full-width paragraph explains the filters. | `page-dashboard.png` | Fixed card anatomy: label at the top, number on one baseline, caption at the bottom; Reviews uses the same anatomy (number plus one caption line); the filter explanation moves into an info button tooltip. Mock-up 3. | S–M | Low || Approved as proposed (2026-11-13) |
+| U-06 | Low–Medium | Board cards spend a line on a lone checklist glyph when the card has no ID chips, and a lone avatar on its own bottom line. | `page-board.png` | Checklist glyph with its count ("2/5") on the service line, avatar at the end of the same line; cards get shorter and scan better. Mock-up 4. | S | Design approved by the user (2026-11-13) in a forked design session: see "U-06 design" below. |
+| U-07 | Low–Medium | Two table styles: the Grid (row dividers, 44 px rows, header cells) and Calendar Records (no dividers, bold first column, different header). | `page-grid.png`, `calendar-records.png` | Records uses the Grid's header and row styles. | S–M | Low || Approved as proposed (2026-11-13) |
+| U-08 | Low | Grid Kind column shows "Subtask c…" truncated with the row ⋯ inside the same cell; every Subtask card title has a lock icon. | `page-grid.png` | Kind as an icon with its name as tooltip and accessible name, ⋯ in its own narrow column; the lock only on hover or in the tooltip. | S–M | Medium (Grid cell layout) || Approved as proposed (2026-11-13) |
+| U-09 | Low | Checklists: on two-line review rows the checkbox is centred while the text is top-aligned; "Open task" on task cards looks like plain text. | `page-checklists.png` | Top-align the checkbox with the first line; "Open task" as a hyperlink button. | S | Low || Approved as proposed (2026-11-13) |
+| U-10 | Low | The status bar's left text repeats the page subtitle on Board and Checklists ("300 cards in 8 buckets" twice). | `page-board.png`, `page-checklists.png` | Status bar left side shows only transient status (filter result counts when filtered); subtitles keep the summary. | S | Low || Approved as proposed (2026-11-13) |
+| U-11 | Medium (from C-11) | Two filter experiences: the Dashboard filters inline with combo boxes and From/To pickers; Board, Grid and Calendar use the Filters button with chips. | `page-dashboard.png`, `flyout-filters-status.png` | Dashboard uses the same Filters button and chips (its four filters become rows in the same flyout). | M | Medium (Dashboard filter wiring) || Approved as an experiment (2026-11-13). Tried in 3E and rejected (2026-11-17): the Dashboard keeps its inline filters. |
+| U-12 | Low (from C-07, C-03) | Dates mix "Created 11/13/2026", "Started 11/13/2026" and "Nov 2026"; first day of the week is forced to Sunday on Dashboard and Calendar pickers but follows the system in the editors. | screenshots; `Dashboard/DashboardPageView.xaml:261,268`, `Calendar/CalendarPageView.xaml:418` | Record dates as "Nov 13" (with the year only when not this year) through `DateText`; one first-day rule for every picker, taken from the workweek setting. | S | Low || Approved with change (2026-11-13): show the year too, for example "Nov 13, 2026". |
+| U-13 | Low (held from 2D) | The Grid toolbar never moves Show archived, Columns and Export into "…"; at the narrowest windows it clips. | `Grid/GridPageView.xaml` | Give the CommandBar a constrained width so dynamic overflow works. | S | Low || Approved as proposed (2026-11-13) |
+| U-14 | Medium (held from 2E, a bug) | A Grid flyout editor opened by F2, double-tap or a page switch never saves on an outside click (the double-click guard overflows). | `Grid/GridEditorFlyout.cs` | Fix the guard's "not opened by tap" value. | S | Low || Approved as proposed (2026-11-13) |
+
+#### U-06 design (approved 2026-11-13)
+
+The Subtask card uses the task card's base layout. Designed with the user in a forked session; the variants shown were "parent line above the title" (A) and "parent title as the heading, subtitle in the footer" (B); the user chose B, without dates.
+
+Rows, top to bottom, the same for both kinds (`Board/BoardPageView.xaml`, `CardTemplate`):
+
+| Row | Task card (unchanged) | Subtask card (new) |
+|---|---|---|
+| 1. Tag strip with ⋯ | Task's tags | Parent's tags (as today) |
+| 2. ID row | Priority glyph, CR chip, Task chip; ⋯ at the end when there is no strip | CR chip and Task chip only; no priority glyph and no Subtask list glyph (`Board_SubtaskGlyph` removed). ⋯ at the end when there is no strip |
+| 3. Title | Task title | The parent task's title, in the same title style. It is the link to the parent (replaces the "Subtask of …" line) |
+| 4. Chip row | Service chip, Squad chip | Service chip and Squad chip (the Squad chip is new on Subtask cards) |
+| 5. Footer, below a divider | Checklist progress, avatars on the right | "↳ " + the card's own subtitle on one line (trimmed with an ellipsis), avatar on the right |
+
+What differs per kind, and nothing else: row 2's priority glyph (task only), row 3's text and link target, and row 5's left side. The "Subtask of …" line and the dates line (`DatesText`, "Started …") are no longer shown on the card; the dates stay in the Subtask card editor.
+
+Rules for the implementation:
+- No element per card is added: the Subtask glyph, the parent-link line and the separate dates footer go away; the Subtask card reuses the task card's footer row with different content.
+- When a Subtask card has neither tags nor ID chips, ⋯ sits at the end of the title row, never on a line of its own.
+- Without colour, the kind is still clear: the ↳ subtitle in the footer, and the card's accessible name keeps "Subtask card …" (`Board_SubtaskCardName`-style name including the subtitle and the parent).
+- AutomationIds that must stay: `Board_SubtaskCard_{id}` (card), `Board_CardTagStrip_`, `Board_CardMenuButtonStrip_`, `Board_CardMenuButton_`, `Board_CardCrChip_`, `Board_CardTaskChip_`, and `Board_CardParentLink_` (now on the title link). `Board_CardPriority_` stays task-only. Add `Board_CardSubtitle_{id}` for the footer subtitle text.
+- The tooltip on the title shows the full parent title; the footer subtitle shows the full subtitle as its tooltip.
+- `design.md` §4.2 (Board card anatomy) is updated in the same batch.
+
+Not proposed: the CR editor's pre-checked "Make Person the default CR Owner" appears only when no default owner exists; that is product rule B-11, out of scope.
+
 ## Implementation batches
 
 Part 1. All nine findings are approved; each batch still needs the user's go-ahead before it is implemented. Batches run in this order, one at a time on `review/app-review`, because 1B, 1C, 1E, 1F and 1G touch the same Presentation files.
@@ -156,6 +205,16 @@ Moved to part 2 on 2026-11-12 (user's decision). The findings stay approved; the
 | A-03(b) `TaskGrid` control | 1G | Part 2 decides which grid pieces become shared components. Riskiest item: focus and keyboard behaviour is covered only by manual testing. |
 
 Part 2 reviews the code as batches 1A–1D leave it.
+
+Part 3. Each batch still needs the user's go-ahead. They run one at a time in this order; 3E runs last on its own branch and is merged only if the user keeps it.
+
+| Batch | Findings | Why together | Approved | Status |
+|---|---|---|---|---|
+| 3A | U-01, U-03, U-04, U-12, U-13, U-14 | Small, contained fixes: editor first focus, empty-value styles, overdue bars, dates with the year and first day of week, Grid toolbar overflow, Grid flyout light-dismiss bug | 2026-11-13 | Implemented and verified 2026-11-13 (build clean, 1492 tests, independent review on Opus: no errors, four fixes applied). Nine commits `1ee1554`..`6044e22`, merged into `review/app-review` as `4c7e5d5` (same tree as the tested commit) after the user tested it on 2026-11-13; `design.md` updated in the main checkout. |
+| 3B | U-02 | The editor header and facts box, built on the task editor (tags on demand, Created in the facts box) | 2026-11-15 | Implemented and verified 2026-11-15 (build clean, 1535 tests, independent review on Opus: no errors, five fixes applied; Board crash repro passes). Eight commits `88f5887`..`4e19e91` on `refs/heads/worktree-agent-a1a549b6c64273642` (the last three are the user's feedback: Subtask editor per U-06, Copied hint, one-field tag line; then two tag-field fixes found by the user and by an on-screen check: the input was never laid out on reveal, and Esc/pick reopened the list; 1564 tests); `design.md` updated in the main checkout; merged into `review/app-review` as `39eb625` (same tree as the tested commit) after the user tested it on 2026-11-16. |
+| 3C | U-06, U-05, U-09, U-10 | Board card (U-06 design), Dashboard cards, Checklists alignment and link, status bar text | 2026-11-16 | Implemented and verified 2026-11-16 (build clean, 1592 tests, independent review on Opus: no errors; its fixes applied; checked on screen in light and dark; Board scroll repro passes). Six commits `b50ec4e`..`17c3cb8` on `refs/heads/worktree-agent-a8a18e6cfebc3dc11`; a follow-up (`45f93d8`) hid every card title and was caught by the screen check, fixed in `17c3cb8`; `design.md` updated in the main checkout; merged into `review/app-review` after the user tested it on 2026-11-16. |
+| 3D | U-07, U-08 | Tables: Calendar Records adopts the Grid styles; Grid Kind column and lock icon | 2026-11-16 | Merged 95240de after user test |
+| 3E | U-11 | Experiment on its own branch: Dashboard uses the Filters button; the user tests and decides | 2026-11-16 | Rejected by the user after testing (2026-11-17); not merged. Branch worktree-agent-a860b89961ebdc9f0 (a4379b9) kept for reference. Its review's shared-filter fixes (empty chips bar gap on Grid/Board/Calendar, open menu detached on dispose) merged separately as 6d2e632 |
 
 ## Early performance notes
 
@@ -193,3 +252,6 @@ Out of scope for this review; listed for the user and not acted on.
   2. Settings rename: Esc while a rename is saving moves focus to the row's ⋯ button although the box stays open.
   3. `Settings/DataPage/DataPageView` keeps its own header markup and has no width-0 guard; a candidate for the shared `PageHeader`.
 - Found during batch 2E (pre-existing, confirmed in the code before 2E): a Grid flyout editor opened by F2, double-tap, UI Automation or the reopen after a page switch never commits on light dismiss. The double-click guard uses `long.MinValue` as "not opened by tap", so `now - long.MinValue` overflows negative and every outside click counts as the second click of a double-click (`Grid/GridEditorFlyout.cs`, formerly `GridPageView.xaml.cs` ~901). One-line fix proposed. **User's decision (2026-11-13): fix in part 3.**
+- Found while testing batch 3A (user, 2026-11-13): scrolling the Board's In Progress bucket with the mouse wheel in a maximized window crashed with `LayoutCycleException`. Reproduced by script; caused by 3A's longer card dates ("Started Nov 13, 2026"); the build before 3A and 3A with that one line reverted do not crash. The Board card layout loops when the dates text changes length; fixed in 3A commit `95e91bd`: the avatar row used a virtualizing `StackLayout`, so its width followed the card's viewport while the bucket scrolled and the wrapping dates text beside it changed height; it now uses a non-virtualizing `CardPeopleLayout` and the dates stay on one line (ellipsis + tooltip). The scripted repro no longer crashes.
+- User feedback while testing batch 3B (2026-11-15), sent back to the 3B agent: (1) the Subtask card editor must follow the U-06 card design: the parent task's title as the heading (the Open parent link), the card's own subtitle under it marked ↳ as the editable field, the parent's facts and Created in the info box; (2) copy buttons for CR and task numbers show a short "Copied" hint; (3) the tag field has no visible "Add tag" button: the whole tag line looks and acts as one clickable field, and the "Add tag" placeholder shows only once the input is revealed by a click or key.
+- Batch 3C decision (user, 2026-11-16): on a Subtask card the parent-title link is kept even though a drag cannot start from it; the card is dragged by its chips, footer or edge.

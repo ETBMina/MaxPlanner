@@ -32,9 +32,15 @@ Read before each part. After each part, add what went wrong or worked, in one or
 - **Pure decision functions are the test seam for view code.** From 2C on, every show/hide, enabled-state and "which editor" decision inside a control or builder was pulled into a small WinUI-free function with tests. That is what made view refactors safe to verify without UI automation.
 - **Merging before the user ran the app stacked up risk.** Four batches were merged on tests and diff review alone. The user then asked for the working branch to be launched for their own testing before every merge; the loop now does that.
 - **An agent skips a sub-item when "no visible change" forbids it.** The shared New button was skipped because one page differed. Report such skips with the exact difference, so the user can approve the small visible change if they want the consistency.
+- **Screen capture can come back black.** In 3D–3F every `winapp ui screenshot` was black (display off). Fall back to `winapp ui search` for presence and positions, and say plainly in the hand-over that the layout was not seen.
+- **Experiments stay on their own branch.** 3E (Dashboard Filters button) was built, reviewed and launched from its branch; the user rejected it and asked to keep the branch. Review follow-ups that also apply to the main line go to the review branch as their own small batch.
 
 ## Working with the user
 
 - Lead with the result and what is not verified; give manual test steps per batch, since unit tests cannot see focus, shortcuts or enabled states.
 - Put decisions as a short list of options with a recommendation.
 - Keep a list of bugs noticed and not fixed; the user decides when they are worth a batch.
+- **Text length is a layout input.** A display-only format change ("11/13/2026" → "Nov 13, 2026") crashed the Board with a layout cycle while scrolling. Unit tests and the independent review could not see it; the user's launch did, and a scripted repro (maximized window, wheel-scroll one bucket) plus a one-line revert pinned it in minutes. For any change to text on a virtualized list item, scroll the list in the launched build before handing it to the user.
+- **Look before you hand over a UI batch.** In 3B the user found a field with no caret and misaligned chips that a 30-second screenshot pass would have caught. When the user has allowed screenshots for the UI part, open the batch's build yourself, capture the changed surfaces in light and dark, and check them before asking the user to test.
+- **Say which batch carries which change.** The user expected the Board card redesign (U-06, batch 3C) in 3B because 3B changed the Subtask editor to match it. When a design spans two batches, say plainly in the hand-over what the build does not include yet.
+- **A review fix can break what the review approved.** In 3C a follow-up commit that restored task-title width made every Board card lose its title. Tests passed and layout was "reasoned, not checked on screen". Re-run the on-screen check after every follow-up commit to a UI batch, not only after the first one.

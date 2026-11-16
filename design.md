@@ -68,6 +68,7 @@ Page padding: L 32/24 (left-right/top), M 24/16, S 16/12. Content may extend to 
 ### 2.4 CommandBar pattern `[gallery-commandbar-1, gallery-appbarseparator-1]`
 - `DefaultLabelPosition="Right"`, `IsDynamicOverflowEnabled="True"`, and `OverflowButtonVisibility="Auto"`. Each command sets `DynamicOverflowOrder` so the least-used commands overflow first.
 - Destructive or rare commands (Export, Reset layout) start in `SecondaryCommands`. A command is never just hidden: at S everything except the accent primary button reaches the user through overflow (T-08).
+- In a page header the CommandBar gets a finite width: the header actions may take the row's width less 12 epx and a 160-epx minimum for the title block, so commands move into "…" before the title is squeezed further (review U-13, Nov 2026).
 - Commands that depend on a selection use `IsEnabled` bindings. A disabled command's tooltip says why ("Select a task").
 - `KeyboardAccelerators` are declared on the command itself, so the tooltip shows the shortcut `[gallery-accessibilitykeyboard-5]` (§7).
 
@@ -129,7 +130,7 @@ A 32-epx bar at the bottom of the content area (`LayerFillColorDefaultBrush` wit
 
 | Zone | Content |
 |---|---|
-| Left: page summary | Page-provided text, e.g. Grid "8 of 32 active tasks match · sorted by Created, newest first · archived hidden"; Board "Filtered: 12 of 40 cards"; Calendar "Workweek Sunday–Thursday · Friday and Saturday hidden". Ellipsis at S, with the full text in a tooltip and `AutomationProperties.Name`. |
+| Left: page summary | Page-provided text, e.g. Grid "8 of 32 active tasks match · sorted by Created, newest first · archived hidden"; Board "Filtered: 12 of 40 cards"; Calendar "Workweek Sunday–Thursday · Friday and Saturday hidden". Ellipsis at S, with the full text in a tooltip and `AutomationProperties.Name`. Text equal to the page subtitle is not shown (review U-10, Nov 2026): Board shows only "Filtered: …" while filtered, Checklists shows nothing. |
 | Right: save status | One of the states in the table below. At S the text collapses to glyph + short label. |
 
 | Save state | Glyph + text | Live setting |
@@ -163,6 +164,9 @@ The indicator shows **actual persistence results**, never optimistic ones (B-07 
 - Several people in one compact field (Grid People fields; Dashboard unlinked rows) use an overlapping group (`PersonAvatarGroup`) of at most 3 circles, the last becoming "+N". The names stay as text.
 - The avatar is decorative and hidden from UI Automation when the name is visible next to it; shown alone, it is an image named after the person, with the name as its tooltip. Board card people footers (§4.2) add the person's roles to the tooltip and name.
 - Not shown: Calendar Month/Week bars (owner is in the tooltip only), joined text lines such as linked-CR secondary text, the import fallback-owner and lookup-replacement combos, and chart labels.
+
+### 2.11 Dates
+- Dates shown as text for a record (Created, Started, Ended, Calendar ranges) include the year, e.g. "Nov 13, 2026", through `DateText.RecordDate`; date pickers show "Pick a date" when empty and start the week on the workweek's first day (Sunday, ADR 0020) everywhere (review U-03, U-12, Nov 2026). Grid cell text keeps the short date because it is also the cell's edit value.
 
 ## 3. Theme and materials
 
@@ -203,8 +207,8 @@ Each page section lists its purpose, regions, controls, item content, commands, 
 
 | Region | Controls and content |
 |---|---|
-| Header | Title "Dashboard". Subtitle: long-format local today + " · non-archived records only". Filters inline, not in a flyout: **Squad** (`ComboBox`: "All squads", configured squads, "General"), **Priority** ("All priorities"), **CR Owner** ("All owners") `[gallery-combobox-2]`, and a **Clear filters** `HyperlinkButton`. Below them, a caption: "Filters apply to tasks, Subtask cards and CRs. Reviews are not filtered." |
-| Summary cards | `ItemsRepeater` + `UniformGridLayout` (`MinItemWidth` 220, `ItemsStretch=Fill`) `[gallery-itemsrepeater-1]`. Each card is a `Button` styled as a card (invoke = drill-down). The six cards are in the table after this one. Card anatomy: label (`BodyStrongTextBlockStyle`), value (`TitleLargeTextBlockStyle`), definition caption, optional badge. The badge "Needs attention" (Warning glyph + text, caution foreground) appears only when the overdue count is above 0. |
+| Header | Title "Dashboard". Subtitle: long-format local today + " · non-archived records only". Filters inline, not in a flyout: **Squad** (`ComboBox`: "All squads", configured squads, "General"), **Priority** ("All priorities"), **CR Owner** ("All owners") `[gallery-combobox-2]`, and a **Clear filters** `HyperlinkButton`. After Clear filters, an info button ("About the filters") opens a flyout explaining what the filters apply to (review U-05, Nov 2026; it replaces the caption under the filters). |
+| Summary cards | `ItemsRepeater` + `UniformGridLayout` (`MinItemWidth` 220, `ItemsStretch=Fill`) `[gallery-itemsrepeater-1]`. Each card is a `Button` styled as a card (invoke = drill-down). The six cards are in the table after this one. Card anatomy (review U-05, Nov 2026): the label on one line at the top (`BodyStrongTextBlockStyle`), the value (`TitleLargeTextBlockStyle`) at the same height in every card, then the definition caption (up to two lines) and the optional badge at the bottom, so caption length never moves the number. The badge "Needs attention" (Warning glyph + text, caution foreground) appears only when the overdue count is above 0. |
 | Charts | Three `BarChart` user controls, described in the next table. |
 | Lists | **Overdue CRs** (B-15.4): CR Number (link), Title, Owner, Squad, Status, Priority chip, Planned end, Days overdue.<br>**Unlinked tasks** (B-15.5): Title, Service, Status, Priority chip, People.<br>Each list is a `ListView` with a header `Grid` (the skill's tabular pattern) `[gallery-listview-1]`, ≤10 rows, and the caption "Showing 10 of 23" plus **View all**. Activating a row opens the CR editor or the task editor. |
 
@@ -215,7 +219,7 @@ Each page section lists its purpose, regions, controls, item content, commands, 
 | Unscheduled tasks | Count | "Subset of active · no CR or CR without planned dates" | Grid |
 | Overdue CRs | Count | "Incomplete CRs whose planned end is before today" | Calendar › Records |
 | Active Subtask cards | Count | "Not completed · parent not archived" | Grid with a non-editable "From Dashboard: active Subtask cards" chip (§2.9) |
-| Reviews | Open count | "{n} done this week · {m} this month" | Checklists Reviews card |
+| Open reviews | Open count | The "{n} done this week" and "{m} done this month" links as the caption line (each opens Checklists › Reviews for its period) | Checklists Reviews card |
 
 **Bar chart (custom, native, T-08, B-15.1–3).** The Gallery `Chart` (`Microsoft.UI.Xaml.Controls.Charts`, `[gallery-chart-2]`) is preview-only and is **absent from the WinAppSDK 2.5 stable index**, so it is not used. The chart is built as follows:
 - **Header:** title (`SubtitleTextBlockStyle`, HeadingLevel 2), a total caption, and a **Table** `ToggleButton` (name "Show as table").
@@ -268,7 +272,7 @@ States: Loading, Empty ("Start by creating a CR or a task" + New CR + New task),
 
 The Subtask cards count is no longer shown on the card. The card's accessible name (§8.2) adds the tags ("Tags: Integration, Zain") when the strip is shown.
 
-**Subtask card anatomy** (same redesign): the same tag strip (showing the **parent task's** Tags, under the same setting), an ID row with the "Subtask" glyph in place of the priority glyph followed by the inherited CR and Task chips (same behavior as on task cards), a "Subtask of {parent title}" `HyperlinkButton` (opens the parent), the Subtitle (`BodyStrongTextBlockStyle`), the parent Service chip, and a last row with the dates on the left when set and the same avatars on the right (only the inherited CR Owner). There is no priority and no checklist, because Subtask cards have none. It uses the same card surface as a task card, with no left edge; the "Subtask" glyph and the "Subtask of …" link give the non-color cue.
+**Subtask card anatomy** (owner decision, Nov 2026, review U-06: the task card's base layout): the same rows as a task card. (1) The tag strip with ⋯, showing the **parent task's** Tags under the same setting. (2) The ID row with the inherited CR and Task chips only (no priority glyph and no "Subtask" glyph); the row is absent when the card has no CR. (3) The title: the **parent task's** title in the task title style, as a `HyperlinkButton` that opens the parent (tooltip: the full parent title; a drag does not start from the link, the card is dragged by its chips, footer or edge, owner decision); when the card has neither tags nor ID chips, ⋯ sits at the end of this row. (4) The chip row: Service and Squad chips. (5) The footer below a divider: "↳ " and the card's own Subtitle on one line (ellipsis, full subtitle as tooltip) on the left, the inherited CR Owner avatar on the right. No priority, checklist or dates. It uses the same card surface as a task card; the "↳ subtitle" footer and the accessible name ("Subtask card {subtitle}, subtask of {parent}, {status}") give the non-colour cue.
 
 **Card menu items:**
 - Open (Enter)
@@ -300,7 +304,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 - ~~"Add Subtask card" from the card menu opens a small dialog with a required Subtitle box. "Open" on a Subtask card opens its parent task until the Subtask card editor (§5.2, Phase 5).~~ Superseded in Phase 5: both open the Subtask card editor (§5.2).
 
 **Proposed notes (Phases 5–6, pending owner review):**
-- The CR chip, the Task chip and the Subtask card's "Subtask of …" indicator are buttons that are not tab stops, because the card itself is the focusable list item. Their keyboard route is the card menu: **Open CR** (linked cards), **Copy ID**, and **Open parent task** (Subtask cards). The CR chip's accessible name and tooltip are "Open CR-1067"; the Task chip's are "Copy ID for Task INT-7625".
+- The CR chip, the Task chip and the Subtask card's parent-title link are buttons that are not tab stops, because the card itself is the focusable list item. Their keyboard route is the card menu: **Open CR** (linked cards), **Copy ID**, and **Open parent task** (Subtask cards). The CR chip's accessible name and tooltip are "Open CR-1067"; the Task chip's are "Copy ID for Task INT-7625".
 - **New CR…** sits in an overflow-only `CommandBar` beside New task until the Calendar page exists (Phase 7), where the CR editor belongs (B-03.1). It is removed then.
 
 ### 4.3 Grid (B-07 Grid, T-08 gate, D7)
@@ -316,12 +320,12 @@ A card that is created, copied or restored, or whose status changes outside a po
 
 | Column (default order) | Editor | Editable when | Read-only display / navigation |
 |---|---|---|---|
-| Kind | — | never | Glyph + "Task" / "Subtask card" |
+| Kind | — | never | Icon only (task or Subtask card glyph, tooltip and accessible name give the kind), with the row ⋯ in a fixed 32 epx sub-column beside it (U-08) |
 | CR Number | — | never | Link → CR editor |
 | Task Number | — | never | Link → CR editor |
 | Squad | — | never | Text ("General") |
 | Owner | — | never | Text |
-| Title | `TextBox` | unlinked task, not archived | Linked: a lock glyph + tooltip "Inherited from CR-1042", and the cell opens the CR. Subtask card: parent title, read-only |
+| Title | `TextBox` | unlinked task, not archived | Linked: a lock glyph shown on row hover or focus + tooltip "Inherited from CR-1042" (U-08), and the cell opens the CR. Subtask card: parent title, read-only |
 | Subtitle | `TextBox` | Subtask card | Blank for tasks |
 | Service | `TextBox` | task (required if linked) | Subtask card: parent service, read-only |
 | Status | `ComboBox` | task, Subtask card | Status text (no glyph, §6.2) |
@@ -418,7 +422,7 @@ States: Loading; Empty ("No CRs yet" + New CR); Filtered-empty (the grid still r
 | Header | Title "Checklists". Subtitle "General to-dos, checklist items of active tasks and reviews · 21 open". No section selector: one surface holds every card. The expanding Search icon (§2.3.1) sits left in the commands row; search applies to all cards: item text, parent title and CR reference, and every review field (B-09, B-17.5). Commands: **Add to task…** (task picker → focuses that group's Add-item box, B-09) and accent **New to-do**. |
 | Groups surface | An outer `ScrollViewer` with a virtualizing `ItemsRepeater` of group cards using `UniformGridLayout` (`ItemsStretch=Fill`, `MinItemWidth` 380) `[gallery-itemsrepeater-2]`. Inner items use a nested `ItemsRepeater`, which shares the outer effective viewport so both levels virtualize (T-08). Order: **General to-dos** first, **Reviews** second (both always shown), then task groups (newest parent first, then ID). A task group shows only while it has an open item; one whose last open item is checked here (or which "Add to task…" chose) stays until the user leaves the page (B-09). Completed (n) sections list the most recently completed item first. |
 | General to-dos card | Glyph + "General to-dos" (HeadingLevel 2), "3 of 7 done" + `ProgressBar`, items, an inline **Add an item** `TextBox` (Enter adds; blank input → inline error, no record), and a **Completed (n)** `Expander`, collapsed by default `[gallery-expander-1]`. |
-| Task group card | Effective title (HeadingLevel 2) + Service chip; "CR-1042 · Task 00457 · In Progress"; **Open task** link; progress; incomplete items; Add an item; Completed (n) expander. **Proposed note (Phase 2, pending owner review):** the Add an item box has an icon **Add** button beside it (`Checklists_AddItemButton_{GroupKey}`, name "Add item", tooltip "Add item (Enter)"), so pointer, touch and UI Automation users have an explicit route besides Enter. |
+| Task group card | Effective title (HeadingLevel 2) + Service chip; "CR-1042 · Task 00457 · In Progress"; **Open task** link (underlined, with a hover plate); progress; incomplete items; Add an item; Completed (n) expander. **Proposed note (Phase 2, pending owner review):** the Add an item box has an icon **Add** button beside it (`Checklists_AddItemButton_{GroupKey}`, name "Add item", tooltip "Add item (Enter)"), so pointer, touch and UI Automation users have an explicit route besides Enter. |
 | Item row | Drag handle (`GripperBarVertical` glyph, decorative). `CheckBox` with the item text as content. Double-click/F2 renames inline (`TextBox`, Enter save, Esc cancel). ⋯ `MenuFlyout`: Rename, **Pop out to card** (task items only, B-16.3), Move up, Move down, Delete…. Completed items show strikethrough **and** sit in the Completed section, so color is never the only cue. |
 | Reviews card | Styled like General to-dos (B-17.2): glyph + "Reviews" (HeadingLevel 2), "2 of 5 done" + `ProgressBar`, one line per open review: `CheckBox` (Done), Title, and the reference caption "CR-2201 · Task 0091" (text, not a link), plus a ⋯ `MenuFlyout` with **View/Edit** (Enter, or tap the text), Move up/down and **Delete…**. An inline **Add a review** `TextBox` + Add button (Enter adds a title-only review; blank input → inline error, no record), a **New review…** link (the full review dialog), and a **Completed (n)** `Expander` (collapsed) whose rows show "Done Oct 20". |
 | Delete confirmation | A light `Flyout` anchored to the row: "Delete 'Draft API spec'? This can't be undone." with **Delete** / Cancel. This applies to checklist items, General to-dos and reviews (B-05). |
@@ -526,6 +530,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
   - Uses the main window's `XamlRoot` and the current `RequestedTheme`, and dialogs are **serialized** by the `DialogService` (T-08).
   - Dialogs **never stack**. Every nested decision is an **inline step** inside the same dialog (the content swaps to a step panel with **Back**), or the first dialog closes before the next one opens. The one exception is the §5.8 dirty-close confirmation: it is a modal layer drawn above the open editor within the same window, not a second `ContentDialog`.
   - A press (left mouse button, pen or touch) on the smoke outside a dialog closes it **exactly like Cancel** (Esc, the Close button): an editor with unsaved changes shows §5.8, and a confirmation never takes its Primary action. Presses inside the dialog or its own flyouts and drop-downs do not close it.
+  - **Header of the Task, CR and Subtask card editors** (owner decision, Nov 2026, review U-02, built on the task editor): a small record-kind caption ("Task", "Change request", "Subtask card"; "New …" for a new record) with More (⋯) on the same line, then the record's own title as a large heading edited in place (Task title, CR title, the card's Subtitle), then one read-only **info box** on a secondary card background, label over value, four columns at L and two below, with **Created** among its facts (hidden for a new record). The Review editor keeps the older title row below.
   - The title row is a `Grid`: the title, a secondary caption (e.g. "Created Oct 6, 2026 · last saved 2 minutes ago"), and a right-aligned **More** `DropDownButton` (⋯) for secondary record commands `[gallery-dropdownbutton-1]`.
   - Footer: Primary = **Save** (or a verb such as "Create task" or "Link permanently"), Close = **Cancel**, Secondary only where it is listed below. `DefaultButton = Primary` for editors and `Close` for destructive confirmations.
 - **Width:**
@@ -535,6 +540,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
   - Other dialogs (Field definition, Copy task, confirmations) keep 640 as a maximum and size to their content.
   - S, or a window height under 600: `FullSizeDesired = true`, one column.
   - In every case the content is a `ScrollViewer` and the footer buttons stay visible (T-08.1).
+- **Focus on open** (owner decision, Nov 2026, review U-01): a record editor opens with no visible focus: focus rests on its content, with no caret and no highlighted field, and never on the tag field, More or Close. The first Tab goes to the editor's first field (Task: Title when editable, otherwise Service; CR: CR number; Subtask card: Subtitle; Review: Title). A screen reader announces the dialog's title.
 - **Required** fields show the header text followed by " *" and `AutomationProperties.IsRequiredForForm=True`. The record editors (Task, CR, Review, Subtask card) show no separate legend because each required field is already marked.
 - **Validation** (B-02.9):
   - The error text sits directly under the field (`CaptionTextBlockStyle`, `SystemFillColorCriticalBrush`, Error glyph), and the field gets the error stroke.
@@ -551,7 +557,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | Input | Control |
 |---|---|
 | People / tags (multi) | **TokenPicker** (Presentation control, ADR 0021): an `AutoSuggestBox` with case-insensitive suggestions and an "Add 'name'" suggestion, plus a wrapping `ItemsRepeater` of removable chip `Button`s (Delete removes). A new name is created only on Save (B-02.6). |
-| Single person (CR Owner, Review developer, task Designer and Developer; the Settings default CR Owner stays a plain `ComboBox` of existing people) | **Person dropdown** (owner request, Oct 2026): looks like a `ComboBox`. The box shows the chosen person (avatar + name) or a placeholder, with a chevron that opens the full list. Typing filters the list case-insensitively and offers "Add 'name'" when no name matches exactly; a new person is created on Save (B-02.6). No chip under the box. Optional fields can be cleared; Esc or leaving the box with unmatched text restores the chosen person. |
+| Single person (CR Owner, Review developer, task Designer and Developer; the Settings default CR Owner stays a plain `ComboBox` of existing people) | **Person dropdown** (owner request, Oct 2026): looks like a `ComboBox`. The box shows the chosen person (avatar + name) or, when empty, a neutral outline person icon and a placeholder (review U-03, Nov 2026), with a chevron that opens the full list. Typing filters the list case-insensitively and offers "Add 'name'" when no name matches exactly; a new person is created on Save (B-02.6). No chip under the box. Optional fields can be cleared; Esc or leaving the box with unmatched text restores the chosen person. |
 | Lookups | `ComboBox` |
 | Dates | `CalendarDatePicker` with a **Clear** button beside it ("Clear start date"). An explicit clear is tracked for B-04. |
 | Numbers | `NumberBox` |
@@ -563,9 +569,9 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 
 | # | Group | Fields (in order) | Behavior |
 |---|---|---|---|
-| 1 | Top line | Tags · More (⋯) · Close (X) | Tags on the left, as one Planner-style field: a tag icon, the tag chips (pills in the tag's colour, each with a remove X), then a "Search for a tag" input right after the last chip, wrapping onto more lines (the title always starts below the whole field). Quiet at rest; the text-field fill on hover and the accent underline on focus. Suggestions show as pills in their tag colour; Backspace in an empty input removes the last chip. Read-only: plain pills, no X, no input. More and **Close** on the right. Close works like Cancel and goes through the unsaved-changes check (§5.8). |
-| 2 | Header | **Title**, then the "Created …" caption | Large and bold. Unlinked: an editable `TextBox`* styled as a title. Linked or pending: read-only, selectable, inherited from the CR. |
-| 3 | Facts strip | CR number · Task number · Squad · Owner | Read-only, on a secondary card background; four columns at L, two below. **CR number** is a link that opens the CR. Unlinked: **Link to CR…** (inline step §5.6) in its place. Pending: the pending CR number + **Choose a different CR** (allowed only while pending), and an InfoBar (Warning) under the header: "This link is permanent. When you save, the title becomes 'Card limits API' and the task number, squad and owner come from CR-1042." The CR number and the task number each have a **copy** icon, hidden until the number or icon is hovered or focused; it copies the plain number (the configured Copy ID format stays in More › Copy…). Unlinked: Squad "General", no task number, "No owner". There is **no Unlink and no Change** (B-03.7). |
+| 1 | Top line | Tags · More (⋯) · Close (X) | Tags on the left, as one Planner-style field: a tag icon, the tag chips (pills in the tag's colour, each with a remove X), with no input at rest (review U-02, owner feedback Nov 2026): the whole line (icon, chips and empty space) is one field with the text-field hover fill and a hand cursor, and a single tab stop named "Tags"; a click outside a chip, Enter, Space or a typed character reveals the search input with the placeholder "Add tag" (a typed character starts the search), and it hides again when focus leaves it empty. The line wraps onto more lines (the title always starts below the whole field). Quiet at rest; the text-field fill on hover and the accent underline on focus. Suggestions show as pills in their tag colour; Backspace in an empty input removes the last chip. Read-only: plain pills, no X, no input, no hover or hand cursor, not a tab stop. More and **Close** on the right. Close works like Cancel and goes through the unsaved-changes check (§5.8). |
+| 2 | Header | The "Task" caption, then the **Title** | Large and bold. Unlinked: an editable `TextBox`* styled as a title. Linked or pending: read-only, selectable, inherited from the CR. |
+| 3 | Info box | CR number · Task number · Squad · Owner · Created | Read-only (Created hidden for a new task), on a secondary card background; four columns at L, two below. **CR number** is a link that opens the CR. Unlinked: **Link to CR…** (inline step §5.6) in its place. Pending: the pending CR number + **Choose a different CR** (allowed only while pending), and an InfoBar (Warning) under the header: "This link is permanent. When you save, the title becomes 'Card limits API' and the task number, squad and owner come from CR-1042." The CR number and the task number each have a **copy** icon, hidden until the number or icon is hovered or focused; it copies the plain number (the configured Copy ID format stays in More › Copy…). After a copy a "Copied" tooltip shows at the icon for 1.5 s without taking focus, and "Copied {number}" is announced (owner feedback, Nov 2026); the Board card's Task chip does the same. Unlinked: Squad "General"; an empty task number or owner shows a muted "None" (secondary text, accessible name "Task number: none"; review U-03, Nov 2026). There is **no Unlink and no Change** (B-03.7). |
 | 4 | Fields | **Service** · **Status*** · **Priority***; Designer · Developer; Start date · End date | Service is marked * when linked or a link is pending; helper when linked: "Tells this task apart from the other 2 tasks on CR-1042." Priority items, and the selected value, show the priority icon in its colour before the name. The creation route preselects the bucket status (B-02.1). Single-person pickers for Designer and Developer (ADR 0024). Date helpers come from the flags: "Set automatically when moved to In Progress" / "Filled when the task is completed". A range error appears under End date. |
 | 5 | Checklist items | Heading "Checklist (2 of 4 items done)"; a reorderable list; an "Add an item" last row | Row: a round check, the text edited in place (F2 rename), and on hover or focus inline buttons Move up, Move down, Pop out to card, Delete. A drag handle appears in the left gutter on hover without moving the row's content. These edits are part of the draft. **Pop out to card** runs immediately and is disabled while the draft is dirty (tooltip "Save the task first"). |
 | 6 | Subtask cards | A list: subtitle, status, dates | **Add Subtask card** (inline subtitle box; creates immediately; disabled for an unsaved new task). Opening a card closes this dialog (after §5.8) and opens §5.2. |
@@ -577,9 +583,9 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 - **Layout by width:** groups 1–3 span the dialog. At L the field rows sit side by side as listed; at M and S every field stacks in one column and the facts strip uses two columns.
 
 ### 5.2 Subtask card editor (B-16)
-- **Header:** "Subtask card" plus the caption "Subtask of {parent title}".
-- **Read-only parent block** (`CardBackgroundFillColorSecondaryBrush`): the parent Title (an **Open parent** link), Service, CR number, Task number, Squad ("General"), and Owner.
-- **Own fields:** **Subtitle*** (250), **Status*** (task statuses), Start date, End date (with B-04 helper text), Notes.
+- **Header** (review U-02 with the owner's U-06 card design, Nov 2026): the "Subtask card" caption with More (⋯); the parent task's title as the heading, read-only, in the inherited-title style, as the **Open parent** link (accessible name "Subtask of {parent}"); directly under it a decorative "↳" and the card's own **Subtitle*** (250), edited in place as a smaller secondary title line.
+- **Info box** (`CardBackgroundFillColorSecondaryBrush`, below the subtitle): Created and Service, CR number, Task number, Squad ("General"), and Owner.
+- **Own fields:** **Status*** (task statuses), Start date, End date (with B-04 helper text), Notes.
 - **More menu:** Delete… (confirmation names the subtitle).
 - **Footer:** Save / Cancel.
 - **Archived parent:** the dialog is read-only and an InfoBar says "The parent task is archived."
@@ -588,7 +594,7 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 **Proposed notes (Phase 5, pending owner review):**
 - The same dialog creates cards: the title is "New Subtask card" and the primary button **Create card**. It opens from the Board/Grid card menu "Add Subtask card" and the task editor's More › Add Subtask card (the task editor closes first, §5.0). The task editor's inline quick-add box (§5.1 group 8) stays as the fast route.
 - The parent title in the read-only block is the **Open parent** link; opening it closes this dialog first (after §5.8). More › Delete… also closes this dialog first, then the §5.7 confirmation opens, because dialogs never stack.
-- The parent block shows "No owner" and squad "General" for an unlinked parent, "None" for a parent without a service, and the CR number placeholder of the Grid for an unlinked parent.
+- The parent block shows squad "General" for an unlinked parent; an empty service, CR number, task number or owner shows a muted "None" (review U-03, Nov 2026).
 - Conflict review and Reload work as in §5.10, over Subtitle, Status, Start date, End date and Notes.
 
 ### 5.3 CR editor (B-03, B-11, T-13, AC-04/30/31)
@@ -596,7 +602,7 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 |---|---|---|
 | — | InfoBar (Warning), shown when overdue | "Overdue by 7 days — Planned end was Tuesday, October 14. Reschedule or complete this CR." Uses the same predicate as the Dashboard (B-15). |
 | 1 | **CR number*** · Task number | Side by side at L. Number helper: "Must be unique." A duplicate error reads "CR-1042 already exists" + **Open CR-1042**. Task number helper: "Shared by all 3 linked tasks." Leading zeros are kept. |
-| 2 | **Title*** | Helper: "Every linked task shows this title; their services tell them apart." |
+| 2 | **Title*** | Shown as the heading above row 1, under the "Change request" caption, with an info box holding Created below it (hidden for a new CR; review U-02, Nov 2026). The first Tab still goes to CR number. Helper: "Every linked task shows this title; their services tell them apart." |
 | 3 | **Owner*** · Squad | Owner: a person picker prefilled with the default CR Owner. **If no default exists**, a `CheckBox` "Make {name} the default CR Owner" (checked) appears under the field once a person is chosen. This is the first-CR owner prompt (B-11), done inline. Squad: a `ComboBox` with "General (no squad)". |
 | 4 | **Status*** · **Priority*** | — |
 | 5 | Planned start · Planned end | Both or neither; an inline error otherwise. Caption: "Unscheduled" when both are empty. **Move to backlog** sits in the More menu. |
@@ -745,7 +751,7 @@ There is no per-status color in release 1 (§11 Q8).
 | State | Background | Stroke | Text/glyph | HC |
 |---|---|---|---|---|
 | Scheduled | The CR's palette fill `CalendarBarFill{i}` | 3-epx left stripe `CalendarBarStripe{i}` | Number + title + status text | ButtonFace + 3-epx ButtonText stripe |
-| **Overdue** | The CR's palette fill | 1-epx `SystemFillColorCautionBrush` outline (replaces the stripe) | Warning glyph + "Overdue" + status | ButtonFace + ButtonText outline + Warning glyph + text |
+| **Overdue** | The CR's palette fill | 3-epx `SystemFillColorCautionBrush` accent on the leading edge, same corners as the other bars (replaces the stripe and the former full outline; review U-04, Nov 2026) | Warning glyph + "Overdue" + status | ButtonFace + ButtonText outline with a thick leading edge + Warning glyph + text |
 | **Completed** | The CR's palette fill and stripe at 50 % opacity | 3-epx faded left stripe | Completed glyph + "Completed" status, secondary text | ButtonFace + GrayText stripe and text + glyph |
 | Hover / pressed | The palette fill blended 20 % / 32 % toward the stripe, so the bar keeps its own hue | Unchanged | Unchanged | System button hover/pressed brushes |
 | Selected | (unchanged) | 2-epx `AccentFillColorDefaultBrush` + the system focus visual when focused | Name suffix ", selected" | Highlight / HighlightText |
@@ -939,7 +945,7 @@ Use `AutomationPeer.RaiseNotificationEvent` (`AutomationNotificationKind.ActionC
 | No Owner anywhere | Owner on the CR editor (required), cards, Grid, Records, Dashboard filter | D14 |
 | No Reviews or Subtask cards | Checklists Reviews card; Subtask cards on Board/Grid; Dashboard cards and chart | D17, D18 |
 | Import/Export as menu items | Settings › Data page with `BreadcrumbBar` and wizards | D13 |
-| Overdue amber bar | The CR's palette fill + Caution outline + Warning glyph + "Overdue" text | P3, §6.3 |
+| Overdue amber bar | The CR's palette fill + Caution leading-edge accent + Warning glyph + "Overdue" text | P3, §6.3 |
 | Fixed desktop layout | S/M/L layouts per page | T-08.1 |
 | "✓ All changes saved · F2 to edit…" Grid footer | Shell status bar; hints at L only | Consistent save status for every page |
 
