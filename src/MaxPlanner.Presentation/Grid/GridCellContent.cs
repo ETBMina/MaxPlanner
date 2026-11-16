@@ -19,6 +19,7 @@ internal static class GridCellContent
     private const string ChevronDownGlyph = "";
     private const string CalendarGlyph = "";
     private const string PickerAffordanceTag = "GridPickerAffordance";
+    private const string HoverRevealTag = "GridHoverReveal";
     private const string AffordanceStyle = "GridCellAffordanceStyle";
     private const string AffordancePointerOverStyle = "GridCellAffordancePointerOverStyle";
     private const string AffordancePressedStyle = "GridCellAffordancePressedStyle";
@@ -41,7 +42,7 @@ internal static class GridCellContent
         FrameworkElement content = column.Key switch
         {
             GridColumns.Kind => KindCell(row, text, host),
-            GridColumns.Title when row.IsTitleLocked => LockedTitle(row, text),
+            GridColumns.Title when row.IsTitleLocked => LockedTitle(row, text, full),
             GridColumns.Archived when row.IsArchived => ArchivedChip(row.DisplayValue(column.Key)),
             _ when row.CanEdit(column.Key) && PickerGlyph(column) is { } glyph => PickerCell(text, glyph),
             _ when row.PeopleNames(column.Key) is { Count: > 0 } people => PeopleCell(text, people),
@@ -88,11 +89,12 @@ internal static class GridCellContent
         isPointerOver || focusState == FocusState.Keyboard;
 
     /// <summary>The picker affordance square inside a display built by <see cref="CreateDisplay"/>, or null.</summary>
-    public static Border? FindPickerAffordance(FrameworkElement? content)
+    public static FrameworkElement? FindPickerAffordance(FrameworkElement? content)
     {
-        if (content is Border { Tag: PickerAffordanceTag } affordance)
+        // The picker square or the title lock: both show only on hover or keyboard focus.
+        if (content is { Tag: PickerAffordanceTag or HoverRevealTag })
         {
-            return affordance;
+            return content;
         }
 
         if (content is WinGrid grid)
@@ -293,21 +295,25 @@ internal static class GridCellContent
         element.Unloaded += (_, _) => row.PropertyChanged -= Handler;
     }
 
+    /// <summary>
+    /// The Kind cell: the kind as an icon (its name is the tooltip and the cell's accessible name), then the row menu
+    /// in its own fixed narrow column so neither is ever trimmed (design §4.3 row menu; keyboard users reach the same
+    /// menu with Shift+F10 on any cell).
+    /// </summary>
     private static WinGrid KindCell(GridRowViewModel row, TextBlock text, IGridCellHost host)
     {
-        var grid = new WinGrid { ColumnSpacing = 4 };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var grid = new WinGrid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var glyph = new FontIcon { FontSize = 14, Glyph = row.KindGlyph };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(RowMenuColumnWidth) });
+        var glyph = new FontIcon { FontSize = 16, Glyph = row.KindGlyph, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
         AutomationProperties.SetAccessibilityView(glyph, AccessibilityView.Raw);
-        WinGrid.SetColumn(text, 1);
+        ToolTipService.SetToolTip(glyph, text.Text);
 
-        // Design §4.3 row menu; keyboard users reach the same menu with Shift+F10 on any cell.
         var menu = new Button
         {
             Padding = new Thickness(4, 2, 4, 2),
             IsTabStop = false,
+            HorizontalAlignment = HorizontalAlignment.Right,
             Content = new FontIcon { FontSize = 12, Glyph = "" },
             Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["SubtleButtonStyle"],
         };
@@ -315,24 +321,38 @@ internal static class GridCellContent
         AutomationProperties.SetName(menu, row.RowMenuName);
         ToolTipService.SetToolTip(menu, row.RowMenuName);
         menu.Click += (_, _) => host.OnRowMenuRequested(row, menu);
-        WinGrid.SetColumn(menu, 2);
+        WinGrid.SetColumn(menu, 1);
         grid.Children.Add(glyph);
-        grid.Children.Add(text);
         grid.Children.Add(menu);
         return grid;
     }
 
-    private static StackPanel LockedTitle(GridRowViewModel row, TextBlock text)
+    /// <summary>The fixed width of the row menu inside the Kind cell.</summary>
+    internal const double RowMenuColumnWidth = 32;
+
+    private static WinGrid LockedTitle(GridRowViewModel row, TextBlock text, string full)
     {
-        // B-02.3: the lock glyph and its tooltip say the title comes from the CR (or the parent task).
-        var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        var glyph = new FontIcon { FontSize = 12, Glyph = "" };
+        // B-02.3: the lock says the title comes from the CR (or the parent task). It shows only while the pointer is
+        // over the cell or it has keyboard focus (GridCell), in a reserved column so the title never moves; the
+        // tooltip always carries the reason.
+        var grid = new WinGrid { ColumnSpacing = 6 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var glyph = new FontIcon { Tag = HoverRevealTag, Opacity = 0, FontSize = 12, Glyph = "", VerticalAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(glyph, row.TitleLockText);
         ToolTipService.SetToolTip(glyph, row.TitleLockText);
-        panel.Children.Add(glyph);
-        panel.Children.Add(text);
-        return panel;
+        ToolTipService.SetToolTip(text, TitleToolTip(full, row.TitleLockText));
+        WinGrid.SetColumn(glyph, 1);
+        grid.Children.Add(text);
+        grid.Children.Add(glyph);
+        return grid;
     }
+
+    /// <summary>The locked title's tooltip: the title, then why it is locked; either may be null or empty.</summary>
+    public static string TitleToolTip(string? title, string? lockText) =>
+        string.IsNullOrEmpty(title) ? lockText ?? string.Empty
+        : string.IsNullOrEmpty(lockText) ? title
+        : title + Environment.NewLine + lockText;
 
     private static Border ArchivedChip(string label)
     {
