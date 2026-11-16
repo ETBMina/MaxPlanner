@@ -524,10 +524,12 @@
                         <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
                     </Button>
                 </Grid>
+                <!-- Collapsed while empty: its closed InfoBars and the stack spacing would otherwise leave a gap. -->
                 <filters:FilterChipsBar
                     x:Name="ChipsBar"
                     PageKey="Board"
-                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.Filters.HasBarContent), Mode=OneWay}" />
             </StackPanel>
         </controls:PageHeader>
 

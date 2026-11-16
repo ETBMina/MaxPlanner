@@ -443,7 +443,7 @@
                     x:Name="ChipsBar"
                     PageKey="Calendar"
                     Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
-                    Visibility="{x:Bind common:BindFunctions.VisibleAny(ViewModel.Filters.HasChips, ViewModel.Filters.IsFromDashboard, ViewModel.Filters.IsInvalidNoticeOpen), Mode=OneWay}" />
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.Filters.HasBarContent), Mode=OneWay}" />
                 <!-- B-08.12: a saved CR hidden by the current filters stays discoverable. -->
                 <InfoBar
                     AutomationProperties.AutomationId="Calendar_SavedHiddenInfoBar"
