@@ -69,6 +69,7 @@ public sealed partial class TokenPicker : UserControl
     private bool _isPointerOverField;
     private bool _isInputRevealed;
     private PendingReveal? _pendingReveal;
+    private bool _isPickingWithPointer;
 
     // The inline field's line height: its 32 epx minimum less the 1 epx border above and below.
     private const double InlineLineHeight = 30;
@@ -99,7 +100,11 @@ public sealed partial class TokenPicker : UserControl
         Unloaded += (_, _) =>
         {
             DetachPressRoot();
-            Box.LayoutUpdated -= OnRevealLayoutUpdated;
+            if (_textBox is not null)
+            {
+                _textBox.Loaded -= OnRevealedTextBoxLoaded;
+            }
+
             _pendingReveal = null;
             if (!IsLoaded)
             {
@@ -303,25 +308,32 @@ public sealed partial class TokenPicker : UserControl
     private void OnBoxLostFocus(object sender, RoutedEventArgs e) =>
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!BoxHasFocus())
+            // A press on a suggestion is not leaving: the pick finishes and the input takes focus back.
+            if (_isPickingWithPointer || BoxHasFocus())
             {
-                _hasFocusWithin = false;
-                _isFocusingProgrammatically = false;
-                _ignoreNextEmptyText = false;
-                Box.IsSuggestionListOpen = false;
+                return;
+            }
 
-                // An on-demand input left empty hides again behind its Add button.
-                _isInputRevealed = false;
-                UpdateInlineInput();
+            _hasFocusWithin = false;
+            _isFocusingProgrammatically = false;
+            _ignoreNextEmptyText = false;
+            Box.IsSuggestionListOpen = false;
+            HideLeftInput();
 
-                // Design §5.0: leaving the person dropdown commits an emptied box or an exact name and restores the
-                // chosen person over any other text.
-                if (IsPersonDropdown)
-                {
-                    ViewModel!.CommitText();
-                }
+            // Design §5.0: leaving the person dropdown commits an emptied box or an exact name and restores the
+            // chosen person over any other text.
+            if (IsPersonDropdown)
+            {
+                ViewModel!.CommitText();
             }
         });
+
+    // An on-demand input that focus has left hides again when it is empty (TokenPickerRules.ShowsInlineInput).
+    private void HideLeftInput()
+    {
+        _isInputRevealed = false;
+        UpdateInlineInput();
+    }
 
     // A press in a box that is already focused (GotFocus handles the first one) reopens the list after Esc. An open
     // list is left alone: refilling it under the pointer would replace the item being clicked.
@@ -397,6 +409,32 @@ public sealed partial class TokenPicker : UserControl
         if (IsInline && e.Key == VirtualKey.Back && IsEditable && ViewModel is { } inlineViewModel && inlineViewModel.RemoveLast())
         {
             e.Handled = true;
+            return;
+        }
+
+        // The on-demand tag input owns Esc: the AutoSuggestBox's own Esc would bring back the text typed before a pick
+        // and reopen the list over the fields below (TokenPickerRules.TagInputEscape).
+        if (IsInline && IsInputOnDemand && e.Key == VirtualKey.Escape && ViewModel is { } tagViewModel)
+        {
+            e.Handled = true;
+            switch (TokenPickerRules.TagInputEscape(Box.IsSuggestionListOpen, tagViewModel.Query))
+            {
+                case TagInputEscapeStep.CloseList:
+                    Box.IsSuggestionListOpen = false;
+                    break;
+                case TagInputEscapeStep.ClearText:
+                    _ignoreNextEmptyText = true;
+                    tagViewModel.Query = string.Empty;
+                    Box.IsSuggestionListOpen = false;
+                    break;
+                default:
+                    // Nothing to undo: focus goes back to the field itself and the empty input hides, so the next Esc
+                    // reaches the dialog, which closes as from any other field.
+                    IsTabStop = true;
+                    Focus(FocusState.Keyboard);
+                    break;
+            }
+
             return;
         }
 
@@ -597,6 +635,26 @@ public sealed partial class TokenPicker : UserControl
         {
             _pressRoot = RootOf(this) as UIElement;
             _pressRoot?.AddHandler(PointerPressedEvent, _outsidePressHandler, true);
+            return;
+        }
+
+        // The list closed after a press on a suggestion: the input takes focus back, so the user can add another tag,
+        // and it hides only when focus leaves it later.
+        if (_isPickingWithPointer)
+        {
+            _isPickingWithPointer = false;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (_textBox is { } textBox && BoxHost.Visibility == Visibility.Visible && !BoxHasFocus())
+                {
+                    _isFocusingProgrammatically = true;
+                    if (!textBox.Focus(FocusState.Programmatic))
+                    {
+                        _isFocusingProgrammatically = false;
+                        HideLeftInput();
+                    }
+                }
+            });
         }
     }
 
@@ -611,8 +669,20 @@ public sealed partial class TokenPicker : UserControl
     // on press, would remove the item before its click chose it.
     private void OnPressWhileListOpen(object sender, PointerRoutedEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject source && !IsWithin(source, Box) && ReferenceEquals(RootOf(source), _pressRoot)
-            && !IsWithin(source, SuggestionsContent()))
+        if (e.OriginalSource is not DependencyObject source)
+        {
+            return;
+        }
+
+        // A press on a suggestion takes focus out of the box until the pick is done; an on-demand input keeps itself
+        // shown meanwhile and takes focus back once the list closes (OnSuggestionListOpenChanged).
+        if (IsWithin(source, SuggestionsContent()))
+        {
+            _isPickingWithPointer = IsInline && IsInputOnDemand;
+            return;
+        }
+
+        if (!IsWithin(source, Box) && ReferenceEquals(RootOf(source), _pressRoot))
         {
             Box.IsSuggestionListOpen = false;
         }
@@ -783,9 +853,10 @@ public sealed partial class TokenPicker : UserControl
 
     // Reveals the hidden on-demand input and puts keyboard focus in its inner text box, so a caret shows and typing goes
     // there; queryStart (a typed character, a UI Automation value) becomes the search text once it has focus.
-    // The box may never have been templated or measured while it was collapsed, and an AutoSuggestBox takes focus only
-    // through its inner text box, so focus is set on that text box once it exists and is loaded: now if it already is,
-    // otherwise after the next layout pass (TokenPickerRules.NextRevealStep).
+    // The box was collapsed until now, so it was never measured and its inner text box (the part an AutoSuggestBox
+    // takes focus through) is not loaded. The field's flow panel does not measure again by itself when its last child
+    // becomes visible, so it is told to, and the layout is brought up to date at once; the text box is then focused, or,
+    // if it is still not loaded, once its Loaded event arrives (TokenPickerRules.NextRevealStep).
     private void RevealAndFocusInput(FocusState state, string queryStart = "")
     {
         if (!IsInline || !IsEditable)
@@ -795,6 +866,8 @@ public sealed partial class TokenPicker : UserControl
 
         _isInputRevealed = true;
         BoxHost.Visibility = Visibility.Visible;
+        InlineFlow.InvalidateMeasure();
+        UpdateLayout();
         _pendingReveal = new PendingReveal(state, queryStart);
         TryFocusRevealedInput();
     }
@@ -806,20 +879,25 @@ public sealed partial class TokenPicker : UserControl
             return;
         }
 
-        Box.LayoutUpdated -= OnRevealLayoutUpdated;
         Box.ApplyTemplate();
         FindInnerTextBox();
-        var focused = _textBox is { IsLoaded: true } textBox && textBox.Focus(pending.State);
-        switch (TokenPickerRules.NextRevealStep(focused, pending.Attempt))
+        if (_textBox is not null)
+        {
+            _textBox.Loaded -= OnRevealedTextBoxLoaded;
+        }
+
+        var isLoaded = _textBox is { IsLoaded: true };
+        var focused = isLoaded && _textBox!.Focus(pending.State);
+        switch (TokenPickerRules.NextRevealStep(focused, isLoaded, pending.Attempt))
         {
             case InputRevealStep.Focused:
                 _pendingReveal = null;
                 UpdateInlineInput();
                 StartQuery(pending.QueryStart);
                 break;
-            case InputRevealStep.WaitForLayout:
+            case InputRevealStep.WaitForLoad when _textBox is not null:
                 _pendingReveal = pending with { Attempt = pending.Attempt + 1 };
-                Box.LayoutUpdated += OnRevealLayoutUpdated;
+                _textBox.Loaded += OnRevealedTextBoxLoaded;
                 break;
             default:
                 // Focus never moved: the input hides again unless focus reached it some other way.
@@ -831,7 +909,7 @@ public sealed partial class TokenPicker : UserControl
         }
     }
 
-    private void OnRevealLayoutUpdated(object? sender, object e) => TryFocusRevealedInput();
+    private void OnRevealedTextBoxLoaded(object sender, RoutedEventArgs e) => TryFocusRevealedInput();
 
     // Text typed on the field (or set through UI Automation) starts the search, with the caret after it.
     private void StartQuery(string text)

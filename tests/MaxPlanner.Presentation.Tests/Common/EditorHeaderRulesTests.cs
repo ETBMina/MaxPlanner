@@ -89,21 +89,25 @@ public sealed class EditorHeaderRulesTests
     public void The_tag_field_itself_is_the_tab_stop_while_its_on_demand_input_is_hidden(bool isEditable, bool isInputOnDemand, bool isInputShown, bool isTabStop) =>
         TokenPickerRules.IsFieldTabStop(isEditable, isInputOnDemand, isInputShown).Should().Be(isTabStop);
 
-    [Fact]
-    public void A_reveal_focuses_at_once_when_the_text_box_is_ready() =>
-        TokenPickerRules.NextRevealStep(focused: true, attempt: 0).Should().Be(InputRevealStep.Focused);
+    [Theory]
+    [InlineData(true, true, 0, InputRevealStep.Focused)]
+    [InlineData(true, true, 1, InputRevealStep.Focused)]
+    [InlineData(false, false, 0, InputRevealStep.WaitForLoad)]
+    [InlineData(false, false, 1, InputRevealStep.GiveUp)]
+    [InlineData(false, true, 0, InputRevealStep.GiveUp)]
+    [InlineData(false, true, 1, InputRevealStep.GiveUp)]
+    public void A_reveal_focuses_a_loaded_text_box_waits_once_for_one_still_loading_and_never_waits_forever(
+        bool focused, bool isTextBoxLoaded, int attempt, InputRevealStep step) =>
+        TokenPickerRules.NextRevealStep(focused, isTextBoxLoaded, attempt).Should().Be(step);
 
-    [Fact]
-    public void A_reveal_whose_text_box_is_not_ready_waits_for_layout_then_gives_up()
-    {
-        for (var attempt = 0; attempt < TokenPickerRules.RevealFocusAttempts - 1; attempt++)
-        {
-            TokenPickerRules.NextRevealStep(focused: false, attempt).Should().Be(InputRevealStep.WaitForLayout);
-        }
-
-        TokenPickerRules.NextRevealStep(focused: false, TokenPickerRules.RevealFocusAttempts - 1).Should().Be(InputRevealStep.GiveUp);
-        TokenPickerRules.NextRevealStep(focused: true, TokenPickerRules.RevealFocusAttempts - 1).Should().Be(InputRevealStep.Focused);
-    }
+    [Theory]
+    [InlineData(true, "tag-1", TagInputEscapeStep.CloseList)]
+    [InlineData(true, null, TagInputEscapeStep.CloseList)]
+    [InlineData(false, "tag-1", TagInputEscapeStep.ClearText)]
+    [InlineData(false, "", TagInputEscapeStep.LeaveInput)]
+    [InlineData(false, null, TagInputEscapeStep.LeaveInput)]
+    public void Esc_in_the_tag_input_closes_the_list_then_clears_the_text_then_leaves(bool isListOpen, string? query, TagInputEscapeStep step) =>
+        TokenPickerRules.TagInputEscape(isListOpen, query).Should().Be(step);
 
     [Theory]
     [InlineData(20, 30, 30)]

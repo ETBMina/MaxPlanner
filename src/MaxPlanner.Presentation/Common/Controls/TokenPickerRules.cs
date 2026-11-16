@@ -1,13 +1,26 @@
 namespace MaxPlanner.Presentation.Common.Controls;
 
+/// <summary>What Esc does in the on-demand tag input (<see cref="TokenPickerRules.TagInputEscape"/>).</summary>
+public enum TagInputEscapeStep
+{
+    /// <summary>Close the open suggestion list.</summary>
+    CloseList,
+
+    /// <summary>Clear the typed text.</summary>
+    ClearText,
+
+    /// <summary>Leave the empty input for the field itself.</summary>
+    LeaveInput,
+}
+
 /// <summary>What a reveal of an on-demand input does after one try to focus its text box.</summary>
 public enum InputRevealStep
 {
     /// <summary>The text box has keyboard focus (a caret): the reveal is done.</summary>
     Focused,
 
-    /// <summary>The text box does not exist or is not loaded yet: try again after the next layout pass.</summary>
-    WaitForLayout,
+    /// <summary>The text box is not loaded yet: try again when its Loaded event arrives.</summary>
+    WaitForLoad,
 
     /// <summary>Focus still did not move after every try: hide the input again.</summary>
     GiveUp,
@@ -47,21 +60,16 @@ public static class TokenPickerRules
         isEditable && isInputOnDemand && !isInputShown;
 
     /// <summary>
-    /// How many times a reveal tries to focus the input's text box: now, then after up to nine layout passes (any layout
-    /// pass in the window counts, and the text box loads a pass or two after it is templated).
-    /// </summary>
-    public const int RevealFocusAttempts = 10;
-
-    /// <summary>
-    /// The order of a reveal: the input is made visible first, then its text box is focused; a box that was collapsed
-    /// may not be templated or loaded yet, so a failed try waits for the next layout pass, and gives up after
-    /// <see cref="RevealFocusAttempts"/> tries.
+    /// The order of a reveal: the input is made visible and laid out first, then its text box is focused. A text box that
+    /// was collapsed until now may not be loaded on the first try; that try waits for its Loaded event and tries once
+    /// more. A loaded text box that refuses focus, or a second failed try, gives up, so the input never waits forever.
     /// </summary>
     /// <param name="focused">This try gave the text box focus.</param>
+    /// <param name="isTextBoxLoaded">The text box was loaded when this try ran.</param>
     /// <param name="attempt">The zero-based number of this try.</param>
-    public static InputRevealStep NextRevealStep(bool focused, int attempt) =>
+    public static InputRevealStep NextRevealStep(bool focused, bool isTextBoxLoaded, int attempt) =>
         focused ? InputRevealStep.Focused
-        : attempt + 1 < RevealFocusAttempts ? InputRevealStep.WaitForLayout
+        : !isTextBoxLoaded && attempt == 0 ? InputRevealStep.WaitForLoad
         : InputRevealStep.GiveUp;
 
     /// <summary>
@@ -70,6 +78,16 @@ public static class TokenPickerRules
     /// when the input shows.
     /// </summary>
     public static double FieldLineHeight(double tallestChild, double minLineHeight) => Math.Max(tallestChild, minLineHeight);
+
+    /// <summary>
+    /// What Esc does in the on-demand tag input: it closes an open suggestion list first, then clears typed text, and with
+    /// nothing left to undo it leaves the input for the field itself (which hides the empty input), so a further Esc
+    /// closes the dialog. It never restores text typed before a pick.
+    /// </summary>
+    public static TagInputEscapeStep TagInputEscape(bool isListOpen, string? query) =>
+        isListOpen ? TagInputEscapeStep.CloseList
+        : !string.IsNullOrEmpty(query) ? TagInputEscapeStep.ClearText
+        : TagInputEscapeStep.LeaveInput;
 
     /// <summary>A printable character typed on the focused field (Space included) reveals the input; control keys do not.</summary>
     public static bool RevealsInput(char character) => !char.IsControl(character);
