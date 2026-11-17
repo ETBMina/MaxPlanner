@@ -26,8 +26,23 @@ internal sealed class ManualScheduler : LocalScheduler
         }
     }
 
+    private Thread? _throwOnScheduleFrom;
+
+    /// <summary>
+    /// The next work scheduled from the calling thread throws instead of being queued, as a failing display wait would
+    /// (<c>WorkspaceContext.WhenDisplayedAsync</c> schedules its marker from the UI thread). Work scheduled from other
+    /// threads, such as the change feed's handoff from the database writer, is queued as usual.
+    /// </summary>
+    public void ThrowOnNextScheduleFromThisThread() => _throwOnScheduleFrom = Thread.CurrentThread;
+
     public override IDisposable Schedule<TState>(TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action)
     {
+        if (_throwOnScheduleFrom is { } thread && thread == Thread.CurrentThread)
+        {
+            _throwOnScheduleFrom = null;
+            throw new InvalidOperationException("display wait");
+        }
+
         var work = new SingleAssignmentDisposable();
         lock (_gate)
         {

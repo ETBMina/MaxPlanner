@@ -1,9 +1,13 @@
+using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace MaxPlanner.Presentation.Settings;
 
-/// <summary>The custom field dialog (design §4.6). Code-behind forwards clicks and uses a full-size dialog in small windows.</summary>
+/// <summary>
+/// The custom field dialog (design §4.6). Buttons bind commands; code-behind forwards the primary button and an option's
+/// Remove, and uses a full-size dialog in small windows.
+/// </summary>
 public sealed partial class FieldDefinitionDialog : ContentDialog
 {
     public FieldDefinitionDialog(FieldDefinitionEditorViewModel viewModel)
@@ -15,7 +19,7 @@ public sealed partial class FieldDefinitionDialog : ContentDialog
         {
             if (XamlRoot is { } root)
             {
-                FullSizeDesired = root.Size.Width < 640 || root.Size.Height < 600;
+                FullSizeDesired = root.Size.Width < Breakpoints.Medium || root.Size.Height < 600;
             }
         };
     }
@@ -26,10 +30,8 @@ public sealed partial class FieldDefinitionDialog : ContentDialog
     {
         // The dialog closes only after the save committed; a failure keeps it open with its errors.
         args.Cancel = true;
-        _ = ViewModel.SaveAsync();
+        ViewModel.SaveCommand.Execute(null);
     }
-
-    private void OnAddOptionClick(object sender, RoutedEventArgs e) => ViewModel.AddOption();
 
     private void OnRemoveOptionClick(object sender, RoutedEventArgs e)
     {

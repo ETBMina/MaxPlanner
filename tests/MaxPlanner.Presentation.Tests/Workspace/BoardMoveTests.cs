@@ -43,8 +43,8 @@ public sealed class BoardMoveTests
         });
         var board = Ready(h);
         var inProgress = board.Buckets[2];
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("First"), inProgress.StatusId), TestContext.Current.CancellationToken));
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Second"), inProgress.StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("First"), inProgress.StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Second"), inProgress.StatusId), TestContext.Current.CancellationToken));
         var card = board.Buckets[0].Cards.Single();
 
         h.Await(board.DropAsync(card, inProgress, 1));
@@ -85,7 +85,7 @@ public sealed class BoardMoveTests
         });
         var board = Ready(h);
         var review = board.Buckets[3];
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Already in review"), review.StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Already in review"), review.StatusId), TestContext.Current.CancellationToken));
         var card = board.Buckets[0].Cards.Single(c => c.IsSubtaskCard);
         var parentRevision = h.Task(parent).Revision;
 
@@ -101,8 +101,8 @@ public sealed class BoardMoveTests
     public void While_searching_a_status_move_lands_at_the_top_of_the_full_bucket_and_reordering_is_refused()
     {
         using var h = Board(out var board, "Match one", "Hidden", "Match two");
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden blocker"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
-        h.External(u => u.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden newer"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden blocker"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
+        h.External(u => u.Tasks.CreateTask.ExecuteAsync(new(OperationId.New(), new TaskId(Guid.NewGuid()), Draft("Hidden newer"), board.Buckets[1].StatusId), TestContext.Current.CancellationToken));
         var announcements = Announcements(h);
         board.SearchText = "match";
         h.Settle();
@@ -161,6 +161,38 @@ public sealed class BoardMoveTests
 
         board.Buckets[0].Cards.Select(c => c.Title).Should().BeEquivalentTo(["Card limits API", "Rounding fix"]);
         board.Summary.Should().Be("Filtered: 2 of 3 cards");
+        board.Subtitle.Should().NotContain("Filtered", "design §2.8 (U-10): the subtitle keeps the unfiltered count");
+    }
+
+    [Fact]
+    [Trait("Req", "B-07")]
+    public void The_status_bar_shows_the_filtered_count_only_while_the_board_is_filtered()
+    {
+        using var h = WorkspaceHarness.Create(async s =>
+        {
+            await s.TaskAsync("Card limits API");
+            await s.TaskAsync("Unrelated");
+        });
+        var board = Ready(h);
+        using var shell = new MaxPlanner.Presentation.Shell.ShellViewModel(new FakeStrings(), new FakeDataFolder(), new FakePreferencesStore());
+        shell.AttachWorkspace(h.Workspace);
+        shell.NavigateTo(MaxPlanner.Presentation.Shell.AppPage.Board);
+        h.Settle();
+
+        shell.StatusSummary.Should().BeEmpty("unfiltered, the status would repeat the subtitle");
+        shell.HasStatusSummary.Should().BeFalse("the empty status text is collapsed, with no tooltip");
+
+        board.SearchText = "limits";
+        h.Settle();
+
+        shell.StatusSummary.Should().Be(board.Summary).And.NotBe(board.Subtitle);
+        shell.HasStatusSummary.Should().BeTrue();
+
+        board.SearchText = string.Empty;
+        h.Settle();
+
+        shell.StatusSummary.Should().BeEmpty();
+        shell.HasStatusSummary.Should().BeFalse();
     }
 
     [Fact]

@@ -183,11 +183,11 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private readonly ObservableCollection<BoardBucketViewModel> _buckets = [];
     private readonly IDisposable _workflowSubscription;
     private readonly IDisposable _commits;
-    private readonly Action<string> _copyText;
+    private readonly Func<string, bool> _copyText;
     private Dictionary<PriorityId, PriorityLevel> _priorityLevels = [];
 
-    /// <param name="copyText">Puts text on the clipboard; tests pass a recorder.</param>
-    public BoardPageViewModel(WorkspaceContext context, Action<string>? copyText = null)
+    /// <param name="copyText">Puts text on the clipboard and says whether it took it; tests pass a recorder.</param>
+    public BoardPageViewModel(WorkspaceContext context, Func<string, bool>? copyText = null)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _copyText = copyText ?? ClipboardText.Set;
@@ -209,8 +209,13 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     [ObservableProperty]
     public partial ViewState State { get; private set; } = ViewState.Loading;
 
+    /// <summary>The status-bar text: "Filtered: 12 of 40 cards" while filters or search narrow the Board, else the subtitle (design §2.8).</summary>
     [ObservableProperty]
     public partial string Summary { get; private set; } = string.Empty;
+
+    /// <summary>"40 cards in 8 buckets": the page subtitle, always the unfiltered count.</summary>
+    [ObservableProperty]
+    public partial string Subtitle { get; private set; } = string.Empty;
 
     /// <summary>The shared Board/Grid task scope: search, filters, chips, and the Dashboard context (B-10).</summary>
     public TaskFilterScopeViewModel Filters { get; }
@@ -333,8 +338,21 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         return CopyIdFormatter.Apply(_context.Store.CurrentWorkflow?.Defaults.CopyIdFormat, card.Model.CopyIdValues);
     }
 
-    /// <summary>Card ⋯ › Copy ID and the card's Task chip (design §4.2): copies the ID text, with no confirmation.</summary>
-    public void CopyId(BoardCardViewModel card) => _copyText(CopyIdText(card));
+    /// <summary>
+    /// Card ⋯ › Copy ID and the card's Task chip (design §4.2): copies the ID text and announces "Copied {id}". Returns
+    /// whether it was copied, so the chip can show its "Copied" hint.
+    /// </summary>
+    public bool CopyId(BoardCardViewModel card)
+    {
+        var text = CopyIdText(card);
+        if (!CopyFeedbackRules.ShowsFeedback(text, _copyText(text)))
+        {
+            return false;
+        }
+
+        _context.Announce(_context.Strings.Format("Copy_Announcement", text));
+        return true;
+    }
 
     public Task CopyAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
 
@@ -367,7 +385,7 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     }
 
     [RelayCommand]
-    private Task NewTask() => NewTaskAsync();
+    private Task NewTask() => UiTasks.RunGuardedAsync(() => NewTaskAsync());
 
     [RelayCommand(CanExecute = nameof(CanGoPrevious))]
     private void PreviousBucket() => SelectedBucket = _buckets[_buckets.IndexOf(SelectedBucket!) - 1];
@@ -440,36 +458,28 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
     private async Task<bool> MoveAsync(BoardCardViewModel card, BoardBucketViewModel target, BoardPlacement placement)
     {
         var source = BucketOf(card);
-        if (_context.IsEditingBlocked)
-        {
-            _context.Announce(_context.Strings.GetString("Error_EditingBlocked"), isFailure: true);
-            return false;
-        }
-
         var model = card.Model;
-        var operation = OperationId.New();
-        card.IsMoving = true;
-        _context.SaveStatus.Begin();
-        var result = model switch
+        var run = await _context.Commands.RunAsync(new CommandRequest<long>(card.IsTask ? "Record_Task" : "Record_SubtaskCard", operation => model switch
         {
-            { Task: { } task } => await _context.UseCases.MoveTask.ExecuteAsync(
-                new MoveTaskCommand(operation, task.Id, task.Revision, target.StatusId, placement), CancellationToken.None).ConfigureAwait(true),
-            { Card: { } subtaskCard } => await _context.UseCases.MoveSubtaskCard.ExecuteAsync(
-                new MoveSubtaskCardCommand(operation, subtaskCard.Id, subtaskCard.Revision, target.StatusId, placement), CancellationToken.None).ConfigureAwait(true),
+            { Task: { } task } => _context.UseCases.Tasks.MoveTask.ExecuteAsync(
+                new MoveTaskCommand(operation, task.Id, task.Revision, target.StatusId, placement), CancellationToken.None),
+            { Card: { } subtaskCard } => _context.UseCases.SubtaskCards.MoveSubtaskCard.ExecuteAsync(
+                new MoveSubtaskCardCommand(operation, subtaskCard.Id, subtaskCard.Revision, target.StatusId, placement), CancellationToken.None),
             _ => throw new InvalidOperationException("A Board card is a task or a Subtask card."),
-        };
-        if (!result.IsSuccess)
+        })
         {
-            card.IsMoving = false;
-            var failure = CommandFailure.From(result.Error!, operation, card.IsTask ? "Record_Task" : "Record_SubtaskCard", _context.Strings);
-            _context.SaveStatus.Fail(failure);
-            _context.Announce(_context.Strings.Format("Board_MoveFailed", card.Title, source?.Name ?? model.Status.Name) + " " + failure.Message, isFailure: true);
+            // The Board ends every failed move with Fail and names the card and the bucket it stays in.
+            FailureIndicator = CommandFailureIndicator.Fail,
+            FailureAnnouncement = failure => _context.Strings.Format("Board_MoveFailed", card.Title, source?.Name ?? model.Status.Name) + " " + failure.Message,
+            AnnouncesBlocked = true,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy => card.IsMoving = busy,
+        }).ConfigureAwait(true);
+        if (!run.IsSuccess)
+        {
             return false;
         }
 
-        _context.SaveStatus.Complete();
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        card.IsMoving = false;
         if (target.Cards.FirstOrDefault(c => c.Key == card.Key) is { } moved)
         {
             _context.Announce(_context.Strings.Format("Board_Moved", moved.Title, target.Name, target.Cards.IndexOf(moved) + 1, target.Cards.Count));
@@ -545,15 +555,14 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
         var initialized = _buckets.Count > 0 && _buckets.All(c => c.IsInitialized);
         var cards = _buckets.Sum(c => c.Cards.Count);
         State = initialized ? ViewState.Populated : ViewState.Loading;
-        if (IsFiltered)
-        {
-            var total = _context.Store.Tasks.Items.Count(t => !t.IsArchived) + _context.Store.SubtaskCards.Items.Count(c => !c.IsParentArchived);
-            Summary = _context.Strings.Format("Board_SummaryFiltered", cards, total);
-            return;
-        }
-
-        Summary = cards == 0
+        // The subtitle always counts every active card; the status bar adds the filtered count only while filtered,
+        // because an unfiltered status would repeat the subtitle (U-10, PageStatusText).
+        var total = IsFiltered
+            ? _context.Store.Tasks.Items.Count(t => !t.IsArchived) + _context.Store.SubtaskCards.Items.Count(c => !c.IsParentArchived)
+            : cards;
+        Subtitle = total == 0
             ? _context.Strings.GetString("Board_SummaryEmpty")
-            : _context.Strings.Format(cards == 1 ? "Board_SummaryOne" : "Board_Summary", cards, _buckets.Count);
+            : _context.Strings.Format(total == 1 ? "Board_SummaryOne" : "Board_Summary", total, _buckets.Count);
+        Summary = IsFiltered ? _context.Strings.Format("Board_SummaryFiltered", cards, total) : Subtitle;
     }
 }

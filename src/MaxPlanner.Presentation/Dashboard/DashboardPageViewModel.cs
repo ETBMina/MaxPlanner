@@ -10,7 +10,9 @@ using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Filters;
+using MaxPlanner.Presentation.Common.Options;
 using MaxPlanner.Presentation.Common.Scheduling;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
@@ -186,18 +188,6 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     /// <summary>The page scroll offset, kept across a drill-down and restored on Back (AC-20).</summary>
     public double ScrollOffset { get; set; }
 
-    public void OpenOverdue(OverdueRowViewModel row)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        _ = _context.ChangeRequests.OpenAsync(new ChangeRequestId(row.Id));
-    }
-
-    public void OpenUnlinked(UnlinkedRowViewModel row)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        _ = _context.Tasks.OpenAsync(new TaskId(row.Id));
-    }
-
     public void Dispose()
     {
         _results.Dispose();
@@ -219,9 +209,13 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
     }
 
     [RelayCommand]
+    private Task NewChangeRequest() => UiTasks.RunGuardedAsync(NewChangeRequestAsync);
+
     private Task NewChangeRequestAsync() => _context.ChangeRequests.NewAsync();
 
     [RelayCommand]
+    private Task NewTask() => UiTasks.RunGuardedAsync(NewTaskAsync);
+
     private Task NewTaskAsync() => _context.Tasks.NewAsync();
 
     [RelayCommand]
@@ -336,7 +330,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         var current = _filter.Value;
         _isSyncingOptions = true;
         Replace(_squads, [new DashboardOption(null, strings.GetString("Dashboard_AllSquads")), .. workflow.Squads.OrderBy(s => s.Order).Select(s => new DashboardOption(s.Id.Value, s.Name.Display)), new DashboardOption(null, strings.GetString("Squad_General"), IsGeneral: true)]);
-        Replace(_priorities, [new DashboardOption(null, strings.GetString("Dashboard_AllPriorities")), .. Tasks.PriorityOption.From(workflow).Select(p => new DashboardOption(p.Id.Value, p.Name, Level: p.Level))]);
+        Replace(_priorities, [new DashboardOption(null, strings.GetString("Dashboard_AllPriorities")), .. PriorityOption.From(workflow).Select(p => new DashboardOption(p.Id.Value, p.Name, Level: p.Level))]);
         Replace(_owners, [new DashboardOption(null, strings.GetString("Dashboard_AllOwners")), .. workflow.People.OrderBy(p => p.Name.Display, StringComparer.CurrentCultureIgnoreCase).Select(p => new DashboardOption(p.Id.Value, p.Name.Display))]);
         SelectedSquad = current.Squad is { } squad
             ? _squads.FirstOrDefault(o => squad.Id is { } id ? o.Id == id.Value : o.IsGeneral) ?? _squads[0]
@@ -375,7 +369,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         _result = result;
         var s = _context.Strings;
         string Count(int value) => value.ToString(CultureInfo.CurrentCulture);
-        Subtitle = s.Format("Dashboard_Subtitle", today.ToString("D", CultureInfo.CurrentCulture));
+        Subtitle = s.Format("Dashboard_Subtitle", DateText.LongDate(today));
 
         SetCard(ActiveTasks, result.ActiveTasks, s.Format("Dashboard_ActiveCaption", Count(result.TotalTasks)), "Dashboard_OpensGrid", s.GetString("Dashboard_ActiveTasks"));
         SetCard(CompletedTasks, result.CompletedTasks, string.Empty, "Dashboard_OpensGrid", s.GetString("Dashboard_CompletedTasks"));
@@ -383,7 +377,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         SetCard(OverdueCrs, result.OverdueCrs, s.GetString("Dashboard_OverdueCaption"), "Dashboard_OpensRecords", s.GetString("Dashboard_OverdueCrs"));
         OverdueCrs.HasBadge = result.OverdueCrs.Count > 0;
         SetCard(ActiveSubtaskCards, result.ActiveSubtaskCards, s.GetString("Dashboard_ActiveCardsCaption"), "Dashboard_OpensGrid", s.GetString("Dashboard_ActiveSubtaskCards"));
-        SetCard(Reviews, result.Reviews.Open, s.Format("Dashboard_ReviewsCaption", Count(result.Reviews.DoneThisWeek.Count), Count(result.Reviews.DoneThisMonth.Count)), "Dashboard_OpensReviews", s.GetString("Dashboard_DrillOpenReviews"));
+        // The Reviews card's caption line is its two links (done this week / this month), so the button has none.
+        SetCard(Reviews, result.Reviews.Open, string.Empty, "Dashboard_OpensReviews", s.GetString("Dashboard_DrillOpenReviews"));
         _doneThisWeek.Text = s.Format("Dashboard_ReviewsWeekLink", Count(result.Reviews.DoneThisWeek.Count));
         _doneThisMonth.Text = s.Format("Dashboard_ReviewsMonthLink", Count(result.Reviews.DoneThisMonth.Count));
 
@@ -391,8 +386,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject, IPageView
         SquadChart.Update(result.TasksBySquad);
         ReviewChart.Update(result.OpenReviewsByDeveloper);
 
-        ReplaceRows(_overdue, [.. result.OverdueList.Preview.Select(r => new OverdueRowViewModel(r, s))]);
-        ReplaceRows(_unlinked, [.. result.UnlinkedList.Preview.Select(t => new UnlinkedRowViewModel(t, s))]);
+        ReplaceRows(_overdue, [.. result.OverdueList.Preview.Select(r => new OverdueRowViewModel(r, s, () => _context.ChangeRequests.OpenAsync(r.ChangeRequest.Id)))]);
+        ReplaceRows(_unlinked, [.. result.UnlinkedList.Preview.Select(t => new UnlinkedRowViewModel(t, s, () => _context.Tasks.OpenAsync(t.Id)))]);
         HasOverdue = _overdue.Count > 0;
         HasUnlinked = _unlinked.Count > 0;
         OverdueCaption = s.Format("Dashboard_ShowingOf", Count(_overdue.Count), Count(result.OverdueList.TotalCount));

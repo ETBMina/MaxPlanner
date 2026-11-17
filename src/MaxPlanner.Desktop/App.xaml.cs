@@ -1,7 +1,9 @@
 using System.Reactive.Concurrency;
+using MaxPlanner.Application.Startup;
 using MaxPlanner.Desktop.Composition;
 using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Desktop.Windowing;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Shell;
@@ -49,7 +51,11 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         _services = AppComposition.Build(_context, DispatcherQueue.GetForCurrentThread(), BeginClose);
         var preferences = _context.LoadedPreferences.Preferences;
-        var window = new MainWindow(_services.GetRequiredService<ShellViewModel>());
+        var shell = _services.GetRequiredService<ShellViewModel>();
+
+        // A UI action that fails unexpectedly is logged and shown in the open workspace; the app keeps running.
+        UiTasks.Configure(_context.LoggerFactory.CreateLogger(typeof(UiTasks).FullName!), () => shell.Workspace?.Context);
+        var window = new MainWindow(shell);
         _window = window;
         var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(window);
         _services.GetRequiredService<Maintenance.WindowFilePickers>().Attach(window.AppWindow.Id);
@@ -77,12 +83,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         Log.WindowShown(_logger, elapsedMs);
 
         _coordinator = _services.GetRequiredService<StartupCoordinator>();
+        _services.GetRequiredService<ShellViewModel>().ReportPreferencesRecovery(_context.LoadedPreferences.Recovery);
         _ = _coordinator.RunAsync();
     }
 
     private void OnPageShown(object? sender, PageShownEventArgs e) => Log.PageShown(_logger, e.Page, (long)e.Elapsed.TotalMilliseconds);
 
-    // T-11: the memory cost of the page preload is the working set after it against the idle budget (500 MiB).
+    // T-11: the memory cost of the page preload is the working set after it against the idle budget (600 MiB, ADR 0030).
     private void OnPagesPreloaded(object? sender, PagesPreloadedEventArgs e)
     {
         var durationMs = (long)e.Elapsed.TotalMilliseconds;
@@ -138,7 +145,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             if (_coordinator is not null)
             {
                 await _coordinator.ShutdownAsync();
-                _context.ExitCode = _coordinator.ExitCode;
+                _context.ExitCode = ExitCodes.For(_coordinator.Exit);
             }
 
             await _context.Preferences.FlushAsync(CancellationToken.None);

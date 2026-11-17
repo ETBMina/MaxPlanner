@@ -27,122 +27,107 @@
         </Grid.RowDefinitions>
 
         <!-- Page header (design §2.3): title and commands, search and Filters (shared with the Board, B-10), filter context. -->
-        <Grid
+        <controls:PageHeader
             x:Name="HeaderRoot"
-            Padding="32,24,32,12"
-            ColumnSpacing="12"
-            RowSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <StackPanel VerticalAlignment="Center" Spacing="2">
-                <TextBlock
-                    x:Name="PageTitle"
-                    x:Uid="Grid_PageTitle"
-                    AutomationProperties.AutomationId="Grid_PageTitle"
-                    AutomationProperties.HeadingLevel="Level1"
-                    Style="{StaticResource PageTitleTextStyle}" />
-                <TextBlock x:Uid="Grid_PageSubtitle" Style="{StaticResource PageSubtitleTextStyle}" />
+            SubtitleUid="Grid_PageSubtitle"
+            TitleAutomationId="Grid_PageTitle"
+            TitleUid="Grid_PageTitle">
+            <controls:PageHeader.Actions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <!--
+                        Design §2.4/§4.3: Show archived, Columns, Export…, and Reset column layout in overflow. The star column
+                        hands the CommandBar the width PageHeader leaves the actions, so its dynamic overflow works.
+                    -->
+                    <CommandBar
+                        x:Name="Commands"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        DefaultLabelPosition="Right"
+                        IsDynamicOverflowEnabled="True"
+                        OverflowButtonVisibility="Auto">
+                        <AppBarToggleButton
+                            x:Uid="Grid_ShowArchivedToggle"
+                            AutomationProperties.AutomationId="Grid_ShowArchivedToggle"
+                            DynamicOverflowOrder="2"
+                            IsChecked="{x:Bind ViewModel.ShowArchived, Mode=TwoWay}">
+                            <AppBarToggleButton.Icon>
+                                <FontIcon Glyph="&#xE7B8;" />
+                            </AppBarToggleButton.Icon>
+                        </AppBarToggleButton>
+                        <AppBarButton
+                            x:Uid="Grid_ColumnsButton"
+                            AutomationProperties.AutomationId="Grid_ColumnsButton"
+                            DynamicOverflowOrder="3">
+                            <AppBarButton.Icon>
+                                <FontIcon Glyph="&#xE80A;" />
+                            </AppBarButton.Icon>
+                            <AppBarButton.Flyout>
+                                <Flyout x:Name="ColumnsFlyout" Opening="OnColumnsFlyoutOpening" ShouldConstrainToRootBounds="True" />
+                            </AppBarButton.Flyout>
+                        </AppBarButton>
+                        <!-- B-12: exports the rows shown now through Settings › Data › Export ("Current view results"). -->
+                        <AppBarButton
+                            x:Uid="Grid_ExportButton"
+                            AutomationProperties.AutomationId="Grid_ExportButton"
+                            Command="{x:Bind ViewModel.ExportViewCommand}"
+                            DynamicOverflowOrder="1">
+                            <AppBarButton.Icon>
+                                <FontIcon Glyph="&#xE896;" />
+                            </AppBarButton.Icon>
+                        </AppBarButton>
+                        <CommandBar.SecondaryCommands>
+                            <AppBarButton
+                                x:Uid="Grid_ResetLayoutButton"
+                                AutomationProperties.AutomationId="Grid_ResetLayoutButton"
+                                Command="{x:Bind ViewModel.ResetLayoutCommand}">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE72C;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                        </CommandBar.SecondaryCommands>
+                    </CommandBar>
+                    <Button
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        x:Uid="Grid_NewTaskButton"
+                        AutomationProperties.AutomationId="Grid_NewTaskButton"
+                        Command="{x:Bind ViewModel.NewTaskCommand}"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="N" Modifiers="Control" />
+                        </Button.KeyboardAccelerators>
+                        <controls:NewButtonContent x:Name="NewTaskContent" x:Uid="Grid_NewTaskButtonText" />
+                    </Button>
+                </Grid>
+            </controls:PageHeader.Actions>
+            <!-- A StackPanel, not a Grid with RowSpacing: the spacing is skipped while the chips bar is collapsed. -->
+            <StackPanel Spacing="8">
+                <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <filters:FilterButton PageKey="Grid" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                    <controls:ExpandingSearchBox
+                        x:Name="SearchBox"
+                        x:Uid="Grid_Search"
+                        Grid.Column="1"
+                        AutomationIdPrefix="Grid"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                </Grid>
+                <!-- Collapsed while empty: its closed InfoBars would otherwise leave a gap under the Filters row. -->
+                <filters:FilterChipsBar
+                    x:Name="ChipsBar"
+                    PageKey="Grid"
+                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.Filters.HasBarContent), Mode=OneWay}" />
             </StackPanel>
-
-            <!-- Design §2.4/§4.3: Show archived, Columns, Export…, and Reset column layout in overflow. -->
-            <CommandBar
-                x:Name="Commands"
-                Grid.Column="1"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                DefaultLabelPosition="Right"
-                IsDynamicOverflowEnabled="True"
-                OverflowButtonVisibility="Auto">
-                <AppBarToggleButton
-                    x:Uid="Grid_ShowArchivedToggle"
-                    AutomationProperties.AutomationId="Grid_ShowArchivedToggle"
-                    DynamicOverflowOrder="2"
-                    IsChecked="{x:Bind ViewModel.ShowArchived, Mode=TwoWay}">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon Glyph="&#xE7B8;" />
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarButton
-                    x:Uid="Grid_ColumnsButton"
-                    AutomationProperties.AutomationId="Grid_ColumnsButton"
-                    DynamicOverflowOrder="3">
-                    <AppBarButton.Icon>
-                        <FontIcon Glyph="&#xE80A;" />
-                    </AppBarButton.Icon>
-                    <AppBarButton.Flyout>
-                        <Flyout x:Name="ColumnsFlyout" Opening="OnColumnsFlyoutOpening" ShouldConstrainToRootBounds="True" />
-                    </AppBarButton.Flyout>
-                </AppBarButton>
-                <!-- B-12: exports the rows shown now through Settings › Data › Export ("Current view results"). -->
-                <AppBarButton
-                    x:Uid="Grid_ExportButton"
-                    AutomationProperties.AutomationId="Grid_ExportButton"
-                    Command="{x:Bind ViewModel.ExportViewCommand}"
-                    DynamicOverflowOrder="1">
-                    <AppBarButton.Icon>
-                        <FontIcon Glyph="&#xE896;" />
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <CommandBar.SecondaryCommands>
-                    <AppBarButton
-                        x:Uid="Grid_ResetLayoutButton"
-                        AutomationProperties.AutomationId="Grid_ResetLayoutButton"
-                        Command="{x:Bind ViewModel.ResetLayoutCommand}">
-                        <AppBarButton.Icon>
-                            <FontIcon Glyph="&#xE72C;" />
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                </CommandBar.SecondaryCommands>
-            </CommandBar>
-
-            <Button
-                Grid.Column="2"
-                VerticalAlignment="Center"
-                x:Uid="Grid_NewTaskButton"
-                AutomationProperties.AutomationId="Grid_NewTaskButton"
-                Command="{x:Bind ViewModel.NewTaskCommand}"
-                Style="{StaticResource AccentButtonStyle}">
-                <Button.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="N" Modifiers="Control" />
-                </Button.KeyboardAccelerators>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="16" Glyph="&#xE710;" />
-                    <TextBlock x:Name="NewTaskText" x:Uid="Grid_NewTaskButtonText" />
-                </StackPanel>
-            </Button>
-
-            <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
-            <Grid
-                Grid.Row="1"
-                Grid.ColumnSpan="3"
-                ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <filters:FilterButton PageKey="Grid" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-                <controls:ExpandingSearchBox
-                    x:Name="SearchBox"
-                    x:Uid="Grid_Search"
-                    Grid.Column="1"
-                    AutomationIdPrefix="Grid"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
-            </Grid>
-            <filters:FilterChipsBar
-                x:Name="ChipsBar"
-                Grid.Row="2"
-                Grid.ColumnSpan="3"
-                PageKey="Grid"
-                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-        </Grid>
+        </controls:PageHeader>
 
         <controls:StateView
             x:Name="PageContent"
@@ -179,8 +164,7 @@
                         <Border
                             x:Name="HeaderBorder"
                             Padding="32,0,0,0"
-                            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                            BorderThickness="0,0,0,1">
+                            Style="{StaticResource TableHeaderBorderStyle}">
                             <local:GridHeaderPanel x:Name="HeaderRow" />
                         </Border>
 
@@ -198,13 +182,23 @@
                             Loaded="OnTableLoaded"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
                             SelectionMode="None">
+                            <!--
+                                P-01: the default cache (CacheLength 4) realized about five viewports of wide rows. CacheLength 2
+                                keeps one viewport above and one below, so Page Up/Down and fast wheel scrolling still land on
+                                realized rows.
+                            -->
+                            <local:GridTable.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsStackPanel CacheLength="2" />
+                                </ItemsPanelTemplate>
+                            </local:GridTable.ItemsPanel>
                             <local:GridTable.ItemContainerStyle>
                                 <Style TargetType="local:GridRowContainer">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                     <Setter Property="Padding" Value="0" />
-                                    <Setter Property="MinHeight" Value="44" />
+                                    <Setter Property="MinHeight" Value="{StaticResource TableRowHeight}" />
                                     <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
-                                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                    <Setter Property="BorderThickness" Value="{StaticResource TableDividerThickness}" />
                                     <Setter Property="IsTabStop" Value="False" />
                                 </Style>
                             </local:GridTable.ItemContainerStyle>
@@ -247,7 +241,7 @@
                         <FontIcon
                             VerticalAlignment="Top"
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Foreground="{ThemeResource ErrorTextBrush}"
                             Glyph="&#xE783;" />
                         <TextBlock

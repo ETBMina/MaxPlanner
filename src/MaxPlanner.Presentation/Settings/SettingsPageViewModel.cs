@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,6 +10,7 @@ using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Settings.DataPage;
@@ -225,8 +225,10 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
     private bool CanBackUpNow => HasDataServices && !IsBackingUp;
 
-    /// <summary>T-09 Back up now: a manual backup, never pruned.</summary>
     [RelayCommand(CanExecute = nameof(CanBackUpNow))]
+    private Task BackUpNow() => UiTasks.RunGuardedAsync(BackUpNowAsync);
+
+    /// <summary>T-09 Back up now: a manual backup, never pruned.</summary>
     private async Task BackUpNowAsync()
     {
         if (_services.Data is not { } data)
@@ -273,17 +275,17 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        section.IsAdding = true;
         var id = Guid.NewGuid();
-        var error = await RunAsync(op => _services.UseCases.AddLookup.ExecuteAsync(new AddLookupCommand(op, section.Kind, id, section.AddText), CancellationToken.None)).ConfigureAwait(true);
-        section.IsAdding = false;
-        if (error is null)
+        var run = await RunAsync(
+            op => _services.UseCases.AddLookup.ExecuteAsync(new AddLookupCommand(op, section.Kind, id, section.AddText), CancellationToken.None),
+            busy => section.IsAdding = busy).ConfigureAwait(true);
+        if (run.IsSuccess)
         {
             section.AddText = string.Empty;
         }
         else
         {
-            section.AddError = error;
+            section.AddError = run.Message;
         }
     }
 
@@ -302,13 +304,12 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return true;
         }
 
-        row.IsBusy = true;
-        var error = await RunAsync(op => _services.UseCases.RenameLookup.ExecuteAsync(
-            new RenameLookupCommand(op, row.Kind, row.Id, row.Stamp, row.RenameText), CancellationToken.None)).ConfigureAwait(true);
-        row.IsBusy = false;
-        if (error is not null)
+        var run = await RunAsync(
+            op => _services.UseCases.RenameLookup.ExecuteAsync(new RenameLookupCommand(op, row.Kind, row.Id, row.Stamp, row.RenameText), CancellationToken.None),
+            busy => row.IsBusy = busy).ConfigureAwait(true);
+        if (!run.IsSuccess)
         {
-            row.RenameError = error;
+            row.RenameError = run.Message;
             return false;
         }
 
@@ -397,7 +398,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        var removal = new LookupRemovalViewModel(_context, _services.UseCases, workflow, row.Kind, row.Id, row.Name);
+        var removal = new LookupRemovalViewModel(_context.Commands, _context, _context.Strings, _services.UseCases, workflow, row.Kind, row.Id, row.Name);
         await removal.LoadAsync().ConfigureAwait(true);
         await _context.ShowDialogAsync(removal).ConfigureAwait(true);
     }
@@ -465,7 +466,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     {
         ArgumentNullException.ThrowIfNull(section);
         return _workflow is { } workflow
-            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForNew(_context, _services.UseCases, workflow, section.Target))
+            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForNew(_context.Commands, _context, _context.Strings, _services.UseCases, workflow, section.Target))
             : Task.CompletedTask;
     }
 
@@ -473,7 +474,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     {
         ArgumentNullException.ThrowIfNull(row);
         return _workflow is { } workflow && workflow.Fields.FirstOrDefault(f => f.Id == row.Id) is { } field
-            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForExisting(_context, _services.UseCases, workflow, field))
+            ? _context.ShowDialogAsync(FieldDefinitionEditorViewModel.ForExisting(_context.Commands, _context, _context.Strings, _services.UseCases, workflow, field))
             : Task.CompletedTask;
     }
 
@@ -546,7 +547,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
     private async Task<bool> SaveDefaultsAsync(WorkflowDefaults defaults)
     {
-        var error = await RunAsync(op => _services.UseCases.UpdateWorkflowDefaults.ExecuteAsync(
+        var run = await RunAsync(op => _services.UseCases.UpdateWorkflowDefaults.ExecuteAsync(
             new UpdateWorkflowDefaultsCommand(
                 op,
                 _defaultsStamp,
@@ -558,9 +559,9 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
                 defaults.CrBacklogStatusId,
                 defaults.CopyIdFormat),
             CancellationToken.None)).ConfigureAwait(true);
-        if (error is not null)
+        if (!run.IsSuccess)
         {
-            ErrorMessage = error;
+            ErrorMessage = run.Message;
 
             // The combo boxes show the committed defaults again (T-07: committed state only).
             if (_workflow is { } workflow)
@@ -569,7 +570,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             }
         }
 
-        return error is null;
+        return run.IsSuccess;
     }
 
     private async Task RunRowAsync(LookupRowViewModel row, Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command)
@@ -579,38 +580,24 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             return;
         }
 
-        row.IsBusy = true;
-        var error = await RunAsync(command).ConfigureAwait(true);
-        row.IsBusy = false;
-        ErrorMessage = error;
+        ErrorMessage = (await RunAsync(command, busy => row.IsBusy = busy).ConfigureAwait(true)).Message;
     }
 
     private async Task RunPageAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command) =>
-        ErrorMessage = await RunAsync(command).ConfigureAwait(true);
+        ErrorMessage = (await RunAsync(command).ConfigureAwait(true)).Message;
 
-    /// <summary>Runs one Settings command with the save indicator; returns the failure text or null on success.</summary>
-    private async Task<string?> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command)
-    {
-        if (_context.IsEditingBlocked)
+    /// <summary>
+    /// Runs one Settings command with the save indicator, announcing a failure and waiting until the commit is displayed.
+    /// The run's message is the text to show when it did not succeed: blocked, failed, unexpected, or nothing after a
+    /// cancellation. <paramref name="busy"/> is the row or section flag that is set while the command runs.
+    /// </summary>
+    private Task<CommandRun<long>> RunAsync(Func<OperationId, Task<AppResult<CommandOutcome<long>>>> command, Action<bool>? busy = null) =>
+        _context.Commands.RunAsync(new CommandRequest<long>("Record_Settings", command)
         {
-            return _context.Strings.GetString("Error_EditingBlocked");
-        }
-
-        var operation = OperationId.New();
-        _context.SaveStatus.Begin();
-        var result = await command(operation).ConfigureAwait(true);
-        if (!result.IsSuccess)
-        {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _context.Announce(failure.Message, isFailure: true);
-            return failure.Message;
-        }
-
-        _context.SaveStatus.Complete();
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        return null;
-    }
+            FailureAnnouncement = CommandRequest.FailureText,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy,
+        });
 
     private void OnWorkflow(WorkflowSnapshot workflow)
     {
@@ -884,7 +871,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
                 ? _context.Strings.GetString("Settings_BackupNone")
                 : _context.Strings.Format(
                     "Settings_BackupLast",
-                    latest.CreatedAtUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture),
+                    DateText.ShortDateTime(latest.CreatedAtUtc.ToLocalTime()),
                     _context.Strings.GetString("BackupKind_" + latest.Kind.Replace("-", string.Empty, StringComparison.Ordinal)));
         }
         catch (IOException)

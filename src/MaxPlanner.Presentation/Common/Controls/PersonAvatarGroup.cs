@@ -22,8 +22,6 @@ public sealed partial class PersonAvatarGroup : StackPanel
     public static readonly DependencyProperty DiameterProperty = DependencyProperty.Register(
         nameof(Diameter), typeof(double), typeof(PersonAvatarGroup), new PropertyMetadata(PersonAvatar.SmallDiameter, (d, _) => ((PersonAvatarGroup)d).Rebuild()));
 
-    private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
-
     public PersonAvatarGroup()
     {
         Orientation = Orientation.Horizontal;
@@ -89,7 +87,7 @@ public sealed partial class PersonAvatarGroup : StackPanel
         };
         circle.Children.Add(new TextBlock
         {
-            Text = Strings.Value.Format("PersonAvatar_Overflow", hidden),
+            Text = ResourceStrings.Shared.Format("PersonAvatar_Overflow", hidden),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             FontSize = PersonAvatarIdentity.FontSizeFor(Diameter),

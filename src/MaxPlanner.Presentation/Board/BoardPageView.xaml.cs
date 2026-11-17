@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Services;
 using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 using Microsoft.UI.Input;
@@ -20,8 +21,6 @@ namespace MaxPlanner.Presentation.Board;
 /// </summary>
 public sealed partial class BoardPageView : UserControl, Shell.IPageView
 {
-    private static readonly ResourceStrings Strings = new();
-
     private readonly HashSet<FrameworkElement> _buckets = [];
     private readonly Dictionary<BoardBucketViewModel, BoardCardList> _lists = [];
     private BoardLayout? _layout;
@@ -51,14 +50,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                OnWidthChanged(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, OnWidthChanged);
         ViewModel.FocusRequested += OnFocusRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         BucketPicker.SelectedItem = ViewModel.SelectedBucket;
@@ -77,19 +69,6 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     }
 
     public BoardPageViewModel ViewModel { get; }
-
-    /// <summary>The priority chip style for a rank token (design §6.1); styles use theme resources, so they follow theme changes.</summary>
-    public static Style PriorityChipStyle(PriorityLevel level) =>
-        (Style)Microsoft.UI.Xaml.Application.Current.Resources[level switch
-        {
-            PriorityLevel.Level1 => "PriorityLevel1ChipStyle",
-            PriorityLevel.Level2 => "PriorityLevel2ChipStyle",
-            PriorityLevel.Lowest => "PriorityLowestChipStyle",
-            _ => "PriorityMidChipStyle",
-        }];
-
-    /// <summary>Important, ChevronUp, Remove (dash), ChevronDown (design §6.1).</summary>
-    public static string PriorityGlyph(PriorityLevel level) => WorkflowGlyphs.Priority(level);
 
     /// <summary>The ID-row priority glyph in the priority color (design §4.2 item 3).</summary>
     public static Style PriorityGlyphStyle(PriorityLevel level) => Resource("BoardPriority" + LevelKey(level) + "GlyphStyle");
@@ -112,13 +91,22 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     /// <summary>Design §4.2: 60% opacity while the card is being moved; the "Moving" caption says it in text.</summary>
     public static double MovingOpacity(bool isMoving) => isMoving ? 0.6 : 1.0;
 
+    /// <summary>The card body's ⋯ button row (<see cref="BoardCardLayout.MenuRow"/>).</summary>
+    public static int CardMenuRow(bool hasIdRow) => BoardCardLayout.MenuRow(hasIdRow);
+
+    /// <summary>The title's column span (<see cref="BoardCardLayout.TitleColumnSpan"/>).</summary>
+    public static int CardTitleColumnSpan(bool hasIdRow) => BoardCardLayout.TitleColumnSpan(hasIdRow);
+
+    /// <summary>The gap row below the ID row (<see cref="BoardCardLayout.IdRowGap"/>).</summary>
+    public static GridLength CardIdRowGap(bool hasIdRow) => new(BoardCardLayout.IdRowGap(hasIdRow));
+
     /// <inheritdoc/>
     public FrameworkElement HeaderElement => HeaderRoot;
 
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -223,7 +211,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         if (layout.SidePadding != previous?.SidePadding || layout.HeaderTop != previous?.HeaderTop || layout.HeaderBottom != previous?.HeaderBottom)
         {
             var padding = layout.SidePadding;
-            HeaderRoot.Padding = new Thickness(padding, layout.HeaderTop, padding, layout.HeaderBottom);
+            HeaderRoot.HeaderPadding = new Thickness(padding, layout.HeaderTop, padding, layout.HeaderBottom);
 
             // ItemsControl's default template ignores Padding, so the inset is a margin inside the scroller.
             BucketsHost.Margin = new Thickness(padding, 0, padding - 12, 12);
@@ -263,6 +251,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         }
     }
 
+    // Not a two-way SelectedItem: a null selection must not clear the view model's bucket.
     private void OnBucketPickerSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (BucketPicker.SelectedItem is BoardBucketViewModel bucket)
@@ -285,7 +274,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: BoardBucketViewModel bucket })
         {
-            _ = ViewModel.NewTaskAsync(bucket);
+            ViewModel.NewTaskAsync(bucket).Forget();
         }
     }
 
@@ -320,19 +309,19 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     private MenuFlyout BuildMenu(BoardCardViewModel card)
     {
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Board_MenuOpen", "Board_MenuOpenItem", "", () => _ = ViewModel.OpenAsync(card)));
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpen"), "Board_MenuOpenItem", () => ViewModel.OpenAsync(card).Forget(), glyph: "");
         if (card.IsSubtaskCard)
         {
-            menu.Items.Add(Item("Board_MenuOpenParent", "Board_MenuOpenParentItem", null, () => _ = ViewModel.OpenParentAsync(card)));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpenParent"), "Board_MenuOpenParentItem", () => ViewModel.OpenParentAsync(card).Forget());
         }
 
         // The card's CR link is not a tab stop inside the list, so the menu is its keyboard route (design §7.3).
         if (card.HasCrReference)
         {
-            menu.Items.Add(Item("Board_MenuOpenCr", "Board_MenuOpenCrItem", null, () => _ = ViewModel.OpenCrAsync(card)));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpenCr"), "Board_MenuOpenCrItem", () => ViewModel.OpenCrAsync(card).Forget());
         }
 
-        var moveTo = new MenuFlyoutSubItem { Text = Strings.GetString("Board_MenuMoveTo") };
+        var moveTo = new MenuFlyoutSubItem { Text = ResourceStrings.Shared.GetString("Board_MenuMoveTo") };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(moveTo, "Board_MenuMoveToItem");
         foreach (var bucket in ViewModel.Buckets)
         {
@@ -340,32 +329,30 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(target, "Board_MenuMoveTo_" + bucket.StatusId.Value.ToString("N"));
             // B-07: while filtered Top/Bottom address the full bucket and same-bucket reordering is off.
             var enabled = !ViewModel.IsFiltered || ViewModel.BucketOf(card) != bucket;
-            target.Items.Add(Item("Board_MenuTopOfBucket", "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), null,
-                () => _ = ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top), enabled));
-            target.Items.Add(Item("Board_MenuBottomOfBucket", "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), null,
-                () => _ = ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom), enabled));
+            target.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuTopOfBucket"), "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top).Forget(), enabled);
+            target.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuBottomOfBucket"), "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom).Forget(), enabled);
 
             moveTo.Items.Add(target);
         }
 
         menu.Items.Add(moveTo);
-        menu.Items.Add(Item("Board_MenuMoveUp", "Board_MenuMoveUpItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, -1), ViewModel.CanMoveUp(card)));
-        menu.Items.Add(Item("Board_MenuMoveDown", "Board_MenuMoveDownItem", "", () => _ = ViewModel.MoveWithinBucketAsync(card, 1), ViewModel.CanMoveDown(card)));
-        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuMoveUp"), "Board_MenuMoveUpItem", () => ViewModel.MoveWithinBucketAsync(card, -1).Forget(), isEnabled: ViewModel.CanMoveUp(card), glyph: "");
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuMoveDown"), "Board_MenuMoveDownItem", () => ViewModel.MoveWithinBucketAsync(card, 1).Forget(), isEnabled: ViewModel.CanMoveDown(card), glyph: "");
+        menu.Items.AddSeparator();
         if (card.IsTask)
         {
-            menu.Items.Add(Item("Board_MenuCopy", "Board_MenuCopyItem", "", () => _ = ViewModel.CopyAsync(card)));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuCopy"), "Board_MenuCopyItem", () => ViewModel.CopyAsync(card).Forget(), glyph: "");
         }
 
-        menu.Items.Add(Item("Board_MenuCopyId", "Board_MenuCopyIdItem", "", () => ViewModel.CopyId(card)));
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuCopyId"), "Board_MenuCopyIdItem", () => ViewModel.CopyId(card), glyph: "");
         if (card.IsTask)
         {
-            menu.Items.Add(Item("Board_MenuAddSubtaskCard", "Board_MenuAddSubtaskCardItem", "", () => _ = ViewModel.AddSubtaskCardAsync(card)));
-            menu.Items.Add(Item("Board_MenuArchive", "Board_MenuArchiveItem", "", () => _ = ViewModel.ArchiveAsync(card)));
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuAddSubtaskCard"), "Board_MenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(card).Forget(), glyph: "");
+            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuArchive"), "Board_MenuArchiveItem", () => ViewModel.ArchiveAsync(card).Forget(), glyph: "");
         }
 
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Board_MenuDelete", "Board_MenuDeleteItem", "", () => _ = ViewModel.DeleteAsync(card)));
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuDelete"), "Board_MenuDeleteItem", () => ViewModel.DeleteAsync(card).Forget(), glyph: "");
         return menu;
     }
 
@@ -373,17 +360,17 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
         {
-            _ = ViewModel.OpenCrAsync(card);
+            ViewModel.OpenCrAsync(card).Forget();
         }
     }
 
-    // The Task chip copies the card's ID like the menu's Copy ID (design §4.2 item 3). The chip handles the press, so the
-    // card neither opens nor starts a drag.
+    // The Task chip copies the card's ID like the menu's Copy ID (design §4.2 item 3) and shows "Copied" at the chip. The
+    // chip handles the press, so the card neither opens nor starts a drag.
     private void OnCardTaskChipClick(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
+        if (sender is FrameworkElement { DataContext: BoardCardViewModel card } chip && ViewModel.CopyId(card))
         {
-            ViewModel.CopyId(card);
+            CopyFeedback.Show(chip);
         }
     }
 
@@ -391,25 +378,12 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: BoardCardViewModel card })
         {
-            _ = ViewModel.OpenParentAsync(card);
+            ViewModel.OpenParentAsync(card).Forget();
         }
     }
 
     // A click anywhere on the card that is not a drag or a child control's press, or UIA Invoke.
-    private void OnCardInvoked(object? sender, BoardCardViewModel card) => _ = ViewModel.OpenAsync(card);
-
-    private static MenuFlyoutItem Item(string textKey, string automationId, string? glyph, Action action, bool enabled = true)
-    {
-        var item = new MenuFlyoutItem { Text = Strings.GetString(textKey), IsEnabled = enabled };
-        if (glyph is not null)
-        {
-            item.Icon = new FontIcon { Glyph = glyph };
-        }
-
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(item, automationId);
-        item.Click += (_, _) => action();
-        return item;
-    }
+    private void OnCardInvoked(object? sender, BoardCardViewModel card) => ViewModel.OpenAsync(card).Forget();
 
     // ----- Keyboard (design §7.3) -----
     private void OnListPreviewKeyDown(object sender, KeyRoutedEventArgs e)
@@ -426,11 +400,11 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         {
             case VirtualKey.Left or VirtualKey.Right when alt && shift:
                 e.Handled = true;
-                _ = ViewModel.MoveToAdjacentBucketAsync(card, e.Key == VirtualKey.Left ? -1 : 1);
+                ViewModel.MoveToAdjacentBucketAsync(card, e.Key == VirtualKey.Left ? -1 : 1).Forget();
                 break;
             case VirtualKey.Up or VirtualKey.Down when alt && shift:
                 e.Handled = true;
-                _ = ViewModel.MoveWithinBucketAsync(card, e.Key == VirtualKey.Up ? -1 : 1);
+                ViewModel.MoveWithinBucketAsync(card, e.Key == VirtualKey.Up ? -1 : 1).Forget();
                 break;
             case VirtualKey.Left or VirtualKey.Right when control:
                 e.Handled = true;
@@ -438,21 +412,21 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
                 break;
             case VirtualKey.Enter when !alt && !control && !shift:
                 e.Handled = true;
-                _ = ViewModel.OpenAsync(card);
+                ViewModel.OpenAsync(card).Forget();
                 break;
 
             // Space opens only from the card itself, so a focused checkbox on the card keeps its toggle (§7.3).
             case VirtualKey.Space when !alt && !control && !shift && e.OriginalSource is BoardCardContainer:
                 e.Handled = true;
-                _ = ViewModel.OpenAsync(card);
+                ViewModel.OpenAsync(card).Forget();
                 break;
             case VirtualKey.Delete:
                 e.Handled = true;
-                _ = ViewModel.DeleteAsync(card);
+                ViewModel.DeleteAsync(card).Forget();
                 break;
             case VirtualKey.D when control:
                 e.Handled = true;
-                _ = ViewModel.CopyAsync(card);
+                ViewModel.CopyAsync(card).Forget();
                 break;
             default:
                 break;
@@ -552,7 +526,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
         {
             // B-07: positional reordering is off while filtered; the forbidden cursor and caption say so (§9).
             e.AcceptedOperation = DataPackageOperation.None;
-            e.DragUIOverride.Caption = Strings.GetString("Board_ReorderOffCaption");
+            e.DragUIOverride.Caption = ResourceStrings.Shared.GetString("Board_ReorderOffCaption");
             ClearDropFeedback();
             return;
         }
@@ -606,7 +580,7 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             return;
         }
 
-        _ = ViewModel.DropAsync(card, bucket, index);
+        ViewModel.DropAsync(card, bucket, index).Forget();
     }
 
     /// <summary>

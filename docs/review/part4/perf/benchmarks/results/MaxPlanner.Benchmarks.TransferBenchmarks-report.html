@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>MaxPlanner.Benchmarks.TransferBenchmarks-20261117-012009</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26300.9974)
+13th Gen Intel Core i7-13700HX 2.10GHz, 1 CPU, 24 logical and 16 physical cores
+.NET SDK 10.0.404
+  [Host] : .NET 10.0.15 (10.0.15, 10.0.1526.53008), X64 RyuJIT x86-64-v3
+</code></pre>
+<pre><code>Job=InProcess  Toolchain=InProcessEmitToolchain  InvocationCount=1  
+IterationCount=5  UnrollFactor=1  WarmupCount=1  
+</code></pre>
+
+<table>
+<thead><tr><th>Method                                   </th><th>Mean</th><th>Error</th><th>StdDev</th><th>P95 </th><th>Gen0</th><th>Gen1</th><th>Gen2</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>&#39;Export the fixture to JSON&#39;</td><td>263.4 ms</td><td>39.80 ms</td><td>6.16 ms</td><td>268.3 ms</td><td>6000.0000</td><td>4000.0000</td><td>1000.0000</td><td>103.36 MB</td>
+</tr><tr><td>&#39;Export the fixture to XLSX&#39;</td><td>914.1 ms</td><td>16.17 ms</td><td>4.20 ms</td><td>918.6 ms</td><td>36000.0000</td><td>5000.0000</td><td>1000.0000</td><td>682.35 MB</td>
+</tr><tr><td>&#39;Import the fixture JSON into an empty dataset&#39;</td><td>1,628.2 ms</td><td>56.09 ms</td><td>8.68 ms</td><td>1,635.4 ms</td><td>31000.0000</td><td>7000.0000</td><td>1000.0000</td><td>487.46 MB</td>
+</tr></tbody></table>
+</body>
+</html>

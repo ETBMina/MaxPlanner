@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The step list shared by the Export, Import, and Restore wizards (design §4.6). The class behind this dictionary
+    lets the step template use x:Bind; each wizard view merges it.
+-->
+<ResourceDictionary
+    x:Class="MaxPlanner.Presentation.Settings.DataPage.WizardResources"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MaxPlanner.Presentation.Settings.DataPage">
+    <DataTemplate x:Key="StepTemplate" x:DataType="local:WizardStep">
+        <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
+            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
+            <TextBlock Text="{x:Bind Title, Mode=OneTime}" />
+            <TextBlock
+                x:Uid="Data_CurrentStepText"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Visibility="{x:Bind local:DataPageView.Show(IsCurrent), Mode=OneWay}" />
+        </StackPanel>
+    </DataTemplate>
+    <Style x:Key="StepListStyle" TargetType="ListView">
+        <Setter Property="SelectionMode" Value="None" />
+        <Setter Property="IsItemClickEnabled" Value="False" />
+        <Setter Property="Width" Value="220" />
+        <Setter Property="Margin" Value="0,0,24,0" />
+    </Style>
+</ResourceDictionary>

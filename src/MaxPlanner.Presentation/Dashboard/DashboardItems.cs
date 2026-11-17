@@ -69,7 +69,11 @@ public sealed partial class DashboardCardViewModel : ObservableObject
     public partial string Value { get; internal set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCaption))]
     public partial string Caption { get; internal set; } = string.Empty;
+
+    /// <summary>A card without a definition caption (Completed tasks, Reviews) leaves the caption line out.</summary>
+    public bool HasCaption => !string.IsNullOrEmpty(Caption);
 
     [ObservableProperty]
     public partial bool HasBadge { get; internal set; }
@@ -220,9 +224,13 @@ public sealed partial class BarChartViewModel : ObservableObject
 }
 
 /// <summary>An Overdue CRs row (B-15.4): number, title, owner, squad, status, priority, planned end, days overdue.</summary>
-public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings strings)
+/// <param name="open">Opens the row's CR (the row's button).</param>
+public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings strings, Func<Task> open)
 {
     public Guid Id { get; } = row.ChangeRequest.Id.Value;
+
+    /// <summary>Opens the CR editor; concurrent runs are allowed, so the row never disables itself.</summary>
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(open), AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
     public string Number { get; } = row.ChangeRequest.Number;
 
@@ -236,7 +244,7 @@ public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings stri
 
     public string Priority { get; } = row.ChangeRequest.Priority.Name;
 
-    public string PlannedEnd { get; } = row.ChangeRequest.PlannedEnd?.ToString("MMM d, yyyy", CultureInfo.CurrentCulture) ?? string.Empty;
+    public string PlannedEnd { get; } = row.ChangeRequest.PlannedEnd is { } end ? DateText.MonthDayYear(end) : string.Empty;
 
     /// <summary>Design §6.3: a number plus "days", never color alone.</summary>
     public string DaysText { get; } = strings.Format(row.DaysOverdue == 1 ? "Dashboard_DaysOverdueOne" : "Dashboard_DaysOverdue", row.DaysOverdue);
@@ -250,9 +258,13 @@ public sealed class OverdueRowViewModel(OverdueCrRow row, ILocalizedStrings stri
 }
 
 /// <summary>An Unlinked tasks row (B-15.5): title, service, status, priority, people. Opens the task editor to link a CR.</summary>
-public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings strings)
+/// <param name="open">Opens the row's task (the row's button).</param>
+public sealed class UnlinkedRowViewModel(TaskReadModel task, ILocalizedStrings strings, Func<Task> open)
 {
     public Guid Id { get; } = task.Id.Value;
+
+    /// <summary>Opens the task editor; concurrent runs are allowed, so the row never disables itself.</summary>
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(open), AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
     public string Title { get; } = task.EffectiveTitle;
 

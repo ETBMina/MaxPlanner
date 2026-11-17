@@ -517,11 +517,9 @@
     <value>{0}, Tags: {1}</value>
     <comment>Board card accessible name while its tag strip shows. {0} = the card summary, {1} = the tag names.</comment>
   </data>
-  <data name="Board_SubtaskGlyph.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Subtask card</value>
-  </data>
-  <data name="Board_SubtaskGlyph.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Subtask card</value>
+  <data name="Board_SubtaskSubtitleLine" xml:space="preserve">
+    <value>↳ {0}</value>
+    <comment>A Subtask card's footer line on the Board. {0} = the card's own subtitle.</comment>
   </data>
   <data name="Board_DatesStarted" xml:space="preserve">
     <value>Started {0}</value>
@@ -610,6 +608,14 @@
   </data>
   <data name="Common_None" xml:space="preserve">
     <value>None</value>
+  </data>
+  <data name="Common_NoneValueName" xml:space="preserve">
+    <value>{0}: none</value>
+    <comment>The accessible name of an empty fact in an editor, for example "Task number: none". {0} is the fact's label.</comment>
+  </data>
+  <data name="Common_DatePlaceholder" xml:space="preserve">
+    <value>Pick a date</value>
+    <comment>The placeholder of every date picker while it has no date.</comment>
   </data>
   <data name="Field_StartDate" xml:space="preserve">
     <value>Start date</value>
@@ -725,10 +731,32 @@
   <data name="Grid_RowMenuName" xml:space="preserve">
     <value>More actions for {0}</value>
   </data>
+  <data name="Grid_ValueError_NoStatus" xml:space="preserve">
+    <value>No task status has that name.</value>
+    <comment>A value typed into a Status cell (UI Automation) matches no status.</comment>
+  </data>
+  <data name="Grid_ValueError_NoPriority" xml:space="preserve">
+    <value>No priority has that name.</value>
+  </data>
+  <data name="Grid_ValueError_NotDate" xml:space="preserve">
+    <value>The value is not a date.</value>
+  </data>
+  <data name="Grid_ValueError_NotNumber" xml:space="preserve">
+    <value>The value is not a number.</value>
+  </data>
+  <data name="Grid_ValueError_NoOption" xml:space="preserve">
+    <value>No option has that name.</value>
+  </data>
+  <data name="Grid_ValueError_CannotEdit" xml:space="preserve">
+    <value>The cell can't be edited now.</value>
+  </data>
+  <data name="Grid_ValueError_UsePicker" xml:space="preserve">
+    <value>Use the picker to change people or tags.</value>
+  </data>
   <data name="Checklists_OpenTaskName" xml:space="preserve">
     <value>Open task {0}</value>
   </data>
-  <data name="Checklists_OpenTaskLink.Content" xml:space="preserve">
+  <data name="Checklists_OpenTaskLinkText.Text" xml:space="preserve">
     <value>Open task</value>
   </data>
   <data name="Copy_Created" xml:space="preserve">
@@ -969,12 +997,6 @@
   </data>
   <data name="TaskEditor_DeletedElsewhere" xml:space="preserve">
     <value>This task was deleted elsewhere. Your changes can't be saved.</value>
-  </data>
-  <data name="TaskEditor_NoOwner" xml:space="preserve">
-    <value>No owner</value>
-  </data>
-  <data name="TaskEditor_NoTaskNumber" xml:space="preserve">
-    <value>No task number</value>
   </data>
   <data name="TaskEditor_PendingLinkWarning" xml:space="preserve">
     <value>This link is permanent. When you save, the title becomes '{0}' and the task number, squad and owner come from {1}.</value>
@@ -1228,16 +1250,16 @@
   <data name="SubtaskEditor_ParentArchivedInfoBar.Message" xml:space="preserve">
     <value>Its Subtask cards are read-only. Restore the task to edit them.</value>
   </data>
-  <data name="SubtaskEditor_ParentHeader.Text" xml:space="preserve">
-    <value>Parent task</value>
-  </data>
   <data name="SubtaskEditor_ServiceLabel.Text" xml:space="preserve">
     <value>Service</value>
   </data>
   <data name="SubtaskEditor_CrNumberLabel.Text" xml:space="preserve">
     <value>CR number</value>
   </data>
-  <data name="SubtaskEditor_SubtitleBox.Header" xml:space="preserve">
+  <data name="SubtaskEditor_SubtitleBox.PlaceholderText" xml:space="preserve">
+    <value>Subtitle *</value>
+  </data>
+  <data name="SubtaskEditor_SubtitleBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Subtitle *</value>
   </data>
   <data name="SubtaskEditor_StatusCombo.Header" xml:space="preserve">
@@ -1324,7 +1346,10 @@
   <data name="CrEditor_TaskNumberBox.Header" xml:space="preserve">
     <value>Task number</value>
   </data>
-  <data name="CrEditor_TitleBox.Header" xml:space="preserve">
+  <data name="CrEditor_TitleBox.PlaceholderText" xml:space="preserve">
+    <value>Title *</value>
+  </data>
+  <data name="CrEditor_TitleBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Title *</value>
   </data>
   <data name="CrEditor_TitleHelper.Text" xml:space="preserve">
@@ -2855,6 +2880,13 @@
   <data name="Dashboard_ClearFiltersLink.Content" xml:space="preserve">
     <value>Clear filters</value>
   </data>
+  <data name="Dashboard_FilterInfoButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>About the filters</value>
+  </data>
+  <data name="Dashboard_FilterInfoButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>About the filters</value>
+    <comment>The info button's tooltip; its flyout shows Dashboard_FilterScopeCaption.Text.</comment>
+  </data>
   <data name="Dashboard_FilterScopeCaption.Text" xml:space="preserve">
     <value>Squad, Priority and CR Owner apply to tasks, Subtask cards and CRs. Active date keeps the records active during the range (from their start date to their end date, or still open) and also applies to open reviews.</value>
   </data>
@@ -2889,7 +2921,7 @@
     <value>Active Subtask cards</value>
   </data>
   <data name="Dashboard_Reviews" xml:space="preserve">
-    <value>Reviews</value>
+    <value>Open reviews</value>
   </data>
   <data name="Dashboard_ActiveCaption" xml:space="preserve">
     <value>of {0} total · not in a completed status</value>
@@ -2902,9 +2934,6 @@
   </data>
   <data name="Dashboard_ActiveCardsCaption" xml:space="preserve">
     <value>Not completed · parent not archived</value>
-  </data>
-  <data name="Dashboard_ReviewsCaption" xml:space="preserve">
-    <value>Open · {0} done this week · {1} this month</value>
   </data>
   <data name="Dashboard_ReviewsWeekLink" xml:space="preserve">
     <value>{0} done this week</value>
@@ -4205,10 +4234,10 @@
     <value>Title</value>
   </data>
   <data name="TaskEditor_TagsPicker.Placeholder" xml:space="preserve">
-    <value>Search for a tag</value>
+    <value>Add tag</value>
   </data>
-  <data name="TaskEditor_TagsPicker.FieldToolTip" xml:space="preserve">
-    <value>Search for a tag to apply to the task</value>
+  <data name="EditorFacts_CreatedLabel.Text" xml:space="preserve">
+    <value>Created</value>
   </data>
   <data name="TaskEditor_CloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Close</value>
@@ -4224,6 +4253,14 @@
   </data>
   <data name="TaskEditor_CopyTaskNumberName" xml:space="preserve">
     <value>Copy task number {0}</value>
+  </data>
+  <data name="Copy_Hint" xml:space="preserve">
+    <value>Copied</value>
+    <comment>Shown briefly at a copy button after it copied a CR or task number.</comment>
+  </data>
+  <data name="Copy_Announcement" xml:space="preserve">
+    <value>Copied {0}</value>
+    <comment>Announced to screen readers after a copy; {0} is the copied text.</comment>
   </data>
   <data name="TaskEditor_ChecklistHeading" xml:space="preserve">
     <value>Checklist</value>

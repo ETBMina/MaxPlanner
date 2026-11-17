@@ -263,6 +263,9 @@ internal sealed class ScriptedCoordinator(IMutationCoordinator inner) : IMutatio
 
     public int Calls { get; private set; }
 
+    /// <summary>The operation ID of every command that reached the coordinator, in order (T-05 retry checks).</summary>
+    public List<OperationId> OperationIds { get; } = [];
+
     public void FailNext(AppError error) => _failNext = error;
 
     /// <summary>The next command throws, as the real coordinator rethrows a non-storage exception after rollback.</summary>
@@ -282,6 +285,7 @@ internal sealed class ScriptedCoordinator(IMutationCoordinator inner) : IMutatio
         CancellationToken cancellationToken)
     {
         Calls++;
+        OperationIds.Add(operationId);
         if (_holdNext is { } hold)
         {
             _holdNext = null;

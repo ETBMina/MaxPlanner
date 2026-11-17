@@ -11,7 +11,6 @@ namespace MaxPlanner.Presentation.Settings.DataPage;
 /// </summary>
 public sealed partial class DataPageView : UserControl
 {
-    private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
     private readonly ImportWizardView _import;
     private readonly ExportWizardView _export;
     private readonly RestoreWizardView _restore;
@@ -30,7 +29,7 @@ public sealed partial class DataPageView : UserControl
         ExportHost.Content = _export;
         RestoreHost.Content = _restore;
         BackupsHost.Content = _backups;
-        Breadcrumb.ItemsSource = new[] { Strings.Value.GetString("Data_BreadcrumbSettings"), Strings.Value.GetString("Data_BreadcrumbData") };
+        Breadcrumb.ItemsSource = new[] { ResourceStrings.Shared.GetString("Data_BreadcrumbSettings"), ResourceStrings.Shared.GetString("Data_BreadcrumbData") };
         SizeChanged += (_, e) => ApplyBreakpoint(e.NewSize.Width);
         ViewModel.PropertyChanged += (_, e) =>
         {
@@ -60,7 +59,7 @@ public sealed partial class DataPageView : UserControl
         // Design §4.6: the step list sits on the left at L; M/S show "Step 2 of 5 · …" instead.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        var isLarge = width >= 1008;
+        var isLarge = width >= Breakpoints.Large;
         HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 8);
         _import.SetLayout(isLarge, padding);
         _export.SetLayout(isLarge, padding);

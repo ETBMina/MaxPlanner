@@ -1,7 +1,6 @@
 using System.Globalization;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
-using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common;
@@ -84,7 +83,7 @@ public sealed class CalendarRecordViewModel : ProjectionItemViewModel<ChangeRequ
 
     protected override void OnModelUpdated(ChangeRequestReadModel previous) => OnPropertyChanged(string.Empty);
 
-    private static string Format(DateOnly? date) => date is { } d ? d.ToString("d", CultureInfo.CurrentCulture) : string.Empty;
+    private static string Format(DateOnly? date) => date is { } d ? DateText.RecordDate(d) : string.Empty;
 
-    private static string Short(DateOnly date) => date.ToString("MMM d", CultureInfo.CurrentCulture);
+    private static string Short(DateOnly date) => DateText.MonthDay(date);
 }

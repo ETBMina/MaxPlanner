@@ -49,7 +49,7 @@ public sealed class CustomFieldsEditorViewModel
 
     /// <summary>The draft values as text, for the conflict review (design §5.10).</summary>
     public string DisplayText(string none) =>
-        Fields.Count == 0 ? none : string.Join("; ", Fields.Select(f => f.Field.Label.Display + ": " + (f.DisplayText.Length == 0 ? none : f.DisplayText)));
+        Fields.Count == 0 ? none : string.Join("; ", Fields.Select(f => f.Field.Label.Display + ": " + (f.ReviewText.Length == 0 ? none : f.ReviewText)));
 
     public bool IsReadOnly
     {

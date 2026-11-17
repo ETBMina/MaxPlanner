@@ -64,7 +64,7 @@
                     Background="Transparent"
                     BorderThickness="0"
                     ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Opening="OnItemMenuOpening">
                             <MenuFlyoutItem
@@ -107,7 +107,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Glyph="&#xE9D5;" />
                         <TextBlock
                             x:Uid="Checklists_GeneralTitle"
@@ -154,7 +154,7 @@
                             Grid.Column="1"
                             AutomationProperties.AutomationId="Checklists_AddItemButton_General"
                             Command="{x:Bind AddItemCommand}">
-                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                         </Button>
                     </Grid>
                     <TextBlock
@@ -210,13 +210,19 @@
                         Style="{StaticResource CaptionTextBlockStyle}"
                         Text="{x:Bind Reference, Mode=OneWay}"
                         TextWrapping="Wrap" />
-                    <!-- B-09: each task group offers Open task (design §4.5). -->
+                    <!--
+                        B-09: each task group offers Open task (design §4.5). The text is underlined, so it reads as a link even
+                        when the accent color is close to the text color; the negative margin keeps it in line with the text above
+                        while the padding gives the hover plate room.
+                    -->
                     <HyperlinkButton
-                        x:Uid="Checklists_OpenTaskLink"
-                        Padding="0"
+                        Margin="-4,-2"
+                        Padding="4,2"
                         AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_OpenTaskLink_', Key.Value), Mode=OneTime}"
                         AutomationProperties.Name="{x:Bind OpenTaskName, Mode=OneWay}"
-                        Command="{x:Bind OpenTaskCommand}" />
+                        Command="{x:Bind OpenTaskCommand}">
+                        <TextBlock x:Uid="Checklists_OpenTaskLinkText" TextDecorations="Underline" />
+                    </HyperlinkButton>
                     <StackPanel Spacing="4">
                         <TextBlock
                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_Progress_', Key.Value), Mode=OneTime}"
@@ -257,7 +263,7 @@
                             Grid.Column="1"
                             AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_AddItemButton_', Key.Value), Mode=OneTime}"
                             Command="{x:Bind AddItemCommand}">
-                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                         </Button>
                     </Grid>
                     <TextBlock
@@ -308,9 +314,14 @@
                     IsEnabled="{x:Bind common:BindFunctions.Not(IsPending), Mode=OneWay}"
                     KeyDown="OnReviewKeyDown"
                     Tag="{x:Bind Mode=OneTime}" />
+                <!--
+                    Top-aligned, 6 epx down: the first text line is centred on the check box (32 epx high, box centred), so a
+                    two-line row keeps its box beside the title, and a one-line row looks as before.
+                -->
                 <StackPanel
                     Grid.Column="1"
-                    VerticalAlignment="Center"
+                    Margin="0,6,0,0"
+                    VerticalAlignment="Top"
                     Background="Transparent"
                     Spacing="2"
                     Tag="{x:Bind Mode=OneTime}"
@@ -340,14 +351,13 @@
                     Background="Transparent"
                     BorderThickness="0"
                     ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Opening="OnItemMenuOpening">
                             <MenuFlyoutItem
                                 x:Uid="Checklists_ReviewEdit"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ReviewEditItem_', Id), Mode=OneTime}"
-                                Click="OnReviewEditClick"
-                                Tag="{x:Bind Mode=OneTime}" />
+                                Command="{x:Bind EditCommand}" />
                             <MenuFlyoutItem
                                 x:Uid="Checklists_ItemMoveUp"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Checklists_ReviewMoveUpItem_', Id), Mode=OneTime}"
@@ -378,7 +388,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="16"
+                            FontSize="{StaticResource StandardIconSize}"
                             Glyph="&#xED15;" />
                         <TextBlock
                             x:Uid="Checklists_ReviewsTitle"
@@ -425,7 +435,7 @@
                             Grid.Column="1"
                             AutomationProperties.AutomationId="Checklists_AddItemButton_Reviews"
                             Command="{x:Bind AddReviewCommand}">
-                            <FontIcon FontSize="16" Glyph="&#xE710;" />
+                            <FontIcon FontSize="{StaticResource StandardIconSize}" Glyph="&#xE710;" />
                         </Button>
                     </Grid>
                     <TextBlock
@@ -473,108 +483,98 @@
         </Grid.RowDefinitions>
 
         <!-- Page header (design §2.3, §4.5). -->
-        <StackPanel
+        <controls:PageHeader
             x:Name="HeaderRoot"
-            Padding="32,24,32,12"
-            Spacing="8">
-            <StackPanel Spacing="2">
-                <TextBlock
-                    x:Name="PageTitle"
-                    x:Uid="Checklists_PageTitle"
-                    AutomationProperties.AutomationId="Checklists_PageTitle"
-                    AutomationProperties.HeadingLevel="Level1"
-                    Style="{StaticResource PageTitleTextStyle}" />
-                <TextBlock
-                    AutomationProperties.AutomationId="Checklists_PageSubtitle"
-                    Style="{StaticResource PageSubtitleTextStyle}"
-                    Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
+            HasSubtitle="True"
+            Subtitle="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+            SubtitleAutomationId="Checklists_PageSubtitle"
+            TitleAutomationId="Checklists_PageTitle"
+            TitleUid="Checklists_PageTitle">
+            <StackPanel Spacing="8">
+                <Grid
+                    ColumnSpacing="12"
+                    RowSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                        <Button
+                            x:Name="AddToTaskButton"
+                            x:Uid="Checklists_AddToTaskButton"
+                            AutomationProperties.AutomationId="Checklists_AddToTaskButton">
+                            <Button.Flyout>
+                                <Flyout x:Name="AddToTaskFlyout" Opening="OnAddToTaskOpening">
+                                    <AutoSuggestBox
+                                        x:Name="TaskPickerBox"
+                                        x:Uid="Checklists_TaskPickerBox"
+                                        Width="320"
+                                        AutomationProperties.AutomationId="Checklists_TaskPickerBox"
+                                        QueryIcon="Find"
+                                        QuerySubmitted="OnTaskPicked"
+                                        TextChanged="OnTaskPickerTextChanged"
+                                        UpdateTextOnSelect="False" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button
+                            x:Uid="Checklists_NewTodoButton"
+                            AutomationProperties.AutomationId="Checklists_NewTodoButton"
+                            Command="{x:Bind ViewModel.NewTodoCommand}"
+                            Style="{StaticResource AccentButtonStyle}">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="N" Modifiers="Control" />
+                            </Button.KeyboardAccelerators>
+                            <controls:NewButtonContent x:Uid="Checklists_NewTodoText" />
+                        </Button>
+                    </StackPanel>
+                    <!-- Design §2.3: the search icon is last in its (left) group and expands into the free space after it. -->
+                    <controls:ExpandingSearchBox
+                        x:Name="SearchBox"
+                        x:Uid="Checklists_Search"
+                        AutomationIdPrefix="Checklists"
+                        ExpandedWidth="320"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                </Grid>
+                <!-- Design §2.9: a review drill-down shows its context and a removable "From Dashboard" chip. -->
+                <InfoBar
+                    AutomationProperties.AutomationId="Checklists_DashboardInfoBar"
+                    IsClosable="False"
+                    IsOpen="{x:Bind ViewModel.IsFromDashboard, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.DashboardMessage, Mode=OneWay}"
+                    Severity="Informational">
+                    <InfoBar.ActionButton>
+                        <Button
+                            x:Uid="Filters_ReturnToDashboardButton"
+                            AutomationProperties.AutomationId="Checklists_ReturnToDashboardButton"
+                            Command="{x:Bind ViewModel.ReturnToDashboardCommand}" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+                <Button
+                    Padding="10,3"
+                    AutomationProperties.AutomationId="Checklists_FilterChip_Dashboard"
+                    AutomationProperties.Name="{x:Bind ViewModel.DashboardChipName, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.RemoveDashboardContextCommand}"
+                    CornerRadius="12"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.DashboardChipName, Mode=OneWay}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFromDashboard), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="{StaticResource CaptionIconSize}"
+                            Glyph="&#xF246;" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.DashboardChipText, Mode=OneWay}" />
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="10"
+                            Glyph="&#xE711;" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
-            <Grid
-                ColumnSpacing="12"
-                RowSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel
-                    Grid.Column="1"
-                    Orientation="Horizontal"
-                    Spacing="8">
-                    <Button
-                        x:Name="AddToTaskButton"
-                        x:Uid="Checklists_AddToTaskButton"
-                        AutomationProperties.AutomationId="Checklists_AddToTaskButton">
-                        <Button.Flyout>
-                            <Flyout x:Name="AddToTaskFlyout" Opening="OnAddToTaskOpening">
-                                <AutoSuggestBox
-                                    x:Name="TaskPickerBox"
-                                    x:Uid="Checklists_TaskPickerBox"
-                                    Width="320"
-                                    AutomationProperties.AutomationId="Checklists_TaskPickerBox"
-                                    QueryIcon="Find"
-                                    QuerySubmitted="OnTaskPicked"
-                                    TextChanged="OnTaskPickerTextChanged"
-                                    UpdateTextOnSelect="False" />
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button
-                        x:Uid="Checklists_NewTodoButton"
-                        AutomationProperties.AutomationId="Checklists_NewTodoButton"
-                        Command="{x:Bind ViewModel.NewTodoCommand}"
-                        Style="{StaticResource AccentButtonStyle}">
-                        <Button.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="N" Modifiers="Control" />
-                        </Button.KeyboardAccelerators>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="14" Glyph="&#xE710;" />
-                            <TextBlock x:Uid="Checklists_NewTodoText" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-                <!-- Design §2.3: the search icon is last in its (left) group and expands into the free space after it. -->
-                <controls:ExpandingSearchBox
-                    x:Name="SearchBox"
-                    x:Uid="Checklists_Search"
-                    AutomationIdPrefix="Checklists"
-                    ExpandedWidth="320"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
-            </Grid>
-            <!-- Design §2.9: a review drill-down shows its context and a removable "From Dashboard" chip. -->
-            <InfoBar
-                AutomationProperties.AutomationId="Checklists_DashboardInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.IsFromDashboard, Mode=OneWay}"
-                Message="{x:Bind ViewModel.DashboardMessage, Mode=OneWay}"
-                Severity="Informational">
-                <InfoBar.ActionButton>
-                    <Button
-                        x:Uid="Filters_ReturnToDashboardButton"
-                        AutomationProperties.AutomationId="Checklists_ReturnToDashboardButton"
-                        Command="{x:Bind ViewModel.ReturnToDashboardCommand}" />
-                </InfoBar.ActionButton>
-            </InfoBar>
-            <Button
-                Padding="10,3"
-                AutomationProperties.AutomationId="Checklists_FilterChip_Dashboard"
-                AutomationProperties.Name="{x:Bind ViewModel.DashboardChipName, Mode=OneWay}"
-                Command="{x:Bind ViewModel.RemoveDashboardContextCommand}"
-                CornerRadius="12"
-                ToolTipService.ToolTip="{x:Bind ViewModel.DashboardChipName, Mode=OneWay}"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFromDashboard), Mode=OneWay}">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon
-                        AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
-                        Glyph="&#xF246;" />
-                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.DashboardChipText, Mode=OneWay}" />
-                    <FontIcon
-                        AutomationProperties.AccessibilityView="Raw"
-                        FontSize="10"
-                        Glyph="&#xE711;" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
+        </controls:PageHeader>
 
         <!-- Filtered-empty (design §4.5): "No items match 'abc'" + Clear search. -->
         <InfoBar

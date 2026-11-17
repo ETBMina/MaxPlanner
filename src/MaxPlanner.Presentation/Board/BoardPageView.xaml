@@ -9,8 +9,11 @@
     xmlns:local="using:MaxPlanner.Presentation.Board"
     IsTabStop="False">
     <UserControl.Resources>
-        <!-- Design §4.2 item 6: card avatars sit side by side with a small gap, never overlapping. -->
-        <StackLayout x:Key="CardPeopleLayout" Orientation="Horizontal" Spacing="4" />
+        <!--
+            Design §4.2 item 6: card avatars sit side by side with a small gap, never overlapping. Not a StackLayout: that
+            virtualizes by viewport, so the avatars' width (and the wrapping dates beside them) changed while scrolling.
+        -->
+        <local:CardPeopleLayout x:Key="CardPeopleLayout" Spacing="4" />
         <DataTemplate x:Key="CardPersonTemplate" x:DataType="local:BoardCardPerson">
             <!-- Each avatar is its own tooltip target: the name, then the roles in secondary text (design §2.10). -->
             <controls:PersonAvatar
@@ -66,33 +69,41 @@
                             Click="OnCardMenuButtonClick"
                             Style="{StaticResource BoardCardMenuButtonStyle}"
                             ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}">
-                            <FontIcon FontSize="14" Glyph="&#xE712;" />
+                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                         </Button>
                     </Grid>
                     <StackPanel Padding="12,8,12,12" Spacing="8">
-                        <!-- Item 3: the ID row; without a strip the ⋯ button sits at its right end. -->
-                        <Grid ColumnSpacing="4">
+                        <!--
+                            Items 3 and 4 (BoardCardLayout): the ID row, an 8-epx gap, the "Moving" caption and the title share one
+                            grid, so the ⋯ button (without a strip) sits at the end of the ID row, or of the title row on a Subtask card
+                            that has no ID chips: never on a line of its own. Column 1 holds only the button and has no spacing of its
+                            own (the button's left margin), so it takes no width while the button is collapsed, and the title spans it
+                            unless the button is in its row.
+                        -->
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <local:BoardChipRow MinHeight="20" Spacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="{x:Bind local:BoardPageView.CardIdRowGap(HasIdRow), Mode=OneWay}" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <local:BoardChipRow
+                                MinHeight="20"
+                                Spacing="6"
+                                Visibility="{x:Bind common:BindFunctions.Visible(HasIdRow), Mode=OneWay}">
                                 <!-- Each priority level has its own glyph, so color is never the only cue. -->
                                 <FontIcon
                                     AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardPriority_', Key), Mode=OneTime}"
                                     AutomationProperties.Name="{x:Bind PriorityName, Mode=OneWay}"
-                                    FontSize="16"
-                                    Glyph="{x:Bind local:BoardPageView.PriorityGlyph(PriorityLevel), Mode=OneWay}"
+                                    FontSize="{StaticResource StandardIconSize}"
+                                    Glyph="{x:Bind common:BindFunctions.PriorityGlyph(PriorityLevel), Mode=OneWay}"
                                     Style="{x:Bind local:BoardPageView.PriorityGlyphStyle(PriorityLevel), Mode=OneWay}"
                                     ToolTipService.ToolTip="{x:Bind PriorityName, Mode=OneWay}"
                                     Visibility="{x:Bind common:BindFunctions.Visible(IsTask), Mode=OneWay}" />
-                                <!-- A Subtask card has no priority: the Subtask glyph and the "Subtask of" link mark the kind without color. -->
-                                <FontIcon
-                                    x:Uid="Board_SubtaskGlyph"
-                                    FontSize="16"
-                                    Foreground="{ThemeResource SubtaskCardAccentBrush}"
-                                    Glyph="&#xE8FD;"
-                                    Visibility="{x:Bind common:BindFunctions.Visible(IsSubtaskCard), Mode=OneWay}" />
                                 <!-- The CR chip opens the CR; the card menu's Open CR is its keyboard route. -->
                                 <Button
                                     AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardCrChip_', Key), Mode=OneTime}"
@@ -106,7 +117,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <FontIcon FontSize="12" Glyph="&#xE8A5;" />
+                                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE8A5;" />
                                         <TextBlock
                                             Grid.Column="1"
                                             Style="{StaticResource IdChipTextStyle}"
@@ -126,46 +137,64 @@
                             </local:BoardChipRow>
                             <Button
                                 Grid.Column="1"
+                                Grid.Row="{x:Bind local:BoardPageView.CardMenuRow(HasIdRow), Mode=OneWay}"
+                                Margin="4,0,0,0"
                                 AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardMenuButton_', Key), Mode=OneTime}"
                                 AutomationProperties.Name="{x:Bind MenuButtonName, Mode=OneWay}"
                                 Click="OnCardMenuButtonClick"
                                 Style="{StaticResource BoardCardMenuButtonStyle}"
                                 ToolTipService.ToolTip="{x:Bind MenuButtonName, Mode=OneWay}"
                                 Visibility="{x:Bind common:BindFunctions.Collapsed(HasTagStrip), Mode=OneWay}">
-                                <FontIcon FontSize="14" Glyph="&#xE712;" />
+                                <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                             </Button>
-                        </Grid>
-                        <TextBlock
-                            x:Uid="Board_MovingCaption"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
-                        <!-- B-16.5: the "Subtask of" indicator opens the parent; the card menu's Open parent task is its keyboard route. -->
-                        <HyperlinkButton
-                            x:Name="SubtaskParentLink"
-                            x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
-                            Padding="0"
-                            AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
-                            AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
-                            Click="OnCardParentLinkClick"
-                            IsTabStop="False">
                             <TextBlock
-                                MaxLines="2"
+                                x:Uid="Board_MovingCaption"
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
+                                Margin="0,0,0,8"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind SubtaskOfText, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="Wrap" />
-                        </HyperlinkButton>
-                        <!-- Item 4: the effective title, or a Subtask card's Subtitle. -->
-                        <TextBlock
-                            MaxLines="3"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind Title, Mode=OneWay}"
-                            TextTrimming="CharacterEllipsis"
-                            TextWrapping="Wrap"
-                            ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
-                        <!-- Item 5: neutral Service chip (only its icon is accent) and, on tasks, the Squad chip. -->
-                        <local:BoardChipRow Visibility="{x:Bind common:BindFunctions.VisibleAny(IsTask, HasService, x:False), Mode=OneWay}">
+                                Visibility="{x:Bind common:BindFunctions.Visible(IsMoving), Mode=OneWay}" />
+                            <!--
+                                Item 4: the title. Its span is bound on this always-loaded panel, never on the x:Load'ed titles inside:
+                                an attached property bound on an x:Load element is applied from a deferred value that starts at 0, and
+                                Grid.ColumnSpan 0 kept the title from loading at all (XamlBindingRulesTests).
+                            -->
+                            <Grid Grid.Row="3" Grid.ColumnSpan="{x:Bind local:BoardPageView.CardTitleColumnSpan(HasIdRow), Mode=OneWay}">
+                                <!-- Tasks: the effective title. -->
+                                <TextBlock
+                                    x:Name="TaskTitle"
+                                    x:Load="{x:Bind IsTask, Mode=OneWay}"
+                                    MaxLines="3"
+                                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                                    Text="{x:Bind Title, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="Wrap"
+                                    ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                                <!--
+                                    Subtask cards (B-16.5): the parent task's title in the same title style, as the link to the parent;
+                                    the card menu's Open parent task is its keyboard route.
+                                -->
+                                <HyperlinkButton
+                                    x:Name="SubtaskParentLink"
+                                    x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
+                                    Padding="0"
+                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardParentLink_', Key), Mode=OneTime}"
+                                    AutomationProperties.Name="{x:Bind SubtaskOfText, Mode=OneWay}"
+                                    Click="OnCardParentLinkClick"
+                                    IsTabStop="False"
+                                    ToolTipService.ToolTip="{x:Bind ParentTitle, Mode=OneWay}">
+                                    <TextBlock
+                                        MaxLines="3"
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind ParentTitle, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="Wrap" />
+                                </HyperlinkButton>
+                            </Grid>
+                        </Grid>
+                        <!-- Item 5: the neutral Service chip (only its icon is accent) and the Squad chip, on both card kinds. -->
+                        <local:BoardChipRow>
                             <Border Style="{StaticResource NeutralChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneWay}">
                                 <Grid ColumnSpacing="4">
                                     <Grid.ColumnDefinitions>
@@ -179,7 +208,7 @@
                                         Text="{x:Bind Service, Mode=OneWay}" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource NeutralChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(IsTask), Mode=OneWay}">
+                            <Border Style="{StaticResource NeutralChipStyle}">
                                 <Grid ColumnSpacing="4">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -218,7 +247,7 @@
                             <FontIcon
                                 VerticalAlignment="Center"
                                 AutomationProperties.AccessibilityView="Raw"
-                                FontSize="14"
+                                FontSize="{StaticResource BodyIconSize}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Glyph="&#xE9D5;"
                                 Visibility="{x:Bind common:BindFunctions.Visible(IsChecklistIncomplete), Mode=OneWay}" />
@@ -269,22 +298,31 @@
                                 ItemsSource="{x:Bind People, Mode=OneWay}"
                                 Layout="{StaticResource CardPeopleLayout}" />
                         </Grid>
-                        <!-- Subtask cards: the dates on the left and the avatar (the inherited CR Owner) on the right. -->
+                        <!--
+                            Item 6 (Subtask cards), the same footer row below a divider: "↳ " + the card's own subtitle on one line
+                            (trimmed, full text in the tooltip), so the card's height never follows the avatar's width, and the avatar
+                            (the inherited CR Owner) on the right.
+                        -->
                         <Grid
                             x:Name="SubtaskFooterRow"
                             x:Load="{x:Bind IsSubtaskCard, Mode=OneWay}"
-                            ColumnSpacing="8"
-                            Visibility="{x:Bind common:BindFunctions.Visible(HasSubtaskFooter), Mode=OneWay}">
+                            Padding="0,8,0,0"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="0,1,0,0"
+                            ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 VerticalAlignment="Center"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind DatesText, Mode=OneWay}"
-                                TextWrapping="Wrap" />
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('Board_CardSubtitle_', Key), Mode=OneTime}"
+                                AutomationProperties.Name="{x:Bind Title, Mode=OneWay}"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind SubtitleLine, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap"
+                                ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
                             <ItemsRepeater
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
@@ -339,7 +377,7 @@
                         BorderThickness="0"
                         Click="OnBucketAddClick"
                         ToolTipService.ToolTip="{x:Bind AddButtonName, Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
                     </Button>
                     <!-- The bucket fills the viewport height, so this list is bounded and virtualizes (T-08). -->
                     <!--
@@ -369,6 +407,16 @@
                         PreviewKeyDown="OnListPreviewKeyDown"
                         SelectionMode="None"
                         Unloaded="OnListUnloaded">
+                        <!--
+                            P-01: every bucket is on screen at once, so the default cache (CacheLength 4: two viewports above
+                            and two below) realized about five viewports of cards per bucket. CacheLength 1 keeps half a
+                            viewport on each side, enough for wheel steps and edge auto-scroll during a drag.
+                        -->
+                        <local:BoardCardList.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel CacheLength="1" />
+                            </ItemsPanelTemplate>
+                        </local:BoardCardList.ItemsPanel>
                         <!--
                             The hover, pressed and focus visuals match the card exactly. The rounded item chrome insets its
                             backplate by 4,2 from the container, so the container's Padding is that same 4,2 (the card fills
@@ -415,93 +463,85 @@
         </Grid.RowDefinitions>
 
         <!-- Page header (design §2.3): title, search and Filters (shared with the Grid, B-10), and the filter context row. -->
-        <StackPanel
+        <controls:PageHeader
             x:Name="HeaderRoot"
-            Padding="32,24,32,12"
-            Spacing="8">
-            <StackPanel Spacing="2">
-                <TextBlock
-                    x:Name="PageTitle"
-                    x:Uid="Board_PageTitle"
-                    AutomationProperties.AutomationId="Board_PageTitle"
-                    AutomationProperties.HeadingLevel="Level1"
-                    Style="{StaticResource PageTitleTextStyle}" />
-                <TextBlock
-                    AutomationProperties.AutomationId="Board_PageSubtitle"
-                    Style="{StaticResource PageSubtitleTextStyle}"
-                    Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
-            </StackPanel>
-            <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
-                <Grid ColumnSpacing="8">
+            HasSubtitle="True"
+            Subtitle="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+            SubtitleAutomationId="Board_PageSubtitle"
+            TitleAutomationId="Board_PageTitle"
+            TitleUid="Board_PageTitle">
+            <StackPanel Spacing="8">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Design §2.3: the search icon is last in the row and expands into the free space after it. -->
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <filters:FilterButton PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
+                        <controls:ExpandingSearchBox
+                            x:Name="SearchBox"
+                            x:Uid="Board_Search"
+                            Grid.Column="1"
+                            AutomationIdPrefix="Board"
+                            Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                    </Grid>
+                    <Button
+                        x:Uid="Board_NewTaskButton"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="Board_NewTaskButton"
+                        Command="{x:Bind ViewModel.NewTaskCommand}"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="N" Modifiers="Control" />
+                        </Button.KeyboardAccelerators>
+                        <controls:NewButtonContent x:Uid="Board_NewTaskText" />
+                    </Button>
+                </Grid>
+                <!-- Design §4.2 S: one bucket per viewport, chosen here or with the previous/next buttons. -->
+                <Grid
+                    x:Name="BucketPickerRow"
+                    ColumnSpacing="8"
+                    Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <filters:FilterButton PageKey="Board" Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-                    <controls:ExpandingSearchBox
-                        x:Name="SearchBox"
-                        x:Uid="Board_Search"
+                    <Button
+                        x:Uid="Board_PrevBucketButton"
+                        AutomationProperties.AutomationId="Board_PrevBucketButton"
+                        Command="{x:Bind ViewModel.PreviousBucketCommand}">
+                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76B;" />
+                    </Button>
+                    <ComboBox
+                        x:Name="BucketPicker"
+                        x:Uid="Board_BucketPickerCombo"
                         Grid.Column="1"
-                        AutomationIdPrefix="Board"
-                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="Board_BucketPickerCombo"
+                        ItemsSource="{x:Bind ViewModel.Buckets, Mode=OneTime}"
+                        SelectionChanged="OnBucketPickerSelectionChanged" />
+                    <Button
+                        x:Uid="Board_NextBucketButton"
+                        Grid.Column="2"
+                        AutomationProperties.AutomationId="Board_NextBucketButton"
+                        Command="{x:Bind ViewModel.NextBucketCommand}">
+                        <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE76C;" />
+                    </Button>
                 </Grid>
-                <Button
-                    x:Uid="Board_NewTaskButton"
-                    Grid.Column="1"
-                    AutomationProperties.AutomationId="Board_NewTaskButton"
-                    Command="{x:Bind ViewModel.NewTaskCommand}"
-                    Style="{StaticResource AccentButtonStyle}">
-                    <Button.KeyboardAccelerators>
-                        <KeyboardAccelerator Key="N" Modifiers="Control" />
-                    </Button.KeyboardAccelerators>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="14" Glyph="&#xE710;" />
-                        <TextBlock x:Uid="Board_NewTaskText" />
-                    </StackPanel>
-                </Button>
-            </Grid>
-            <!-- Design §4.2 S: one bucket per viewport, chosen here or with the previous/next buttons. -->
-            <Grid
-                x:Name="BucketPickerRow"
-                ColumnSpacing="8"
-                Visibility="Collapsed">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Button
-                    x:Uid="Board_PrevBucketButton"
-                    AutomationProperties.AutomationId="Board_PrevBucketButton"
-                    Command="{x:Bind ViewModel.PreviousBucketCommand}">
-                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
-                </Button>
-                <ComboBox
-                    x:Name="BucketPicker"
-                    x:Uid="Board_BucketPickerCombo"
-                    Grid.Column="1"
-                    HorizontalAlignment="Stretch"
-                    AutomationProperties.AutomationId="Board_BucketPickerCombo"
-                    ItemsSource="{x:Bind ViewModel.Buckets, Mode=OneTime}"
-                    SelectionChanged="OnBucketPickerSelectionChanged" />
-                <Button
-                    x:Uid="Board_NextBucketButton"
-                    Grid.Column="2"
-                    AutomationProperties.AutomationId="Board_NextBucketButton"
-                    Command="{x:Bind ViewModel.NextBucketCommand}">
-                    <FontIcon FontSize="12" Glyph="&#xE76C;" />
-                </Button>
-            </Grid>
-            <filters:FilterChipsBar
-                x:Name="ChipsBar"
-                PageKey="Board"
-                Scope="{x:Bind ViewModel.Filters, Mode=OneTime}" />
-        </StackPanel>
+                <!-- Collapsed while empty: its closed InfoBars and the stack spacing would otherwise leave a gap. -->
+                <filters:FilterChipsBar
+                    x:Name="ChipsBar"
+                    PageKey="Board"
+                    Scope="{x:Bind ViewModel.Filters, Mode=OneTime}"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.Filters.HasBarContent), Mode=OneWay}" />
+            </StackPanel>
+        </controls:PageHeader>
 
         <controls:StateView
             x:Name="PageContent"

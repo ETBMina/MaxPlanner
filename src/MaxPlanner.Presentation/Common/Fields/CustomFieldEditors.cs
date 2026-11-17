@@ -2,7 +2,6 @@ using System.ComponentModel;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Presentation.Common.Controls;
-using MaxPlanner.Presentation.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -138,13 +137,13 @@ internal static class CustomFieldEditors
 
     private static (FrameworkElement, Control) Date(CustomFieldEditorViewModel field, string? header, string id)
     {
-        var picker = new CalendarDatePicker
+        var picker = DatePickers.Apply(new CalendarDatePicker
         {
             Header = header,
             Date = field.Date,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             IsEnabled = !field.IsReadOnly,
-        };
+        });
         var clear = new Button
         {
             Content = new FontIcon { Glyph = "", FontSize = 12 },
@@ -225,7 +224,7 @@ internal static class CustomFieldEditors
 
     private static bool SameNumber(double a, double b) => (double.IsNaN(a) && double.IsNaN(b)) || a.Equals(b);
 
-    private static readonly Lazy<string> ClearName = new(() => new Services.ResourceStrings().GetString("CustomField_ClearDateName"));
+    private static readonly Lazy<string> ClearName = new(() => Services.ResourceStrings.Shared.GetString("CustomField_ClearDateName"));
 }
 
 /// <summary>

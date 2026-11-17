@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Checklists;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -36,7 +37,7 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _completions = completions ?? throw new ArgumentNullException(nameof(completions));
         _keepVisible = keepVisible ?? throw new ArgumentNullException(nameof(keepVisible));
-        _queue = new ChecklistCommandQueue(context, "Record_Task");
+        _queue = new ChecklistCommandQueue(context.Commands, "Record_Task");
         OpenItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_openItems);
         CompletedItems = new ReadOnlyObservableCollection<ChecklistItemViewModel>(_completedItems);
         SyncItems();
@@ -148,10 +149,11 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
 
             _keepVisible(Model.Id);
             item.IsPending = true;
-            ToggleError = await _queue.RunAsync(op => _context.UseCases.SetChecklistItemCompleted.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _context.UseCases.Checklists.SetChecklistItemCompleted.ExecuteAsync(
                 new SetChecklistItemCompletedCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), isChecked), CancellationToken.None)).ConfigureAwait(true);
+            ToggleError = run.Message;
             item.IsPending = false;
-            if (ToggleError is not null)
+            if (!run.IsSuccess)
             {
                 // AC-07: the shared state is unchanged, so the checkbox returns to the committed value.
                 item.RestoreCommitted();
@@ -170,8 +172,9 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         await _queue.Enqueue(async () =>
         {
             item.IsPending = true;
-            error = await _queue.RunAsync(op => _context.UseCases.RenameChecklistItem.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _context.UseCases.Checklists.RenameChecklistItem.ExecuteAsync(
                 new RenameChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), text), CancellationToken.None)).ConfigureAwait(true);
+            error = run.IsSuccess ? null : run.Message ?? string.Empty;
             item.IsPending = false;
         }).ConfigureAwait(true);
         return error;
@@ -190,8 +193,9 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
             }
 
             item.IsPending = true;
-            ToggleError = await _queue.RunAsync(op => _context.UseCases.MoveChecklistItem.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _context.UseCases.Checklists.MoveChecklistItem.ExecuteAsync(
                 new MoveChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id), new ChecklistItemId(anchor.Id), PlaceAfter: !up), CancellationToken.None)).ConfigureAwait(true);
+            ToggleError = run.Message;
             item.IsPending = false;
         });
     }
@@ -203,10 +207,11 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
         {
             _keepVisible(Model.Id);
             item.IsPending = true;
-            ToggleError = await _queue.RunAsync(op => _context.UseCases.DeleteChecklistItem.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _context.UseCases.Checklists.DeleteChecklistItem.ExecuteAsync(
                 new DeleteChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(item.Id)), CancellationToken.None)).ConfigureAwait(true);
+            ToggleError = run.Message;
             item.IsPending = false;
-            if (ToggleError is null)
+            if (run.IsSuccess)
             {
                 _context.Announce(_context.Strings.Format("Checklists_ItemDeleted", item.Text));
             }
@@ -228,18 +233,21 @@ public sealed partial class ChecklistGroupViewModel : ProjectionItemViewModel<Ta
 
     /// <summary>"Open task" (B-09, design §4.5): the task editor for this group's task.</summary>
     [RelayCommand]
-    private Task OpenTask() => _context.Tasks.OpenAsync(Model.Id);
+    private Task OpenTask() => UiTasks.RunGuardedAsync(() => _context.Tasks.OpenAsync(Model.Id));
 
     private bool CanAddItem() => !IsAdding;
 
-    /// <summary>Enter in the Add box, or its Add button: blank text is refused with an inline error (B-02.7).</summary>
     [RelayCommand(CanExecute = nameof(CanAddItem))]
+    private Task AddItem() => UiTasks.RunGuardedAsync(AddItemAsync);
+
+    /// <summary>Enter in the Add box, or its Add button: blank text is refused with an inline error (B-02.7).</summary>
     private Task AddItemAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;
-        NewItemError = await _queue.RunAsync(op => _context.UseCases.AddChecklistItem.ExecuteAsync(
+        var run = await _queue.RunAsync(op => _context.UseCases.Checklists.AddChecklistItem.ExecuteAsync(
             new AddChecklistItemCommand(op, Model.Id, Model.Revision, new ChecklistItemId(Guid.NewGuid()), NewItemText), CancellationToken.None)).ConfigureAwait(true);
-        if (NewItemError is null)
+        NewItemError = run.Message;
+        if (run.IsSuccess)
         {
             NewItemText = string.Empty;
         }

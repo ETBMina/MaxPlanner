@@ -18,7 +18,7 @@ Test layers: **D** Domain tests, **A** Application tests (in-memory fake and rea
 | T-07 Reactive state | `Presentation/Common/Store/WorkspaceProjectionStore.cs`, `ProjectionView`, `CoalescingObservable` (Dashboard) | P store tests; AC-17 navigation cycles (G run-performance) | Verified (store); Built (Dashboard coalescing) |
 | T-08 Native UI | `Shell/*`, `Themes/AppResources.xaml`, page views, `ThemeService`, `MainWindow` backdrop | UI screenshots L/M/S × Light/Dark; M: High Contrast, Narrator, touch, DPI, Snap, transparency off, RDP | Built |
 | T-08.1 Responsive | `ApplyBreakpoint` in every page view, `ExpandingSearchBox`, `FilterChipsBar.IsCompact` | UI at 500/639/640/1007/1008/1600 epx | Built |
-| T-09 Settings, backup, recovery | `Infrastructure/Backup/*`, `Preferences/*`, `StartupCoordinator`, `RecoveryView` | I restore tests; Desktop integration; UI recovery page | Built |
+| T-09 Settings, backup, recovery | `Infrastructure/Backup/*`, `Preferences/*`, `Application/Startup/StartupCoordinator` and its ports, `Infrastructure/Startup/*` adapters, `RecoveryView` | I restore tests; A startup coordinator tests; I startup adapter tests; Desktop integration; UI recovery page | Built |
 | T-10 Transfer validation | `Infrastructure/Transfer/*`, `Application/Transfer/*` | I transfer fixtures; security review | Built |
 | T-11 Performance gates | `tools/MaxPlanner.FixtureGenerator` (benchmark), `tests/MaxPlanner.Benchmarks`, log events 5003/5016/5605/5010, `scripts/run-performance.ps1` | G run-performance on the documented machine | Built (not run) |
 | T-12 Sequence, deliverables | `docs/deployment-guide.md`, `docs/user-guide.md`, this file | Review | Built |

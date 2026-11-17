@@ -51,6 +51,21 @@ public sealed class GridPickerAffordanceTests
     public void The_affordance_shows_on_hover_or_keyboard_focus_only(bool isPointerOver, FocusState focusState, bool expected) =>
         GridCellContent.IsPickerAffordanceShown(isPointerOver, focusState).Should().Be(expected);
 
+    [Theory]
+    [InlineData("Title", "Locked", "Title\nLocked")]
+    [InlineData("Title", null, "Title")]
+    [InlineData("Title", "", "Title")]
+    [InlineData(null, "Locked", "Locked")]
+    [InlineData("", "Locked", "Locked")]
+    [InlineData(null, null, "")]
+    [InlineData("", "", "")]
+    public void The_locked_title_tooltip_joins_the_title_and_the_lock_reason(string? title, string? lockText, string expected) =>
+        GridCellContent.TitleToolTip(title, lockText).Should().Be(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal));
+
+    [Fact]
+    public void The_Kind_column_is_narrow_enough_for_the_icon_and_row_menu_only() =>
+        GridColumns.DefaultWidth(GridColumns.Kind).Should().BeLessThan(100);
+
     private static FieldDefinition Field(FieldKind kind)
     {
         IReadOnlyList<FieldOption> options = kind == FieldKind.Lookup

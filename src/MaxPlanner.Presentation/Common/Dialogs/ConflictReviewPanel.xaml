@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The two conflict steps of a draft editor (design §5.10): the review (Field | Your draft | Saved now, with Use mine,
+    Back and Apply to draft) and the reload confirmation (Back and Reload). Collapsed while neither step is shown.
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Common.Dialogs.ConflictReviewPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:dialogs="using:MaxPlanner.Presentation.Common.Dialogs"
+    IsTabStop="False"
+    Visibility="Collapsed">
+    <Grid>
+        <!-- ===== Conflict review (design §5.10). ===== -->
+        <StackPanel x:Name="ReviewStep" Spacing="12" Visibility="Collapsed">
+            <TextBlock x:Uid="Conflict_ReviewHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" />
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Uid="Conflict_FieldHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="Conflict_MineHeader" Grid.Column="1" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="Conflict_SavedHeader" Grid.Column="2" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="Conflict_UseMineHeader" Grid.Column="3" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            </Grid>
+            <ItemsControl x:Name="RowsList" AutomationProperties.AutomationId="Conflict_Rows">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="dialogs:ConflictRowViewModel">
+                        <Grid Padding="0,6" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind Field, Mode=OneTime}" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="1" Text="{x:Bind Mine, Mode=OneTime}" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="2" Text="{x:Bind Saved, Mode=OneTime}" TextWrapping="Wrap" />
+                            <CheckBox
+                                Grid.Column="3"
+                                MinWidth="0"
+                                AutomationProperties.AutomationId="{x:Bind common:BindFunctions.UseMineId(Key), Mode=OneTime}"
+                                AutomationProperties.Name="{x:Bind Field, Mode=OneTime}"
+                                IsChecked="{x:Bind UseMine, Mode=TwoWay}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="BackButton" x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_BackButton" />
+                <Button
+                    x:Name="ApplyButton"
+                    x:Uid="Conflict_ApplyButton"
+                    AutomationProperties.AutomationId="Conflict_ApplyButton"
+                    Style="{StaticResource AccentButtonStyle}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- ===== Reload confirmation (design §5.10: Reload discards the draft after a confirmation). ===== -->
+        <StackPanel x:Name="ReloadStep" Spacing="12" Visibility="Collapsed">
+            <TextBlock x:Name="ReloadMessageText" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="ReloadBackButton" x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="Conflict_ReloadBackButton" />
+                <Button
+                    x:Name="ReloadConfirmButton"
+                    x:Uid="Conflict_ReloadConfirmButton"
+                    AutomationProperties.AutomationId="Conflict_ReloadConfirmButton"
+                    Style="{StaticResource AccentButtonStyle}" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

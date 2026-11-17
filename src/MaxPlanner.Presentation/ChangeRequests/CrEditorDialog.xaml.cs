@@ -1,16 +1,16 @@
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
-using MaxPlanner.Presentation.Tasks;
+using MaxPlanner.Presentation.Common.Options;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 
 namespace MaxPlanner.Presentation.ChangeRequests;
 
 /// <summary>
-/// The CR editor dialog. Code-behind only forwards clicks and keys to <see cref="CrEditorViewModel"/>, keeps
-/// the combo box selections in step with it (a two-way SelectedItem could run before ItemsSource), moves
-/// focus where the ViewModel asks, and reflows the field pairs by width (design §5.0).
+/// The CR editor dialog. Buttons bind <see cref="CrEditorViewModel"/> commands, and <see cref="EditorDialogShell"/> wires
+/// the dialog buttons and keys; code-behind keeps the combo box selections in step with it (a two-way SelectedItem could
+/// run before ItemsSource), moves focus where the ViewModel asks, and reflows the field pairs by width (design §5.0).
 /// </summary>
 public sealed partial class CrEditorDialog : ContentDialog
 {
@@ -18,18 +18,13 @@ public sealed partial class CrEditorDialog : ContentDialog
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        EditorDialogLayout.Attach(this, ApplyLayout);
+        // Ctrl+Enter is left unhandled on every inline step (save and create, delete, conflict review, reload).
+        EditorDialogShell.Attach(this, viewModel, Root, OnFocusRequested, () => NumberBox, ApplyLayout, saveFromFormStepOnly: true);
         SquadCombo.SelectedItem = viewModel.SelectedSquad;
         StatusCombo.SelectedItem = viewModel.SelectedStatus;
         PriorityCombo.SelectedItem = viewModel.SelectedPriority;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        viewModel.FocusRequested += OnFocusRequested;
-        Opened += (_, _) => NumberBox.Focus(FocusState.Programmatic);
-        Unloaded += (_, _) =>
-        {
-            viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-            viewModel.FocusRequested -= OnFocusRequested;
-        };
+        Unloaded += (_, _) => viewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 
     public CrEditorViewModel ViewModel { get; }
@@ -38,11 +33,12 @@ public sealed partial class CrEditorDialog : ContentDialog
     // gets a full-size dialog so Save and Cancel stay reachable (T-08.1).
     private void ApplyLayout(Windows.Foundation.Size size)
     {
-        var twoColumns = size.Width >= EditorDialogSizing.LargeBreakpoint;
+        var twoColumns = size.Width >= Breakpoints.Large;
+        FactsPanel.Columns = EditorFactsLayout.Columns(size.Width);
         Pair(NumberPair, TaskNumberPanel, twoColumns);
         Pair(OwnerPair, SquadPanel, twoColumns);
         Pair(StatusPair, PriorityPanel, twoColumns);
-        Pair(PlannedPair, PlannedEndPanel, twoColumns);
+        Pair(PlannedPair, PlannedEndField, twoColumns);
     }
 
     private static void Pair(Microsoft.UI.Xaml.Controls.Grid pair, FrameworkElement second, bool twoColumns)
@@ -74,7 +70,7 @@ public sealed partial class CrEditorDialog : ContentDialog
         }
     }
 
-    private void OnFocusRequested(object? sender, string field)
+    private void OnFocusRequested(string field)
     {
         // Design §5.0: focus moves to the first invalid field.
         Control? target = field switch
@@ -85,7 +81,7 @@ public sealed partial class CrEditorDialog : ContentDialog
             "Squad" => SquadCombo,
             "Status" => StatusCombo,
             "Priority" => PriorityCombo,
-            "PlannedEnd" => PlannedEndPicker,
+            "PlannedEnd" => PlannedEndField.DatePicker,
             "EmailSubject" => EmailSubjectBox,
             "SolutionDesignUrl" => UrlBox,
             "Description" => DescriptionBox,
@@ -110,59 +106,12 @@ public sealed partial class CrEditorDialog : ContentDialog
         }
     }
 
-    private void OnPrimaryClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        // The dialog closes only after the save committed (the ViewModel asks for it); a failure keeps it open.
-        args.Cancel = true;
-        _ = ViewModel.SaveAsync();
-    }
-
-    private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
-    {
-        if (args.Result != ContentDialogResult.None)
-        {
-            return;
-        }
-
-        // Design §5.8: while the dirty-close confirmation is open it owns the decision, so the editor stays open.
-        args.Cancel = ViewModel.IsDirtyClosePromptOpen || !ViewModel.TryClose();
-    }
-
-    private void OnSaveAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (ViewModel.IsFormStep)
-        {
-            args.Handled = true;
-            _ = ViewModel.SaveAsync();
-        }
-    }
-
-    private void OnBackAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (!ViewModel.IsFormStep)
-        {
-            args.Handled = true;
-            ViewModel.StepBack();
-        }
-    }
-
+    // Not a two-way SelectedItem: that could write null back while ItemsSource is (re)set.
     private void OnSquadSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedSquad = SquadCombo.SelectedItem as SquadOption;
 
     private void OnStatusSelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedStatus = StatusCombo.SelectedItem as CrStatusOption;
 
     private void OnPrioritySelectionChanged(object sender, SelectionChangedEventArgs e) => ViewModel.SelectedPriority = PriorityCombo.SelectedItem as PriorityOption;
-
-    private void OnClearStartClick(object sender, RoutedEventArgs e) => ViewModel.ClearPlannedStart();
-
-    private void OnClearEndClick(object sender, RoutedEventArgs e) => ViewModel.ClearPlannedEnd();
-
-    private void OnOpenUrlClick(object sender, RoutedEventArgs e) => _ = ViewModel.OpenUrlAsync();
-
-    private void OnOpenDuplicateClick(object sender, RoutedEventArgs e) => ViewModel.OpenDuplicate();
-
-    private void OnCreateTaskClick(object sender, RoutedEventArgs e) => ViewModel.BeginCreateTask();
-
-    private void OnSaveAndCreateClick(object sender, RoutedEventArgs e) => _ = ViewModel.SaveAndCreateTaskAsync();
 
     private void OnLinkedTaskClick(object sender, ItemClickEventArgs e)
     {
@@ -171,20 +120,4 @@ public sealed partial class CrEditorDialog : ContentDialog
             ViewModel.OpenLinkedTask(row);
         }
     }
-
-    private void OnDeleteClick(object sender, RoutedEventArgs e) => ViewModel.BeginDelete();
-
-    private void OnMoveToBacklogClick(object sender, RoutedEventArgs e) => ViewModel.RequestMoveToBacklog();
-
-    private void OnConfirmDeleteClick(object sender, RoutedEventArgs e) => _ = ViewModel.ConfirmDeleteAsync();
-
-    private void OnReviewConflictClick(object sender, RoutedEventArgs e) => ViewModel.ReviewConflict();
-
-    private void OnReloadClick(object sender, RoutedEventArgs e) => ViewModel.BeginReload();
-
-    private void OnConfirmReloadClick(object sender, RoutedEventArgs e) => ViewModel.ConfirmReload();
-
-    private void OnApplyConflictClick(object sender, RoutedEventArgs e) => ViewModel.ApplyConflictReview();
-
-    private void OnStepBackClick(object sender, RoutedEventArgs e) => ViewModel.StepBack();
 }

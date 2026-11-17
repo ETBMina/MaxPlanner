@@ -8,8 +8,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.Settings"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     Title="{x:Bind ViewModel.DialogTitle, Mode=OneTime}"
     AutomationProperties.AutomationId="FieldDialog_Dialog"
     CloseButtonText="{x:Bind ViewModel.CloseButtonText, Mode=OneTime}"
@@ -39,7 +39,7 @@
                 AutomationProperties.IsRequiredForForm="True"
                 MaxLength="100"
                 Text="{x:Bind ViewModel.Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <tasks:FieldError Text="{x:Bind ViewModel.LabelError, Mode=OneWay}" />
+            <fields:FieldError Text="{x:Bind ViewModel.LabelError, Mode=OneWay}" />
 
             <TextBox
                 x:Uid="FieldDialog_KeyBox"
@@ -48,7 +48,7 @@
                 IsReadOnly="{x:Bind common:BindFunctions.Not(ViewModel.IsNew), Mode=OneTime}"
                 MaxLength="100"
                 Text="{x:Bind ViewModel.Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <tasks:FieldError Text="{x:Bind ViewModel.KeyError, Mode=OneWay}" />
+            <fields:FieldError Text="{x:Bind ViewModel.KeyError, Mode=OneWay}" />
 
             <ComboBox
                 x:Uid="FieldDialog_KindCombo"
@@ -81,21 +81,21 @@
                                     AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
                                     Click="OnRemoveOptionClick"
                                     ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneTime}">
-                                    <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    <FontIcon FontSize="{StaticResource CaptionIconSize}" Glyph="&#xE711;" />
                                 </Button>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button x:Uid="FieldDialog_AddOptionButton" AutomationProperties.AutomationId="FieldDialog_AddOptionButton" Click="OnAddOptionClick" />
-                <tasks:FieldError Text="{x:Bind ViewModel.OptionsError, Mode=OneWay}" />
+                <Button x:Uid="FieldDialog_AddOptionButton" AutomationProperties.AutomationId="FieldDialog_AddOptionButton" Command="{x:Bind ViewModel.AddOptionCommand}" />
+                <fields:FieldError Text="{x:Bind ViewModel.OptionsError, Mode=OneWay}" />
             </StackPanel>
 
             <ToggleSwitch
                 x:Uid="FieldDialog_RequiredToggle"
                 AutomationProperties.AutomationId="FieldDialog_RequiredToggle"
                 IsOn="{x:Bind ViewModel.IsRequired, Mode=TwoWay}" />
-            <tasks:FieldError Text="{x:Bind ViewModel.RequiredError, Mode=OneWay}" />
+            <fields:FieldError Text="{x:Bind ViewModel.RequiredError, Mode=OneWay}" />
 
             <!-- Default value: validated against the kind and options (B-11). -->
             <TextBox
@@ -114,6 +114,8 @@
                 x:Uid="FieldDialog_DefaultDatePicker"
                 AutomationProperties.AutomationId="FieldDialog_DefaultDatePicker"
                 Date="{x:Bind ViewModel.DefaultDate, Mode=TwoWay}"
+                FirstDayOfWeek="{x:Bind common:DatePickers.FirstDayOfWeek, Mode=OneTime}"
+                PlaceholderText="{x:Bind common:DatePickers.Placeholder, Mode=OneTime}"
                 Visibility="{x:Bind ViewModel.DefaultIsDate, Mode=OneWay}" />
             <ComboBox
                 x:Uid="FieldDialog_DefaultOptionCombo"
@@ -126,7 +128,7 @@
                 x:Uid="FieldDialog_NoDefaultText"
                 Style="{StaticResource PageSubtitleTextStyle}"
                 Visibility="{x:Bind ViewModel.HasNoDefault, Mode=OneWay}" />
-            <tasks:FieldError Text="{x:Bind ViewModel.DefaultError, Mode=OneWay}" />
+            <fields:FieldError Text="{x:Bind ViewModel.DefaultError, Mode=OneWay}" />
 
             <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind ViewModel.IsSaving, Mode=OneWay}">
                 <ProgressRing Width="16" Height="16" IsActive="{x:Bind ViewModel.IsSaving, Mode=OneWay}" />

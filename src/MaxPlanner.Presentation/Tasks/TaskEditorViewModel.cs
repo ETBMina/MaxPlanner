@@ -1,9 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
-using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
@@ -19,30 +18,13 @@ using MaxPlanner.Domain.Values;
 using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Grid;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.Tasks;
-
-/// <summary>A priority offered by the editors' Priority box.</summary>
-public sealed record PriorityOption(PriorityId Id, string Name, PriorityLevel Level = PriorityLevel.Mid) : IPriorityChoice
-{
-    string IPriorityChoice.DisplayName => Name;
-
-    PriorityLevel? IPriorityChoice.Level => Level;
-
-    /// <summary>The configured priorities in rank order, each with the glyph level of its rank (design §6.1).</summary>
-    public static IReadOnlyList<PriorityOption> From(WorkflowSnapshot workflow)
-    {
-        ArgumentNullException.ThrowIfNull(workflow);
-        var levels = PriorityLevels.Of(workflow.Priorities);
-        return [.. workflow.Priorities.OrderBy(p => p.Order).Select(p => new PriorityOption(p.Id, p.Name.Display, levels.GetValueOrDefault(p.Id, PriorityLevel.Mid)))];
-    }
-
-    public override string ToString() => Name;
-}
 
 /// <summary>
 /// The task editor (B-02, B-03, B-05, T-13, design §5.0–§5.1, §5.6, §5.8, §5.10). It edits a draft and never
@@ -57,10 +39,8 @@ public sealed record PriorityOption(PriorityId Id, string Name, PriorityLevel Le
 /// always show its current committed state (T-13). A link chosen here is pending until Save and is permanent
 /// once saved; there is no unlink or change (B-03.7, AC-29).</para>
 /// </remarks>
-public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
+public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<EditorFollowUp>, IInlineStepEditor
 {
-    private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
-
     private static readonly string[] StateProperties =
     [
         nameof(IsLinked), nameof(LinkedCr), nameof(IsTitleEditable), nameof(ShowInheritedTitle), nameof(InheritedTitle),
@@ -71,25 +51,20 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         nameof(TaskNumberToCopy), nameof(CanCopyTaskNumber), nameof(CopyTaskNumberName),
         nameof(CanEditFields), nameof(CanSave), nameof(CanArchive), nameof(CanRestore), nameof(CanAddSubtaskCard), nameof(CanPopOut),
         nameof(IsFormStep), nameof(IsLinkPickStep), nameof(IsLinkConfirmStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
-        nameof(Caption), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
+        nameof(CreatedText), nameof(HasValidationSummary), nameof(HasSaveError), nameof(HasCrChangedMessage), nameof(IsReadOnly),
     ];
 
-    private readonly WorkspaceContext _context;
     private readonly NewNameRegistry _newPeople = new();
     private readonly NewNameRegistry _newTags = new();
     private readonly ObservableCollection<EditorChecklistItemViewModel> _checklist = [];
     private readonly ObservableCollection<EditorSubtaskCardViewModel> _subtaskCards = [];
-    private readonly ObservableCollection<ConflictRowViewModel> _conflictRows = [];
-    private readonly IDisposable _commits;
     private readonly TaskId _taskId;
     private readonly WorkflowSnapshot _workflow;
     private TaskReadModel? _base;
     private DraftValues _baseValues;
+    private IReadOnlyDictionary<FieldId, CustomValue> _customValues = CustomValue.NoValues;
     private bool _startCleared;
     private bool _endCleared;
-    private bool _isLoading;
-    private bool _closeApproved;
-    private OperationId? _retryOperation;
     private readonly ChangeRequestId? _presetLinkId;
 
     /// <param name="taskId">The task to edit, or null for a new task.</param>
@@ -99,11 +74,10 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     /// task and its link are created together by Save (B-02.1 "CR creation preselects (and links) the CR").
     /// </param>
     public TaskEditorViewModel(WorkspaceContext context, TaskId? taskId, TaskStatusId? initialStatus, ChangeRequestId? linkTo = null)
+        : base(context, isNew: taskId is null, "Record_Task")
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
         _workflow = context.Store.CurrentWorkflow
             ?? throw new InvalidOperationException("The task editor needs the loaded workflow; editing is blocked until the store is ready.");
-        IsNew = taskId is null;
         _taskId = taskId ?? new TaskId(Guid.NewGuid());
         StatusOptions = [.. _workflow.TaskStatuses.OrderBy(s => s.Order).Select(s => new StatusOption(s.Id, s.Name.Display))];
         PriorityOptions = PriorityOption.From(_workflow);
@@ -118,20 +92,19 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         CustomFields.Changed += OnDraftChanged;
         ChecklistItems = new ReadOnlyObservableCollection<EditorChecklistItemViewModel>(_checklist);
         SubtaskCards = new ReadOnlyObservableCollection<EditorSubtaskCardViewModel>(_subtaskCards);
-        ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
         _checklist.CollectionChanged += OnChecklistChanged;
         CrPicker = new CrPickerViewModel(context.Store, context.Strings);
 
         if (IsNew)
         {
             var status = initialStatus is { } s && _workflow.FindTaskStatus(s) is not null ? s : _workflow.Defaults.DefaultTaskStatusId;
-            _isLoading = true;
+            IsLoading = true;
             SelectedStatus = StatusOptions.FirstOrDefault(o => o.Id == status);
             SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultPriorityId);
 
             // B-11: a new task starts with each custom field's default; it is the base, so it is not a change.
             CustomFields.LoadDefaults();
-            _isLoading = false;
+            IsLoading = false;
             _baseValues = Capture();
 
             // T-13: the preview comes from the committed CR, and Save checks the revision it was taken from.
@@ -155,23 +128,14 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
 
         RefreshSubtaskCards();
-        _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => OnCommitted());
+        ObserveCommits();
     }
-
-    public event EventHandler? CloseRequested;
-
-    /// <summary>Asks the view to focus a field: a field key such as <c>Title</c> (design §5.0).</summary>
-    public event EventHandler<string>? FocusRequested;
-
-    public bool IsNew { get; }
 
     /// <summary>The edited task, or null for a new one (until it is created).</summary>
     public TaskId? ExistingTaskId => IsNew ? null : _taskId;
 
     /// <summary>The task created by Save of a new draft.</summary>
     public TaskId? CreatedTaskId { get; private set; }
-
-    public EditorFollowUp FollowUp { get; private set; }
 
     /// <summary>The Subtask card to open for <see cref="EditorFollowUp.OpenSubtaskCard"/>.</summary>
     public SubtaskCardId? FollowUpCardId { get; private set; }
@@ -195,21 +159,17 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     public ReadOnlyObservableCollection<EditorSubtaskCardViewModel> SubtaskCards { get; }
 
-    public ReadOnlyObservableCollection<ConflictRowViewModel> ConflictRows { get; }
-
     public CrPickerViewModel CrPicker { get; }
 
     /// <summary>The committed state of the task now (null for a new task or after a deletion elsewhere).</summary>
     public TaskReadModel? Latest { get; private set; }
 
-    public string DialogTitle => _context.Strings.GetString(IsNew ? "TaskEditor_TitleNew" : "TaskEditor_Title");
+    public string DialogTitle => Context.Strings.GetString(IsNew ? "TaskEditor_TitleNew" : "TaskEditor_Title");
 
-    public string PrimaryButtonText => _context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
+    public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "TaskEditor_CreateButton" : "TaskEditor_SaveButton");
 
-    public string CloseButtonText => _context.Strings.GetString("Common_Cancel");
-
-    /// <summary>"Created Oct 6, 2026" (design §5.0 title row).</summary>
-    public string Caption => _base is { } b ? _context.Strings.Format("TaskEditor_CreatedCaption", b.CreatedAtUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture)) : string.Empty;
+    /// <summary>The info box's Created fact, "Oct 6, 2026"; empty for a new task (the fact is hidden).</summary>
+    public string CreatedText => _base is { } b ? DateText.RecordDate(b.CreatedAtUtc.ToLocalTime()) : string.Empty;
 
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
@@ -272,39 +232,16 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     [ObservableProperty]
     public partial string? SubtaskCardError { get; private set; }
 
-    /// <summary>"Fix 2 fields to save" (design §5.0); shown in the Error InfoBar at the top.</summary>
-    [ObservableProperty]
-    public partial string? ValidationSummary { get; private set; }
-
-    /// <summary>A non-field failure (storage, conflict text, deleted elsewhere); the draft is kept (AC-07).</summary>
-    [ObservableProperty]
-    public partial string? SaveError { get; private set; }
-
     /// <summary>T-13: the pending link's CR changed before Save; the preview was refreshed.</summary>
     [ObservableProperty]
     public partial string? CrChangedMessage { get; private set; }
 
     [ObservableProperty]
-    public partial bool IsSaving { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsDirty { get; private set; }
-
-    [ObservableProperty]
     public partial EditorStep CurrentStep { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsDirtyClosePromptOpen { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsConflict { get; private set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLinkServiceLocked))]
     public partial bool IsArchived { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsDeletedElsewhere { get; private set; }
 
     /// <summary>The CR chosen in the link step, not yet saved (design §5.1 group 2 "Pending").</summary>
     [ObservableProperty]
@@ -326,7 +263,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public string LinkedCrNumber => LinkedCr?.Number ?? string.Empty;
 
     /// <summary>"Open CR-1042": the CR link's accessible name and tooltip (design §8.2).</summary>
-    public string OpenCrName => LinkedCr is { } cr ? _context.Strings.Format("TaskEditor_OpenCrName", cr.Number) : string.Empty;
+    public string OpenCrName => LinkedCr is { } cr ? Context.Strings.Format("TaskEditor_OpenCrName", cr.Number) : string.Empty;
 
     public bool CanEditFields => !IsReadOnly && !IsSaving;
 
@@ -339,11 +276,11 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     /// <summary>D10: Service is required on linked tasks and while a link is pending.</summary>
     public bool IsServiceRequired => IsLinked || PendingLink is not null;
 
-    public string ServiceHeader => _context.Strings.GetString(IsServiceRequired ? "TaskEditor_ServiceRequiredHeader" : "TaskEditor_ServiceHeader");
+    public string ServiceHeader => Context.Strings.GetString(IsServiceRequired ? "TaskEditor_ServiceRequiredHeader" : "TaskEditor_ServiceHeader");
 
     /// <summary>"Tells this task apart from the other 2 tasks on CR-1042."</summary>
     public string ServiceHelper => (LinkedCr ?? PendingLink) is { } cr
-        ? _context.Strings.Format("TaskEditor_ServiceHelper", Math.Max(0, cr.LinkedTaskCount - (IsLinked ? 1 : 0)), cr.Number)
+        ? Context.Strings.Format("TaskEditor_ServiceHelper", Math.Max(0, cr.LinkedTaskCount - (IsLinked ? 1 : 0)), cr.Number)
         : string.Empty;
 
     public bool HasServiceHelper => ServiceHelper.Length > 0;
@@ -353,21 +290,21 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public bool HasPendingLink => PendingLink is not null;
 
     /// <summary>B-02.4: the permanence notice shown while a link is pending.</summary>
-    public string PendingLinkWarning => PendingLink is { } cr ? _context.Strings.Format("TaskEditor_PendingLinkWarning", cr.Title, cr.Number) : string.Empty;
+    public string PendingLinkWarning => PendingLink is { } cr ? Context.Strings.Format("TaskEditor_PendingLinkWarning", cr.Title, cr.Number) : string.Empty;
 
     /// <summary>B-03.6: only an unlinked task (active or archived) can be linked, and only once (AC-29).</summary>
     public bool CanLinkToCr => !IsLinked && !IsSaving && !IsDeletedElsewhere;
 
-    public string TaskNumberText => (LinkedCr ?? PendingLink) is { } cr
-        ? cr.TaskNumber ?? _context.Strings.GetString("TaskEditor_NoTaskNumber")
-        : _context.Strings.GetString("TaskEditor_NoTaskNumber");
+    /// <summary>The CR's task number; empty when there is none (the facts strip shows "None").</summary>
+    public string TaskNumberText => (LinkedCr ?? PendingLink)?.TaskNumber ?? string.Empty;
 
     /// <summary>D15: "General" when the task is unlinked or its CR has no squad.</summary>
-    public string SquadText => (LinkedCr ?? PendingLink)?.SquadName ?? (Latest ?? _base)?.Cr.SquadName ?? _context.Strings.GetString("Squad_General");
+    public string SquadText => (LinkedCr ?? PendingLink)?.SquadName ?? (Latest ?? _base)?.Cr.SquadName ?? Context.Strings.GetString("Squad_General");
 
-    public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? _context.Strings.GetString("TaskEditor_NoOwner");
+    /// <summary>The CR owner's name; empty when there is none (the facts strip shows "None").</summary>
+    public string OwnerText => (LinkedCr ?? PendingLink)?.OwnerName ?? string.Empty;
 
-    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar), not the "No owner" placeholder.</summary>
+    /// <summary>Whether <see cref="OwnerText"/> names a person (it shows the avatar).</summary>
     public bool HasOwner => !string.IsNullOrEmpty((LinkedCr ?? PendingLink)?.OwnerName);
 
     /// <summary>The CR chosen in the link step, shown in the facts strip until Save.</summary>
@@ -379,26 +316,41 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     public bool CanCopyCrNumber => CrNumberToCopy.Length > 0;
 
     /// <summary>"Copy CR number RP-116": the copy button's accessible name and tooltip.</summary>
-    public string CopyCrNumberName => CanCopyCrNumber ? _context.Strings.Format("TaskEditor_CopyCrNumberName", CrNumberToCopy) : string.Empty;
+    public string CopyCrNumberName => CanCopyCrNumber ? Context.Strings.Format("TaskEditor_CopyCrNumberName", CrNumberToCopy) : string.Empty;
 
     /// <summary>The plain task number ("INT-7116"); empty when the CR has none or the task is unlinked.</summary>
     public string TaskNumberToCopy => (LinkedCr ?? PendingLink)?.TaskNumber ?? string.Empty;
 
     public bool CanCopyTaskNumber => TaskNumberToCopy.Length > 0;
 
-    public string CopyTaskNumberName => CanCopyTaskNumber ? _context.Strings.Format("TaskEditor_CopyTaskNumberName", TaskNumberToCopy) : string.Empty;
+    public string CopyTaskNumberName => CanCopyTaskNumber ? Context.Strings.Format("TaskEditor_CopyTaskNumberName", TaskNumberToCopy) : string.Empty;
+
+    /// <summary>
+    /// After a copy button put <paramref name="copiedText"/> on the clipboard (<paramref name="reachedClipboard"/>):
+    /// announces "Copied RP-116" and returns true, so the button shows its "Copied" hint; otherwise does nothing.
+    /// </summary>
+    public bool ReportCopied(string copiedText, bool reachedClipboard)
+    {
+        if (!CopyFeedbackRules.ShowsFeedback(copiedText, reachedClipboard))
+        {
+            return false;
+        }
+
+        Context.Announce(Context.Strings.Format("Copy_Announcement", copiedText));
+        return true;
+    }
 
     /// <summary>"Checklist (2 of 4 items done)", or "Checklist" while it is empty.</summary>
     public string ChecklistHeading => _checklist.Count == 0
-        ? _context.Strings.GetString("TaskEditor_ChecklistHeading")
-        : _context.Strings.Format("TaskEditor_ChecklistHeadingCount", _checklist.Count(i => i.IsCompleted), _checklist.Count);
+        ? Context.Strings.GetString("TaskEditor_ChecklistHeading")
+        : Context.Strings.Format("TaskEditor_ChecklistHeadingCount", _checklist.Count(i => i.IsCompleted), _checklist.Count);
 
     /// <summary>B-04 helper from the status flags, never from labels.</summary>
     public string StartHelper => Helper("TaskEditor_StartHelper", _workflow.TaskStatuses.Where(s => s.SetsStartDate));
 
     public string EndHelper => Helper("TaskEditor_EndHelper", _workflow.TaskStatuses.Where(s => s.IsCompleted));
 
-    public bool CanSave => !IsSaving && CurrentStep == EditorStep.Form && !IsDeletedElsewhere && (!IsArchived || PendingLink is not null);
+    public override bool CanSave => !IsSaving && CurrentStep == EditorStep.Form && !IsDeletedElsewhere && (!IsArchived || PendingLink is not null);
 
     public bool CanArchive => !IsNew && !IsReadOnly && !IsDirty && PendingLink is null && !IsSaving;
 
@@ -420,147 +372,12 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     public bool IsReloadConfirmStep => CurrentStep == EditorStep.ReloadConfirm;
 
-    public bool HasValidationSummary => ValidationSummary is not null;
-
-    public bool HasSaveError => SaveError is not null;
-
     public bool HasCrChangedMessage => CrChangedMessage is not null;
 
-    /// <summary>
-    /// Saves the whole draft as one command (B-02.8). Repeated calls while saving are ignored. On success
-    /// the editor closes once the result is displayed; on failure the draft, its errors, and the dialog stay.
-    /// </summary>
-    public async Task<bool> SaveAsync()
-    {
-        if (!CanSave)
-        {
-            return false;
-        }
+    // A link the user chose is a change; the CR a "Create task" route preselected is not (B-03.5).
+    protected override bool NeedsClosePrompt => IsDirty || (PendingLink is not null && PendingLink.Id != _presetLinkId);
 
-        // Text typed in a person box counts even when Save comes from Ctrl+Enter, before the box loses focus.
-        Designer.CommitText();
-        Developer.CommitText();
-
-        if (!IsNew && !IsDirty && PendingLink is null)
-        {
-            Approve();
-            return true;
-        }
-
-        if (_context.IsEditingBlocked)
-        {
-            SaveError = _context.Strings.GetString("Error_EditingBlocked");
-            RaiseState();
-            return false;
-        }
-
-        ClearErrors();
-        if (!CustomFields.TryBuild(_base?.CustomValues ?? CustomValue.NoValues, out var customValues))
-        {
-            ValidationSummary = _context.Strings.Format("TaskEditor_FixField", 1);
-            FocusRequested?.Invoke(this, "Custom:" + CustomFields.FirstErrorKey);
-            RaiseState();
-            return false;
-        }
-
-        var operation = _retryOperation ?? OperationId.New();
-        IsSaving = true;
-        IsDirtyClosePromptOpen = false;
-        RaiseState();
-        _context.SaveStatus.Begin();
-        var (error, sequence) = await ExecuteSaveAsync(operation, customValues).ConfigureAwait(true);
-        if (error is not null)
-        {
-            var failure = CommandFailure.From(error, operation, "Record_Task", _context.Strings);
-            _context.SaveStatus.Report(failure);
-
-            // T-05: only an unknown outcome is retried under the same operation; anything else is a new intent.
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            IsSaving = false;
-            ShowFailure(failure);
-            RaiseState();
-            return false;
-        }
-
-        _context.SaveStatus.Complete();
-        _retryOperation = null;
-        await _context.WhenDisplayedAsync(sequence, DisplayTimeout).ConfigureAwait(true);
-        IsSaving = false;
-        _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
-        Approve();
-        return true;
-    }
-
-    /// <summary>
-    /// The dialog is closing by Esc, Cancel, an outside click or a follow-up. A dirty draft (or a pending link) cancels
-    /// the close and asks for the Save / Discard / Continue editing confirmation (design §5.8).
-    /// </summary>
-    /// <returns>True when the dialog may close.</returns>
-    public bool TryClose()
-    {
-        if (_closeApproved)
-        {
-            return true;
-        }
-
-        if (IsSaving)
-        {
-            return false;
-        }
-
-        // A link the user chose is a change; the CR a "Create task" route preselected is not (B-03.5).
-        if (IsDirty || (PendingLink is not null && PendingLink.Id != _presetLinkId))
-        {
-            IsDirtyClosePromptOpen = true;
-            return false;
-        }
-
-        _closeApproved = true;
-        return true;
-    }
-
-    public async Task<bool> SaveFromPromptAsync()
-    {
-        IsDirtyClosePromptOpen = false;
-        var saved = await SaveAsync().ConfigureAwait(true);
-        if (!saved)
-        {
-            // A failed save keeps the editor open; the window close the prompt answered is abandoned.
-            IsWindowClosePending = false;
-        }
-
-        return saved;
-    }
-
-    /// <inheritdoc/>
-    public bool IsWindowClosePending { get; private set; }
-
-    /// <inheritdoc/>
-    public bool TryCloseForWindow()
-    {
-        if (TryClose())
-        {
-            return true;
-        }
-
-        IsWindowClosePending = IsDirtyClosePromptOpen;
-        return false;
-    }
-
-    /// <summary>Discard: closes without saving; nothing is created, including new people and tags (B-02.6).</summary>
-    public void DiscardChanges()
-    {
-        IsDirtyClosePromptOpen = false;
-        Approve();
-    }
-
-    /// <summary>Continue editing (also Esc on the prompt): the draft stays and any pending follow-up is dropped.</summary>
-    public void ContinueEditing()
-    {
-        IsDirtyClosePromptOpen = false;
-        IsWindowClosePending = false;
-        FollowUp = EditorFollowUp.None;
-    }
+    protected override bool HasChangesToSave => IsDirty || PendingLink is not null;
 
     /// <summary>
     /// More › Copy…, Delete…, Add Subtask card, Open CR, or a Subtask card row: closes this dialog first (after
@@ -568,16 +385,12 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     /// </summary>
     public void RequestFollowUp(EditorFollowUp followUp)
     {
-        if (IsNew || IsSaving || (followUp == EditorFollowUp.OpenCr && !IsLinked) || (followUp == EditorFollowUp.AddSubtaskCard && !CanAddSubtaskCard))
+        if (IsNew || (followUp == EditorFollowUp.OpenCr && !IsLinked) || (followUp == EditorFollowUp.AddSubtaskCard && !CanAddSubtaskCard))
         {
             return;
         }
 
-        FollowUp = followUp;
-        if (TryClose())
-        {
-            CloseRequested?.Invoke(this, EventArgs.Empty);
-        }
+        CloseForFollowUp(followUp);
     }
 
     /// <summary>A row of the Subtask cards list (design §5.1 group 8): this dialog closes and §5.2 opens.</summary>
@@ -589,6 +402,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     }
 
     /// <summary>Link to CR… (design §5.6 step 1).</summary>
+    [RelayCommand]
     public void BeginLink()
     {
         if (!CanLinkToCr)
@@ -603,6 +417,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     }
 
     /// <summary>Next: the permanence confirmation (design §5.6 step 2).</summary>
+    [RelayCommand]
     public void LinkNext()
     {
         if (CurrentStep == EditorStep.LinkPick && CrPicker.Selected is not null)
@@ -625,8 +440,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
         if (string.IsNullOrWhiteSpace(Service))
         {
-            ServiceError = _context.Strings.GetString("Error_ServiceRequiredWhenLinked");
-            FocusRequested?.Invoke(this, "Service");
+            ServiceError = Context.Strings.GetString("Error_ServiceRequiredWhenLinked");
+            RequestFocus("Service");
             return false;
         }
 
@@ -640,51 +455,45 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     }
 
     /// <summary>Back (Alt+Left) from an inline step.</summary>
+    [RelayCommand]
     public void StepBack()
     {
         CurrentStep = CurrentStep == EditorStep.LinkConfirm ? EditorStep.LinkPick : EditorStep.Form;
         RaiseState();
     }
 
-    /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
-    public void ReviewConflict()
+    protected override IReadOnlyList<ConflictRowViewModel>? BuildConflictRows()
     {
-        if (!IsConflict || Latest is not { } latest)
+        if (Latest is not { } latest)
         {
-            return;
+            return null;
         }
 
         var mine = Capture();
         var saved = ValuesOf(latest);
-        _conflictRows.Clear();
+        var rows = new List<ConflictRowViewModel>();
         foreach (var key in DraftValues.Keys.Where(k => !mine.SameAs(saved, k)))
         {
             var (mineText, savedText) = key == "CustomFields" ? (CustomFields.DisplayText(None), SavedCustomFieldsText(latest)) : (Describe(mine, key), Describe(saved, key));
-            _conflictRows.Add(new ConflictRowViewModel(key, _context.Strings.GetString("Field_" + key), mineText, savedText));
+            rows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), mineText, savedText));
         }
 
-        CurrentStep = EditorStep.ConflictReview;
-        RaiseState();
+        return rows;
     }
 
-    /// <summary>
-    /// Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on
-    /// and taking the saved value elsewhere. Nothing is saved until the user saves again.
-    /// </summary>
-    public void ApplyConflictReview()
+    protected override bool ApplyReviewToDraft(IReadOnlySet<string> keep)
     {
         if (Latest is not { } latest)
         {
-            return;
+            return false;
         }
 
-        var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
         var mineTokens = (Designer.Tokens.ToList(), Developer.Tokens.ToList(), Tags.Tokens.ToList());
         var mineChecklist = _checklist.Select(i => (i.Id, i.Text, i.IsCompleted, i.IsNew)).ToList();
         _ = CustomFields.TryBuild(latest.CustomValues, out var mineCustom);
         Load(latest);
-        _isLoading = true;
+        IsLoading = true;
         if (keep.Contains("Title"))
         {
             Title = mine.Title;
@@ -749,36 +558,27 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             }
         }
 
-        _isLoading = false;
-        IsConflict = false;
-        SaveError = null;
-        _conflictRows.Clear();
-        CurrentStep = EditorStep.Form;
-        RecomputeDirty();
-        RaiseState();
+        IsLoading = false;
+        return true;
     }
 
-    /// <summary>Reload asks first, because it discards the draft (design §5.10).</summary>
-    public void BeginReload()
-    {
-        CurrentStep = EditorStep.ReloadConfirm;
-        RaiseState();
-    }
-
-    public void ConfirmReload()
+    protected override void ReloadLatest()
     {
         if (Latest is { } latest)
         {
             PendingLink = null;
             Load(latest);
         }
-
-        IsConflict = false;
-        SaveError = null;
-        CurrentStep = EditorStep.Form;
-        RaiseState();
     }
 
+    protected override void ShowConflictStep(ConflictStep conflictStep) => CurrentStep = conflictStep switch
+    {
+        ConflictStep.Review => EditorStep.ConflictReview,
+        ConflictStep.ReloadConfirm => EditorStep.ReloadConfirm,
+        _ => EditorStep.Form,
+    };
+
+    [RelayCommand]
     public void ClearStartDate()
     {
         StartDate = null;
@@ -786,6 +586,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         RecomputeDirty();
     }
 
+    [RelayCommand]
     public void ClearEndDate()
     {
         EndDate = null;
@@ -803,7 +604,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
         if (string.IsNullOrWhiteSpace(NewChecklistText))
         {
-            ChecklistError = _context.Strings.Format("Error_Required", _context.Strings.GetString("Field_Text"));
+            ChecklistError = Context.Strings.Format("Error_Required", Context.Strings.GetString("Field_Text"));
             return false;
         }
 
@@ -847,7 +648,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
 
         // The same command as the Checklists page: one transaction, then "Moved to a Subtask card in …".
-        return await _context.Tasks.PopOutAsync(task, item.Id).ConfigureAwait(true) is not null;
+        return await Context.Tasks.PopOutAsync(task, item.Id).ConfigureAwait(true) is not null;
     }
 
     /// <summary>Add Subtask card (design §5.1 group 8): creates the card immediately in the default status.</summary>
@@ -859,43 +660,58 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
 
         SubtaskCardError = null;
-        var operation = OperationId.New();
-        _context.SaveStatus.Begin();
-        var result = await _context.UseCases.CreateSubtaskCard.ExecuteAsync(
-            new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None).ConfigureAwait(true);
-        if (!result.IsSuccess)
+
+        // Refused while editing is blocked (T-07). A failure is shown below the box and not announced; the box keeps its
+        // text. On success the box clears before the display wait, so the wait stays outside the run.
+        var run = await Context.Commands.RunAsync(new CommandRequest<SubtaskCardId>("Record_SubtaskCard", operation =>
+            Context.UseCases.SubtaskCards.CreateSubtaskCard.ExecuteAsync(
+                new CreateSubtaskCardCommand(operation, _taskId, new SubtaskCardId(Guid.NewGuid()), NewSubtaskCardText), CancellationToken.None))).ConfigureAwait(true);
+        if (!run.IsSuccess)
         {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_SubtaskCard", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            SubtaskCardError = failure.Message;
+            SubtaskCardError = run.Message;
             return false;
         }
 
-        _context.SaveStatus.Complete();
         NewSubtaskCardText = string.Empty;
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
+        await WhenDisplayedAsync(run.Outcome!.CommitSequence).ConfigureAwait(true);
         return true;
     }
 
     public async Task<bool> ArchiveAsync() =>
-        CanArchive && Latest is { } task && await RunLifecycleAsync(_context.Tasks.ArchiveAsync(task)).ConfigureAwait(true);
+        CanArchive && Latest is { } task && await RunLifecycleAsync(Context.Tasks.ArchiveAsync(task)).ConfigureAwait(true);
 
     public async Task<bool> RestoreAsync() =>
-        CanRestore && Latest is { } task && await RunLifecycleAsync(_context.Tasks.RestoreAsync(task)).ConfigureAwait(true);
+        CanRestore && Latest is { } task && await RunLifecycleAsync(Context.Tasks.RestoreAsync(task)).ConfigureAwait(true);
 
-    public void Dispose()
-    {
-        _commits.Dispose();
-        Designer.Changed -= OnDraftChanged;
-        Developer.Changed -= OnDraftChanged;
-        Tags.Changed -= OnDraftChanged;
-        CustomFields.Changed -= OnDraftChanged;
-        _checklist.CollectionChanged -= OnChecklistChanged;
-        foreach (var item in _checklist)
-        {
-            item.PropertyChanged -= OnChecklistItemChanged;
-        }
-    }
+    /// <summary>The link step's Link button; <see cref="ConfirmLink"/> keeps its result for callers that need it.</summary>
+    [RelayCommand]
+    private void UseSelectedCr() => ConfirmLink();
+
+    // The editor's buttons and menu items bind these commands. The async ones allow concurrent runs, so a running
+    // command never disables its button; the methods keep their own guards (CanArchive, CanRestore, IsSaving…).
+    [RelayCommand]
+    private void RequestCopy() => RequestFollowUp(EditorFollowUp.Copy);
+
+    [RelayCommand]
+    private void RequestDelete() => RequestFollowUp(EditorFollowUp.Delete);
+
+    [RelayCommand]
+    private void RequestAddSubtaskCard() => RequestFollowUp(EditorFollowUp.AddSubtaskCard);
+
+    [RelayCommand]
+    private void RequestOpenCr() => RequestFollowUp(EditorFollowUp.OpenCr);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Archive() => UiTasks.RunGuardedAsync(ArchiveAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Restore() => UiTasks.RunGuardedAsync(RestoreAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task AddSubtaskCard() => UiTasks.RunGuardedAsync(AddSubtaskCardAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task PopOut(EditorChecklistItemViewModel item) => UiTasks.RunGuardedAsync(() => PopOutAsync(item));
 
     internal static DateTimeOffset? ToPicker(DateOnly? date) => DraftDates.ToPicker(date);
 
@@ -915,32 +731,73 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     partial void OnNotesChanged(string value) => RecomputeDirty();
 
-    partial void OnIsDirtyChanged(bool value) => RaiseState();
+    partial void OnIsArchivedChanged(bool value) => OnSavingChanged();
 
-    partial void OnIsSavingChanged(bool value)
+    protected override void Dispose(bool disposing)
     {
-        Designer.IsReadOnly = value || IsReadOnly;
-        Developer.IsReadOnly = value || IsReadOnly;
-        Tags.IsReadOnly = value || IsReadOnly;
-        CustomFields.IsReadOnly = value || IsReadOnly;
+        base.Dispose(disposing);
+        if (!disposing)
+        {
+            return;
+        }
+
+        Designer.Changed -= OnDraftChanged;
+        Developer.Changed -= OnDraftChanged;
+        Tags.Changed -= OnDraftChanged;
+        CustomFields.Changed -= OnDraftChanged;
+        _checklist.CollectionChanged -= OnChecklistChanged;
+        foreach (var item in _checklist)
+        {
+            item.PropertyChanged -= OnChecklistItemChanged;
+        }
     }
 
-    partial void OnIsArchivedChanged(bool value) => OnIsSavingChanged(IsSaving);
+    protected override void OnDirtyChanged() => RaiseState();
 
-    private string None => _context.Strings.GetString("Common_None");
+    protected override void OnSavingChanged()
+    {
+        Designer.IsReadOnly = IsSaving || IsReadOnly;
+        Developer.IsReadOnly = IsSaving || IsReadOnly;
+        Tags.IsReadOnly = IsSaving || IsReadOnly;
+        CustomFields.IsReadOnly = IsSaving || IsReadOnly;
+    }
+
+    // Text typed in a person box counts even when Save comes from Ctrl+Enter, before the box loses focus.
+    protected override void CommitPendingInput()
+    {
+        Designer.CommitText();
+        Developer.CommitText();
+    }
+
+    // B-11: the custom fields are checked in the editor first; their errors show beside their typed editors.
+    protected override bool TryPrepareSave()
+    {
+        if (CustomFields.TryBuild(_base?.CustomValues ?? CustomValue.NoValues, out _customValues))
+        {
+            return true;
+        }
+
+        ShowValidationSummary(1, "Custom:" + CustomFields.FirstErrorKey);
+        return false;
+    }
+
+    protected override void OnSaved() => Context.Announce(Context.Strings.GetString("SaveStatus_Saved"));
+
+    private string None => Context.Strings.GetString("Common_None");
 
     private string SavedCustomFieldsText(TaskReadModel latest)
     {
-        var saved = new CustomFieldsEditorViewModel(FieldTarget.Task, _workflow, _context.Strings);
+        var saved = new CustomFieldsEditorViewModel(FieldTarget.Task, _workflow, Context.Strings);
         saved.Load(latest.CustomValues);
         return saved.DisplayText(None);
     }
 
     private IEnumerable<(Guid Id, string Name)> People() => _workflow.People.Select(p => (p.Id.Value, p.Name.Display));
 
-    private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation, IReadOnlyDictionary<FieldId, CustomValue> customValues)
+    protected override async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation)
     {
-        var useCases = _context.UseCases;
+        var customValues = _customValues;
+        var useCases = Context.UseCases;
         var designerIds = Designer.Ids;
         var developerIds = Developer.Ids;
         var tagIds = Tags.Ids;
@@ -966,7 +823,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
         if (IsNew)
         {
-            var created = await useCases.CreateTask.ExecuteAsync(
+            var created = await useCases.Tasks.CreateTask.ExecuteAsync(
                 new CreateTaskCommand(operation, _taskId, content, SelectedStatus?.Id, SelectedPriority?.Id, start, end, link, checklist, lookups),
                 CancellationToken.None).ConfigureAwait(true);
             CreatedTaskId = created.IsSuccess ? created.Value.Value : null;
@@ -980,12 +837,12 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         if (IsArchived)
         {
             var linkService = task.Service is null ? Service : null;
-            var linked = await useCases.LinkTaskToChangeRequest.ExecuteAsync(
+            var linked = await useCases.Tasks.LinkTaskToChangeRequest.ExecuteAsync(
                 new LinkTaskToChangeRequestCommand(operation, task.Id, task.Revision, link!.Id, link.ExpectedRevision, linkService), CancellationToken.None).ConfigureAwait(true);
             return linked.IsSuccess ? (null, linked.Value.CommitSequence) : (linked.Error, 0);
         }
 
-        var updated = await useCases.UpdateTask.ExecuteAsync(
+        var updated = await useCases.Tasks.UpdateTask.ExecuteAsync(
             new UpdateTaskCommand(operation, task.Id, task.Revision, content, SelectedStatus?.Id ?? task.Status.Id, SelectedPriority?.Id ?? task.Priority.Id,
                 start, end, checklist, lookups, link),
             CancellationToken.None).ConfigureAwait(true);
@@ -994,37 +851,29 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     private static DateIntent Intent(DateOnly? draft, DateOnly? based, bool cleared) => DraftDates.Intent(draft, based, cleared);
 
-    private void ShowFailure(CommandFailure failure)
+    protected override string ConflictMessage => Context.Strings.GetString("TaskEditor_ConflictMessage");
+
+    protected override bool ShowEditorFailure(CommandFailure failure)
     {
-        switch (failure.Error)
+        if (failure.Error is not ConcurrencyConflictError { Entity: EntityKind.ChangeRequest } || PendingLink is not { } pending)
         {
-            case ValidationFailedError validation:
-                ShowFieldErrors(validation.Errors);
-                break;
-            case ConcurrencyConflictError { Entity: EntityKind.ChangeRequest } when PendingLink is { } pending:
-                // T-13: the CR changed after the preview; refresh it and let the user review before saving.
-                PendingLink = CrPicker.Current(pending.Id);
-                CrChangedMessage = _context.Strings.Format("TaskEditor_CrChangedMessage", pending.Number);
-                break;
-            case ConcurrencyConflictError:
-                IsConflict = true;
-                SaveError = _context.Strings.GetString("TaskEditor_ConflictMessage");
-                break;
-            default:
-                SaveError = failure.Message;
-                break;
+            return false;
         }
 
-        _context.Announce(failure.Message, isFailure: true);
+        // T-13: the CR changed after the preview; refresh it and let the user review before saving.
+        PendingLink = CrPicker.Current(pending.Id);
+        CrChangedMessage = Context.Strings.Format("TaskEditor_CrChangedMessage", pending.Number);
+        return true;
     }
 
-    private void ShowFieldErrors(IReadOnlyList<DomainError> errors)
+    protected override void ShowFieldErrors(IReadOnlyList<DomainError> errors)
     {
+        ArgumentNullException.ThrowIfNull(errors);
         string? first = null;
         var fields = new HashSet<string>(StringComparer.Ordinal);
         foreach (var error in errors.Where(e => e.Field?.StartsWith("Custom:", StringComparison.Ordinal) != true))
         {
-            var text = CommandErrorText.Describe(error, _context.Strings);
+            var text = CommandErrorText.Describe(error, Context.Strings);
             var key = error.Field switch
             {
                 "Title" => SetError(() => TitleError = text, "Title"),
@@ -1044,17 +893,13 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
 
         // B-11: custom-field errors (field "Custom:{key}") show beside their typed editors.
-        if (CustomFields.ShowErrors(errors, _context.Strings) is { } customKey)
+        if (CustomFields.ShowErrors(errors, Context.Strings) is { } customKey)
         {
             first ??= "Custom:" + customKey;
             fields.UnionWith(CustomFields.Fields.Where(f => f.Error is not null).Select(f => "Custom:" + f.Key));
         }
 
-        ValidationSummary = _context.Strings.Format(fields.Count == 1 ? "TaskEditor_FixField" : "TaskEditor_FixFields", fields.Count);
-        if (first is not null)
-        {
-            FocusRequested?.Invoke(this, first);
-        }
+        ShowValidationSummary(fields.Count, first);
 
         static string SetError(Action set, string key)
         {
@@ -1063,12 +908,10 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
     }
 
-    private void ClearErrors()
+    protected override void ClearFieldErrors()
     {
         TitleError = ServiceError = StatusError = PriorityError = DesignerError = DeveloperError = TagsError = DateError = NotesError = ChecklistError = null;
         CustomFields.ClearErrors();
-        ValidationSummary = null;
-        SaveError = null;
         CrChangedMessage = null;
     }
 
@@ -1076,21 +919,21 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     {
         IsSaving = true;
         RaiseState();
-        var succeeded = await command.ConfigureAwait(true);
-        IsSaving = false;
-        RaiseState();
-        return succeeded;
-    }
-
-    private void Approve()
-    {
-        _closeApproved = true;
-        CloseRequested?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            return await command.ConfigureAwait(true);
+        }
+        finally
+        {
+            // A command that throws ends here too, so the editor never stays busy; the command's guard reports it.
+            IsSaving = false;
+            RaiseState();
+        }
     }
 
     private void Load(TaskReadModel model)
     {
-        _isLoading = true;
+        IsLoading = true;
         _base = model;
         Latest = model;
         IsArchived = model.IsArchived;
@@ -1118,7 +961,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
         _startCleared = _endCleared = false;
         _baseValues = ValuesOf(model);
-        _isLoading = false;
+        IsLoading = false;
         RecomputeDirty();
         RaiseState();
     }
@@ -1138,7 +981,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private void UpdateRowState(EditorChecklistItemViewModel item)
     {
         var canPopOut = CanPopOut && !item.IsNew;
-        var reason = !canPopOut && CanEditFields ? _context.Strings.GetString("TaskEditor_PopOutUnavailable") : string.Empty;
+        var reason = !canPopOut && CanEditFields ? Context.Strings.GetString("TaskEditor_PopOutUnavailable") : string.Empty;
         item.SetState(CanEditFields, canPopOut, reason);
     }
 
@@ -1172,11 +1015,11 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     private string Describe(DraftValues values, string key)
     {
-        var none = _context.Strings.GetString("Common_None");
+        var none = Context.Strings.GetString("Common_None");
         string Join(IEnumerable<string> names) => names.DefaultIfEmpty(none).Aggregate((a, b) => a + ", " + b);
         string Person(Guid id) => _workflow.FindPerson(new PersonId(id))?.Name.Display ?? _newPeople.Used([id]).Select(p => p.Name).FirstOrDefault() ?? none;
         string Tag(Guid id) => _workflow.FindTag(new TagId(id))?.Name.Display ?? _newTags.Used([id]).Select(t => t.Name).FirstOrDefault() ?? none;
-        string Date(DateOnly? date) => date?.ToString("d", CultureInfo.CurrentCulture) ?? none;
+        string Date(DateOnly? date) => date is { } day ? DateText.RecordDate(day) : none;
         string Text(string text) => text.Length == 0 ? none : text;
         return key switch
         {
@@ -1190,7 +1033,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             "StartDate" => Date(values.Start),
             "EndDate" => Date(values.End),
             "Notes" => Text(values.Notes),
-            _ => _context.Strings.Format("TaskEditor_ChecklistSummary", values.Checklist.Count, values.Checklist.Count(i => i.IsCompleted)),
+            _ => Context.Strings.Format("TaskEditor_ChecklistSummary", values.Checklist.Count, values.Checklist.Count(i => i.IsCompleted)),
         };
     }
 
@@ -1211,15 +1054,9 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
         }
     }
 
-    private void RecomputeDirty()
-    {
-        if (!_isLoading)
-        {
-            IsDirty = !Capture().SameAs(_baseValues) || _startCleared || _endCleared;
-        }
-    }
+    protected override bool ComputeIsDirty() => !Capture().SameAs(_baseValues) || _startCleared || _endCleared;
 
-    private void OnCommitted()
+    protected override void OnCommitted()
     {
         RefreshSubtaskCards();
         if (IsNew || CreatedTaskId is not null)
@@ -1228,12 +1065,12 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
             return;
         }
 
-        var model = _context.Store.Tasks.Lookup(_taskId);
+        var model = Context.Store.Tasks.Lookup(_taskId);
         Latest = model.HasValue ? model.Value : null;
         if (Latest is null)
         {
             IsDeletedElsewhere = true;
-            SaveError ??= _context.Strings.GetString("TaskEditor_DeletedElsewhere");
+            SaveError ??= Context.Strings.GetString("TaskEditor_DeletedElsewhere");
         }
         else if (!IsDirty && !IsSaving && !IsConflict && PendingLink is null && Latest.Revision != _base?.Revision)
         {
@@ -1246,7 +1083,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
 
     private void RefreshSubtaskCards()
     {
-        var cards = IsNew ? [] : _context.Store.SubtaskCards.Items
+        var cards = IsNew ? [] : Context.Store.SubtaskCards.Items
             .Where(c => c.ParentTaskId == _taskId)
             .OrderBy(c => c.StatusOrder)
             .ThenBy(c => c.Rank)
@@ -1266,18 +1103,18 @@ public sealed partial class TaskEditorViewModel : ObservableObject, IDialogViewM
     private string DatesText(DateOnly? start, DateOnly? end) => (start, end) switch
     {
         (null, null) => string.Empty,
-        ({ } s, null) => _context.Strings.Format("Board_DatesStarted", s.ToString("d", CultureInfo.CurrentCulture)),
-        (null, { } e) => _context.Strings.Format("Board_DatesEnded", e.ToString("d", CultureInfo.CurrentCulture)),
-        ({ } s, { } e) => _context.Strings.Format("Board_DatesRange", s.ToString("d", CultureInfo.CurrentCulture), e.ToString("d", CultureInfo.CurrentCulture)),
+        ({ } s, null) => Context.Strings.Format("Board_DatesStarted", DateText.RecordDate(s)),
+        (null, { } e) => Context.Strings.Format("Board_DatesEnded", DateText.RecordDate(e)),
+        ({ } s, { } e) => Context.Strings.Format("Board_DatesRange", DateText.RecordDate(s), DateText.RecordDate(e)),
     };
 
     private string Helper(string key, IEnumerable<Domain.Workflow.TaskStatusDefinition> statuses)
     {
         var names = statuses.OrderBy(s => s.Order).Select(s => s.Name.Display).ToList();
-        return names.Count == 0 ? string.Empty : _context.Strings.Format(key, string.Join(", ", names));
+        return names.Count == 0 ? string.Empty : Context.Strings.Format(key, string.Join(", ", names));
     }
 
-    private void RaiseState()
+    protected override void RaiseState()
     {
         foreach (var name in StateProperties)
         {

@@ -7,22 +7,11 @@
     xmlns:local="using:MaxPlanner.Presentation.Settings.DataPage"
     IsTabStop="False">
     <UserControl.Resources>
-        <DataTemplate x:Key="StepTemplate" x:DataType="local:WizardStep">
-            <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
-                <FontIcon FontSize="14" Glyph="{x:Bind local:DataPageView.StepGlyph(IsCurrent, IsDone), Mode=OneWay}" />
-                <TextBlock Text="{x:Bind Title, Mode=OneTime}" />
-                <TextBlock
-                    x:Uid="Data_CurrentStepText"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Visibility="{x:Bind local:DataPageView.Show(IsCurrent), Mode=OneWay}" />
-            </StackPanel>
-        </DataTemplate>
-        <Style x:Key="StepListStyle" TargetType="ListView">
-            <Setter Property="SelectionMode" Value="None" />
-            <Setter Property="IsItemClickEnabled" Value="False" />
-            <Setter Property="Width" Value="220" />
-            <Setter Property="Margin" Value="0,0,24,0" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <local:WizardResources />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </UserControl.Resources>
     <Grid x:Name="ImportPanel" Padding="32,0,32,16">
             <Grid.ColumnDefinitions>
@@ -341,7 +330,7 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <FontIcon FontSize="14" Glyph="{x:Bind Glyph, Mode=OneTime}" />
+                                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="{x:Bind Glyph, Mode=OneTime}" />
                                             <StackPanel Grid.Column="1">
                                                 <TextBlock TextWrapping="Wrap"><Run FontWeight="SemiBold" Text="{x:Bind SeverityText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind EntityText, Mode=OneTime}" /><Run Text=" · " /><Run Text="{x:Bind RecordKey, Mode=OneTime}" /></TextBlock>
                                                 <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Message, Mode=OneTime}" TextWrapping="Wrap" />

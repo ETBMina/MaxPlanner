@@ -12,7 +12,7 @@ using MaxPlanner.Presentation.Workspace;
 namespace MaxPlanner.Presentation.Common.Filters;
 
 /// <summary>An active-filter chip (design §2.6): "Squad: Retail Cards", removable, named "Remove filter Squad: Retail Cards".</summary>
-public sealed class FilterChipViewModel
+public sealed partial class FilterChipViewModel
 {
     private readonly Action _remove;
 
@@ -35,6 +35,7 @@ public sealed class FilterChipViewModel
     /// <summary>The non-editable "From Dashboard" chip; removing it restores the page's previous filters (design §2.9).</summary>
     public bool IsDashboard { get; }
 
+    [RelayCommand]
     public void Remove() => _remove();
 }
 
@@ -70,16 +71,23 @@ public abstract partial class FilterScopeViewModel : ObservableObject, IDisposab
 
     /// <summary>Search, any field, or a Dashboard context narrows the records.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasChips))]
+    [NotifyPropertyChangedFor(nameof(HasChips), nameof(HasBarContent))]
     public partial bool IsFiltered { get; private set; }
 
     public bool HasChips => IsFiltered;
+
+    /// <summary>
+    /// The chips bar has something to show: chips, the Dashboard InfoBar, or the invalid-filter notice. While it has
+    /// nothing, pages collapse it so its closed InfoBars and stack spacing leave no gap under the Filters row.
+    /// </summary>
+    public bool HasBarContent => HasChips || IsFromDashboard || IsInvalidNoticeOpen;
 
     /// <summary>The page search box: applied immediately (outside the filter menu) and persisted with the scope.</summary>
     [ObservableProperty]
     public partial string SearchText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBarContent))]
     public partial bool IsInvalidNoticeOpen { get; set; }
 
     [ObservableProperty]
@@ -87,6 +95,7 @@ public abstract partial class FilterScopeViewModel : ObservableObject, IDisposab
 
     /// <summary>A Dashboard drill-down replaced this scope's filters (design §2.9).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBarContent))]
     public partial bool IsFromDashboard { get; private set; }
 
     /// <summary>"Showing Dashboard results: Active tasks · Squad: Retail Cards".</summary>
@@ -262,6 +271,9 @@ public abstract class FilterScopeViewModel<TSpec> : FilterScopeViewModel
 
     public override void Dispose()
     {
+        // An open menu could otherwise still apply (and persist) changes after the workspace is gone.
+        _openMenu?.Detach();
+        _openMenu = null;
         _workflowSubscription.Dispose();
         GC.SuppressFinalize(this);
     }

@@ -10,8 +10,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
     xmlns:controls="using:MaxPlanner.Presentation.Common.Controls"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.Settings"
-    xmlns:tasks="using:MaxPlanner.Presentation.Tasks"
     IsTabStop="False">
     <UserControl.Resources>
         <DataTemplate x:Key="FlagChipTemplate" x:DataType="x:String">
@@ -126,7 +126,7 @@
                             LostFocus="OnRenameLostFocus"
                             MaxLength="100"
                             Text="{x:Bind RenameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <tasks:FieldError Text="{x:Bind RenameError, Mode=OneWay}" />
+                        <fields:FieldError Text="{x:Bind RenameError, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
                 <ItemsRepeater
@@ -147,7 +147,7 @@
                     IsEnabled="{x:Bind common:BindFunctions.Not(IsBusy), Mode=OneWay}"
                     Style="{StaticResource SubtleButtonStyle}"
                     ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                 </Button>
             </Grid>
         </DataTemplate>
@@ -237,7 +237,7 @@
                             AutomationProperties.AutomationId="{x:Bind AddButtonAutomationId, Mode=OneTime}"
                             Click="OnAddClick"
                             IsEnabled="{x:Bind common:BindFunctions.Not(IsAdding), Mode=OneWay}" />
-                        <tasks:FieldError Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind AddError, Mode=OneWay}" />
+                        <fields:FieldError Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind AddError, Mode=OneWay}" />
                     </Grid>
                 </StackPanel>
             </Expander>
@@ -279,7 +279,7 @@
                     Click="OnFieldRowMenuClick"
                     Style="{StaticResource SubtleButtonStyle}"
                     ToolTipService.ToolTip="{x:Bind MenuName, Mode=OneWay}">
-                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                 </Button>
             </Grid>
         </DataTemplate>
@@ -341,15 +341,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel x:Name="HeaderRoot" Padding="32,24,32,12" Spacing="2">
-            <TextBlock
-                x:Name="PageTitle"
-                x:Uid="Settings_PageTitle"
-                AutomationProperties.AutomationId="Settings_PageTitle"
-                AutomationProperties.HeadingLevel="Level1"
-                Style="{StaticResource PageTitleTextStyle}" />
-            <TextBlock x:Uid="Settings_PageSubtitle" Style="{StaticResource PageSubtitleTextStyle}" />
-        </StackPanel>
+        <controls:PageHeader
+            x:Name="HeaderRoot"
+            SubtitleUid="Settings_PageSubtitle"
+            TitleAutomationId="Settings_PageTitle"
+            TitleUid="Settings_PageTitle" />
 
         <!-- Page InfoBar (design §2.7): a refused Settings change, for example settings changed elsewhere. -->
         <InfoBar

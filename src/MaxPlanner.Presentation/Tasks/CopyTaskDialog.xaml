@@ -5,7 +5,9 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:MaxPlanner.Presentation.Common"
+    xmlns:fields="using:MaxPlanner.Presentation.Common.Fields"
     xmlns:local="using:MaxPlanner.Presentation.Tasks"
+    xmlns:pickers="using:MaxPlanner.Presentation.Common.Pickers"
     x:Uid="CopyTask_Dialog"
     AutomationProperties.AutomationId="CopyTask_Dialog"
     DefaultButton="Primary"
@@ -39,13 +41,13 @@
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsTitleEditable), Mode=OneWay}" />
-                <local:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
                 <TextBox
                     AutomationProperties.AutomationId="CopyTask_ServiceBox"
                     Header="{x:Bind ViewModel.ServiceHeader, Mode=OneWay}"
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Service, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <local:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
                 <InfoBar
                     AutomationProperties.AutomationId="CopyTask_LinkInfoBar"
                     IsClosable="False"
@@ -53,7 +55,7 @@
                     Message="{x:Bind ViewModel.LinkStateText, Mode=OneWay}"
                     Severity="Informational">
                     <InfoBar.ActionButton>
-                        <Button x:Uid="CopyTask_LinkToCrButton" AutomationProperties.AutomationId="CopyTask_LinkToCrButton" Click="OnLinkClick" />
+                        <Button x:Uid="CopyTask_LinkToCrButton" AutomationProperties.AutomationId="CopyTask_LinkToCrButton" Command="{x:Bind ViewModel.BeginLinkCommand}" />
                     </InfoBar.ActionButton>
                 </InfoBar>
                 <InfoBar
@@ -63,7 +65,7 @@
                     Message="{x:Bind ViewModel.PendingLinkWarning, Mode=OneWay}"
                     Severity="Warning">
                     <InfoBar.ActionButton>
-                        <Button x:Uid="CopyTask_ClearLinkButton" AutomationProperties.AutomationId="CopyTask_ClearLinkButton" Click="OnClearLinkClick" />
+                        <Button x:Uid="CopyTask_ClearLinkButton" AutomationProperties.AutomationId="CopyTask_ClearLinkButton" Command="{x:Bind ViewModel.ClearLinkCommand}" />
                     </InfoBar.ActionButton>
                 </InfoBar>
                 <Grid ColumnSpacing="12">
@@ -123,7 +125,7 @@
                     SelectionChanged="OnCrSelectionChanged"
                     SelectionMode="Single">
                     <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="local:CrChoice">
+                        <DataTemplate x:DataType="pickers:CrChoice">
                             <StackPanel Padding="0,6" AutomationProperties.Name="{x:Bind local:TaskEditorDialog.CrName(Number, Title, Secondary), Mode=OneTime}">
                                 <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Number, Mode=OneTime}" />
                                 <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Title, Mode=OneTime}" TextWrapping="Wrap" />
@@ -133,11 +135,11 @@
                     </ListView.ItemTemplate>
                 </ListView>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_BackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="LinkCr_NextButton"
                         AutomationProperties.AutomationId="LinkCr_NextButton"
-                        Click="OnLinkNextClick"
+                        Command="{x:Bind ViewModel.LinkNextCommand}"
                         IsEnabled="{x:Bind ViewModel.CrPicker.HasSelection, Mode=OneWay, FallbackValue=False}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
@@ -158,13 +160,13 @@
                     AutomationProperties.IsRequiredForForm="True"
                     MaxLength="250"
                     Text="{x:Bind ViewModel.Service, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <local:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
+                <fields:FieldError Text="{x:Bind ViewModel.ServiceError, Mode=OneWay}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_ConfirmBackButton" Click="OnStepBackClick" />
+                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="LinkCr_ConfirmBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
                     <Button
                         x:Uid="LinkCr_LinkButton"
                         AutomationProperties.AutomationId="LinkCr_LinkButton"
-                        Click="OnConfirmLinkClick"
+                        Command="{x:Bind ViewModel.UseSelectedCrCommand}"
                         Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -182,7 +184,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button x:Uid="CopyTask_BackButton" AutomationProperties.AutomationId="CopyTask_BackButton" Click="OnStepBackClick" />
+                <Button x:Uid="CopyTask_BackButton" AutomationProperties.AutomationId="CopyTask_BackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

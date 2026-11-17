@@ -16,7 +16,7 @@
             <Button
                 Padding="10,3"
                 AutomationProperties.Name="{x:Bind RemoveName, Mode=OneTime}"
-                Click="OnChipClick"
+                Command="{x:Bind RemoveCommand}"
                 CornerRadius="12"
                 Loaded="OnChipLoaded"
                 ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneTime}">
@@ -24,7 +24,7 @@
                     <!-- The Dashboard chip carries the Dashboard glyph so it reads as a different kind of chip. -->
                     <FontIcon
                         AutomationProperties.AccessibilityView="Raw"
-                        FontSize="12"
+                        FontSize="{StaticResource CaptionIconSize}"
                         Glyph="&#xF246;"
                         Visibility="{x:Bind common:BindFunctions.Visible(IsDashboard), Mode=OneTime}" />
                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Label, Mode=OneTime}" />

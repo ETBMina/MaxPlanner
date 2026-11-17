@@ -1,10 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.Workflow;
 using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Workflow;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
@@ -20,16 +22,28 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
 {
     private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly WorkspaceContext _context;
+    private readonly ICommandRunner _commands;
+    private readonly IAnnouncer _announcer;
+    private readonly ILocalizedStrings _strings;
     private readonly SettingsUseCases _useCases;
     private readonly LookupKind _kind;
     private readonly Guid _id;
     private readonly string _name;
     private OperationId? _retryOperation;
 
-    public LookupRemovalViewModel(WorkspaceContext context, SettingsUseCases useCases, WorkflowSnapshot workflow, LookupKind kind, Guid id, string name)
+    public LookupRemovalViewModel(
+        ICommandRunner commands,
+        IAnnouncer announcer,
+        ILocalizedStrings strings,
+        SettingsUseCases useCases,
+        WorkflowSnapshot workflow,
+        LookupKind kind,
+        Guid id,
+        string name)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _commands = commands ?? throw new ArgumentNullException(nameof(commands));
+        _announcer = announcer ?? throw new ArgumentNullException(nameof(announcer));
+        _strings = strings ?? throw new ArgumentNullException(nameof(strings));
         _useCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
         ArgumentNullException.ThrowIfNull(workflow);
         _kind = kind;
@@ -42,7 +56,7 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
     public event EventHandler? CloseRequested;
 
     /// <summary>"Remove status 'Review'?" (design §5.9).</summary>
-    public string DialogTitle => _context.Strings.Format("LookupRemove_Title_" + _kind, _name);
+    public string DialogTitle => _strings.Format("LookupRemove_Title_" + _kind, _name);
 
     public IReadOnlyList<SettingsChoice> ReplacementChoices { get; }
 
@@ -94,9 +108,9 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
     /// <summary>Design §5.9 note for statuses: "Dates are kept. This is not a status move."</summary>
     public bool ShowStatusNote => _kind is LookupKind.TaskStatus or LookupKind.CrStatus;
 
-    public string PrimaryButtonText => _context.Strings.GetString(IsUnused || ClearInstead ? "LookupRemove_RemoveButton" : "LookupRemove_RemoveAndReplaceButton");
+    public string PrimaryButtonText => _strings.GetString(IsUnused || ClearInstead ? "LookupRemove_RemoveButton" : "LookupRemove_RemoveAndReplaceButton");
 
-    public string CloseButtonText => _context.Strings.GetString("Common_Cancel");
+    public string CloseButtonText => _strings.GetString("Common_Cancel");
 
     public bool CanRemove => !IsLoading && !IsSaving && Usage is not null
         && (IsUnused || (ShowClearOption && ClearInstead) || (SelectedReplacementIndex >= 0 && SelectedReplacementIndex < ReplacementChoices.Count));
@@ -109,13 +123,17 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
         IsLoading = false;
         if (!result.IsSuccess)
         {
-            Error = CommandErrorText.Describe(result.Error!, "Record_Settings", _context.Strings);
+            Error = CommandErrorText.Describe(result.Error!, "Record_Settings", _strings);
             return;
         }
 
         Usage = result.Value;
         UsageLines = Describe(result.Value);
     }
+
+    /// <summary>The primary button; concurrent runs are allowed, so the command never disables anything.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Remove() => UiTasks.RunGuardedAsync(RemoveAsync);
 
     /// <summary>Primary: removes the value with the confirmed counts. The dialog stays open on failure.</summary>
     public async Task<bool> RemoveAsync()
@@ -125,67 +143,60 @@ public sealed partial class LookupRemovalViewModel : ObservableObject, IDialogVi
             return false;
         }
 
-        if (_context.IsEditingBlocked)
+        if (_commands.IsEditingBlocked)
         {
-            Error = _context.Strings.GetString("Error_EditingBlocked");
+            Error = _strings.GetString("Error_EditingBlocked");
             return false;
         }
 
         Error = null;
         UsageChangedMessage = null;
         Guid? replacement = IsUnused || ClearInstead ? null : ReplacementChoices[SelectedReplacementIndex].Id;
-        var operation = _retryOperation ?? OperationId.New();
-        IsSaving = true;
-        _context.SaveStatus.Begin();
-        AppResult<CommandOutcome<long>> result;
-        try
-        {
-            result = await _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            // The coordinator logs the exception and rolls the transaction back; nothing was written, so the
-            // indicator keeps its last result and the dialog stays open with a generic message.
-            _context.SaveStatus.Reject();
-            _retryOperation = null;
-            IsSaving = false;
-            Error = _context.Strings.GetString("Error_Unexpected");
-            _context.Announce(Error, isFailure: true);
-            return false;
-        }
 
-        if (!result.IsSuccess)
+        // The dialog announces a typed failure itself, after showing it. A throw was reported by the runner; the dialog
+        // stays open with the unexpected-error text, and the retry reuses the operation, as the outcome is unknown (T-05).
+        var run = await _commands.RunAsync(new CommandRequest<long>("Record_Settings", operation =>
+            _useCases.RemoveLookup.ExecuteAsync(new RemoveLookupCommand(operation, _kind, _id, replacement, confirmed), CancellationToken.None))
         {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_Settings", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            IsSaving = false;
-            if (result.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.LookupUsageChanged }, ..] })
-            {
-                UsageChangedMessage = _context.Strings.GetString("LookupRemove_UsageChanged");
-                await LoadAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                Error = failure.Message;
-            }
+            Operation = _retryOperation,
+            DisplayTimeout = DisplayTimeout,
+            Busy = busy => IsSaving = busy,
+        }).ConfigureAwait(true);
+        switch (run.Status)
+        {
+            case CommandRunStatus.Succeeded:
+                _retryOperation = null;
+                _announcer.Announce(_strings.Format("LookupRemove_Done", _name));
+                CloseRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+            case CommandRunStatus.Failed:
+                _retryOperation = run.RetryOperation;
+                if (run.Failure!.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.LookupUsageChanged }, ..] })
+                {
+                    UsageChangedMessage = _strings.GetString("LookupRemove_UsageChanged");
+                    await LoadAsync().ConfigureAwait(true);
+                }
+                else
+                {
+                    Error = run.Message;
+                }
 
-            _context.Announce(failure.Message, isFailure: true);
-            return false;
+                _announcer.Announce(run.Message!, isFailure: true);
+                return false;
+            default:
+                if (run.Operation is not null)
+                {
+                    _retryOperation = run.RetryOperation;
+                }
+
+                Error = run.Message;
+                return false;
         }
-
-        _context.SaveStatus.Complete();
-        _retryOperation = null;
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
-        IsSaving = false;
-        _context.Announce(_context.Strings.Format("LookupRemove_Done", _name));
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        return true;
     }
 
     private List<string> Describe(LookupUsageCounts usage)
     {
-        var strings = _context.Strings;
+        var strings = _strings;
         var lines = new List<string>();
         void Add(int count, string key)
         {

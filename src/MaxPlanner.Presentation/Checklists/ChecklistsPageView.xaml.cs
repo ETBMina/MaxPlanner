@@ -20,9 +20,6 @@ namespace MaxPlanner.Presentation.Checklists;
 /// </summary>
 public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
 {
-    // The strings of the code-built confirmation flyout.
-    private static readonly ResourceStrings Strings = new();
-
     // The Reviews card's key in IndexOfCard (it has no Add box focus target from the page commands).
     private const string ReviewsCardKey = "Reviews";
 
@@ -33,14 +30,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         viewModel.FocusAddBoxRequested += OnFocusAddBoxRequested;
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
     }
 
     public ChecklistsPageViewModel ViewModel { get; }
@@ -58,7 +48,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -91,7 +81,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     {
         if (sender is CheckBox { Tag: ChecklistItemViewModel item } box && box.IsChecked != item.IsChecked)
         {
-            _ = item.ToggleAsync(box.IsChecked == true);
+            item.ToggleAsync(box.IsChecked == true).Forget();
         }
     }
 
@@ -99,7 +89,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     {
         if (sender is CheckBox { Tag: ReviewRowViewModel row } box && box.IsChecked != row.IsDone)
         {
-            _ = row.ToggleAsync(box.IsChecked == true);
+            row.ToggleAsync(box.IsChecked == true).Forget();
         }
     }
 
@@ -125,7 +115,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
                 var command = e.Key == VirtualKey.Up ? item.MoveUpCommand : item.MoveDownCommand;
                 if (command.CanExecute(null))
                 {
-                    _ = MoveAndRefocusAsync(box, item, command);
+                    MoveAndRefocusAsync(box, item, command).Forget();
                 }
 
                 break;
@@ -164,34 +154,35 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         item.BeginRename();
         if (box?.Parent is Panel row && row.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBox>().FirstOrDefault() is { } editor)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                editor.Focus(FocusState.Keyboard);
-                editor.SelectAll();
-            });
+            InlineRenameEditor.FocusWhenShown(DispatcherQueue, () => editor);
         }
     }
 
-    private async void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
+    private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not TextBox { Tag: ChecklistItemViewModel item } editor)
+        if (sender is TextBox { Tag: ChecklistItemViewModel item } editor)
         {
-            return;
+            InlineRenameEditor.HandleKey(
+                e,
+                commit: () => RenameKeyAsync(editor, item, commit: true).Forget(),
+                cancel: () => RenameKeyAsync(editor, item, commit: false).Forget());
         }
+    }
 
+    // Escape runs before the first await, so it completes within the key event as before.
+    private async Task RenameKeyAsync(TextBox editor, ChecklistItemViewModel item, bool commit)
+    {
         try
         {
-            if (e.Key == VirtualKey.Enter)
+            if (commit)
             {
-                e.Handled = true;
                 if (await item.CommitRenameAsync().ConfigureAwait(true))
                 {
                     FocusRowCheckBox(editor);
                 }
             }
-            else if (e.Key == VirtualKey.Escape)
+            else
             {
-                e.Handled = true;
                 item.CancelRename();
                 FocusRowCheckBox(editor);
             }
@@ -249,21 +240,13 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         }
     }
 
-    private void OnReviewEditClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is MenuFlyoutItem { Tag: ReviewRowViewModel row })
-        {
-            _ = row.EditAsync();
-        }
-    }
-
     // Tapping a review's text opens View/Edit, as the ⋯ menu does.
     private void OnReviewTextTapped(object sender, TappedRoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: ReviewRowViewModel row })
         {
             e.Handled = true;
-            _ = row.EditAsync();
+            row.EditCommand.Execute(null);
         }
     }
 
@@ -279,7 +262,7 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         if (e.Key == VirtualKey.Enter)
         {
             e.Handled = true;
-            _ = row.EditAsync();
+            row.EditCommand.Execute(null);
         }
         else if (e.Key == VirtualKey.Delete)
         {
@@ -297,14 +280,14 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
     private static void ShowDeleteFlyout(FrameworkElement anchor, string prompt, Func<Task> delete)
     {
         var flyout = new Flyout { ShouldConstrainToRootBounds = true };
-        var confirm = new Button { Content = Strings.GetString("Checklists_DeleteButton") };
-        var cancel = new Button { Content = Strings.GetString("Common_Cancel"), Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["AccentButtonStyle"] };
+        var confirm = new Button { Content = ResourceStrings.Shared.GetString("Checklists_DeleteButton") };
+        var cancel = new Button { Content = ResourceStrings.Shared.GetString("Common_Cancel"), Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["AccentButtonStyle"] };
         AutomationProperties.SetAutomationId(confirm, "Checklists_DeleteConfirmButton");
         AutomationProperties.SetAutomationId(cancel, "Checklists_DeleteCancelButton");
         confirm.Click += (_, _) =>
         {
             flyout.Hide();
-            _ = delete();
+            delete().Forget();
         };
         cancel.Click += (_, _) => flyout.Hide();
 
@@ -456,11 +439,11 @@ public sealed partial class ChecklistsPageView : UserControl, Shell.IPageView
         // T-08.1 / design §4.5: L 2–3 columns, M 1–2, S one full-width column; padding L 32/24, M 24/16, S 16/12.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= 640 ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         GroupsRepeater.Margin = new Thickness(padding, 0, padding, 24);
         NoMatchesBar.Margin = new Thickness(padding, 0, padding, 8);
-        GroupsLayout.MaxColumns = width >= 1008 ? 3 : width >= 640 ? 2 : 1;
-        GroupsLayout.MinColumnWidth = width >= 640 ? 380 : 0;
+        GroupsLayout.MaxColumns = Breakpoints.BySize(width, 3, 2, 1);
+        GroupsLayout.MinColumnWidth = width >= Breakpoints.Medium ? 380 : 0;
     }
 
     private static bool IsDown(VirtualKey key) => InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);

@@ -63,7 +63,7 @@ public sealed class BoardCardSettingsTests
         using var h = BoardMoveTests.Board(out _, "A");
         var context = h.Workspace.Context;
         var before = ContextListeners(context);
-        var board = new BoardPageViewModel(context, _ => { });
+        var board = new BoardPageViewModel(context, _ => true);
         h.PumpUntil(() => board.State == ViewState.Populated);
         h.Settle();
         var card = board.Buckets.SelectMany(b => b.Cards).Single();
@@ -89,7 +89,7 @@ public sealed class BoardCardSettingsTests
         });
         BoardMoveTests.Templates(h);
         var copied = new List<string>();
-        using var board = new BoardPageViewModel(h.Workspace.Context, copied.Add);
+        using var board = new BoardPageViewModel(h.Workspace.Context, text => { copied.Add(text); return true; });
         h.PumpUntil(() => board.State == ViewState.Populated);
         h.Settle();
         var card = board.Buckets.SelectMany(b => b.Cards).Single(c => c.TaskId == task);

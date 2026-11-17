@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Transfer;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 
 namespace MaxPlanner.Presentation.Settings.DataPage;
@@ -133,6 +134,8 @@ public abstract partial class WizardViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(CanGoNext))]
+    private Task Next() => UiTasks.RunGuardedAsync(NextAsync);
+
     private async Task NextAsync()
     {
         var next = await RunAsync(AdvanceAsync, "Data_Working").ConfigureAwait(true);

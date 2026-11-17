@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,6 +6,7 @@ using MaxPlanner.Application.Filtering;
 using MaxPlanner.Application.Reviews;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Reviews;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Projections;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Reviews;
@@ -28,8 +28,8 @@ public sealed partial class ReviewRowViewModel : ObservableObject
         _owner = owner;
         _strings = strings;
         Model = model;
-        MoveUpCommand = new AsyncRelayCommand(() => _owner.MoveAsync(this, up: true), () => !IsPending && _owner.CanMove(this, up: true));
-        MoveDownCommand = new AsyncRelayCommand(() => _owner.MoveAsync(this, up: false), () => !IsPending && _owner.CanMove(this, up: false));
+        MoveUpCommand = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(() => _owner.MoveAsync(this, up: true)), () => !IsPending && _owner.CanMove(this, up: true));
+        MoveDownCommand = new AsyncRelayCommand(() => UiTasks.RunGuardedAsync(() => _owner.MoveAsync(this, up: false)), () => !IsPending && _owner.CanMove(this, up: false));
     }
 
     public ReviewItem Model { get; private set; }
@@ -50,7 +50,7 @@ public sealed partial class ReviewRowViewModel : ObservableObject
     public bool HasReference => Reference.Length > 0;
 
     /// <summary>"Done Oct 20" for the Completed section (design §4.5).</summary>
-    public string DoneText => Model.CompletedOn is { } day ? _strings.Format("Reviews_DoneOn", day.ToString("MMM d", CultureInfo.CurrentCulture)) : string.Empty;
+    public string DoneText => Model.CompletedOn is { } day ? _strings.Format("Reviews_DoneOn", DateText.MonthDay(day)) : string.Empty;
 
     public string AccessibleName => string.Join(", ", new[] { Title, Reference, IsDone ? DoneText : _strings.GetString("Reviews_Open") }.Where(p => p.Length > 0));
 
@@ -72,6 +72,10 @@ public sealed partial class ReviewRowViewModel : ObservableObject
     public Task ToggleAsync(bool isDone) => _owner.ToggleAsync(this, isDone);
 
     public Task EditAsync() => _owner.EditAsync(this);
+
+    /// <summary>View/Edit (the row's menu item, Enter, or a tap on its text); concurrent runs are allowed, as before.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task Edit() => UiTasks.RunGuardedAsync(EditAsync);
 
     public Task DeleteAsync() => _owner.DeleteAsync(this);
 
@@ -112,7 +116,7 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     public ReviewsViewModel(WorkspaceContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _queue = new ChecklistCommandQueue(context, "Record_Review");
+        _queue = new ChecklistCommandQueue(context.Commands, "Record_Review");
         Open = new ReadOnlyObservableCollection<ReviewRowViewModel>(_open);
         Completed = new ReadOnlyObservableCollection<ReviewRowViewModel>(_completed);
         _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => Sync());
@@ -189,8 +193,10 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
         Sync();
     }
 
-    /// <summary>The Reviews card's "New review…" (design §4.5): the review editor in create mode.</summary>
     [RelayCommand]
+    private Task NewReview() => UiTasks.RunGuardedAsync(NewReviewAsync);
+
+    /// <summary>The Reviews card's "New review…" (design §4.5): the review editor in create mode.</summary>
     public Task NewReviewAsync() => RunEditorAsync(null);
 
     public Task EditAsync(ReviewRowViewModel row)
@@ -211,10 +217,11 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             }
 
             row.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.SetReviewDone.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _context.UseCases.Reviews.SetReviewDone.ExecuteAsync(
                 new SetReviewDoneCommand(op, review.Id, review.Revision, isDone), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             row.IsPending = false;
-            if (ActionError is not null)
+            if (!run.IsSuccess)
             {
                 row.RestoreCommitted();
             }
@@ -239,8 +246,9 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             }
 
             row.IsPending = true;
-            ActionError = await _queue.RunAsync(op => _context.UseCases.MoveReview.ExecuteAsync(
+            var run = await _queue.RunAsync(op => _context.UseCases.Reviews.MoveReview.ExecuteAsync(
                 new MoveReviewCommand(op, review.Id, review.Revision, anchor.Model.Id, PlaceAfter: !up), CancellationToken.None)).ConfigureAwait(true);
+            ActionError = run.Message;
             row.IsPending = false;
         });
     }
@@ -260,15 +268,18 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
     public static IEnumerable<ReviewItem> CompletedDisplayOrder(IEnumerable<ReviewItem> ranked) =>
         ranked.Where(r => r.IsDone).OrderByDescending(r => r.CompletedOn).ThenByDescending(r => r.UpdatedAtUtc);
 
-    /// <summary>Enter in the Add a review box or its Add button: a title-only review; blank text shows an inline error.</summary>
     [RelayCommand(CanExecute = nameof(CanAddReview))]
+    private Task AddReview() => UiTasks.RunGuardedAsync(AddReviewAsync);
+
+    /// <summary>Enter in the Add a review box or its Add button: a title-only review; blank text shows an inline error.</summary>
     private Task AddReviewAsync() => _queue.Enqueue(async () =>
     {
         IsAdding = true;
         var draft = new ReviewDraft(NewItemText, CrNumber: null, TaskNumber: null, Services: [], DeveloperId: null, Comments: null);
-        NewItemError = await _queue.RunAsync(op => _context.UseCases.CreateReview.ExecuteAsync(
+        var run = await _queue.RunAsync(op => _context.UseCases.Reviews.CreateReview.ExecuteAsync(
             new CreateReviewCommand(op, new ReviewItemId(Guid.NewGuid()), draft, NewDeveloper: null, IsDone: false), CancellationToken.None)).ConfigureAwait(true);
-        if (NewItemError is null)
+        NewItemError = run.Message;
+        if (run.IsSuccess)
         {
             NewItemText = string.Empty;
         }
@@ -285,9 +296,10 @@ public sealed partial class ReviewsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        ActionError = await _queue.RunAsync(op => _context.UseCases.DeleteReview.ExecuteAsync(
+        var run = await _queue.RunAsync(op => _context.UseCases.Reviews.DeleteReview.ExecuteAsync(
             new DeleteReviewCommand(op, id, review.Value.Revision), CancellationToken.None)).ConfigureAwait(true);
-        if (ActionError is null)
+        ActionError = run.Message;
+        if (run.IsSuccess)
         {
             _context.Announce(_context.Strings.Format("Checklists_ItemDeleted", title));
         }

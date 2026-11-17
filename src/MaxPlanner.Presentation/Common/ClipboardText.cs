@@ -6,11 +6,12 @@ namespace MaxPlanner.Presentation.Common;
 /// <summary>Puts plain text on the clipboard (works unpackaged). Call on the UI thread.</summary>
 public static class ClipboardText
 {
-    public static void Set(string text)
+    /// <summary>Copies <paramref name="text"/>; false when there was nothing to copy or the clipboard refused it.</summary>
+    public static bool Set(string text)
     {
         if (string.IsNullOrEmpty(text))
         {
-            return;
+            return false;
         }
 
         var package = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
@@ -21,10 +22,12 @@ public static class ClipboardText
 
             // Keeps the text on the clipboard after the app closes.
             Clipboard.Flush();
+            return true;
         }
         catch (COMException)
         {
             // Another process holds the clipboard open; the copy is lost, as it would be in any app. Nothing to undo.
+            return false;
         }
     }
 }

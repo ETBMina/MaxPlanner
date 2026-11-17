@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
@@ -11,22 +11,18 @@ using MaxPlanner.Domain.Common;
 using MaxPlanner.Domain.Fields;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Fields;
+using MaxPlanner.Presentation.Common.Options;
+using MaxPlanner.Presentation.Common.Pickers;
 using MaxPlanner.Presentation.Common.Services;
-using MaxPlanner.Presentation.Tasks;
 using MaxPlanner.Presentation.Workspace;
 
 namespace MaxPlanner.Presentation.ChangeRequests;
 
 /// <summary>A CR status offered by the CR editor's Status box.</summary>
 public sealed record CrStatusOption(CrStatusId Id, string Name)
-{
-    public override string ToString() => Name;
-}
-
-/// <summary>A squad in the CR editor's Squad box; a null ID is "General (no squad)" (D15).</summary>
-public sealed record SquadOption(SquadId? Id, string Name)
 {
     public override string ToString() => Name;
 }
@@ -69,7 +65,7 @@ public enum CrEditorFollowUp
 /// task IDs it showed is sent; if the set changed meanwhile, the deletion is refused and the step shows the
 /// new counts for a new confirmation (AC-30).</para>
 /// </remarks>
-public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewModel, IDirtyCloseEditor, IDisposable
+public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEditorFollowUp>, IInlineStepEditor
 {
     private const string NumberKey = "Number";
     private const string TaskNumberKey = "TaskNumber";
@@ -85,11 +81,9 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     private const string DescriptionKey = "Description";
     private const string CustomFieldsKey = "CustomFields";
 
-    private static readonly TimeSpan DisplayTimeout = TimeSpan.FromSeconds(5);
-
     private static readonly string[] StateProperties =
     [
-        nameof(Caption), nameof(IsReadOnly), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(CanCreateTask),
+        nameof(CreatedText), nameof(IsReadOnly), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(CanCreateTask),
         nameof(IsFormStep), nameof(IsSaveAndCreateStep), nameof(IsDeleteStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
         nameof(HasValidationSummary), nameof(HasSaveError), nameof(IsOverdue), nameof(OverdueMessage), nameof(LinkedTasksHeader),
         nameof(HasLinkedTasks), nameof(TaskNumberHelper), nameof(SaveAndCreatePrompt), nameof(ShowMakeDefaultOwner), nameof(MakeDefaultOwnerText),
@@ -97,19 +91,14 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         nameof(CanMoveToBacklog),
     ];
 
-    private readonly WorkspaceContext _context;
     private readonly WorkflowSnapshot _workflow;
     private readonly NewNameRegistry _newPeople = new();
     private readonly ObservableCollection<LinkedTaskRowViewModel> _linkedTasks = [];
-    private readonly ObservableCollection<ConflictRowViewModel> _conflictRows = [];
-    private readonly IDisposable _commits;
     private readonly ChangeRequestId _id;
     private ChangeRequestReadModel? _base;
     private DraftSnapshot _baseValues;
+    private IReadOnlyDictionary<FieldId, CustomValue> _customValues = CustomValue.NoValues;
     private IReadOnlyCollection<TaskId> _deleteScope = [];
-    private bool _isLoading;
-    private bool _closeApproved;
-    private OperationId? _retryOperation;
 
     /// <param name="changeRequestId">The CR to edit, or null for a new CR.</param>
     /// <param name="plannedDay">
@@ -117,11 +106,10 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     /// scheduling status, like a scheduled backlog CR (B-08.5). Ignored for an existing CR.
     /// </param>
     public CrEditorViewModel(WorkspaceContext context, ChangeRequestId? changeRequestId, DateOnly? plannedDay = null)
+        : base(context, isNew: changeRequestId is null, "Record_ChangeRequest")
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
         _workflow = context.Store.CurrentWorkflow
             ?? throw new InvalidOperationException("The CR editor needs the loaded workflow; editing is blocked until the store is ready.");
-        IsNew = changeRequestId is null;
         _id = changeRequestId ?? new ChangeRequestId(Guid.NewGuid());
         StatusOptions = [.. _workflow.CrStatuses.OrderBy(s => s.Order).Select(s => new CrStatusOption(s.Id, s.Name.Display))];
         PriorityOptions = PriorityOption.From(_workflow);
@@ -137,11 +125,10 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         CustomFields = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, context.Strings);
         CustomFields.Changed += OnCustomFieldsChanged;
         LinkedTasks = new ReadOnlyObservableCollection<LinkedTaskRowViewModel>(_linkedTasks);
-        ConflictRows = new ReadOnlyObservableCollection<ConflictRowViewModel>(_conflictRows);
 
         if (IsNew)
         {
-            _isLoading = true;
+            IsLoading = true;
             SelectedStatus = StatusOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultCrStatusId);
             SelectedPriority = PriorityOptions.FirstOrDefault(o => o.Id == _workflow.Defaults.DefaultPriorityId);
             SelectedSquad = SquadOptions[0];
@@ -160,7 +147,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
             // B-11: a new CR starts with each custom field's default; it is the base, so it is not a change.
             CustomFields.LoadDefaults();
-            _isLoading = false;
+            IsLoading = false;
             _baseValues = Capture();
         }
         else
@@ -180,22 +167,13 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         }
 
         RefreshLinkedTasks();
-        _commits = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => OnCommitted());
+        ObserveCommits();
     }
-
-    public event EventHandler? CloseRequested;
-
-    /// <summary>Asks the view to focus a field key such as <c>Number</c> (design §5.0).</summary>
-    public event EventHandler<string>? FocusRequested;
-
-    public bool IsNew { get; }
 
     /// <summary>The edited CR, or the CR this editor created; null while a new CR is unsaved.</summary>
     public ChangeRequestId? SavedId => !IsNew || CreatedId is not null ? _id : null;
 
     public ChangeRequestId? CreatedId { get; private set; }
-
-    public CrEditorFollowUp FollowUp { get; private set; }
 
     /// <summary>The task to open for <see cref="CrEditorFollowUp.OpenTask"/>.</summary>
     public TaskId? FollowUpTaskId { get; private set; }
@@ -217,21 +195,18 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     public ReadOnlyObservableCollection<LinkedTaskRowViewModel> LinkedTasks { get; }
 
-    public ReadOnlyObservableCollection<ConflictRowViewModel> ConflictRows { get; }
-
     /// <summary>The committed CR now (null for a new CR or after a deletion elsewhere).</summary>
     public ChangeRequestReadModel? Latest { get; private set; }
 
-    public string DialogTitle => _context.Strings.GetString(IsNew ? "CrEditor_TitleNew" : "CrEditor_Title");
+    public string DialogTitle => Context.Strings.GetString(IsNew ? "CrEditor_TitleNew" : "CrEditor_Title");
 
-    public string PrimaryButtonText => _context.Strings.GetString(IsNew ? "CrEditor_CreateButton" : "TaskEditor_SaveButton");
-
-    public string CloseButtonText => _context.Strings.GetString("Common_Cancel");
+    public string PrimaryButtonText => Context.Strings.GetString(IsNew ? "CrEditor_CreateButton" : "TaskEditor_SaveButton");
 
     /// <summary>The number as saved, or as typed for a new CR, for step texts ("Save CR-1042 and create a task?").</summary>
-    public string DisplayNumber => Latest?.Number ?? (Number.Trim().Length > 0 ? Number.Trim() : _context.Strings.GetString("CrEditor_ThisCr"));
+    public string DisplayNumber => Latest?.Number ?? (Number.Trim().Length > 0 ? Number.Trim() : Context.Strings.GetString("CrEditor_ThisCr"));
 
-    public string Caption => _base is { } b ? _context.Strings.Format("TaskEditor_CreatedCaption", b.CreatedAtUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture)) : string.Empty;
+    /// <summary>The info box's Created fact, "Oct 6, 2026"; empty for a new CR (the info box is hidden).</summary>
+    public string CreatedText => _base is { } b ? DateText.RecordDate(b.CreatedAtUtc.ToLocalTime()) : string.Empty;
 
     [ObservableProperty]
     public partial string Number { get; set; } = string.Empty;
@@ -304,12 +279,6 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     [ObservableProperty]
     public partial string? DescriptionError { get; private set; }
 
-    [ObservableProperty]
-    public partial string? ValidationSummary { get; private set; }
-
-    [ObservableProperty]
-    public partial string? SaveError { get; private set; }
-
     /// <summary>"The linked tasks changed. Review the new counts." (design §5.7 scope changed).</summary>
     [ObservableProperty]
     public partial string? DeleteScopeMessage { get; private set; }
@@ -318,22 +287,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     public partial string? DeleteError { get; private set; }
 
     [ObservableProperty]
-    public partial bool IsSaving { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsDirty { get; private set; }
-
-    [ObservableProperty]
     public partial CrEditorStep CurrentStep { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsDirtyClosePromptOpen { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsConflict { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsDeletedElsewhere { get; private set; }
 
     /// <summary>"Delete CR-1042 and its tasks?" (design §5.7).</summary>
     [ObservableProperty]
@@ -355,7 +309,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     public bool CanEditFields => !IsReadOnly && !IsSaving;
 
-    public bool CanSave => !IsSaving && !IsReadOnly && CurrentStep == CrEditorStep.Form;
+    public override bool CanSave => !IsSaving && !IsReadOnly && CurrentStep == CrEditorStep.Form;
 
     public bool CanDelete => !IsNew && !IsReadOnly && !IsSaving;
 
@@ -374,83 +328,57 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     public bool IsReloadConfirmStep => CurrentStep == CrEditorStep.ReloadConfirm;
 
-    public bool HasValidationSummary => ValidationSummary is not null;
-
-    public bool HasSaveError => SaveError is not null;
-
     public bool HasDeleteScopeMessage => DeleteScopeMessage is not null;
 
     public bool HasDeleteError => DeleteError is not null;
 
     public bool HasDuplicate => DuplicateId is not null;
 
-    public string OpenDuplicateText => DuplicateId is { } id && _context.Store.ChangeRequests.Lookup(id) is { HasValue: true } other
-        ? _context.Strings.Format("CrEditor_OpenDuplicate", other.Value.Number)
+    public string OpenDuplicateText => DuplicateId is { } id && Context.Store.ChangeRequests.Lookup(id) is { HasValue: true } other
+        ? Context.Strings.Format("CrEditor_OpenDuplicate", other.Value.Number)
         : string.Empty;
 
     /// <summary>B-15 predicate, the same one the Dashboard uses (design §5.3 Overdue InfoBar).</summary>
     public bool IsOverdue => Latest is { IsOverdue: true };
 
     public string OverdueMessage => Latest is { IsOverdue: true, PlannedEnd: { } end } cr
-        ? _context.Strings.Format(cr.DaysOverdue == 1 ? "CrEditor_OverdueOne" : "CrEditor_Overdue", cr.DaysOverdue, end.ToString("D", CultureInfo.CurrentCulture))
+        ? Context.Strings.Format(cr.DaysOverdue == 1 ? "CrEditor_OverdueOne" : "CrEditor_Overdue", cr.DaysOverdue, DateText.LongDate(end))
         : string.Empty;
 
     /// <summary>"Unscheduled" when both planned dates are empty (design §5.3 group 5).</summary>
-    public string PlannedCaption => PlannedStart is null && PlannedEnd is null ? _context.Strings.GetString("CrEditor_Unscheduled") : string.Empty;
+    public string PlannedCaption => PlannedStart is null && PlannedEnd is null ? Context.Strings.GetString("CrEditor_Unscheduled") : string.Empty;
 
-    public string LinkedTasksHeader => _context.Strings.Format("CrEditor_LinkedTasksHeader", _linkedTasks.Count);
+    public string LinkedTasksHeader => Context.Strings.Format("CrEditor_LinkedTasksHeader", _linkedTasks.Count);
 
     public bool HasLinkedTasks => _linkedTasks.Count > 0;
 
     /// <summary>"Shared by all 3 linked tasks." (design §5.3 group 1).</summary>
-    public string TaskNumberHelper => _context.Strings.Format(_linkedTasks.Count == 1 ? "CrEditor_TaskNumberHelperOne" : "CrEditor_TaskNumberHelper", _linkedTasks.Count);
+    public string TaskNumberHelper => Context.Strings.Format(_linkedTasks.Count == 1 ? "CrEditor_TaskNumberHelperOne" : "CrEditor_TaskNumberHelper", _linkedTasks.Count);
 
-    public string SaveAndCreatePrompt => _context.Strings.Format("CrEditor_SaveAndCreatePrompt", DisplayNumber);
+    public string SaveAndCreatePrompt => Context.Strings.Format("CrEditor_SaveAndCreatePrompt", DisplayNumber);
 
     /// <summary>B-11: while no default CR Owner exists, offer to make the chosen owner the default.</summary>
     public bool ShowMakeDefaultOwner => CurrentDefaultOwner is null && Owner.Tokens.Count > 0 && !IsReadOnly;
 
-    public string MakeDefaultOwnerText => Owner.Tokens.FirstOrDefault() is { } owner ? _context.Strings.Format("CrEditor_MakeDefaultOwner", owner.Name) : string.Empty;
+    public string MakeDefaultOwnerText => Owner.Tokens.FirstOrDefault() is { } owner ? Context.Strings.Format("CrEditor_MakeDefaultOwner", owner.Name) : string.Empty;
 
     /// <summary>B-02.11: only an http/https link can be opened, and only by the user.</summary>
     public bool CanOpenUrl => HttpUrl.CreateOptional(SolutionDesignUrl) is { IsSuccess: true, Value: not null };
 
-    private PersonId? CurrentDefaultOwner => _context.Store.CurrentWorkflow?.Defaults.DefaultCrOwnerId;
+    protected override bool NeedsClosePrompt => IsDirty && !IsReadOnly;
 
-    /// <summary>
-    /// Saves the whole draft as one command. Repeated calls while saving are ignored. On success the editor
-    /// closes once the result is displayed; on failure the draft, its errors, and the dialog stay.
-    /// </summary>
-    public async Task<bool> SaveAsync()
-    {
-        if (!CanSave)
-        {
-            return false;
-        }
+    /// <summary>A clean CR still saves when it would make the chosen owner the default (B-11).</summary>
+    protected override bool HasChangesToSave => IsDirty || OffersDefaultOwner;
 
-        // Text typed in the Owner box counts even when Save comes from Ctrl+Enter, before the box loses focus.
-        Owner.CommitText();
+    private PersonId? CurrentDefaultOwner => Context.Store.CurrentWorkflow?.Defaults.DefaultCrOwnerId;
 
-        var offersDefault = ShowMakeDefaultOwner && MakeDefaultOwner;
-        if (!IsNew && !IsDirty && !offersDefault)
-        {
-            Approve();
-            return true;
-        }
-
-        var saved = await SaveDraftAsync(offersDefault).ConfigureAwait(true);
-        if (saved)
-        {
-            Approve();
-        }
-
-        return saved;
-    }
+    private bool OffersDefaultOwner => ShowMakeDefaultOwner && MakeDefaultOwner;
 
     /// <summary>
     /// "+ Create task" (B-03.5, T-13): a saved, clean CR closes the editor and the task editor opens with the
     /// link; a new or dirty CR first shows the inline "Save and create" step.
     /// </summary>
+    [RelayCommand]
     public void BeginCreateTask()
     {
         if (!CanCreateTask)
@@ -476,7 +404,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         Owner.CommitText();
         CurrentStep = CrEditorStep.Form;
         RaiseState();
-        if (!await SaveDraftAsync(ShowMakeDefaultOwner && MakeDefaultOwner).ConfigureAwait(true))
+        if (!await SaveDraftAsync().ConfigureAwait(true))
         {
             return false;
         }
@@ -491,15 +419,16 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     {
         ArgumentNullException.ThrowIfNull(row);
         FollowUpTaskId = row.Id;
-        RequestFollowUp(CrEditorFollowUp.OpenTask);
+        CloseForFollowUp(CrEditorFollowUp.OpenTask);
     }
 
     /// <summary>"Open CR-1042" beside a duplicate-number error (B-03.2).</summary>
+    [RelayCommand]
     public void OpenDuplicate()
     {
         if (DuplicateId is not null)
         {
-            RequestFollowUp(CrEditorFollowUp.OpenOtherCr);
+            CloseForFollowUp(CrEditorFollowUp.OpenOtherCr);
         }
     }
 
@@ -507,22 +436,24 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     public async Task<bool> OpenUrlAsync()
     {
         var url = HttpUrl.CreateOptional(SolutionDesignUrl);
-        return url is { IsSuccess: true, Value: { } link } && await _context.UrlLauncher.OpenAsync(link.Value).ConfigureAwait(true);
+        return url is { IsSuccess: true, Value: { } link } && await Context.UrlLauncher.OpenAsync(link.Value).ConfigureAwait(true);
     }
 
     /// <summary>
     /// More › Move to backlog (B-08.11): the editor closes (after the dirty prompt, so a draft is never saved
     /// implicitly) and the explicit command clears the dates and sets the backlog status.
     /// </summary>
+    [RelayCommand]
     public void RequestMoveToBacklog()
     {
         if (CanMoveToBacklog)
         {
-            RequestFollowUp(CrEditorFollowUp.MoveToBacklog);
+            CloseForFollowUp(CrEditorFollowUp.MoveToBacklog);
         }
     }
 
     /// <summary>More › Delete… (design §5.7): the cascade step with the counts of what goes with the CR.</summary>
+    [RelayCommand]
     public void BeginDelete()
     {
         if (!CanDelete)
@@ -537,6 +468,17 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         RaiseState();
     }
 
+    // The async actions as commands for the dialog's buttons. Concurrent runs are allowed, so a running command never
+    // disables its button; each method keeps its own guards.
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task OpenUrl() => UiTasks.RunGuardedAsync(OpenUrlAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task SaveAndCreateTask() => UiTasks.RunGuardedAsync(SaveAndCreateTaskAsync);
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task ConfirmDelete() => UiTasks.RunGuardedAsync(ConfirmDeleteAsync);
+
     /// <summary>
     /// "Delete CR and n tasks": sends the exact task set the step showed. When the linked tasks changed, the
     /// step stays with the new counts and a warning, and the user confirms again (B-05, AC-30).
@@ -548,116 +490,52 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             return false;
         }
 
-        if (_context.IsEditingBlocked)
+        if (Context.IsEditingBlocked)
         {
-            DeleteError = _context.Strings.GetString("Error_EditingBlocked");
+            DeleteError = Context.Strings.GetString("Error_EditingBlocked");
             RaiseDeleteState();
             return false;
         }
 
         IsSaving = true;
         DeleteError = null;
-        var operation = OperationId.New();
-        _context.SaveStatus.Begin();
 
         // The confirmation is about what is deleted, so the CR's current revision is sent: a content edit
-        // elsewhere does not change what the user agreed to, while a scope change does and is refused.
-        var result = await _context.UseCases.DeleteChangeRequest.ExecuteAsync(
-            new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None).ConfigureAwait(true);
-        if (!result.IsSuccess)
+        // elsewhere does not change what the user agreed to, while a scope change does and is refused. The step
+        // announces a failure itself, after showing it.
+        var run = await Context.Commands.RunAsync(new CommandRequest<CascadeDeletionSummary>("Record_ChangeRequest", operation =>
+            Context.UseCases.ChangeRequests.DeleteChangeRequest.ExecuteAsync(new DeleteChangeRequestCommand(operation, cr.Id, cr.Revision, _deleteScope), CancellationToken.None))
         {
-            var failure = CommandFailure.From(result.Error!, operation, "Record_ChangeRequest", _context.Strings);
-            _context.SaveStatus.Report(failure);
-            IsSaving = false;
-            if (result.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.CascadeScopeChanged }, ..] })
-            {
-                ComputeDeleteScope();
-                DeleteScopeMessage = _context.Strings.GetString("CascadeDelete_ScopeChanged");
-                _context.Announce(DeleteScopeMessage, isFailure: true);
-            }
-            else
-            {
-                DeleteError = failure.Message;
-                _context.Announce(failure.Message, isFailure: true);
-            }
-
-            RaiseDeleteState();
-            return false;
-        }
-
-        _context.SaveStatus.Complete();
-        await _context.WhenDisplayedAsync(result.Value.CommitSequence, DisplayTimeout).ConfigureAwait(true);
+            DisplayTimeout = CommitDisplayTimeout,
+        }).ConfigureAwait(true);
         IsSaving = false;
-        _context.Announce(_context.Strings.Format("CrEditor_Deleted", cr.Number, result.Value.Value.TaskCount));
-        Approve();
-        return true;
-    }
-
-    /// <summary>Esc, Cancel, an outside click or a follow-up: a dirty draft asks for the Save / Discard / Continue editing confirmation (design §5.8).</summary>
-    public bool TryClose()
-    {
-        if (_closeApproved)
+        switch (run.Status)
         {
-            return true;
+            case CommandRunStatus.Succeeded:
+                Context.Announce(Context.Strings.Format("CrEditor_Deleted", cr.Number, run.Outcome!.Value.TaskCount));
+                Approve();
+                return true;
+            case CommandRunStatus.Failed when run.Failure!.Error is ValidationFailedError { Errors: [{ Code: DomainErrorCodes.CascadeScopeChanged }, ..] }:
+                ComputeDeleteScope();
+                DeleteScopeMessage = Context.Strings.GetString("CascadeDelete_ScopeChanged");
+                Context.Announce(DeleteScopeMessage, isFailure: true);
+                break;
+            case CommandRunStatus.Failed:
+                DeleteError = run.Message;
+                Context.Announce(run.Message!, isFailure: true);
+                break;
+            default:
+                // The delete threw (the runner reported it once) or editing became blocked: the step stays with the text.
+                DeleteError = run.Message;
+                break;
         }
 
-        if (IsSaving)
-        {
-            return false;
-        }
-
-        if (IsDirty && !IsReadOnly)
-        {
-            IsDirtyClosePromptOpen = true;
-            return false;
-        }
-
-        _closeApproved = true;
-        return true;
-    }
-
-    public async Task<bool> SaveFromPromptAsync()
-    {
-        IsDirtyClosePromptOpen = false;
-        var saved = await SaveAsync().ConfigureAwait(true);
-        if (!saved)
-        {
-            // A failed save keeps the editor open; the window close the prompt answered is abandoned.
-            IsWindowClosePending = false;
-        }
-
-        return saved;
-    }
-
-    /// <inheritdoc/>
-    public bool IsWindowClosePending { get; private set; }
-
-    /// <inheritdoc/>
-    public bool TryCloseForWindow()
-    {
-        if (TryClose())
-        {
-            return true;
-        }
-
-        IsWindowClosePending = IsDirtyClosePromptOpen;
+        RaiseDeleteState();
         return false;
     }
 
-    public void DiscardChanges()
-    {
-        IsDirtyClosePromptOpen = false;
-        Approve();
-    }
-
-    public void ContinueEditing()
-    {
-        IsDirtyClosePromptOpen = false;
-        IsWindowClosePending = false;
-        FollowUp = CrEditorFollowUp.None;
-    }
-
     /// <summary>Back (Alt+Left) from an inline step.</summary>
+    [RelayCommand]
     public void StepBack()
     {
         CurrentStep = CrEditorStep.Form;
@@ -667,47 +545,45 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         RaiseDeleteState();
     }
 
+    [RelayCommand]
     public void ClearPlannedStart() => PlannedStart = null;
 
+    [RelayCommand]
     public void ClearPlannedEnd() => PlannedEnd = null;
 
-    /// <summary>Review changes (design §5.10): Field | Your draft | Saved now for each differing field.</summary>
-    public void ReviewConflict()
+    protected override IReadOnlyList<ConflictRowViewModel>? BuildConflictRows()
     {
-        if (!IsConflict || Latest is not { } latest)
+        if (Latest is not { } latest)
         {
-            return;
+            return null;
         }
 
         var mine = Capture();
         var saved = ValuesOf(latest);
-        _conflictRows.Clear();
+        var rows = new List<ConflictRowViewModel>();
         foreach (var key in mine.Keys.Where(k => !mine.SameAs(saved, k)))
         {
             var (mineText, savedText) = key == CustomFieldsKey
                 ? (CustomFields.DisplayText(None), SavedCustomFieldsText(latest))
                 : (Describe(mine, key), Describe(saved, key));
-            _conflictRows.Add(new ConflictRowViewModel(key, _context.Strings.GetString("Field_" + key), mineText, savedText));
+            rows.Add(new ConflictRowViewModel(key, Context.Strings.GetString("Field_" + key), mineText, savedText));
         }
 
-        CurrentStep = CrEditorStep.ConflictReview;
-        RaiseState();
+        return rows;
     }
 
-    /// <summary>Apply to draft: the draft moves to the saved revision, keeping the user's value where Use mine is on.</summary>
-    public void ApplyConflictReview()
+    protected override bool ApplyReviewToDraft(IReadOnlySet<string> keep)
     {
         if (Latest is not { } latest)
         {
-            return;
+            return false;
         }
 
-        var keep = _conflictRows.Where(r => r.UseMine).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
         var mine = Capture();
         var mineOwner = Owner.Tokens.Select(t => (t.Id, t.Name, t.IsNew)).ToList();
         _ = CustomFields.TryBuild(latest.CustomValues, out var mineCustom);
         Load(latest);
-        _isLoading = true;
+        IsLoading = true;
         foreach (var key in keep)
         {
             Restore(key, mine, mineOwner);
@@ -718,40 +594,24 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             CustomFields.Load(mineCustom);
         }
 
-        _isLoading = false;
-        IsConflict = false;
-        SaveError = null;
-        _conflictRows.Clear();
-        CurrentStep = CrEditorStep.Form;
-        RecomputeDirty();
-        RaiseState();
+        IsLoading = false;
+        return true;
     }
 
-    public void BeginReload()
-    {
-        CurrentStep = CrEditorStep.ReloadConfirm;
-        RaiseState();
-    }
-
-    public void ConfirmReload()
+    protected override void ReloadLatest()
     {
         if (Latest is { } latest)
         {
             Load(latest);
         }
-
-        IsConflict = false;
-        SaveError = null;
-        CurrentStep = CrEditorStep.Form;
-        RaiseState();
     }
 
-    public void Dispose()
+    protected override void ShowConflictStep(ConflictStep conflictStep) => CurrentStep = conflictStep switch
     {
-        _commits.Dispose();
-        Owner.Changed -= OnOwnerChanged;
-        CustomFields.Changed -= OnCustomFieldsChanged;
-    }
+        ConflictStep.Review => CrEditorStep.ConflictReview,
+        ConflictStep.ReloadConfirm => CrEditorStep.ReloadConfirm,
+        _ => CrEditorStep.Form,
+    };
 
     partial void OnNumberChanged(string value)
     {
@@ -791,13 +651,6 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     partial void OnDescriptionChanged(string value) => RecomputeDirty();
 
-    partial void OnIsSavingChanged(bool value)
-    {
-        Owner.IsReadOnly = value || IsReadOnly;
-        CustomFields.IsReadOnly = value || IsReadOnly;
-        RaiseState();
-    }
-
     partial void OnDuplicateIdChanged(ChangeRequestId? value)
     {
         OnPropertyChanged(nameof(HasDuplicate));
@@ -808,54 +661,49 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     partial void OnDeleteErrorChanged(string? value) => OnPropertyChanged(nameof(HasDeleteError));
 
-    private async Task<bool> SaveDraftAsync(bool makeDefaultOwner)
+    protected override void Dispose(bool disposing)
     {
-        if (_context.IsEditingBlocked)
+        base.Dispose(disposing);
+        if (disposing)
         {
-            SaveError = _context.Strings.GetString("Error_EditingBlocked");
-            RaiseState();
-            return false;
+            Owner.Changed -= OnOwnerChanged;
+            CustomFields.Changed -= OnCustomFieldsChanged;
         }
-
-        ClearErrors();
-        if (!CustomFields.TryBuild(_base?.CustomValues ?? CustomValue.NoValues, out var customValues))
-        {
-            ValidationSummary = _context.Strings.Format("TaskEditor_FixField", 1);
-            FocusRequested?.Invoke(this, "Custom:" + CustomFields.FirstErrorKey);
-            RaiseState();
-            return false;
-        }
-
-        var operation = _retryOperation ?? OperationId.New();
-        IsSaving = true;
-        IsDirtyClosePromptOpen = false;
-        _context.SaveStatus.Begin();
-        var (error, sequence) = await ExecuteSaveAsync(operation, makeDefaultOwner, customValues).ConfigureAwait(true);
-        if (error is not null)
-        {
-            var failure = CommandFailure.From(error, operation, "Record_ChangeRequest", _context.Strings);
-            _context.SaveStatus.Report(failure);
-
-            // T-05: only an unknown outcome is retried under the same operation; anything else is a new intent.
-            _retryOperation = failure.RequiresSameOperationOnRetry ? operation : null;
-            IsSaving = false;
-            ShowFailure(failure);
-            RaiseState();
-            return false;
-        }
-
-        _context.SaveStatus.Complete();
-        _retryOperation = null;
-        await _context.WhenDisplayedAsync(sequence, DisplayTimeout).ConfigureAwait(true);
-        IsSaving = false;
-        _context.Announce(_context.Strings.GetString("SaveStatus_Saved"));
-        _context.ReportChangeRequestSaved(_id);
-        return true;
     }
 
-    private async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation, bool makeDefaultOwner, IReadOnlyDictionary<FieldId, CustomValue> customValues)
+    protected override void OnSavingChanged()
     {
-        var useCases = _context.UseCases;
+        Owner.IsReadOnly = IsSaving || IsReadOnly;
+        CustomFields.IsReadOnly = IsSaving || IsReadOnly;
+        RaiseState();
+    }
+
+    // Text typed in the Owner box counts even when Save comes from Ctrl+Enter, before the box loses focus.
+    protected override void CommitPendingInput() => Owner.CommitText();
+
+    // B-11: the custom fields are checked in the editor first; their errors show beside their typed editors.
+    protected override bool TryPrepareSave()
+    {
+        if (CustomFields.TryBuild(_base?.CustomValues ?? CustomValue.NoValues, out _customValues))
+        {
+            return true;
+        }
+
+        ShowValidationSummary(1, "Custom:" + CustomFields.FirstErrorKey);
+        return false;
+    }
+
+    protected override void OnSaved()
+    {
+        Context.Announce(Context.Strings.GetString("SaveStatus_Saved"));
+        Context.ReportChangeRequestSaved(_id);
+    }
+
+    protected override async Task<(AppError? Error, long Sequence)> ExecuteSaveAsync(OperationId operation)
+    {
+        var makeDefaultOwner = OffersDefaultOwner;
+        var customValues = _customValues;
+        var useCases = Context.UseCases;
         var ownerToken = Owner.Tokens.FirstOrDefault();
         var newOwner = ownerToken is { IsNew: true } typed ? new NewPerson(new PersonId(typed.Id), typed.Name) : null;
         var draft = new ChangeRequestDraft(
@@ -874,7 +722,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
         if (IsNew && CreatedId is null)
         {
-            var created = await useCases.CreateChangeRequest.ExecuteAsync(
+            var created = await useCases.ChangeRequests.CreateChangeRequest.ExecuteAsync(
                 new CreateChangeRequestCommand(operation, _id, draft, SelectedStatus?.Id, newOwner, makeDefaultOwner), CancellationToken.None).ConfigureAwait(true);
             if (!created.IsSuccess)
             {
@@ -887,44 +735,33 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
         // A status is always selected: the box offers only configured statuses and starts on the CR's own.
         var statusId = SelectedStatus?.Id ?? _base!.Status.Id;
-        var updated = await useCases.UpdateChangeRequest.ExecuteAsync(
+        var updated = await useCases.ChangeRequests.UpdateChangeRequest.ExecuteAsync(
             new UpdateChangeRequestCommand(operation, _id, _base!.Revision, draft, statusId, newOwner, makeDefaultOwner), CancellationToken.None).ConfigureAwait(true);
         return updated.IsSuccess ? (null, updated.Value.CommitSequence) : (updated.Error, 0);
     }
 
-    private void ShowFailure(CommandFailure failure)
+    protected override bool ShowEditorFailure(CommandFailure failure)
     {
-        switch (failure.Error)
+        if (failure.Error is not DuplicateCrNumberError duplicate)
         {
-            case ValidationFailedError validation:
-                ShowFieldErrors(validation.Errors);
-                break;
-            case DuplicateCrNumberError duplicate:
-                // B-03.2: the error names the existing CR and offers to open it.
-                NumberError = _context.Strings.Format("CrEditor_DuplicateNumber", duplicate.Number);
-                DuplicateId = duplicate.ExistingId;
-                ValidationSummary = _context.Strings.Format("TaskEditor_FixField", 1);
-                FocusRequested?.Invoke(this, NumberKey);
-                break;
-            case ConcurrencyConflictError:
-                IsConflict = true;
-                SaveError = _context.Strings.Format("Editor_ConflictMessage", _context.Strings.GetString("Record_ChangeRequest"));
-                break;
-            default:
-                SaveError = failure.Message;
-                break;
+            return false;
         }
 
-        _context.Announce(failure.Message, isFailure: true);
+        // B-03.2: the error names the existing CR and offers to open it.
+        NumberError = Context.Strings.Format("CrEditor_DuplicateNumber", duplicate.Number);
+        DuplicateId = duplicate.ExistingId;
+        ShowValidationSummary(1, NumberKey);
+        return true;
     }
 
-    private void ShowFieldErrors(IReadOnlyList<DomainError> errors)
+    protected override void ShowFieldErrors(IReadOnlyList<DomainError> errors)
     {
+        ArgumentNullException.ThrowIfNull(errors);
         string? first = null;
         var fields = new HashSet<string>(StringComparer.Ordinal);
         foreach (var error in errors.Where(e => e.Field?.StartsWith("Custom:", StringComparison.Ordinal) != true))
         {
-            var text = CommandErrorText.Describe(error, _context.Strings);
+            var text = CommandErrorText.Describe(error, Context.Strings);
             var key = error.Field switch
             {
                 NumberKey => Set(() => NumberError = text, NumberKey),
@@ -945,17 +782,13 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         }
 
         // B-11: custom-field errors (field "Custom:{key}") show beside their typed editors.
-        if (CustomFields.ShowErrors(errors, _context.Strings) is { } customKey)
+        if (CustomFields.ShowErrors(errors, Context.Strings) is { } customKey)
         {
             first ??= "Custom:" + customKey;
             fields.UnionWith(CustomFields.Fields.Where(f => f.Error is not null).Select(f => "Custom:" + f.Key));
         }
 
-        ValidationSummary = _context.Strings.Format(fields.Count == 1 ? "TaskEditor_FixField" : "TaskEditor_FixFields", fields.Count);
-        if (first is not null)
-        {
-            FocusRequested?.Invoke(this, first);
-        }
+        ShowValidationSummary(fields.Count, first);
 
         static string Set(Action set, string key)
         {
@@ -964,34 +797,12 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         }
     }
 
-    private void ClearErrors()
+    protected override void ClearFieldErrors()
     {
         NumberError = TaskNumberError = TitleError = OwnerError = SquadError = StatusError = PriorityError = null;
         PlannedError = EmailSubjectError = UrlError = DescriptionError = null;
         CustomFields.ClearErrors();
-        ValidationSummary = null;
-        SaveError = null;
         DuplicateId = null;
-    }
-
-    private void RequestFollowUp(CrEditorFollowUp followUp)
-    {
-        if (IsSaving)
-        {
-            return;
-        }
-
-        FollowUp = followUp;
-        if (TryClose())
-        {
-            CloseRequested?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    private void Approve()
-    {
-        _closeApproved = true;
-        CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -1000,10 +811,10 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
     /// </summary>
     private void ComputeDeleteScope()
     {
-        var tasks = _context.Store.Tasks.Items.Where(t => t.Cr.ChangeRequestId == _id).ToList();
+        var tasks = Context.Store.Tasks.Items.Where(t => t.Cr.ChangeRequestId == _id).ToList();
         _deleteScope = [.. tasks.Select(t => t.Id)];
         var archived = tasks.Count(t => t.IsArchived);
-        var strings = _context.Strings;
+        var strings = Context.Strings;
         DeleteHeading = strings.Format("CascadeDelete_Heading", DisplayNumber);
         DeleteTasksLine = strings.Format("CascadeDelete_Tasks", tasks.Count, tasks.Count - archived, archived);
         DeleteChecklistLine = strings.Format("CascadeDelete_ChecklistItems", tasks.Sum(t => t.ChecklistTotal));
@@ -1013,7 +824,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     private void Load(ChangeRequestReadModel model)
     {
-        _isLoading = true;
+        IsLoading = true;
         _base = model;
         Latest = model;
         Number = model.Number;
@@ -1031,7 +842,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         CustomFields.Load(model.CustomValues);
         DuplicateId = null;
         _baseValues = ValuesOf(model);
-        _isLoading = false;
+        IsLoading = false;
         RecomputeDirty();
         RaiseState();
     }
@@ -1117,10 +928,10 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     private string Describe(DraftSnapshot values, string key)
     {
-        var none = _context.Strings.GetString("Common_None");
+        var none = Context.Strings.GetString("Common_None");
         return values[key] switch
         {
-            null when key == SquadKey => _context.Strings.GetString("Squad_General"),
+            null when key == SquadKey => Context.Strings.GetString("Squad_General"),
             null => none,
             string { Length: 0 } => none,
             string text => text,
@@ -1129,16 +940,16 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             SquadId squad => _workflow.FindSquad(squad)?.Name.Display ?? none,
             CrStatusId status => _workflow.FindCrStatus(status)?.Name.Display ?? none,
             PriorityId priority => _workflow.FindPriority(priority)?.Name.Display ?? none,
-            DateOnly date => date.ToString("d", CultureInfo.CurrentCulture),
+            DateOnly date => DateText.RecordDate(date),
             var other => other.ToString() ?? none,
         };
     }
 
-    private string None => _context.Strings.GetString("Common_None");
+    private string None => Context.Strings.GetString("Common_None");
 
     private string SavedCustomFieldsText(ChangeRequestReadModel latest)
     {
-        var saved = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, _context.Strings);
+        var saved = new CustomFieldsEditorViewModel(FieldTarget.ChangeRequest, _workflow, Context.Strings);
         saved.Load(latest.CustomValues);
         return saved.DisplayText(None);
     }
@@ -1153,17 +964,20 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         OnPropertyChanged(nameof(MakeDefaultOwnerText));
     }
 
-    private void RecomputeDirty()
+    protected override bool ComputeIsDirty() => !Capture().SameAs(_baseValues);
+
+    // The step texts name the number as typed, so they follow every draft change.
+    protected override void RecomputeDirty()
     {
-        if (!_isLoading)
+        base.RecomputeDirty();
+        if (!IsLoading)
         {
-            IsDirty = !Capture().SameAs(_baseValues);
             OnPropertyChanged(nameof(DisplayNumber));
             OnPropertyChanged(nameof(SaveAndCreatePrompt));
         }
     }
 
-    private void OnCommitted()
+    protected override void OnCommitted()
     {
         RefreshLinkedTasks();
         if (IsNew && CreatedId is null)
@@ -1172,13 +986,13 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
             return;
         }
 
-        var model = _context.Store.ChangeRequests.Lookup(_id);
+        var model = Context.Store.ChangeRequests.Lookup(_id);
         Latest = model.HasValue ? model.Value : null;
         if (Latest is null)
         {
             // Deleted elsewhere (or by this editor, which is closing): the draft stays visible, read-only.
             IsDeletedElsewhere = true;
-            SaveError ??= _context.Strings.GetString("CrEditor_DeletedElsewhere");
+            SaveError ??= Context.Strings.GetString("CrEditor_DeletedElsewhere");
         }
         else if (!IsDirty && !IsSaving && !IsConflict && Latest.Revision != _base?.Revision)
         {
@@ -1191,8 +1005,8 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
 
     private void RefreshLinkedTasks()
     {
-        var strings = _context.Strings;
-        var rows = IsNew && CreatedId is null ? [] : _context.Store.Tasks.Items
+        var strings = Context.Strings;
+        var rows = IsNew && CreatedId is null ? [] : Context.Store.Tasks.Items
             .Where(t => t.Cr.ChangeRequestId == _id)
             .OrderBy(t => t.IsArchived)
             .ThenBy(t => t.StatusOrder)
@@ -1229,7 +1043,7 @@ public sealed partial class CrEditorViewModel : ObservableObject, IDialogViewMod
         OnPropertyChanged(nameof(HasDeleteError));
     }
 
-    private void RaiseState()
+    protected override void RaiseState()
     {
         foreach (var name in StateProperties)
         {

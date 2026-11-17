@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Composition.SystemBackdrops;
@@ -59,14 +58,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         MonthView.Render(viewModel.Surface);
         viewModel.SurfaceChanged += OnSurfaceChanged;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
         SurfaceScroller.SizeChanged += (_, _) => FitSurface();
         Loaded += (_, _) => ApplyPeriodWidth();
     }
@@ -79,7 +71,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch()
@@ -217,13 +209,13 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     // at M; a full-width overlay card at S. Below L the command group moves to its own row so it can wrap.
     private void ApplyBreakpoint(double width)
     {
-        var wide = width >= 1008;
+        var wide = width >= Breakpoints.Large;
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, PagePadding.Top(window), padding, width >= 640 ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         _gutter = padding;
-        ViewModel.SetCompact(width < 640);
-        ChipsBar.IsCompact = width < 640;
+        ViewModel.SetCompact(width < Breakpoints.Medium);
+        ChipsBar.IsCompact = width < Breakpoints.Medium;
         Split.DisplayMode = wide ? SplitViewDisplayMode.CompactInline : SplitViewDisplayMode.CompactOverlay;
 
         Microsoft.UI.Xaml.Controls.Grid.SetRow(CommandGroup, wide ? 0 : 1);
@@ -232,7 +224,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         CommandGroup.HorizontalAlignment = wide ? HorizontalAlignment.Right : HorizontalAlignment.Left;
 
         // At S the period navigation takes a line of its own and Filters and New CR sit under it.
-        var stacked = width < 640;
+        var stacked = width < Breakpoints.Medium;
         Microsoft.UI.Xaml.Controls.Grid.SetRow(PeriodPanel, 0);
         Microsoft.UI.Xaml.Controls.Grid.SetColumn(PeriodPanel, 0);
         Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(PeriodPanel, stacked ? 3 : 1);
@@ -243,14 +235,14 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
 
         // The rail and the backlog card sit inside the page gutter; at S the full-width pane keeps the gutter on both sides.
         BacklogRail.Margin = new Thickness(padding, 0, 0, 16);
-        BacklogCardHost.Margin = new Thickness(padding, 0, width < 640 ? padding : 0, 16);
+        BacklogCardHost.Margin = new Thickness(padding, 0, width < Breakpoints.Medium ? padding : 0, 16);
         BacklogOpaqueBase.Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
         // ADR 0008: the overlay base uses the window's material, Mica Base, only where the window does; otherwise the
         // solid base beneath it shows, as on the window. At L the inline pane sees the window's own Mica, so the
         // hosted backdrop is detached rather than kept running while collapsed.
         BacklogMica.SystemBackdrop = wide || !IsMicaSupported ? null : _backlogMica ??= new MicaBackdrop { Kind = MicaKind.Base };
         Split.CompactPaneLength = padding + BacklogRail.Width;
-        Split.OpenPaneLength = width < 640 ? Math.Max(280, width) : 280 + padding;
+        Split.OpenPaneLength = width < Breakpoints.Medium ? Math.Max(280, width) : 280 + padding;
         ApplyContentPadding();
         if (_wasWide != wide)
         {
@@ -275,7 +267,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
             var label = ViewModel.Text(key);
             var isSorted = ViewModel.SortColumn == column;
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            content.Children.Add(new TextBlock { Text = label, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["CaptionTextBlockStyle"], TextTrimming = TextTrimming.CharacterEllipsis });
+            content.Children.Add(new TextBlock { Text = label, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["TableHeaderTextStyle"] });
             if (isSorted)
             {
                 content.Children.Add(new FontIcon { Glyph = ViewModel.IsSortDescending ? "" : "", FontSize = 10 }.Hidden());
@@ -286,7 +278,8 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
                 Content = content,
                 Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 BorderThickness = new Thickness(0),
-                Padding = new Thickness(0, 4, 0, 4),
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
             };
@@ -316,13 +309,11 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
     }
 
-    private void OnClearSearchClick(object sender, RoutedEventArgs e) => ViewModel.Filters.ClearAll();
-
     private void OnAgendaItemClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is CalendarAgendaRow { Record: { } record })
         {
-            _ = ViewModel.OpenAsync(record.Id);
+            ViewModel.OpenAsync(record.Id).Forget();
         }
     }
 
@@ -330,7 +321,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         if (e.ClickedItem is CalendarRecordViewModel record)
         {
-            _ = ViewModel.OpenAsync(record.Id);
+            ViewModel.OpenAsync(record.Id).Forget();
         }
     }
 
@@ -340,7 +331,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         if (e.ClickedItem is CalendarRecordViewModel record)
         {
-            _ = ViewModel.OpenAsync(record.Id);
+            ViewModel.OpenAsync(record.Id).Forget();
         }
     }
 
@@ -348,7 +339,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         if (Record(sender) is { } record)
         {
-            _ = ViewModel.OpenAsync(record.Id);
+            ViewModel.OpenAsync(record.Id).Forget();
         }
     }
 
@@ -356,7 +347,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         if (Record(sender) is { } record)
         {
-            _ = ViewModel.OpenLinkedTasksAsync(record.Id);
+            ViewModel.OpenLinkedTasksAsync(record.Id).Forget();
         }
     }
 
@@ -369,11 +360,11 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
 
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Calendar_MenuOpen", "Calendar_BacklogMenuOpen_", record, () => _ = ViewModel.OpenAsync(record.Id)));
-        menu.Items.Add(Item("Calendar_MenuScheduleOn", "Calendar_BacklogMenuSchedule_", record, () => ShowScheduleFlyout(anchor, record.Model)));
-        menu.Items.Add(Item("Calendar_MenuOpenLinkedTasks", "Calendar_BacklogMenuLinkedTasks_", record, () => _ = ViewModel.OpenLinkedTasksAsync(record.Id)));
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Calendar_MenuDelete", "Calendar_BacklogMenuDelete_", record, () => _ = ViewModel.DeleteAsync(record.Id)));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpen"), "Calendar_BacklogMenuOpen_" + record.Id.ToString("N"), () => ViewModel.OpenAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuScheduleOn"), "Calendar_BacklogMenuSchedule_" + record.Id.ToString("N"), () => ShowScheduleFlyout(anchor, record.Model));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpenLinkedTasks"), "Calendar_BacklogMenuLinkedTasks_" + record.Id.ToString("N"), () => ViewModel.OpenLinkedTasksAsync(record.Id).Forget());
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuDelete"), "Calendar_BacklogMenuDelete_" + record.Id.ToString("N"), () => ViewModel.DeleteAsync(record.Id).Forget());
         menu.ShowAt(anchor);
     }
 
@@ -386,15 +377,13 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         }
 
         var menu = new MenuFlyout();
-        menu.Items.Add(Item("Calendar_MenuOpen", "Calendar_RecordMenuOpen_", record, () => _ = ViewModel.OpenAsync(record.Id)));
-        menu.Items.Add(Item("Calendar_MenuOpenLinkedTasks", "Calendar_RecordMenuLinkedTasks_", record, () => _ = ViewModel.OpenLinkedTasksAsync(record.Id)));
-        menu.Items.Add(Item("Calendar_MenuCreateTask", "Calendar_RecordMenuCreateTask_", record, () => _ = ViewModel.CreateTaskAsync(record.Id)));
-        menu.Items.Add(Item("Calendar_MenuScheduleOn", "Calendar_RecordMenuSchedule_", record, () => ShowScheduleFlyout(anchor, record.Model)));
-        var backlog = Item("Calendar_MenuMoveToBacklog", "Calendar_RecordMenuBacklog_", record, () => _ = ViewModel.MoveToBacklogAsync(record.Id));
-        backlog.IsEnabled = record.CanMoveToBacklog;
-        menu.Items.Add(backlog);
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Calendar_MenuDelete", "Calendar_RecordMenuDelete_", record, () => _ = ViewModel.DeleteAsync(record.Id)));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpen"), "Calendar_RecordMenuOpen_" + record.Id.ToString("N"), () => ViewModel.OpenAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuOpenLinkedTasks"), "Calendar_RecordMenuLinkedTasks_" + record.Id.ToString("N"), () => ViewModel.OpenLinkedTasksAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuCreateTask"), "Calendar_RecordMenuCreateTask_" + record.Id.ToString("N"), () => ViewModel.CreateTaskAsync(record.Id).Forget());
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuScheduleOn"), "Calendar_RecordMenuSchedule_" + record.Id.ToString("N"), () => ShowScheduleFlyout(anchor, record.Model));
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuMoveToBacklog"), "Calendar_RecordMenuBacklog_" + record.Id.ToString("N"), () => ViewModel.MoveToBacklogAsync(record.Id).Forget(), record.CanMoveToBacklog);
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(ViewModel.Text("Calendar_MenuDelete"), "Calendar_RecordMenuDelete_" + record.Id.ToString("N"), () => ViewModel.DeleteAsync(record.Id).Forget());
         menu.ShowAt(anchor);
     }
 
@@ -417,7 +406,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         else if (e.Key == VirtualKey.Delete)
         {
             e.Handled = true;
-            _ = ViewModel.DeleteAsync(record.Id);
+            ViewModel.DeleteAsync(record.Id).Forget();
         }
     }
 
@@ -489,7 +478,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
     {
         var flyout = new Flyout { ShouldConstrainToRootBounds = true };
         var day = MonthView.FocusedDay ?? ViewModel.Today;
-        var calendar = new CalendarView { SelectionMode = CalendarViewSelectionMode.Single, FirstDayOfWeek = Windows.Globalization.DayOfWeek.Sunday };
+        var calendar = DatePickers.Apply(new CalendarView { SelectionMode = CalendarViewSelectionMode.Single });
         AutomationProperties.SetAutomationId(calendar, "Calendar_ScheduleCalendar");
         calendar.SelectedDates.Add(new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue)));
         calendar.SetDisplayDate(new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue)));
@@ -501,7 +490,7 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         {
             prompt.Text = ViewModel.ReplacePrompt(cr, day);
             prompt.Visibility = prompt.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-            schedule.Content = ViewModel.Format("Calendar_ScheduleOnButton", day.ToString("MMM d", CultureInfo.CurrentCulture));
+            schedule.Content = ViewModel.Format("Calendar_ScheduleOnButton", DateText.MonthDay(day));
         }
 
         calendar.SelectedDatesChanged += (_, args) =>
@@ -515,19 +504,11 @@ public sealed partial class CalendarPageView : UserControl, Shell.IPageView
         schedule.Click += (_, _) =>
         {
             flyout.Hide();
-            _ = ViewModel.ScheduleAsync(cr.Id.Value, day);
+            ViewModel.ScheduleAsync(cr.Id.Value, day).Forget();
         };
         UpdatePrompt();
         flyout.Content = new StackPanel { Spacing = 8, Children = { calendar, prompt, schedule } };
         flyout.ShowAt(anchor);
-    }
-
-    private MenuFlyoutItem Item(string key, string idPrefix, CalendarRecordViewModel record, Action action)
-    {
-        var item = new MenuFlyoutItem { Text = ViewModel.Text(key) };
-        AutomationProperties.SetAutomationId(item, idPrefix + record.Id.ToString("N"));
-        item.Click += (_, _) => action();
-        return item;
     }
 
     private static CalendarRecordViewModel? Record(object sender) => (sender as FrameworkElement)?.Tag as CalendarRecordViewModel;

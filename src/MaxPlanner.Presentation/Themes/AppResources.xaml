@@ -23,7 +23,6 @@
             <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemFillColorCautionBrush" />
-            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
             <!-- Board cards (design §4.2): the priority glyph by configured rank, the CR/Task chips, and the neutral chips. -->
@@ -49,6 +48,8 @@
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
             <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <!-- Design §6.3: overdue is a 3-epx caution accent on the leading edge, not a full outline. -->
+            <Thickness x:Key="CalendarOverdueBarBorderThickness">3,0,0,0</Thickness>
             <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
@@ -134,7 +135,6 @@
             <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemFillColorCautionBrush" />
-            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="ControlStrongStrokeColorDefaultBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemFillColorCriticalBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemFillColorSuccessBrush" />
             <!-- Board cards (design §4.2): the priority glyph by configured rank, the CR/Task chips, and the neutral chips. -->
@@ -160,6 +160,8 @@
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="AccentFillColorDefaultBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
             <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <!-- Design §6.3: overdue is a 3-epx caution accent on the leading edge, not a full outline. -->
+            <Thickness x:Key="CalendarOverdueBarBorderThickness">3,0,0,0</Thickness>
             <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
@@ -247,7 +249,6 @@
             <StaticResource x:Key="PriorityLowestChipBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="PriorityLevel1GlyphBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="PriorityLevel2GlyphBrush" ResourceKey="SystemColorButtonTextColorBrush" />
-            <StaticResource x:Key="SubtaskCardAccentBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="ErrorTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="CompletedGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <!-- Board cards: no priority colors in High Contrast; the glyph carries the level. Chips are links (HotLight) and ButtonFace chips. -->
@@ -274,6 +275,8 @@
             <StaticResource x:Key="CalendarBarAccentBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="CalendarOverdueBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="CalendarOverdueBarStrokeBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <!-- HC: every bar has a ButtonText leading stripe, so overdue keeps an outline as well to stay distinct. -->
+            <Thickness x:Key="CalendarOverdueBarBorderThickness">3,1,1,1</Thickness>
             <StaticResource x:Key="CalendarCompletedBarBackgroundBrush" ResourceKey="SystemColorButtonFaceColorBrush" />
             <StaticResource x:Key="CalendarCompletedBarStrokeBrush" ResourceKey="SystemColorGrayTextColorBrush" />
             <StaticResource x:Key="CalendarBarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
@@ -344,6 +347,14 @@
             <StaticResource x:Key="PersonAvatarOverflowForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
+
+    <!--
+        FontIcon sizes: a glyph beside caption text or inside a chip (12), beside body text or in a compact button (14),
+        and the standard Fluent icon size (16).
+    -->
+    <x:Double x:Key="CaptionIconSize">12</x:Double>
+    <x:Double x:Key="BodyIconSize">14</x:Double>
+    <x:Double x:Key="StandardIconSize">16</x:Double>
 
     <!-- Person avatars (PersonAvatar, PersonAvatarGroup): size, corner radius, and fill are set in code. -->
     <Style x:Key="PersonAvatarStyle" TargetType="Grid">
@@ -426,7 +437,7 @@
         <Setter Property="MaxLines" Value="1" />
     </Style>
     <Style x:Key="ChipGlyphStyle" TargetType="FontIcon">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource CaptionIconSize}" />
         <Setter Property="Foreground" Value="{ThemeResource ChipForegroundBrush}" />
     </Style>
     <Style x:Key="AccentChipTextStyle" BasedOn="{StaticResource ChipTextStyle}" TargetType="TextBlock">
@@ -796,7 +807,7 @@
         <Setter Property="Background" Value="{ThemeResource GridAffordancePressedBackgroundBrush}" />
     </Style>
     <Style x:Key="GridCellAffordanceGlyphStyle" TargetType="FontIcon">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource CaptionIconSize}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="IsHitTestVisible" Value="False" />
@@ -805,6 +816,29 @@
     <Style x:Key="GridCellAffordanceGlyphPointerOverStyle" BasedOn="{StaticResource GridCellAffordanceGlyphStyle}" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource GridAffordancePointerOverForegroundBrush}" />
     </Style>
+    <!--
+        Shared table look (Grid and Calendar Records): a 40-epx header with semibold body text over a divider, and
+        44-epx rows separated by dividers.
+    -->
+    <x:Double x:Key="TableRowHeight">44</x:Double>
+    <Thickness x:Key="TableDividerThickness">0,0,0,1</Thickness>
+    <Style x:Key="TableHeaderBorderStyle" TargetType="Border">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="{StaticResource TableDividerThickness}" />
+    </Style>
+    <Style x:Key="TableHeaderTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="TableRowStyle" TargetType="Grid">
+        <Setter Property="MinHeight" Value="{StaticResource TableRowHeight}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="{StaticResource TableDividerThickness}" />
+    </Style>
+
     <!-- A transparent background makes the whole cell hit-testable, so one click anywhere in it reaches the cell. -->
     <Style x:Key="GridCellStyle" TargetType="ContentControl">
         <Setter Property="Background" Value="Transparent" />
@@ -838,6 +872,53 @@
     </Style>
     <Style x:Key="ErrorGlyphStyle" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}" />
+    </Style>
+
+    <!-- An editor fact without a value (FactValue): a muted "None" in the secondary text style, never the value style. -->
+    <Style x:Key="FactNoneTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!--
+        The record editors' shared header (Task, CR, Subtask card; design §5.0): a small record-kind caption ("Task",
+        "Change request", "Subtask card"), the record's own title as a large heading edited in place, and an info box of
+        read-only facts (label over value) on a secondary card background, laid out by EditorFactsPanel.
+    -->
+    <!-- A text box that edits in place: no border or fill at rest; the template's hover and focus states add them. -->
+    <Style x:Key="EditorInlineTextBoxStyle" BasedOn="{StaticResource DefaultTextBoxStyle}" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style x:Key="EditorTitleTextBoxStyle" BasedOn="{StaticResource EditorInlineTextBoxStyle}" TargetType="TextBox">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- The Subtask card's own subtitle under the parent title (U-06): a secondary title line, smaller than the heading. -->
+    <Style x:Key="EditorSubtitleTextBoxStyle" BasedOn="{StaticResource EditorInlineTextBoxStyle}" TargetType="TextBox">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="EditorSubtitleMarkerTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="16" />
+    </Style>
+    <Style x:Key="EditorRecordKindTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style x:Key="EditorInfoBoxStyle" BasedOn="{StaticResource SecondaryCardBorderStyle}" TargetType="Border">
+        <Setter Property="Padding" Value="12" />
+    </Style>
+    <Style x:Key="EditorFactLabelTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="EditorFactValueTextStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <!-- Page header (design §2.3): title row with an optional secondary subtitle. -->
@@ -886,7 +967,7 @@
     <Style x:Key="CalendarOverdueBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource CalendarOverdueBarBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CalendarOverdueBarStrokeBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{ThemeResource CalendarOverdueBarBorderThickness}" />
     </Style>
     <Style x:Key="CalendarCompletedBarButtonStyle" BasedOn="{StaticResource CalendarBarButtonStyle}" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource CalendarCompletedBarBackgroundBrush}" />

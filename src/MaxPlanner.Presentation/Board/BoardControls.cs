@@ -73,15 +73,13 @@ internal sealed partial class BoardCardAutomationPeer(BoardCardContainer owner) 
     protected override string GetNameCore() => owner.Content is BoardCardViewModel card ? card.AccessibleName : base.GetNameCore();
 
     // Design §8.2: the card's help text points to its actions menu.
-    protected override string GetHelpTextCore() => HelpText.Value.GetString("Board_CardHelpText");
+    protected override string GetHelpTextCore() => Common.Services.ResourceStrings.Shared.GetString("Board_CardHelpText");
 
     // Invoke opens the card, the same route as a click or Enter.
     protected override object GetPatternCore(PatternInterface patternInterface) =>
         patternInterface == PatternInterface.Invoke ? this : base.GetPatternCore(patternInterface);
 
     public void Invoke() => owner.Invoke();
-
-    private static readonly Lazy<Common.Services.ResourceStrings> HelpText = new(() => new Common.Services.ResourceStrings());
 }
 
 /// <summary>

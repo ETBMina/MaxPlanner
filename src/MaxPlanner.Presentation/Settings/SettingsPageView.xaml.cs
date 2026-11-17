@@ -16,8 +16,6 @@ namespace MaxPlanner.Presentation.Settings;
 /// </summary>
 public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 {
-    private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
-
     /// <summary>The row whose grip received the last pointer press; only that row may start a drag.</summary>
     private LookupRowViewModel? _gripPressedRow;
 
@@ -28,14 +26,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         AttachDataPage();
     }
@@ -45,7 +36,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     public SettingsPageViewModel ViewModel { get; }
 
     /// <summary>Gives the page title keyboard focus after navigation (design §7.7).</summary>
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public FrameworkElement HeaderElement => HeaderRoot;
@@ -79,11 +70,11 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         // card's action wraps below its text.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
+        HeaderRoot.HeaderPadding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
         CapWrapper.Padding = new Thickness(padding, 0, padding, 32);
         ErrorBar.Margin = new Thickness(padding, 0, padding, 8);
-        CardsPanel.HorizontalAlignment = width >= 1008 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
-        var wrap = width < 640;
+        CardsPanel.HorizontalAlignment = width >= Breakpoints.Large ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        var wrap = width < Breakpoints.Medium;
         foreach (var card in FindDescendants<SettingsCard>(CardsPanel))
         {
             card.IsWrapped = wrap;
@@ -95,7 +86,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: LookupSectionViewModel section })
         {
-            _ = ViewModel.AddAsync(section);
+            ViewModel.AddAsync(section).Forget();
         }
     }
 
@@ -104,7 +95,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         if (e.Key == VirtualKey.Enter && sender is FrameworkElement { DataContext: LookupSectionViewModel section })
         {
             e.Handled = true;
-            _ = ViewModel.AddAsync(section);
+            ViewModel.AddAsync(section).Forget();
         }
     }
 
@@ -121,24 +112,17 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
     private void OnRenameKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: LookupRowViewModel row } box)
+        if (sender is FrameworkElement { DataContext: LookupRowViewModel row } box)
         {
-            return;
-        }
-
-        switch (e.Key)
-        {
-            case VirtualKey.Enter:
-                e.Handled = true;
-                _ = CommitRenameAsync(row, box);
-                break;
-            case VirtualKey.Escape:
-                e.Handled = true;
-                row.CancelRename();
-                FocusMenuButton(box, row);
-                break;
-            default:
-                break;
+            InlineRenameEditor.HandleKey(
+                e,
+                commit: () => CommitRenameAsync(row, box).Forget(),
+                cancel: () =>
+                {
+                    // The menu button takes focus even while a running rename ignores the cancel.
+                    row.CancelRename();
+                    FocusMenuButton(box, row);
+                });
         }
     }
 
@@ -147,7 +131,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         // Leaving the box attempts the rename; a refused name keeps the box and its error (as in the Grid).
         if (sender is FrameworkElement { DataContext: LookupRowViewModel { IsRenaming: true, IsBusy: false, RenameError: null } row })
         {
-            _ = ViewModel.CommitRenameAsync(row);
+            ViewModel.CommitRenameAsync(row).Forget();
         }
     }
 
@@ -202,7 +186,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         _gripPressedRow = null;
         if (from >= 0 && args.Items is [LookupRowViewModel row])
         {
-            _ = ViewModel.CommitDraggedRowAsync(row, from);
+            ViewModel.CommitDraggedRowAsync(row, from).Forget();
         }
     }
 
@@ -213,34 +197,25 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             return;
         }
 
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        MenuFlyoutItem Item(string key, string id, Action action, bool enabled = true)
-        {
-            var item = new MenuFlyoutItem { Text = strings.GetString(key), IsEnabled = enabled };
-            AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => action();
-            menu.Items.Add(item);
-            return item;
-        }
-
         void Flag(string key, string id, bool value, StatusFlagKind flag)
         {
             var item = new ToggleMenuFlyoutItem { Text = strings.GetString(key), IsChecked = value };
             AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => _ = ViewModel.SetFlagAsync(row, flag, !value);
+            item.Click += (_, _) => ViewModel.SetFlagAsync(row, flag, !value).Forget();
             menu.Items.Add(item);
         }
 
-        Item("Settings_MenuRename", "Settings_RowMenuRenameItem", () => BeginRename(button, row));
+        menu.Items.AddItem(strings.GetString("Settings_MenuRename"), "Settings_RowMenuRenameItem", () => BeginRename(button, row));
         if (row.Kind is LookupKind.TaskStatus or LookupKind.CrStatus or LookupKind.Priority or LookupKind.Person && !row.IsDefault)
         {
-            Item(row.Kind == LookupKind.Person ? "Settings_MenuMakeDefaultOwner" : "Settings_MenuSetDefault", "Settings_RowMenuSetDefaultItem", () => _ = ViewModel.SetAsDefaultAsync(row));
+            menu.Items.AddItem(strings.GetString(row.Kind == LookupKind.Person ? "Settings_MenuMakeDefaultOwner" : "Settings_MenuSetDefault"), "Settings_RowMenuSetDefaultItem", () => ViewModel.SetAsDefaultAsync(row).Forget());
         }
 
         if (row.Kind is LookupKind.TaskStatus or LookupKind.CrStatus)
         {
-            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.AddSeparator();
             Flag("Settings_MenuFlagCompleted", "Settings_RowMenuCompletedItem", row.IsCompleted, StatusFlagKind.Completed);
             if (row.Kind == LookupKind.TaskStatus)
             {
@@ -252,13 +227,13 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
         if (row.Kind is not (LookupKind.Person or LookupKind.Tag))
         {
-            menu.Items.Add(new MenuFlyoutSeparator());
-            Item("Settings_MenuMoveUp", "Settings_RowMenuMoveUpItem", () => _ = ViewModel.MoveAsync(row, -1), row.CanMoveUp);
-            Item("Settings_MenuMoveDown", "Settings_RowMenuMoveDownItem", () => _ = ViewModel.MoveAsync(row, 1), row.CanMoveDown);
+            menu.Items.AddSeparator();
+            menu.Items.AddItem(strings.GetString("Settings_MenuMoveUp"), "Settings_RowMenuMoveUpItem", () => ViewModel.MoveAsync(row, -1).Forget(), row.CanMoveUp);
+            menu.Items.AddItem(strings.GetString("Settings_MenuMoveDown"), "Settings_RowMenuMoveDownItem", () => ViewModel.MoveAsync(row, 1).Forget(), row.CanMoveDown);
         }
 
-        menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Settings_MenuRemove", "Settings_RowMenuRemoveItem", () => _ = ViewModel.RemoveAsync(row));
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(strings.GetString("Settings_MenuRemove"), "Settings_RowMenuRemoveItem", () => ViewModel.RemoveAsync(row).Forget());
         menu.ShowAt(button);
     }
 
@@ -266,14 +241,9 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         row.BeginRename();
         var container = FindAncestor<Microsoft.UI.Xaml.Controls.Grid>(anchor);
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            if (container is not null && FindDescendants<TextBox>(container).FirstOrDefault(b => AutomationProperties.GetAutomationId(b) == row.RenameAutomationId) is { } box)
-            {
-                box.Focus(FocusState.Keyboard);
-                box.SelectAll();
-            }
-        });
+        InlineRenameEditor.FocusWhenShown(
+            DispatcherQueue,
+            () => container is null ? null : FindDescendants<TextBox>(container).FirstOrDefault(b => AutomationProperties.GetAutomationId(b) == row.RenameAutomationId));
     }
 
     private static void FocusMenuButton(FrameworkElement inside, LookupRowViewModel row)
@@ -293,7 +263,7 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     {
         if (sender is FrameworkElement { DataContext: FieldSectionViewModel section })
         {
-            _ = ViewModel.AddFieldAsync(section);
+            ViewModel.AddFieldAsync(section).Forget();
         }
     }
 
@@ -304,21 +274,13 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
             return;
         }
 
-        var strings = Strings.Value;
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        void Item(string key, string id, Action action, bool enabled = true)
-        {
-            var item = new MenuFlyoutItem { Text = strings.GetString(key), IsEnabled = enabled };
-            AutomationProperties.SetAutomationId(item, id);
-            item.Click += (_, _) => action();
-            menu.Items.Add(item);
-        }
-
-        Item("Settings_MenuEditField", "Settings_FieldMenuEditItem", () => _ = ViewModel.EditFieldAsync(row));
-        Item("Settings_MenuMoveUp", "Settings_FieldMenuMoveUpItem", () => _ = ViewModel.MoveFieldAsync(row, -1), row.CanMoveUp);
-        Item("Settings_MenuMoveDown", "Settings_FieldMenuMoveDownItem", () => _ = ViewModel.MoveFieldAsync(row, 1), row.CanMoveDown);
-        menu.Items.Add(new MenuFlyoutSeparator());
-        Item("Settings_MenuRemoveField", "Settings_FieldMenuRemoveItem", () => _ = ViewModel.DeactivateFieldAsync(row));
+        menu.Items.AddItem(strings.GetString("Settings_MenuEditField"), "Settings_FieldMenuEditItem", () => ViewModel.EditFieldAsync(row).Forget());
+        menu.Items.AddItem(strings.GetString("Settings_MenuMoveUp"), "Settings_FieldMenuMoveUpItem", () => ViewModel.MoveFieldAsync(row, -1).Forget(), row.CanMoveUp);
+        menu.Items.AddItem(strings.GetString("Settings_MenuMoveDown"), "Settings_FieldMenuMoveDownItem", () => ViewModel.MoveFieldAsync(row, 1).Forget(), row.CanMoveDown);
+        menu.Items.AddSeparator();
+        menu.Items.AddItem(strings.GetString("Settings_MenuRemoveField"), "Settings_FieldMenuRemoveItem", () => ViewModel.DeactivateFieldAsync(row).Forget());
         menu.ShowAt(button);
     }
 

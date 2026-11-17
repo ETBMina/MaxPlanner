@@ -3,6 +3,7 @@ using System.Diagnostics;
 using MaxPlanner.Presentation.Board;
 using MaxPlanner.Presentation.Calendar;
 using MaxPlanner.Presentation.Checklists;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Dashboard;
 using MaxPlanner.Presentation.Grid;
@@ -152,6 +153,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>Opens or closes the overlay pane from the title bar's toggle (S breakpoint).</summary>
     public void TogglePane() => Nav.IsPaneOpen = !Nav.IsPaneOpen;
+
+    /// <summary>The data notice's severity: a failed restore is an error, any other outcome a success.</summary>
+    public static InfoBarSeverity DataNoticeSeverity(bool isError) => isError ? InfoBarSeverity.Error : InfoBarSeverity.Success;
 
     /// <summary>The App InfoBar text for a save failure: the actionable message, then the operation id line.</summary>
     public static string FailureText(string? message, string? details) =>
@@ -310,7 +314,7 @@ public sealed partial class ShellView : UserControl
         }
 
         _preloadWorkspace = workspace;
-        _ = PreloadPagesAsync(++_preloadRun, workspace);
+        PreloadPagesAsync(++_preloadRun, workspace).Forget();
     }
 
     private bool IsPreloadCurrent(int run, WorkspaceViewModel workspace) =>

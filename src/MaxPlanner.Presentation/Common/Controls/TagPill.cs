@@ -52,8 +52,6 @@ public sealed partial class TagPillStrip : Panel
     public static readonly DependencyProperty ItemsProperty = DependencyProperty.Register(
         nameof(Items), typeof(object), typeof(TagPillStrip), new PropertyMetadata(null, (d, e) => ((TagPillStrip)d).OnItemsChanged(e.NewValue)));
 
-    private static readonly Lazy<ResourceStrings> Strings = new(() => new ResourceStrings());
-
     private readonly TextBlock _overflow;
     private int _pillCount;
     private int _visibleCount;
@@ -206,7 +204,7 @@ public sealed partial class TagPillStrip : Panel
 
     private double MeasureOverflow(int hidden, Size constraint)
     {
-        var text = Strings.Value.Format("TagPill_Overflow", hidden);
+        var text = ResourceStrings.Shared.Format("TagPill_Overflow", hidden);
         if (_overflow.Text != text)
         {
             _overflow.Text = text;

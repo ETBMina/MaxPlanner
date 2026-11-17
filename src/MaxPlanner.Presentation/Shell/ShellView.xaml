@@ -36,7 +36,7 @@
                 AutomationProperties.AutomationId="Shell_DataNoticeInfoBar"
                 IsOpen="{x:Bind ViewModel.IsDataNoticeOpen, Mode=TwoWay}"
                 Message="{x:Bind ViewModel.DataNoticeMessage, Mode=OneWay}"
-                Severity="{x:Bind ViewModel.DataNoticeSeverity, Mode=OneWay}" />
+                Severity="{x:Bind local:ShellView.DataNoticeSeverity(ViewModel.IsDataNoticeError), Mode=OneWay}" />
             <InfoBar
                 x:Uid="Shell_PreferencesInfoBar"
                 AutomationProperties.AutomationId="Shell_PreferencesInfoBar"
@@ -114,9 +114,9 @@
             AlwaysShowHeader="False"
             AutomationProperties.AutomationId="Shell_Nav"
             AutomationProperties.LandmarkType="Navigation"
-            CompactModeThresholdWidth="640"
+            CompactModeThresholdWidth="{x:Bind common:Breakpoints.Medium, Mode=OneTime}"
             DisplayModeChanged="OnNavDisplayModeChanged"
-            ExpandedModeThresholdWidth="1008"
+            ExpandedModeThresholdWidth="{x:Bind common:Breakpoints.Large, Mode=OneTime}"
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="True"
             PaneDisplayMode="Auto"
@@ -192,7 +192,8 @@
                         Text="{x:Bind ViewModel.StatusSummary, Mode=OneWay}"
                         TextTrimming="CharacterEllipsis"
                         TextWrapping="NoWrap"
-                        ToolTipService.ToolTip="{x:Bind ViewModel.StatusSummary, Mode=OneWay}" />
+                        ToolTipService.ToolTip="{x:Bind common:BindFunctions.ToolTipOrNull(ViewModel.StatusSummary), Mode=OneWay}"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasStatusSummary), Mode=OneWay}" />
                     <StackPanel
                         Grid.Column="1"
                         VerticalAlignment="Center"
@@ -201,7 +202,7 @@
                         Spacing="6">
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Glyph="&#xE73E;"
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsSettled), Mode=OneWay}" />
                         <ProgressRing
@@ -211,12 +212,12 @@
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsSaving), Mode=OneWay}" />
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Glyph="&#xE895;"
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsResyncing), Mode=OneWay}" />
                         <FontIcon
                             AutomationProperties.AccessibilityView="Raw"
-                            FontSize="14"
+                            FontSize="{StaticResource BodyIconSize}"
                             Foreground="{ThemeResource ErrorTextBrush}"
                             Glyph="&#xE783;"
                             Visibility="{x:Bind common:BindFunctions.Visible(SaveStatus.IsFailed), Mode=OneWay}" />

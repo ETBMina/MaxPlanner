@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The two message bars at the top of a draft editor (design §5.0, §5.10): "Fix 2 fields to save" and the save
+    failure, which keeps the draft. A conflict adds Review changes and Reload. A closed InfoBar stays Visible with
+    zero height and would still take the parent's spacing, so each bar, and this control, collapses while closed.
+-->
+<UserControl
+    x:Class="MaxPlanner.Presentation.Common.Dialogs.EditorMessageBars"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    IsTabStop="False"
+    Visibility="Collapsed">
+    <StackPanel Spacing="12">
+        <InfoBar
+            x:Name="ValidationBar"
+            x:Uid="TaskEditor_ValidationInfoBar"
+            IsClosable="False"
+            Severity="Error"
+            Visibility="Collapsed" />
+
+        <InfoBar
+            x:Name="ErrorBar"
+            IsClosable="False"
+            Severity="Error"
+            Visibility="Collapsed">
+            <!-- Editors with conflict steps: Review changes and Reload below the message. -->
+            <InfoBar.Content>
+                <StackPanel
+                    x:Name="ConflictActions"
+                    Margin="0,0,0,12"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Visibility="Collapsed">
+                    <Button x:Name="ReviewButton" x:Uid="Conflict_ReviewButton" AutomationProperties.AutomationId="Conflict_ReviewButton" />
+                    <Button x:Name="ReloadButton" x:Uid="Conflict_ReloadButton" AutomationProperties.AutomationId="Conflict_ReloadButton" />
+                </StackPanel>
+            </InfoBar.Content>
+            <!-- Editors without conflict steps: Reload as the bar's action button. -->
+            <InfoBar.ActionButton>
+                <Button
+                    x:Name="ReloadActionButton"
+                    x:Uid="Conflict_ReloadButton"
+                    AutomationProperties.AutomationId="Conflict_ReloadButton"
+                    Visibility="Collapsed" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+    </StackPanel>
+</UserControl>

@@ -1,7 +1,10 @@
 using System.Reactive.Concurrency;
 using MaxPlanner.Application.Preferences;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Application.Startup;
 using MaxPlanner.Desktop.Startup;
+using MaxPlanner.Infrastructure.Persistence;
+using MaxPlanner.Infrastructure.Startup;
 using MaxPlanner.Infrastructure.Storage;
 using MaxPlanner.Presentation.Common.Scheduling;
 using MaxPlanner.Presentation.Common.Services;
@@ -48,18 +51,43 @@ internal static class AppComposition
         services.AddSingleton<ThemeService>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<Maintenance.WindowFilePickers>();
-        services.AddSingleton(sp => new StartupCoordinator(
-            context,
+
+        // Startup, recovery, and restore (T-09, ADR 0015): the Application coordinator over the Infrastructure storage
+        // and restore adapters, with the shell and the per-dataset session on the Desktop side.
+        services.AddSingleton<IDatasetStorage>(sp => new SqliteDatasetStorage(
+            context.Paths, new SqliteDatasetOptions(sp.GetRequiredService<TimeProvider>(), context.LoggerFactory)));
+        services.AddSingleton<IRestoreOperations>(new FileRestoreOperations(context.Paths, StartupContext.AppVersion));
+        services.AddSingleton(sp => new ShellSessionFactory(
             sp,
+            sp.GetRequiredService<ShellViewModel>(),
+            sp.GetRequiredService<IScheduler>(),
+            sp.GetRequiredService<IUiDispatcher>(),
+            sp.GetRequiredService<ILocalizedStrings>(),
+            sp.GetRequiredService<Maintenance.WindowFilePickers>(),
+            context,
+            sp.GetRequiredService<ILogger<ShellSessionFactory>>()));
+        services.AddSingleton(sp => new ShellStartupView(
             sp.GetRequiredService<ShellViewModel>(),
             sp.GetRequiredService<ILocalizedStrings>(),
             sp.GetRequiredService<IDataFolderLauncher>(),
-            sp.GetRequiredService<IScheduler>(),
-            sp.GetRequiredService<IUiDispatcher>(),
-            sp.GetRequiredService<TimeProvider>(),
             sp.GetRequiredService<Maintenance.WindowFilePickers>(),
+            context,
             requestClose,
-            sp.GetRequiredService<ILogger<StartupCoordinator>>()));
+            sp.GetRequiredService<ILogger<ShellStartupView>>()));
+        services.AddSingleton(sp =>
+        {
+            var view = sp.GetRequiredService<ShellStartupView>();
+            var coordinator = new StartupCoordinator(
+                sp.GetRequiredService<IDatasetStorage>(),
+                sp.GetRequiredService<IRestoreOperations>(),
+                sp.GetRequiredService<ShellSessionFactory>(),
+                view,
+                sp.GetRequiredService<TimeProvider>(),
+                new StartupEnvironment(context.Inspection.HasPriorUse, StartupContext.AppVersion, () => context.ElapsedMilliseconds),
+                sp.GetRequiredService<ILogger<StartupCoordinator>>());
+            view.Connect(coordinator);
+            return coordinator;
+        });
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

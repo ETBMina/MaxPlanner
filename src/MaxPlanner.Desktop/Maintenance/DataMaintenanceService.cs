@@ -1,32 +1,33 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using MaxPlanner.Application.Common;
-using MaxPlanner.Desktop.Startup;
+using MaxPlanner.Application.Startup;
 using MaxPlanner.Infrastructure.Backup;
-using MaxPlanner.Infrastructure.Persistence;
+using MaxPlanner.Infrastructure.Startup;
 using MaxPlanner.Presentation.Common.Services;
 using Microsoft.Extensions.Logging;
 
 namespace MaxPlanner.Desktop.Maintenance;
 
 /// <summary>
-/// Settings › Data backup and restore over the open dataset (T-09, ADR 0015). The restore itself is delegated to the
-/// startup coordinator, which owns the dataset session it must close and reopen.
+/// Settings › Data backup and restore over the open dataset (T-09, ADR 0015), through the Application backup and restore
+/// ports. The restore itself is delegated to the startup coordinator, which owns the dataset session it must close and reopen.
 /// </summary>
 internal sealed partial class DataMaintenanceService(
-    SqliteDataset dataset,
+    IDatasetBackups backups,
+    IRestoreOperations restores,
     TimeProvider time,
-    Func<RestoreValidation, Task<RestoreRunOutcome>> restore,
+    Func<IStagedRestore, Task<RestoreRunResult>> restore,
     ILogger<DataMaintenanceService> logger) : IDataMaintenance
 {
-    public string BackupsDirectory => dataset.Paths.BackupsDirectory;
+    public string BackupsDirectory => backups.BackupsDirectory;
 
     public Task<IReadOnlyList<BackupListItem>> ListBackupsAsync(CancellationToken cancellationToken) =>
         Task.Run<IReadOnlyList<BackupListItem>>(() =>
         {
             try
             {
-                return [.. BackupCatalog.List(BackupsDirectory).Select(e => new BackupListItem(e.Path, e.Name, e.CreatedAtUtc, e.Kind, e.SizeBytes, e.Manifest.ToString(), e.IsManual))];
+                return [.. backups.List().Select(e => new BackupListItem(e.Path, e.Name, e.CreatedAtUtc, e.Kind, e.SizeBytes, e.ManifestState, e.IsManual))];
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -38,19 +39,20 @@ internal sealed partial class DataMaintenanceService(
     public Task<AppResult<string>> CreateBackupAsync(string kind, CancellationToken cancellationToken)
     {
         // Only the kinds the Data page may write; daily and the other safety kinds have their own owners.
-        var safeKind = kind == BackupKinds.ImportSafety ? BackupKinds.ImportSafety : BackupKinds.Manual;
+        var safeKind = kind == BackupKinds.ImportSafety ? BackupKind.ImportSafety : BackupKind.Manual;
+        var kindName = SqliteDatasetBackups.KindName(safeKind);
         return Task.Run(() =>
         {
-            var result = BackupMaintenance.Create(dataset, safeKind, time.GetUtcNow(), StartupContext.AppVersion);
+            var result = backups.Create(safeKind, time.GetUtcNow());
             if (result.IsSuccess)
             {
                 var folder = Path.GetFileName(result.Value);
-                Log.Created(logger, safeKind, folder);
+                Log.Created(logger, kindName, folder);
             }
             else
             {
                 var failure = (result.Error as StorageFailureError)?.Kind;
-                Log.CreateFailed(logger, safeKind, failure);
+                Log.CreateFailed(logger, kindName, failure);
             }
 
             return result;
@@ -62,7 +64,7 @@ internal sealed partial class DataMaintenanceService(
         {
             try
             {
-                var deleted = BackupMaintenance.DeleteManual(BackupsDirectory, path);
+                var deleted = backups.DeleteManual(path);
                 var folder = Path.GetFileName(path);
                 Log.Deleted(logger, folder, deleted);
                 return deleted;
@@ -91,16 +93,16 @@ internal sealed partial class DataMaintenanceService(
         {
             try
             {
-                var validation = RestoreService.Validate(dataset.Paths, backupFolder, cancellationToken);
-                var failed = string.Join(",", validation.Checks.Where(c => !c.Passed).Select(c => c.Kind));
-                Log.Validated(logger, validation.IsValid, failed);
+                var staged = restores.Validate(backupFolder, cancellationToken);
+                var failed = string.Join(",", staged.Checks.Where(c => !c.Passed).Select(c => c.Kind));
+                Log.Validated(logger, staged.IsValid, failed);
                 return new RestorePreparation(
-                    validation,
+                    staged,
                     backupFolder,
-                    [.. validation.Checks.Select(c => new RestoreCheckItem(c.Kind.ToString(), c.Passed, c.Detail))],
-                    validation.IsValid,
-                    validation.BackupCreatedAtUtc,
-                    validation.BackupKind);
+                    [.. staged.Checks.Select(c => new RestoreCheckItem(c.Kind, c.Passed, c.Detail))],
+                    staged.IsValid,
+                    staged.BackupCreatedAtUtc,
+                    staged.BackupKind);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -112,19 +114,26 @@ internal sealed partial class DataMaintenanceService(
     public void DiscardRestore(RestorePreparation preparation)
     {
         ArgumentNullException.ThrowIfNull(preparation);
-        if (preparation.Token is RestoreValidation validation)
+        if (preparation.Token is IStagedRestore staged)
         {
-            RestoreService.Discard(validation);
+            restores.Discard(staged);
         }
     }
 
     public Task<RestoreRunOutcome> RestoreAsync(RestorePreparation preparation)
     {
         ArgumentNullException.ThrowIfNull(preparation);
-        return preparation.Token is RestoreValidation { IsValid: true } validation
-            ? restore(validation)
+        return preparation.Token is IStagedRestore { IsValid: true } staged
+            ? ToOutcomeAsync(restore(staged))
             : Task.FromResult(RestoreRunOutcome.NotStarted);
     }
+
+    private static async Task<RestoreRunOutcome> ToOutcomeAsync(Task<RestoreRunResult> run) => await run switch
+    {
+        RestoreRunResult.Restored => RestoreRunOutcome.Restored,
+        RestoreRunResult.RolledBack => RestoreRunOutcome.RolledBack,
+        _ => RestoreRunOutcome.NotStarted,
+    };
 
     private void StartExplorer(string argument)
     {

@@ -1,7 +1,7 @@
-using System.Globalization;
 using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Domain.Identifiers;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Workspace;
 
@@ -40,14 +40,14 @@ public sealed class ChangeRequestCommands
     public async Task<bool> ScheduleAsync(ChangeRequestReadModel cr, DateOnly day)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        var outcome = await _context.Tasks.RunAsync("Record_ChangeRequest", op => _context.UseCases.ScheduleChangeRequest.ExecuteAsync(
-            new ScheduleChangeRequestCommand(op, cr.Id, cr.Revision, day), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is not null)
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ChangeRequests.ScheduleChangeRequest.ExecuteAsync(
+            new ScheduleChangeRequestCommand(op, cr.Id, cr.Revision, day), CancellationToken.None))).ConfigureAwait(true);
+        if (run.IsSuccess)
         {
             _context.Announce(_context.Strings.Format("Calendar_Scheduled", cr.Number, LongDate(day)));
         }
 
-        return outcome is not null;
+        return run.IsSuccess;
     }
 
     /// <summary>
@@ -57,31 +57,31 @@ public sealed class ChangeRequestCommands
     public async Task<bool> ResizeAsync(ChangeRequestReadModel cr, DateOnly? newStart, DateOnly? newEnd)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        var outcome = await _context.Tasks.RunAsync("Record_ChangeRequest", op => _context.UseCases.ResizeChangeRequest.ExecuteAsync(
-            new ResizeChangeRequestCommand(op, cr.Id, cr.Revision, newStart, newEnd), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is not null && (newStart ?? cr.PlannedStart) is { } start && (newEnd ?? cr.PlannedEnd) is { } end)
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ChangeRequests.ResizeChangeRequest.ExecuteAsync(
+            new ResizeChangeRequestCommand(op, cr.Id, cr.Revision, newStart, newEnd), CancellationToken.None))).ConfigureAwait(true);
+        if (run.IsSuccess && (newStart ?? cr.PlannedStart) is { } start && (newEnd ?? cr.PlannedEnd) is { } end)
         {
             _context.Announce(_context.Strings.Format("Calendar_Rescheduled", cr.Number, LongDate(start), LongDate(end)));
         }
 
-        return outcome is not null;
+        return run.IsSuccess;
     }
 
     /// <summary>B-08.11: clears both planned dates and sets the backlog status.</summary>
     public async Task<bool> MoveToBacklogAsync(ChangeRequestReadModel cr)
     {
         ArgumentNullException.ThrowIfNull(cr);
-        var outcome = await _context.Tasks.RunAsync("Record_ChangeRequest", op => _context.UseCases.MoveChangeRequestToBacklog.ExecuteAsync(
-            new MoveChangeRequestToBacklogCommand(op, cr.Id, cr.Revision), CancellationToken.None)).ConfigureAwait(true);
-        if (outcome is not null)
+        var run = await _context.Commands.RunAsync(CommandRequest.Announced("Record_ChangeRequest", op => _context.UseCases.ChangeRequests.MoveChangeRequestToBacklog.ExecuteAsync(
+            new MoveChangeRequestToBacklogCommand(op, cr.Id, cr.Revision), CancellationToken.None))).ConfigureAwait(true);
+        if (run.IsSuccess)
         {
             _context.Announce(_context.Strings.Format("Calendar_MovedToBacklog", cr.Number));
         }
 
-        return outcome is not null;
+        return run.IsSuccess;
     }
 
-    private static string LongDate(DateOnly day) => day.ToString("M", CultureInfo.CurrentCulture);
+    private static string LongDate(DateOnly day) => DateText.LongMonthDay(day);
 
     private async Task RunEditorAsync(ChangeRequestId? id, DateOnly? plannedDay, bool startDelete)
     {

@@ -182,6 +182,46 @@ public sealed class FilterMenuViewModelTests
     }
 
     [Fact]
+    public void A_menu_open_when_the_scope_is_disposed_cannot_write_preferences()
+    {
+        using var h = Seed();
+        OpenGrid(h);
+        var filters = h.Workspace.Context.TaskFilters;
+        var menu = filters.CreateMenu();
+        var before = h.Preferences.Current;
+
+        filters.Dispose();
+        menu.Find<FilterChoiceGroupViewModel>("Status")!.Choices[0].IsChecked = true;
+
+        menu.IsDetached.Should().BeTrue("disposal closes the open menu");
+        filters.Spec.Statuses.Should().BeEmpty();
+        h.Preferences.Current.Should().BeSameAs(before, "nothing is persisted after disposal");
+    }
+
+    [Fact]
+    public void The_chips_bar_has_content_only_while_there_are_chips_or_a_notice()
+    {
+        using var h = Seed();
+        OpenGrid(h);
+        var filters = h.Workspace.Context.TaskFilters;
+        var changed = new List<string?>();
+        filters.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        filters.HasBarContent.Should().BeFalse("no filter is set, so the bar collapses");
+
+        filters.SearchText = "Recent";
+        filters.HasBarContent.Should().BeTrue("the search chip shows");
+        changed.Should().Contain(nameof(filters.HasBarContent));
+
+        filters.ClearAll();
+        filters.HasBarContent.Should().BeFalse();
+
+        filters.IsInvalidNoticeOpen = true;
+        filters.HasBarContent.Should().BeTrue("the invalid-filter notice shows without chips");
+        filters.IsInvalidNoticeOpen = false;
+        filters.HasBarContent.Should().BeFalse();
+    }
+
+    [Fact]
     public void Custom_field_filters_without_a_menu_row_are_kept()
     {
         // A menu opened before the workflow arrived has no custom field rows; its changes must not drop those filters.

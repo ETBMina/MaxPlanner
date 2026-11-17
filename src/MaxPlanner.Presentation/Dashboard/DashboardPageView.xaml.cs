@@ -1,5 +1,6 @@
 using MaxPlanner.Presentation.Common;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 
 namespace MaxPlanner.Presentation.Dashboard;
@@ -11,20 +12,15 @@ namespace MaxPlanner.Presentation.Dashboard;
 /// </summary>
 public sealed partial class DashboardPageView : UserControl, Shell.IPageView
 {
+    // The six card templates are created once (the view lives as long as the dataset), so the set stays small.
+    private readonly HashSet<TextBlock> _trimWatched = [];
     private bool _isCardFitPending;
 
     public DashboardPageView(DashboardPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        SizeChanged += (_, e) =>
-        {
-            // A collapsed (hidden) page has no width to adapt to; it applies the real width when shown again.
-            if (e.NewSize.Width > 0)
-            {
-                ApplyBreakpoint(e.NewSize.Width);
-            }
-        };
+        PageLayout.OnWidthChanged(this, ApplyBreakpoint);
 
         // A caption or badge that changes can change a card's height. The view and the page ViewModel share the
         // dataset's lifetime, so these subscriptions need no removal.
@@ -65,7 +61,7 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public FrameworkElement? ContentElement => PageContent;
 
-    public void FocusTitle() => PageTitle.Focus(FocusState.Programmatic);
+    public void FocusTitle() => HeaderRoot.FocusTitle();
 
     /// <inheritdoc/>
     public bool FocusSearch() => false;
@@ -76,8 +72,28 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
     /// <inheritdoc/>
     public void OnHidden() => PageContent.OnPageHidden();
 
-    /// <summary>The card's last gap: a share of the spare height above the review links, or nothing without links.</summary>
-    public static GridLength TrailingGap(bool hasLinks) => hasLinks ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+    // A card label or caption shows its full text as a tooltip only while trimmed. The first change also watches the
+    // text, so a caption that changes while it stays trimmed keeps a current tooltip.
+    private void OnTextTrimmedChanged(TextBlock sender, IsTextTrimmedChangedEventArgs args)
+    {
+        if (_trimWatched.Add(sender))
+        {
+            sender.RegisterPropertyChangedCallback(TextBlock.TextProperty, (d, _) => UpdateTrimmedToolTip((TextBlock)d));
+        }
+
+        UpdateTrimmedToolTip(sender);
+    }
+
+    private static void UpdateTrimmedToolTip(TextBlock text) =>
+        ToolTipService.SetToolTip(text, BindFunctions.ToolTipWhenTrimmed(text.IsTextTrimmed, text.Text));
+
+    // The flyout's text is not focusable, so Narrator would not read it on open: announce it from the info button.
+    private void OnFilterInfoOpened(object? sender, object e)
+    {
+        var peer = FrameworkElementAutomationPeer.FromElement(FilterInfoButton) ?? FrameworkElementAutomationPeer.CreatePeerForElement(FilterInfoButton);
+        peer?.RaiseNotificationEvent(
+            AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, FilterScopeText.Text, "DashboardFilterInfo");
+    }
 
     private void OnCardPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args) => ScheduleCardHeightFit();
 
@@ -138,13 +154,13 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
         // T-08.1 page padding: L 32/24, M 24/16, S 16/12 (design §2.3).
         var window = PagePadding.WindowWidth(this, width);
         var inset = PagePadding.Side(window);
-        HeaderRoot.Padding = new Thickness(inset, PagePadding.Top(window), inset, width >= 640 ? 12 : 8);
+        HeaderRoot.ApplyWidth(width, window);
         ContentRoot.Padding = new Thickness(inset, 0, inset, 24);
 
         // Design §4.1: cards 3–6 per row at L, 2 columns at M, 1 at S.
-        CardsLayout.MinItemWidth = width >= 1008 ? 220 : width >= 640 ? Math.Max(220, (width - (2 * inset) - 12) / 2) : Math.Max(200, width - (2 * inset));
+        CardsLayout.MinItemWidth = width >= Breakpoints.Large ? 220 : width >= Breakpoints.Medium ? Math.Max(220, (width - (2 * inset) - 12) / 2) : Math.Max(200, width - (2 * inset));
 
-        var wide = width >= 1008;
+        var wide = width >= Breakpoints.Large;
         Place(StatusChartView, 0, 0, 1);
         Place(SquadChartView, wide ? 0 : 1, wide ? 1 : 0, 1);
         Place(ReviewChartView, wide ? 1 : 2, 0, 1);
@@ -164,21 +180,5 @@ public sealed partial class DashboardPageView : UserControl, Shell.IPageView
         Microsoft.UI.Xaml.Controls.Grid.SetRow(element, row);
         Microsoft.UI.Xaml.Controls.Grid.SetColumn(element, column);
         Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(element, span);
-    }
-
-    private void OnOverdueRowClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: OverdueRowViewModel row })
-        {
-            ViewModel.OpenOverdue(row);
-        }
-    }
-
-    private void OnUnlinkedRowClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: UnlinkedRowViewModel row })
-        {
-            ViewModel.OpenUnlinked(row);
-        }
     }
 }
