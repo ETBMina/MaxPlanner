@@ -16,7 +16,7 @@
        - "Page shown" (event 5605) for -NavigationCycles rounds of Ctrl+1 .. Ctrl+5 sent with "winapp ui send-keys":
          page-switch p95 <= 250 ms;
        - "Navigated to ...; live store subscriptions N; working set M MiB" (event 5010): subscriptions must not grow
-         over the cycles (AC-17), and the idle working set after the cycles must stay <= 500 MiB.
+         over the cycles (AC-17), and the idle working set after the cycles must stay <= 600 MiB (ADR 0030).
   The script never touches real user data: everything runs in a new temp folder that it deletes unless -KeepWork.
 .NOTES
   Requires the .NET SDK (global.json), a published ZIP (scripts/publish-portable.ps1), and WinApp CLI 0.7+ for the
@@ -55,7 +55,7 @@ New-Item -ItemType Directory -Force -Path $fixture | Out-Null
 $budgets = [ordered]@{
     StartupMs        = 3000
     PageSwitchP95Ms  = 250
-    IdleWorkingSetMiB = 500
+    IdleWorkingSetMiB = 600
 }
 $results = [ordered]@{
     Date        = (Get-Date).ToString('o')

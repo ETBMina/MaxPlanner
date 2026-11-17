@@ -19,8 +19,8 @@ Living document for the whole-app review (architecture and MVVM, consistency, UI
 | 0 | Baseline | Done 2026-11-11 | n/a | n/a |
 | 1 | Architecture and MVVM | Done 2026-11-11 | All nine approved 2026-11-11 | 1A, 1B, 1C, 1D merged 2026-11-12 (1290 tests); awaiting the user's manual check in the app. A-03(b), A-04, A-06 moved to part 2. |
 | 2 | Consistency and shared components | Done 2026-11-12 | Approved as proposed 2026-11-12 | 2A–2E merged 2026-11-13, each tested by the user in the app |
-| 3 | UI / UX | Done 2026-11-13 | All fourteen decided 2026-11-13 (four with changes, see the table) | Not started; each batch awaits approval |
-| 4 | Performance | Not started | | |
+| 3 | UI / UX | Done 2026-11-13 | All fourteen decided 2026-11-13 (four with changes, see the table) | 3A–3D merged, each tested by the user in the app; 3E rejected (branch kept), its filter fixes merged |
+| 4 | Performance | Done 2026-11-17 | P-01, P-02, P-04 approved 2026-11-17; P-03 deferred | 4A done (no change), 4B merged, 4C closed by raising the budget to 600 MiB (ADR 0030) |
 
 ## Part 0 — Baseline
 
@@ -215,6 +215,48 @@ Part 3. Each batch still needs the user's go-ahead. They run one at a time in th
 | 3C | U-06, U-05, U-09, U-10 | Board card (U-06 design), Dashboard cards, Checklists alignment and link, status bar text | 2026-11-16 | Implemented and verified 2026-11-16 (build clean, 1592 tests, independent review on Opus: no errors; its fixes applied; checked on screen in light and dark; Board scroll repro passes). Six commits `b50ec4e`..`17c3cb8` on `refs/heads/worktree-agent-a8a18e6cfebc3dc11`; a follow-up (`45f93d8`) hid every card title and was caught by the screen check, fixed in `17c3cb8`; `design.md` updated in the main checkout; merged into `review/app-review` after the user tested it on 2026-11-16. |
 | 3D | U-07, U-08 | Tables: Calendar Records adopts the Grid styles; Grid Kind column and lock icon | 2026-11-16 | Merged 95240de after user test |
 | 3E | U-11 | Experiment on its own branch: Dashboard uses the Filters button; the user tests and decides | 2026-11-16 | Rejected by the user after testing (2026-11-17); not merged. Branch worktree-agent-a860b89961ebdc9f0 (a4379b9) kept for reference. Its review's shared-filter fixes (empty chips bar gap on Grid/Board/Calendar, open menu detached on dispose) merged separately as 6d2e632 |
+
+## Part 4 — Performance measurements (2026-11-17)
+
+Release portable build of `review/app-review` at `c8951f6`, same machine and full benchmark fixture as part 0. Raw results: `docs/review/part4/perf/`.
+
+| Measure | Part 0 | Part 4 | Budget | Verdict |
+|---|---|---|---|---|
+| Startup to rendered, worst of 5 | 1,490 ms | 1,420 ms | 3,000 ms | Pass |
+| Page switch p50 / p95 / max | 28 / 95 / 99 ms | 27 / 106 / 216 ms | p95 250 ms | Pass |
+| Idle working set after 20 rounds | 597.4 MiB | 628.2 MiB | 500 MiB | **Miss** (+31 MiB) |
+| Live store subscriptions | 21 → 21 | 21 → 21 | no growth | Pass |
+| Save one task edit to store | 1.68 ms, 71 KB | 2.50 ms, 71 KB | — | Slower, same allocation |
+| Dashboard recompute | 3.19 ms, 3.9 MB | 3.16 ms, 3.9 MB | — | Same |
+| Search every task and card | 2.17 ms, 577 KB | 2.24 ms, 1,294 KB | — | Same time, 2.2x allocation |
+| Snapshot read / store load / exports / import | — | within ±4% | — | Same |
+
+Memory by page, first visit in a fresh session (working set / private bytes): startup with four pages preloaded 456 MiB (log); Dashboard shown 467 / 370; **Board +95 / +111**; Grid +26 / +37; Calendar +1; Checklists +10; Settings +1; total 601 / 531.
+
+The search and save code paths did not change since part 0 (`TaskSearch`, the store save path), so those two differences are probably fixture or run variance; P-04 confirms it before anyone optimises.
+
+### Part 4 findings (P-01, P-02, P-04 approved 2026-11-17; P-03 deferred until P-02)
+
+| ID | Severity | Finding | Evidence | Proposed change | Effort | Risk |
+|---|---|---|---|---|---|---|
+| P-01 | High | Every Board bucket list keeps the default ListView cache (`CacheLength` 4: two viewports above and below), so first showing the Board realizes several viewports of cards in each bucket. | First Board visit +95 MiB working set, +111 MiB private; no `CacheLength` set anywhere in `src/`; `Board/BoardPageView.xaml:387` | Set a small cache length on the bucket lists (and the Grid list), then remeasure; keep the 3A scroll repro passing. | S | Low: blank cards for a moment on very fast scrolling |
+| P-02 | High | Idle working set misses the 500 MiB budget (628 MiB, +31 since part 0); 456 MiB is already held at startup with the four hidden pages preloaded. | Table above; the startup log line | After P-01, remeasure. If still over, take a managed heap snapshot to see what holds the startup memory (needs the `dotnet-gcdump` developer tool, which needs approval), then propose targeted fixes. | S to measure | None for the measurement |
+| P-03 | Low | Dashboard recompute allocates 3.9 MB per run with Gen2 collections (unchanged since part 0). | Benchmark | Defer until P-02 shows whether it matters. | M | Low |
+| P-04 | Low | Save-to-store went 1.68 → 2.50 ms and search allocation doubled, with no change in either code path. | Benchmarks | Rerun both benchmarks on one fixed fixture to confirm variance before acting. | S | None |
+
+### Part 4 batches
+
+| Batch | Findings | Content | Approved | Status |
+|---|---|---|---|---|
+| 4A | P-04 | Rerun the save and search benchmarks twice on one fixed fixture (measurement only, no code) | 2026-11-17 | Done: no regression. On one fixture both runs gave search 1.91 ms / 577 KB (same as part 0; the 1,294 KB was that run's generated data). Save was 3.85 and 3.90 ms with the same 71 KB: it includes the SQLite commit to disk, and the runs used different disks (part 0 Samsung 970 EVO, part 4 WD SN7100, these reruns the scratch folder), so it tracks the disk, not the code. Closed with no change. |
+| 4B | P-01 | Small cache length on the Board bucket lists and the Grid list; remeasure memory per page; Board scroll repro | 2026-11-17 | Built and tested (`947dda3`, 1604 tests). Board CacheLength 1, Grid 2. Same session, full fixture, after visiting five pages: working set 578 → 502 MiB, private 510 → 416 MiB; Grid first visit +27 → +12 MiB. Board scroll repro passes. Merged 8bbb241 after user test |
+| 4C | P-02 | Remeasure after 4B; if still over budget, managed heap snapshot (needs `dotnet-gcdump` approval) and targeted fixes | 2026-11-17 | Remeasured on `8bbb241` (`docs/review/part4/perf-4b/`): idle working set 628 → 544 MiB (budget 500, still a miss), page switch p95 106 → 60 ms, max 216 → 131 ms, startup worst 1,416 ms, subscriptions 21 → 21. Snapshot taken (`dotnet-gcdump` installed globally with the user's approval): after visiting every page, private bytes 517 MiB but the managed GC heap only 145 MB (1.64 M objects); the largest managed arrays are the projection store and DynamicData filter caches (each a few hundred KB). About 370 MiB is native: the WinUI visual trees of the five live pages, composition, the runtime and SQLite. A 300-task dataset starts at about 280 MiB, so roughly 260 MiB scales with data. The user chose to raise the budget to 600 MiB (ADR 0030; requirements, script, App comment and deployment guide updated); 544 MiB now passes. P-03 stays deferred. Done |
+
+### After the review
+
+| Change | Status |
+|---|---|
+| User feedback (2026-11-17): the tag icon stayed beside the first line when tags wrapped, and a field kept focus until a click landed on another field. The icon is now centred on the whole field; in every record editor one press on content that takes no focus moves focus back to the editor's neutral focus (design §5.0 "Click-away", `ClickAwayRules`, `EditorDialogShell`). | Tested by the user; merged 298f42a |
 
 ## Early performance notes
 

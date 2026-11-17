@@ -89,7 +89,7 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     private void OnPageShown(object? sender, PageShownEventArgs e) => Log.PageShown(_logger, e.Page, (long)e.Elapsed.TotalMilliseconds);
 
-    // T-11: the memory cost of the page preload is the working set after it against the idle budget (500 MiB).
+    // T-11: the memory cost of the page preload is the working set after it against the idle budget (600 MiB, ADR 0030).
     private void OnPagesPreloaded(object? sender, PagesPreloadedEventArgs e)
     {
         var durationMs = (long)e.Elapsed.TotalMilliseconds;

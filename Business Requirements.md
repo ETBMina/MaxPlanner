@@ -271,7 +271,7 @@ These are **design-default budgets** to verify against the implemented applicati
 | Dashboard after a committed task/CR/lookup/review change | p95 ≤200 ms to consistent counts/charts/lists; reuse shared projections, without full-database rereads |
 | Switching loaded pages | p95 ≤250 ms |
 | UI during I/O/import | No app-induced UI-thread stall >100 ms; progress/cancel remains responsive |
-| Idle working set with fixture | ≤500 MiB; use on-demand detail loading if necessary |
+| Idle working set with fixture | ≤600 MiB (raised from 500 MiB by ADR 0030); use on-demand detail loading if necessary |
 | 100 navigation cycles | No growing subscription/handler count or sustained memory retention from old pages |
 
 Required evidence:

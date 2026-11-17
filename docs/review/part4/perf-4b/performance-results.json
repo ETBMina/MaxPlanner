@@ -1,0 +1,88 @@
+{
+  "Date": "2026-11-17T10:55:50.5921108+02:00",
+  "Machine": {
+    "Os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
+    "Cpu": "13th Gen Intel(R) Core(TM) i7-13700HX",
+    "LogicalCores": 24,
+    "MemoryGiB": 31.7,
+    "Disk": "WD_BLACK SN7100 4TB (SSD)",
+    "DotNetSdk": "10.0.404",
+    "Zip": "..\\agent-a2f7923d16f1f6395\\artifacts\\MaxPlanner-0.4.1-win-x64.zip"
+  },
+  "Fixture": "Created C:\\Users\\Maximizer\\AppData\\Local\\Temp\\MaxPlanner Perf 8adb15fd\\fixture\\data\\data.db: 5000 CRs, 10000 tasks (2000 archived), 2000 Subtask cards, 50000 checklist items, 2000 reviews, 5000 General to-dos.",
+  "Benchmarks": null,
+  "Launches": [
+    {
+      "Run": 1,
+      "ReadyMs": 1214,
+      "RenderedMs": 1416
+    },
+    {
+      "Run": 2,
+      "ReadyMs": 1131,
+      "RenderedMs": 1341
+    },
+    {
+      "Run": 3,
+      "ReadyMs": 1147,
+      "RenderedMs": 1358
+    },
+    {
+      "Run": 4,
+      "ReadyMs": 1136,
+      "RenderedMs": 1346
+    },
+    {
+      "Run": 5,
+      "ReadyMs": 1150,
+      "RenderedMs": 1359
+    }
+  ],
+  "Navigation": {
+    "Switches": 100,
+    "P50Ms": 24.0,
+    "P95Ms": 60.0,
+    "MaxMs": 131.0,
+    "SubscriptionsFirst": [
+      21,
+      21,
+      21,
+      21,
+      21
+    ],
+    "SubscriptionsLast": [
+      21,
+      21,
+      21,
+      21,
+      21
+    ],
+    "IdleWorkingSetMiB": 544.1
+  },
+  "Verdicts": {
+    "Startup": {
+      "WorstRenderedMs": 1416.0,
+      "BudgetMs": 3000,
+      "Pass": true
+    },
+    "PageSwitch": {
+      "P95Ms": 60.0,
+      "BudgetMs": 250,
+      "Pass": true
+    },
+    "IdleWorkingSet": {
+      "MiB": 544.1,
+      "BudgetMiB": 500,
+      "Pass": false
+    },
+    "Subscriptions": {
+      "FirstCyclesMax": 21.0,
+      "LastCyclesMax": 21.0,
+      "Pass": true
+    }
+  },
+  "Limitations": [
+    "Benchmarks skipped (-SkipBenchmarks).",
+    "Save-to-visible-UI, search-to-visible-UI, Dashboard-after-commit in the UI, and UI-thread stalls during import are not scripted here; the benchmarks measure their non-UI part and the Phase 19 UI run records the rest."
+  ]
+}
