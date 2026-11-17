@@ -1,6 +1,8 @@
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace MaxPlanner.Presentation.Common.Dialogs;
@@ -13,6 +15,28 @@ namespace MaxPlanner.Presentation.Common.Dialogs;
 /// </summary>
 public static class EditorDialogShell
 {
+    // Each attached dialog's neutral focus, for RestFocus; it goes with the dialog.
+    private static readonly ConditionalWeakTable<ContentDialog, FirstFocus> NeutralFocus = new();
+
+    /// <summary>
+    /// Moves focus back to the neutral focus of the editor dialog that holds <paramref name="element"/>, as when it
+    /// opened (design §5.0, Focus on open): on the dialog's content, with no caret and no highlighted field; the next Tab
+    /// goes to the editor's first field. For a press that took focus out of a field without landing on a control.
+    /// </summary>
+    /// <returns>False when the element is not inside an editor dialog, or the dialog could not take focus.</returns>
+    public static bool RestFocus(DependencyObject element)
+    {
+        for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is ContentDialog dialog && NeutralFocus.TryGetValue(dialog, out var state))
+            {
+                return state.Rest();
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Call once, after InitializeComponent.</summary>
     /// <param name="dialog">The editor dialog.</param>
     /// <param name="editor">Its view model. Alt+Left is added only when it implements <see cref="IInlineStepEditor"/>.</param>
@@ -116,6 +140,7 @@ public static class EditorDialogShell
     private static FirstFocus AttachFirstFocus(ContentDialog dialog, Func<Control?> firstField)
     {
         var state = new FirstFocus(dialog, firstField);
+        NeutralFocus.AddOrUpdate(dialog, state);
         dialog.GettingFocus += state.OnGettingFocus;
         dialog.AddHandler(UIElement.PointerPressedEvent, state.PointerPressedHandler, true);
         dialog.AddHandler(UIElement.PointerReleasedEvent, state.PointerReleasedHandler, true);
@@ -191,6 +216,27 @@ public static class EditorDialogShell
             {
                 ReleaseNeutral();
             }
+        }
+
+        // The neutral focus again, after the opening: the dialog rejoins the Tab cycle without focus visuals until focus
+        // leaves it, and the first Tab from it goes to the first field, exactly as on open.
+        public bool Rest()
+        {
+            if (_isNeutralReleased)
+            {
+                _isNeutralReleased = false;
+                _dialog.GettingFocus += OnGettingFocus;
+            }
+
+            _dialog.IsTabStop = true;
+            _dialog.UseSystemFocusVisuals = false;
+            if (_dialog.Focus(FocusState.Programmatic))
+            {
+                return true;
+            }
+
+            ReleaseNeutral();
+            return false;
         }
 
         private static FirstFocusMove MoveOf(FocusNavigationDirection direction) => direction switch
