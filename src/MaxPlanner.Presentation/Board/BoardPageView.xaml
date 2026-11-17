@@ -408,6 +408,16 @@
                         SelectionMode="None"
                         Unloaded="OnListUnloaded">
                         <!--
+                            P-01: every bucket is on screen at once, so the default cache (CacheLength 4: two viewports above
+                            and two below) realized about five viewports of cards per bucket. CacheLength 1 keeps half a
+                            viewport on each side, enough for wheel steps and edge auto-scroll during a drag.
+                        -->
+                        <local:BoardCardList.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel CacheLength="1" />
+                            </ItemsPanelTemplate>
+                        </local:BoardCardList.ItemsPanel>
+                        <!--
                             The hover, pressed and focus visuals match the card exactly. The rounded item chrome insets its
                             backplate by 4,2 from the container, so the container's Padding is that same 4,2 (the card fills
                             the backplate); BoardCardContainer gives the chrome the card's 8-epx corners. The 8-epx gap between

@@ -42,7 +42,7 @@ public sealed class XamlBindingRulesTests
                     && a.Value.StartsWith("{x:Bind", StringComparison.Ordinal))
                 .Select(a => $"{(string?)e.Attribute(Xaml + "Name") ?? e.Name.LocalName} {a.Name.LocalName}"));
 
-    private static IEnumerable<string> XamlFiles()
+    internal static IEnumerable<string> XamlFiles()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "MaxPlanner.slnx")))
