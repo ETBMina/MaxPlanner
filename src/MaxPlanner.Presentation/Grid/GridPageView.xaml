@@ -182,6 +182,16 @@
                             Loaded="OnTableLoaded"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
                             SelectionMode="None">
+                            <!--
+                                P-01: the default cache (CacheLength 4) realized about five viewports of wide rows. CacheLength 2
+                                keeps one viewport above and one below, so Page Up/Down and fast wheel scrolling still land on
+                                realized rows.
+                            -->
+                            <local:GridTable.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsStackPanel CacheLength="2" />
+                                </ItemsPanelTemplate>
+                            </local:GridTable.ItemsPanel>
                             <local:GridTable.ItemContainerStyle>
                                 <Style TargetType="local:GridRowContainer">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
