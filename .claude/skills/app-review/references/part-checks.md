@@ -58,3 +58,5 @@ Compare siblings side by side. The duplication is usually in scaffolding, not in
 - Static: virtualization and recycling, template depth in list items, binding cost, layout thrash, UI-thread work, allocations in projection updates, SQLite queries and indexes, subscription leaks, startup path.
 - Measured: rerun the benchmarks and `run-performance.ps1` and compare with part 0. Start from the "Early performance notes" collected during parts 1 to 3.
 - Report with before/after charts.
+- When memory is over budget, take a managed heap snapshot (`dotnet-gcdump collect -p <pid>`, installed globally) after visiting every page, and split GC heap from native before proposing fixes.
+- Check `CacheLength` on list panels of pages that stay alive.
