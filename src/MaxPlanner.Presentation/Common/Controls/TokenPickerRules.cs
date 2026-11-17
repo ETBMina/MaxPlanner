@@ -26,25 +26,6 @@ public enum InputRevealStep
     GiveUp,
 }
 
-/// <summary>What a press elsewhere in the picker's window or popup does (<see cref="TokenPickerRules.OutsidePress"/>).</summary>
-public enum OutsidePressStep
-{
-    /// <summary>Nothing: the press is in the box itself, or under another root (another popup).</summary>
-    None,
-
-    /// <summary>A press on a suggestion: the pick runs, and an on-demand input takes focus back afterwards.</summary>
-    Pick,
-
-    /// <summary>Close the suggestion list; focus stays where the press leaves it.</summary>
-    CloseList,
-
-    /// <summary>
-    /// Close the list and take focus out of the field: a focusable control that was pressed keeps the focus it took,
-    /// and a press anywhere else leaves focus on the editor's content with no visible focus.
-    /// </summary>
-    LeaveField,
-}
-
 /// <summary>
 /// The display decisions of <see cref="TokenPicker"/>, kept free of WinUI so tests can check them. Names arrive through
 /// <c>x:Bind</c>, which turns a null string into an empty one, so null and empty mean the same.
@@ -107,31 +88,6 @@ public static class TokenPickerRules
         isListOpen ? TagInputEscapeStep.CloseList
         : !string.IsNullOrEmpty(query) ? TagInputEscapeStep.ClearText
         : TagInputEscapeStep.LeaveInput;
-
-    /// <summary>
-    /// Whether the picker watches presses elsewhere in its window or popup: while its suggestion list is open, and for an
-    /// inline field while focus is in it, so a single press outside takes focus out of the field (WinUI moves no focus
-    /// on a press on content that takes none, such as an editor's empty space or its labels).
-    /// </summary>
-    public static bool WatchesOutsidePress(bool isListOpen, bool isInline, bool hasFocusInField) =>
-        isListOpen || (isInline && hasFocusInField);
-
-    /// <summary>
-    /// What a press does while the picker watches presses. A press on a suggestion is a pick. A press in the box, or
-    /// under another root, is left alone. A press elsewhere in an inline field (a chip, its icon, its empty space) only
-    /// closes the list, as the field keeps focus. A press outside an inline field leaves it; outside any other picker
-    /// it only closes the list.
-    /// </summary>
-    /// <param name="isInline">The picker is an inline tag field.</param>
-    /// <param name="isInSuggestions">The press is in the suggestion list.</param>
-    /// <param name="isInBox">The press is in the search box.</param>
-    /// <param name="isInField">The press is in the inline field (always false for a picker that is not inline).</param>
-    /// <param name="isSameRoot">The press is under the picker's own window or popup root.</param>
-    public static OutsidePressStep OutsidePress(bool isInline, bool isInSuggestions, bool isInBox, bool isInField, bool isSameRoot) =>
-        isInSuggestions ? OutsidePressStep.Pick
-        : isInBox || !isSameRoot ? OutsidePressStep.None
-        : isInline && !isInField ? OutsidePressStep.LeaveField
-        : OutsidePressStep.CloseList;
 
     /// <summary>A printable character typed on the focused field (Space included) reveals the input; control keys do not.</summary>
     public static bool RevealsInput(char character) => !char.IsControl(character);

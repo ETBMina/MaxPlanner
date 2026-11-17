@@ -78,7 +78,7 @@ public sealed partial class TokenPicker : UserControl
     public TokenPicker()
     {
         InitializeComponent();
-        _outsidePressHandler = OnOutsidePress;
+        _outsidePressHandler = OnPressWhileListOpen;
 
         // The inline field's look follows focus on the picker itself (its tab stop while the input is hidden) and on its
         // parts; a typed character or Enter on the picker reveals the input.
@@ -627,14 +627,16 @@ public sealed partial class TokenPicker : UserControl
         return null;
     }
 
-    // A click on a part of the dialog or flyout that takes no focus moves no focus at all: the box stays focused and the
-    // AutoSuggestBox keeps its list open. So while the list is open, or focus is in an inline field, a press anywhere
-    // else under this window or popup root is watched (OnOutsidePress).
+    // A click on a part of the dialog or flyout that takes no focus leaves the box focused, so the AutoSuggestBox
+    // keeps its list open. While it is open, a press anywhere else under this window or popup root closes it. In an
+    // editor dialog the same press then takes focus out of the box (EditorDialogShell), and the input hides.
     private void OnSuggestionListOpenChanged(DependencyObject sender, DependencyProperty property)
     {
-        UpdatePressWatch();
+        DetachPressRoot();
         if (Box.IsSuggestionListOpen)
         {
+            _pressRoot = RootOf(this) as UIElement;
+            _pressRoot?.AddHandler(PointerPressedEvent, _outsidePressHandler, true);
             return;
         }
 
@@ -658,23 +660,6 @@ public sealed partial class TokenPicker : UserControl
         }
     }
 
-    // Watches presses under this window or popup root while TokenPickerRules.WatchesOutsidePress says so.
-    private void UpdatePressWatch()
-    {
-        var watches = IsLoaded && TokenPickerRules.WatchesOutsidePress(Box.IsSuggestionListOpen, IsInline, IsFocusInField());
-        if (watches == (_pressRoot is not null))
-        {
-            return;
-        }
-
-        DetachPressRoot();
-        if (watches)
-        {
-            _pressRoot = RootOf(this) as UIElement;
-            _pressRoot?.AddHandler(PointerPressedEvent, _outsidePressHandler, true);
-        }
-    }
-
     private void DetachPressRoot()
     {
         _pressRoot?.RemoveHandler(PointerPressedEvent, _outsidePressHandler);
@@ -683,58 +668,26 @@ public sealed partial class TokenPicker : UserControl
 
     // A press in the suggestion list is a pick, not an outside click. In a dialog or flyout the list's popup shares
     // the picker's popup root, so the root alone cannot tell them apart: the list itself is checked. Closing it here,
-    // on press, would remove the item before its click chose it (TokenPickerRules.OutsidePress).
-    private void OnOutsidePress(object sender, PointerRoutedEventArgs e)
+    // on press, would remove the item before its click chose it.
+    private void OnPressWhileListOpen(object sender, PointerRoutedEventArgs e)
     {
         if (e.OriginalSource is not DependencyObject source)
         {
             return;
         }
 
-        var step = TokenPickerRules.OutsidePress(
-            IsInline,
-            IsWithin(source, SuggestionsContent()),
-            IsWithin(source, Box),
-            IsInline && IsWithin(source, InlineField),
-            ReferenceEquals(RootOf(source), _pressRoot));
-        switch (step)
+        // A press on a suggestion takes focus out of the box until the pick is done; an on-demand input keeps itself
+        // shown meanwhile and takes focus back once the list closes (OnSuggestionListOpenChanged).
+        if (IsWithin(source, SuggestionsContent()))
         {
-            // A press on a suggestion takes focus out of the box until the pick is done; an on-demand input keeps itself
-            // shown meanwhile and takes focus back once the list closes (OnSuggestionListOpenChanged).
-            case OutsidePressStep.Pick:
-                _isPickingWithPointer = IsInline && IsInputOnDemand;
-                break;
-            case OutsidePressStep.CloseList:
-                Box.IsSuggestionListOpen = false;
-                break;
-            case OutsidePressStep.LeaveField:
-                Box.IsSuggestionListOpen = false;
-                DispatcherQueue.TryEnqueue(LeaveFieldAfterPress);
-                break;
-        }
-    }
-
-    // Runs once the press has done its own focusing: a pressed control that takes focus (a field, a button) already has
-    // it. A press on content that takes none left focus in the field, so it goes to the editor's content with no visible
-    // focus (design §5.0, Focus on open); the input then hides as when focus leaves it by Tab (OnBoxLostFocus).
-    private void LeaveFieldAfterPress()
-    {
-        if (IsFocusInField())
-        {
-            EditorDialogShell.RestFocus(this);
-        }
-    }
-
-    // Focus on the picker itself (the field's tab stop while the input is hidden) or on any part of the inline field.
-    private bool IsFocusInField()
-    {
-        if (!IsInline || XamlRoot is null)
-        {
-            return false;
+            _isPickingWithPointer = IsInline && IsInputOnDemand;
+            return;
         }
 
-        var focusedElement = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
-        return ReferenceEquals(focusedElement, this) || IsWithin(focusedElement, InlineField);
+        if (!IsWithin(source, Box) && ReferenceEquals(RootOf(source), _pressRoot))
+        {
+            Box.IsSuggestionListOpen = false;
+        }
     }
 
     // The AutoSuggestBox template's SuggestionsPopup part. Its child is not a visual descendant of the box.
@@ -838,6 +791,10 @@ public sealed partial class TokenPicker : UserControl
         // The field draws its own focused state, so the picker, when it is the field's tab stop, shows no second focus
         // rectangle around it.
         UseSystemFocusVisuals = false;
+
+        // The whole field is one text field: in an editor, a press on its icon or empty space keeps the focus that is in
+        // it (a press there reveals or keeps the input), where a press elsewhere takes focus out (EditorDialogShell).
+        EditorDialogShell.SetIsFocusArea(this, true);
         var clear = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         foreach (var key in BoxChromeKeys)
         {
@@ -1151,12 +1108,11 @@ public sealed partial class TokenPicker : UserControl
         }
 
         // Focus on the picker itself (the field's tab stop while the input is hidden) or inside the field shows the
-        // field's focused look once; the picker draws no focus rectangle of its own. While focus is in the field, a
-        // press outside it is watched, so one press takes focus out (UpdatePressWatch).
-        var focused = IsFocusInField();
+        // field's focused look once; the picker draws no focus rectangle of its own.
+        var focusedElement = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        var focused = ReferenceEquals(focusedElement, this) || IsWithin(focusedElement, InlineField);
         var state = !IsEditable ? "FieldNormal" : focused ? "FieldFocused" : _isPointerOverField ? "FieldPointerOver" : "FieldNormal";
         VisualStateManager.GoToState(this, state, true);
-        UpdatePressWatch();
     }
 
     private void OnRemoveClick(object sender, RoutedEventArgs e)
