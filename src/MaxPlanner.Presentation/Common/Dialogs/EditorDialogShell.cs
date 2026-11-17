@@ -1,18 +1,30 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace MaxPlanner.Presentation.Common.Dialogs;
 
 /// <summary>
 /// Wires the parts every draft editor dialog shares (design §5.0, §5.8, §7.2): <see cref="EditorDialogLayout"/>, the
-/// primary button and Ctrl+Enter running Save, the close guard, Alt+Left on an inline step, the first focus, and the
-/// editor's focus requests. A dialog keeps only what is its own: its first field, its field-to-control focus map, its
-/// selection sync, and its special handlers.
+/// primary button and Ctrl+Enter running Save, the close guard, Alt+Left on an inline step, the first focus, click-away,
+/// and the editor's focus requests. A dialog keeps only what is its own: its first field, its field-to-control focus
+/// map, its selection sync, and its special handlers.
 /// </summary>
 public static class EditorDialogShell
 {
+    /// <summary>
+    /// Marks a composite field whose whole area counts as the field for click-away (the inline tag field: its icon and
+    /// empty space are part of one text field). A press anywhere in it keeps focus that is inside it.
+    /// </summary>
+    public static readonly DependencyProperty IsFocusAreaProperty = DependencyProperty.RegisterAttached(
+        "IsFocusArea", typeof(bool), typeof(EditorDialogShell), new PropertyMetadata(false));
+
+    public static bool GetIsFocusArea(DependencyObject element) => (bool)element.GetValue(IsFocusAreaProperty);
+
+    public static void SetIsFocusArea(DependencyObject element, bool value) => element.SetValue(IsFocusAreaProperty, value);
+
     /// <summary>Call once, after InitializeComponent.</summary>
     /// <param name="dialog">The editor dialog.</param>
     /// <param name="editor">Its view model. Alt+Left is added only when it implements <see cref="IInlineStepEditor"/>.</param>
@@ -113,12 +125,18 @@ public static class EditorDialogShell
     // Opened. A press is seen after the pressed control took focus, so a press during that short time still lands on the
     // dialog. When focus leaves the dialog, the first Tab goes to the first field, and the dialog leaves the Tab cycle
     // again, so later Tab and Shift+Tab cycle the fields as before.
+    // Click-away (owner decision, Nov 2026): after the opening, a press on the dialog's content that takes no focus
+    // (empty space, a label, a panel, a fact box, the scroll area) takes focus out of the field that has it and puts it
+    // back on that neutral focus (ClickAwayRules). It is judged on release, once the press has done its own focusing.
     private static FirstFocus AttachFirstFocus(ContentDialog dialog, Func<Control?> firstField)
     {
         var state = new FirstFocus(dialog, firstField);
         dialog.GettingFocus += state.OnGettingFocus;
         dialog.AddHandler(UIElement.PointerPressedEvent, state.PointerPressedHandler, true);
         dialog.AddHandler(UIElement.PointerReleasedEvent, state.PointerReleasedHandler, true);
+        dialog.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(state.OnClickAwayPressed), true);
+        dialog.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(state.OnClickAwayReleased), true);
+        dialog.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler((_, _) => state.ForgetPress()), true);
         dialog.AddHandler(UIElement.KeyDownEvent, state.KeyDownHandler, true);
         dialog.AddHandler(UIElement.KeyUpEvent, state.KeyUpHandler, true);
         dialog.Opened += (_, _) => dialog.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, state.End);
@@ -134,6 +152,7 @@ public static class EditorDialogShell
         private readonly bool _usedSystemFocusVisuals;
         private bool _isInputDetached;
         private bool _isNeutralReleased;
+        private PendingPress? _press;
 
         public FirstFocus(ContentDialog dialog, Func<Control?> firstField)
         {
@@ -193,6 +212,100 @@ public static class EditorDialogShell
             }
         }
 
+        // A press on the dialog: what has focus once the pressed control had its turn (a button or a text box takes it on
+        // press, before the press reaches the dialog), and where the press is, for the click-away decision on release.
+        public void OnClickAwayPressed(object sender, PointerRoutedEventArgs e)
+        {
+            _press = null;
+            if (_dialog.XamlRoot is null || e.OriginalSource is not DependencyObject source)
+            {
+                return;
+            }
+
+            // A popup (a drop-down, a calendar, a suggestion list, a menu) has a root of its own; the dialog's content
+            // and its fields share one.
+            var contentRoot = RootOf(_dialog.Content as DependencyObject ?? _dialog);
+            var focused = FocusManager.GetFocusedElement(_dialog.XamlRoot) as DependencyObject;
+            _press = new PendingPress(
+                focused,
+                ReferenceEquals(RootOf(source), contentRoot),
+                focused is not null && !ReferenceEquals(focused, _dialog) && ReferenceEquals(RootOf(focused), contentRoot),
+                focused is not null && IsWithin(source, FocusAreaOf(focused)));
+        }
+
+        public void OnClickAwayReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (_press is not { } press || _dialog.XamlRoot is null)
+            {
+                return;
+            }
+
+            _press = null;
+            var focusedNow = FocusManager.GetFocusedElement(_dialog.XamlRoot);
+            if (ClickAwayRules.RestsFocusAfterPress(press.IsOnDialogContent, press.WasFieldFocused, press.IsInFocusedField, ReferenceEquals(focusedNow, press.Focused)))
+            {
+                Rest();
+            }
+        }
+
+        // A press that ends in a pan or a lost capture is not a click.
+        public void ForgetPress() => _press = null;
+
+        // The neutral focus again, after the opening: the dialog rejoins the Tab cycle without focus visuals until focus
+        // leaves it, and the first Tab from it goes to the first field, exactly as on open.
+        private void Rest()
+        {
+            if (_isNeutralReleased)
+            {
+                _isNeutralReleased = false;
+                _dialog.GettingFocus += OnGettingFocus;
+            }
+
+            _dialog.IsTabStop = true;
+            _dialog.UseSystemFocusVisuals = false;
+            if (!_dialog.Focus(FocusState.Programmatic))
+            {
+                ReleaseNeutral();
+            }
+        }
+
+        // The focused element, or the composite field around it that counts as one field (IsFocusArea).
+        private DependencyObject FocusAreaOf(DependencyObject focused)
+        {
+            for (var current = focused; current is not null && !ReferenceEquals(current, _dialog); current = VisualTreeHelper.GetParent(current))
+            {
+                if (GetIsFocusArea(current))
+                {
+                    return current;
+                }
+            }
+
+            return focused;
+        }
+
+        private static DependencyObject RootOf(DependencyObject element)
+        {
+            for (var parent = VisualTreeHelper.GetParent(element); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+            {
+                element = parent;
+            }
+
+            return element;
+        }
+
+        private static bool IsWithin(DependencyObject? element, DependencyObject ancestor)
+        {
+            for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+            {
+                if (ReferenceEquals(current, ancestor))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static FirstFocusMove MoveOf(FocusNavigationDirection direction) => direction switch
         {
             FocusNavigationDirection.None => FirstFocusMove.None,
@@ -235,5 +348,7 @@ public static class EditorDialogShell
             _dialog.IsTabStop = _wasTabStop;
             _dialog.UseSystemFocusVisuals = _usedSystemFocusVisuals;
         }
+
+        private sealed record PendingPress(DependencyObject? Focused, bool IsOnDialogContent, bool WasFieldFocused, bool IsInFocusedField);
     }
 }

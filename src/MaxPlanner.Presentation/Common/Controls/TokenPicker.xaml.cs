@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Pickers;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -627,7 +628,8 @@ public sealed partial class TokenPicker : UserControl
     }
 
     // A click on a part of the dialog or flyout that takes no focus leaves the box focused, so the AutoSuggestBox
-    // keeps its list open. While it is open, a press anywhere else under this window or popup root closes it.
+    // keeps its list open. While it is open, a press anywhere else under this window or popup root closes it. In an
+    // editor dialog the same press then takes focus out of the box (EditorDialogShell), and the input hides.
     private void OnSuggestionListOpenChanged(DependencyObject sender, DependencyProperty property)
     {
         DetachPressRoot();
@@ -789,6 +791,10 @@ public sealed partial class TokenPicker : UserControl
         // The field draws its own focused state, so the picker, when it is the field's tab stop, shows no second focus
         // rectangle around it.
         UseSystemFocusVisuals = false;
+
+        // The whole field is one text field: in an editor, a press on its icon or empty space keeps the focus that is in
+        // it (a press there reveals or keeps the input), where a press elsewhere takes focus out (EditorDialogShell).
+        EditorDialogShell.SetIsFocusArea(this, true);
         var clear = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         foreach (var key in BoxChromeKeys)
         {

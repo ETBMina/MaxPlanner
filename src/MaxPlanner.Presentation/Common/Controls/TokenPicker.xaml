@@ -187,10 +187,13 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <!-- Centred in the first 30 epx line, so it stays beside the first line of chips when they wrap. -->
+                <!--
+                    Centred on the whole field: in the 30 epx line of a single-line field, and on all the lines together
+                    when the chips wrap.
+                -->
                 <FontIcon
-                    Margin="4,7,8,0"
-                    VerticalAlignment="Top"
+                    Margin="4,0,8,0"
+                    VerticalAlignment="Center"
                     AutomationProperties.AccessibilityView="Raw"
                     FontSize="{StaticResource StandardIconSize}"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
