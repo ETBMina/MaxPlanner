@@ -282,6 +282,7 @@ The Subtask cards count is no longer shown on the card. The card's accessible na
 - **Copy ID** (owner request, Nov 2026; task and Subtask cards): copies the card's ID text, built from the Settings › Defaults **Copy ID format**, to the clipboard. See §4.6.
 - Add Subtask card (tasks only)
 - Archive (tasks only)
+- Create pull request… (when the Azure DevOps integration is on; §5.11)
 - Delete…
 
 | | L | M | S |
@@ -315,7 +316,7 @@ A card that is created, copied or restored, or whose status changes outside a po
 | Header | Title "Grid". Filters (shared with Board), then the expanding Search icon (§2.3.1). Tasks and Subtask cards always appear together; the Kind column identifies each row, and there is no Kind filter (B-07, owner decision). Accent **New task** (opens the task editor with the default status, same as the Board). CommandBar: **Show archived** (`AppBarToggleButton`, persisted, B-05), **Columns** (flyout), **Export…** (current view → Data page export with the scope preset), Clear all filters, overflow: Reset column layout. |
 | Chips row | Active filters plus "From Dashboard" (§2.9) |
 | Table | Virtualized rows with sticky column headers. Header buttons sort (Ascending → Descending → default), and their names are "Sort by Title, currently ascending". Columns can be resized (pointer, or Alt+Left/Right on a focused header) and reordered (drag or header menu "Move left/right"). The column chooser is a `Flyout` with a `CheckBox` per column plus Reset. Widths are clamped to 48–800 on restore. |
-| Row | **No bulk-selection checkbox column**, since there are no bulk commands in release 1. Row header ⋯ `MenuFlyout`: Open, Copy…, Copy ID (§4.2), Link to CR… (unlinked tasks only), Add Subtask card, Archive/Restore, Delete…. Archived rows use secondary text, an "Archived" chip in the Archived column, and are read-only except Link to CR… (B-05). |
+| Row | **No bulk-selection checkbox column**, since there are no bulk commands in release 1. Row header ⋯ `MenuFlyout`: Open, Copy…, Copy ID (§4.2), Link to CR… (unlinked tasks only), Add Subtask card, Archive/Restore, Create pull request… (when the Azure DevOps integration is on; §5.11), Delete…. Archived rows use secondary text, an "Archived" chip in the Archived column, and are read-only except Link to CR… (B-05). |
 | Footer | The status bar summary (§2.8). |
 
 | Column (default order) | Editor | Editable when | Read-only display / navigation |
@@ -473,6 +474,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
 | People and tags | Expanders for People and Tags. The rows are the same as the workflow rows. Person rows show the CR Owner count. |
 | Custom fields | Expanders for Task fields and CR fields. Rows: label, kind, required/default chips, ⋯ (Edit…, Move up/down, Deactivate…). **Add field…** opens the field dialog: Label*, Key* (proposed from the label, editable until first save), Kind* `ComboBox`, Required `ToggleSwitch` (if records exist, shows a backfill preview step), Default, Lookup source. Built-in fields are not listed (B-11). |
 | Defaults | Default task status, Default CR status, Default priority, **Default CR Owner** (person picker with "None"), CR scheduling status, and Calendar workweek (read-only "Sunday–Thursday", §11 Q5). **Copy ID format** (owner request, Nov 2026): a `TextBox`, default `{CRNum} - {TaskNum}`, with the placeholders listed in its description: `{CRNum}`, `{TaskNum}`, `{Title}`, `{Service}`, `{Squad}`. Matching is case-insensitive, and unknown placeholders are left as typed. Gaps are trimmed on the format's literal text only, never inside values: a placeholder with an empty value is dropped, and a literal between two placeholders is kept only when values remain on both sides of it ("{CRNum} - {TaskNum} {Title}" gives "View Zain Products" for an unlinked task, not " -  View Zain Products"; Squad is empty when unlinked, never "General"; when every placeholder in the format is empty nothing is copied; a format with only literal text copies that text). Copy ID shows no confirmation. A configuration replace from a file that predates this setting resets it to the default.. Text before the first placeholder and after the last one is kept only when the placeholder next to it has a value. The result is then trimmed of whitespace. A Subtask card uses the CR values inherited through its parent, and the parent's title and service. The format is a dataset setting and is included in export and import (ADR 0026). An empty format falls back to the default. |
+| Integrations | One `SettingsExpander` **Azure DevOps** ("Create pull requests from tasks and CRs.") with an **Enable Azure DevOps integration** `ToggleSwitch` in its header, off by default. When off, only the header shows and the menu items (§5.11) are hidden; values and token are kept. Rows: **Collection URL** (`https://server/collection`; must start with `https://`; an address with `/_git/` or `/_apis/` gets an inline hint), **Project**, **Repository**, **Personal access token** (a `PasswordBox` when none is saved or after **Change…**; a saved token shows only "Saved", never its value; **Remove** asks first; description: "Needs Code (Read and write). Kept in Windows Credential Manager for this Windows user. Not exported or backed up."), **Test connection** (inline ✓/✗ with the §5.11 messages, e.g. "Connected as {name} · {repository} found"); then **Default target branch** (`uat`), **Auto-complete by default** `ToggleSwitch` (on), **Pull request title** (`TextBox`, default `PR {CRNum} {TaskNum} into {Target}`; placeholders `{CRNum}`, `{TaskNum}`, `{Title}`, `{Source}`, `{Target}`, with the Copy ID format's matching and gap-trimming rules; empty falls back to the default). Fields save on change. Below the S breakpoint labels stack above fields. These are **per-PC preferences**: not part of the dataset, export or import, and **not** reset by Restore default UI preferences. AutomationIds: `Settings_AdoExpander`, `Settings_AdoEnabledSwitch`, `Settings_AdoCollectionUrlBox`, `Settings_AdoProjectBox`, `Settings_AdoRepositoryBox`, `Settings_AdoTokenBox`, `Settings_AdoTokenChangeButton`, `Settings_AdoTokenRemoveButton`, `Settings_AdoTestConnectionButton`, `Settings_AdoDefaultTargetBox`, `Settings_AdoAutoCompleteSwitch`, `Settings_AdoTitleTemplateBox`. Placement: after Custom fields and before Data (Views is not built yet). The Azure DevOps values are a separate slice of the preferences, so a future Restore default UI preferences keeps them. ADR 0031. |
 | Views | Restore default UI preferences (Grid layout, filters, window). The confirmation states that business data is unaffected (B-11). |
 | Data | A **SettingsCard** "Data location" with the path, `IsTextSelectionEnabled`, and an **Open folder** button. **Backups**: last backup time, **Back up now**, a **Manage backups…** link. **Import, export and restore** (a card whose full-width `Button` shows a chevron) → the Data page. |
 | About | Version, schema version, dataset ID (copyable), Third-party notices (opens the bundled text file). |
@@ -579,7 +581,7 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 | 7 | Notes | Multiline | — |
 | 8 | Custom fields | Per definition order | Typed |
 
-- **More menu:** Copy… (§5.5), Archive / Restore, Add Subtask card, Delete… (§5.7).
+- **More menu:** Copy… (§5.5), Archive / Restore, Add Subtask card, Create pull request… (§5.11), Delete… (§5.7).
 - **Archived task:** an InfoBar (Informational) "Archived tasks are read-only. Restore to edit." with **Restore**. All fields, tags and checklist actions are disabled except **Link to CR…** when the task is unlinked (B-05); Open CR and the copy icons still work.
 - **Layout by width:** groups 1–3 span the dialog. At L the field rows sit side by side as listed; at M and S every field stacks in one column and the facts strip uses two columns.
 
@@ -587,7 +589,7 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 - **Header** (review U-02 with the owner's U-06 card design, Nov 2026): the "Subtask card" caption with More (⋯); the parent task's title as the heading, read-only, in the inherited-title style, as the **Open parent** link (accessible name "Subtask of {parent}"); directly under it a decorative "↳" and the card's own **Subtitle*** (250), edited in place as a smaller secondary title line.
 - **Info box** (`CardBackgroundFillColorSecondaryBrush`, below the subtitle): Created and Service, CR number, Task number, Squad ("General"), and Owner.
 - **Own fields:** **Status*** (task statuses), Start date, End date (with B-04 helper text), Notes.
-- **More menu:** Delete… (confirmation names the subtitle).
+- **More menu:** Create pull request… (§5.11; uses the parent's CR and task numbers), Delete… (confirmation names the subtitle).
 - **Footer:** Save / Cancel.
 - **Archived parent:** the dialog is read-only and an InfoBar says "The parent task is archived."
 - **Parent effects:** saving never changes the parent task's status or dates. The helper under Status states this (AC-32).
@@ -611,7 +613,7 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 | 7 | Custom fields | — |
 | 8 | **Linked tasks (3)** | A `ListView`: service chip, effective status, "Checklist 2/5", an "Archived" chip. A row opens the task (closes after §5.8). **+ Create task**: for a new or dirty CR, an inline step "Save CR-1042 and create a task?" → Save and create (T-13). **Link existing task…**: inline step §5.6 (task-side picker). |
 
-- **More menu:** Move to backlog, Delete… (inline cascade step §5.7). **No Archive** (B-05).
+- **More menu:** Move to backlog, Create pull request… (§5.11), Delete… (inline cascade step §5.7). **No Archive** (B-05).
 
 **Proposed notes (Phase 6, pending owner review):**
 - **Owner** uses the TokenPicker in single-selection mode (one chip; choosing another name replaces it), so suggestions and "Add 'name'" match the people pickers. A new person is created only by Save (B-02.6).
@@ -703,6 +705,57 @@ Route: the task editor and copy dialog (inline), the Grid row ⋯ "Link to CR…
 - **Reload** discards the draft after a confirmation.
 - The draft is never replaced silently.
 - **Proposed note — single Grid cell (Phase 2, pending owner review):** an inline cell edit has one field, so the conflict is shown in the cell's error `Popup` instead of an inline step: the error text, "Saved now: {committed value}" (it follows later commits), "Your change: {draft}", **Use mine** (`Conflict_UseMineButton`: keeps the draft and commits it against the current revision) and **Reload** (`Conflict_ReloadButton`: discards the draft and shows the saved value). Both values are visible side by side, so Reload is the explicit decision and has no extra confirmation. The editor stays open with the draft until one of the two is chosen, and leaving the cell never retries a conflicting draft. Requirements are unchanged (B-02.9, AC-07).
+
+### 5.11 Create pull request (B-18, ADR 0031)
+Owner decisions, Nov 2026. Creates one Azure DevOps pull request for a task, CR or Subtask card. Nothing is saved to the dataset.
+
+**Entry points.** "Create pull request…" (Branch glyph) is shown only when Settings › Integrations › Azure DevOps is **on**. It sits just above Delete…, separated from it, in:
+- the task editor, CR editor and Subtask card editor More menus (§5.1–§5.3);
+- the Board card menu (§4.2) and the Grid row menu (§4.3), for tasks, CRs and Subtask cards.
+
+Dialogs never stack (§5.0): from an editor the item works like Copy…, so the editor closes first (with the dirty-close confirmation, §5.8, when there are unsaved edits) and the dialog then opens over the page with the **saved** values. From Board and Grid it opens directly. The CR and Subtask card editors' More button is enabled for any saved record (Delete… keeps its own read-only rule).
+
+| Situation | Item |
+|---|---|
+| New record never saved | Disabled (like Copy ID) |
+| Saved record | Enabled; the dialog uses the saved values |
+| Archived task, or editing blocked | Enabled (nothing is written) |
+| Integration on but setup incomplete | Enabled; the dialog explains what is missing |
+
+Reviews and General to-dos have no item.
+
+**Dialog.** An in-app dialog built from `EditorDialogShell` and `EditorMessageBars`, about 480 epx wide, single column (not a separate window). Title "Create pull request"; caption "{project} · {repository}" from Settings.
+
+| Field | Default | Notes |
+|---|---|---|
+| Source branch* | The task number (CR: its task number; Subtask card: its parent's) | Plain `TextBox`, no server list. With no task number it starts empty, helper "This task has no task number. Type the branch name." |
+| Target branch* | Settings default (`uat`) | Plain `TextBox` |
+| Title* | Built from the Settings title template | Rebuilt when source or target changes, until the user edits the title; then kept |
+| Auto-complete when policies pass | Settings default (on) | `CheckBox`, per pull request |
+
+- No description field; the pull request is sent with no description.
+- A short name is sent as `refs/heads/{name}`; a pasted `refs/heads/…` is accepted.
+- Validation (inline, Create disabled until valid): all three required; source ≠ target; branch names follow git rules (no spaces or `~ ^ : ? * [ \`, no `..`, not ending in `/` or `.lock`).
+
+**Progress.** Create locks the fields, disables Create and Cancel (a request cannot be safely cancelled midway), and shows a step list with a `ProgressRing` on the active line and a ✓ on finished lines: Checking branches → Checking for new commits → Creating pull request → Setting auto-complete (only when ticked). Each step is announced. Timeout 30 s per request. Nothing is retried automatically.
+
+**Results** (an `InfoBar` at the top of the dialog; focus moves to its first action):
+
+| Outcome | Severity | Message | Actions |
+|---|---|---|---|
+| Created | Success | "Pull request **#{id}** created." where **#{id}** is a hyperlink to the pull request page (the full address is not shown) | The link opens the browser; Create becomes **Close** |
+| Created, auto-complete failed | Warning | "Pull request **#{id}** created, but auto-complete couldn't be set: {server message}." (same link) | Link, Close |
+| No new commits (`aheadCount` 0) | Warning | "{source} has no new commits compared with {target}. Push your work first." | Fields unlock. No override. |
+| Branch not found | Error | "Branch {name} doesn't exist in {repository}." | Fields unlock |
+| Already exists (409 `GitPullRequestExistsException`) | Informational | "A pull request from {source} to {target} already exists." | **Open existing PR** (finds the active one), Close |
+| Token rejected (401/403) | Error | "Azure DevOps rejected the token. It may have expired or lack Code (Read and write)." | **Open Settings**, Close |
+| Network, timeout, TLS | Error | "Couldn't reach {server}: {reason}." | **Try again** |
+| Other server error | Error | "Azure DevOps returned an error: {server message}." | **Try again** |
+| Setup incomplete | Warning (on open) | "Azure DevOps isn't set up yet. Missing: {items}." | **Open Settings**; Create disabled |
+
+**Open Settings** closes the dialog and opens Settings with the Azure DevOps expander expanded and focused. A token missing from Credential Manager counts as missing.
+
+**Accessibility.** AutomationIds follow each menu's existing convention for the menu item (for example `Board_MenuCreatePullRequestItem`); the dialog uses the `PullRequest_` prefix: `PullRequest_Dialog` (name "Create pull request for {record title}"), `PullRequest_SourceBranchBox`, `PullRequest_TargetBranchBox`, `PullRequest_TitleBox`, `PullRequest_AutoCompleteCheckBox`, `PullRequest_ProgressList`, `PullRequest_ResultInfoBar`, `PullRequest_Link` (name "Open pull request #{id} in browser"), `PullRequest_OpenExistingButton`, `PullRequest_OpenSettingsButton`, `PullRequest_TryAgainButton`. Inline errors are linked to their fields; the result bar is a live region; step states use glyphs as well as color. Enter runs Create when valid; Esc closes except while running. Long URLs and server messages wrap.
 
 ## 6. Visual tokens
 
