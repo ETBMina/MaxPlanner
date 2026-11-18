@@ -30,6 +30,9 @@ public enum SubtaskEditorFollowUp
     None,
     Delete,
     OpenParent,
+
+    /// <summary>More › Create pull request… (design §5.11): uses the parent's CR and task numbers.</summary>
+    CreatePullRequest,
 }
 
 /// <summary>
@@ -54,7 +57,7 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
     private static readonly string[] StateProperties =
     [
         nameof(CreatedText), nameof(Caption), nameof(ParentTitle), nameof(ParentService), nameof(CrNumberText), nameof(TaskNumberText), nameof(SquadText),
-        nameof(OwnerText), nameof(HasOwner), nameof(IsReadOnly), nameof(IsParentArchived), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete),
+        nameof(OwnerText), nameof(HasOwner), nameof(IsReadOnly), nameof(IsParentArchived), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(IsMoreMenuEnabled),
         nameof(IsFormStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep), nameof(HasValidationSummary), nameof(HasSaveError),
         nameof(CanOpenParent),
     ];
@@ -110,6 +113,12 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
 
     /// <summary>The edited card, or null for a new one (until it is created).</summary>
     public SubtaskCardId? ExistingCardId => IsNew ? null : _cardId;
+
+    /// <summary>Settings › Integrations › Azure DevOps is on: More shows Create pull request… (design §5.11).</summary>
+    public bool IsPullRequestAvailable => Context.IsAzureDevOpsEnabled;
+
+    /// <summary>The More button: enabled for a saved record while Delete… or Create pull request… can be used.</summary>
+    public bool IsMoreMenuEnabled => EditorControlRules.IsMoreMenuEnabled(IsNew, CanDelete, IsPullRequestAvailable);
 
     public SubtaskCardId? CreatedCardId { get; private set; }
 
@@ -229,7 +238,7 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
     /// <summary>More › Delete… or Open parent: closes this dialog first (after the dirty prompt), then the caller opens the next one.</summary>
     public void RequestFollowUp(SubtaskEditorFollowUp followUp)
     {
-        if (followUp == SubtaskEditorFollowUp.Delete && !CanDelete)
+        if ((followUp == SubtaskEditorFollowUp.Delete && !CanDelete) || (followUp == SubtaskEditorFollowUp.CreatePullRequest && IsNew))
         {
             return;
         }
@@ -242,6 +251,9 @@ public sealed partial class SubtaskCardEditorViewModel : ConflictEditorViewModel
 
     [RelayCommand]
     private void RequestOpenParent() => RequestFollowUp(SubtaskEditorFollowUp.OpenParent);
+
+    [RelayCommand]
+    private void RequestCreatePullRequest() => RequestFollowUp(SubtaskEditorFollowUp.CreatePullRequest);
 
     [RelayCommand]
     public void ClearStartDate()

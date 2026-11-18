@@ -767,6 +767,14 @@
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="MinHeight" Value="68" />
     </Style>
+    <!-- A settings card inside an expander: a plain row under a divider, its text aligned with the expander's title. -->
+    <Style x:Key="SettingsExpanderRowBorderStyle" TargetType="Border">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="Padding" Value="56,12,16,12" />
+        <Setter Property="MinHeight" Value="52" />
+    </Style>
     <Style x:Key="SettingsExpanderStyle" TargetType="Expander">
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />

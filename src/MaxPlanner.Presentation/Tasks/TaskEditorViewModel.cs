@@ -135,6 +135,9 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     /// <summary>The edited task, or null for a new one (until it is created).</summary>
     public TaskId? ExistingTaskId => IsNew ? null : _taskId;
 
+    /// <summary>Settings › Integrations › Azure DevOps is on: More shows Create pull request… (design §5.11).</summary>
+    public bool IsPullRequestAvailable => Context.IsAzureDevOpsEnabled;
+
     /// <summary>The task created by Save of a new draft.</summary>
     public TaskId? CreatedTaskId { get; private set; }
 
@@ -708,6 +711,9 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
 
     [RelayCommand]
     private void RequestOpenCr() => RequestFollowUp(EditorFollowUp.OpenCr);
+
+    [RelayCommand]
+    private void RequestCreatePullRequest() => RequestFollowUp(EditorFollowUp.CreatePullRequest);
 
     [RelayCommand(AllowConcurrentExecutions = true)]
     private Task Archive() => UiTasks.RunGuardedAsync(ArchiveAsync);

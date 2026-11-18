@@ -71,6 +71,52 @@ public sealed record UiPreferences
 
     /// <summary>Settings › Appearance › Show tags on Board cards (design §4.6); null means the default, on.</summary>
     public bool? ShowBoardCardTags { get; init; }
+
+    /// <summary>
+    /// Settings › Integrations › Azure DevOps (ADR 0031, design §4.6): per-PC values, kept by <see cref="RestoreDefaults"/>.
+    /// Null means the defaults (integration off). The token is never here; it lives in Windows Credential Manager.
+    /// </summary>
+    public AzureDevOpsPreferences? AzureDevOps { get; init; }
+
+    /// <summary>
+    /// Restore default UI preferences (design §4.6): every UI preference goes back to its default, but the per-PC
+    /// integration settings (<see cref="AzureDevOps"/>) are kept, because they are machine setup, not UI state.
+    /// </summary>
+    public UiPreferences RestoreDefaults() => Default with { AzureDevOps = AzureDevOps };
+}
+
+/// <summary>
+/// The Azure DevOps pull request settings (ADR 0031, B-18.2). Per-PC preferences: not part of the dataset, export or
+/// import. Text values are stored as typed (trimmed); null or blank means "not set" or "use the default".
+/// </summary>
+public sealed record AzureDevOpsPreferences
+{
+    public const string DefaultTargetBranch = "uat";
+
+    public static AzureDevOpsPreferences Default { get; } = new();
+
+    /// <summary>The integration switch; off by default. Off hides every pull request command.</summary>
+    public bool Enabled { get; init; }
+
+    /// <summary><c>https://server/collection</c>, without a project or <c>/_git/</c>.</summary>
+    public string? CollectionUrl { get; init; }
+
+    public string? Project { get; init; }
+
+    public string? Repository { get; init; }
+
+    /// <summary>Null or blank means <see cref="DefaultTargetBranch"/>.</summary>
+    public string? DefaultTarget { get; init; }
+
+    /// <summary>Null means on.</summary>
+    public bool? AutoComplete { get; init; }
+
+    /// <summary>Null or blank means the default title template.</summary>
+    public string? TitleTemplate { get; init; }
+
+    public string EffectiveDefaultTarget => string.IsNullOrWhiteSpace(DefaultTarget) ? DefaultTargetBranch : DefaultTarget.Trim();
+
+    public bool EffectiveAutoComplete => AutoComplete ?? true;
 }
 
 public enum PreferencesRecovery

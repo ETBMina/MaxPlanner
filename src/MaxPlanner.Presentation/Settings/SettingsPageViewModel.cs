@@ -43,6 +43,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
     private bool _isSyncing;
     private string _defaultsStamp = string.Empty;
     private readonly CopyIdFormatDraft _copyIdDraft = new();
+    private bool _isAzureDevOpsFocusPending;
 
     public SettingsPageViewModel(WorkspaceContext context, SettingsServices services)
     {
@@ -60,6 +61,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
         ThemeChoices = [strings.GetString("Settings_ThemeSystem"), strings.GetString("Settings_ThemeLight"), strings.GetString("Settings_ThemeDark")];
         ThemeIndex = (int)(services.Theme?.Mode ?? ThemePreference.System);
         DataFolderPath = services.DataFolder?.DataDirectory ?? string.Empty;
+        AzureDevOps = new AzureDevOpsSettingsViewModel(context);
         _workflowSubscription = context.Store.Workflow.ObserveOn(context.UiScheduler).Subscribe(OnWorkflow);
         _commitSubscription = context.Store.Committed.ObserveOn(context.UiScheduler).Subscribe(_ => RefreshUsage());
         _ = RefreshBackupAsync();
@@ -174,6 +176,12 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
 
     public bool IsCardsVisible => !IsDataPageOpen;
 
+    /// <summary>Settings › Integrations › Azure DevOps (ADR 0031).</summary>
+    public AzureDevOpsSettingsViewModel AzureDevOps { get; }
+
+    /// <summary>Raised by <see cref="ShowAzureDevOps"/>; the view focuses the expander once the page is shown.</summary>
+    public event EventHandler? AzureDevOpsFocusRequested;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(BackUpNowCommand))]
     public partial bool IsBackingUp { get; private set; }
@@ -198,6 +206,26 @@ public sealed partial class SettingsPageViewModel : ObservableObject, IPageViewM
             page.Show(mode, view);
             IsDataPageOpen = true;
         }
+    }
+
+    /// <summary>
+    /// The pull request dialog's Open Settings (design §5.11): the Settings cards with the Azure DevOps expander expanded,
+    /// and focus on it once the page is shown (<see cref="TakeAzureDevOpsFocusRequest"/>).
+    /// </summary>
+    public void ShowAzureDevOps()
+    {
+        IsDataPageOpen = false;
+        AzureDevOps.IsExpanded = true;
+        _isAzureDevOpsFocusPending = true;
+        AzureDevOpsFocusRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>True once after <see cref="ShowAzureDevOps"/>: the view moves focus to the expander instead of the title.</summary>
+    public bool TakeAzureDevOpsFocusRequest()
+    {
+        var pending = _isAzureDevOpsFocusPending;
+        _isAzureDevOpsFocusPending = false;
+        return pending;
     }
 
     private DataPageViewModel? EnsureDataPage()

@@ -325,7 +325,7 @@ Provide an offline workspace for an individual managing CRs, their tasks, follow
 
 **Release 1 MUST include:** Dashboard, Board, editable Grid, CR Calendar in Month/Week/Records modes, Checklists with General to-dos and Reviews, task/CR/Subtask card/review creation and editing, permanent one-CR-to-many-tasks linking, copy, task archive/restore, delete, configurable workflows/fields, search/filters, JSON/CSV/XLSX transfer, reviewed external-data import, backup/restore, and the native/offline/portable guarantees in section 1.
 
-**Deferred:** multiuser collaboration, cloud sync, accounts/permissions, multiple simultaneously open datasets, nested Subtask cards (a Subtask card cannot own Subtask cards), recurring tasks, dependencies/Gantt charts, attachments, email/calendar integration, automatic updates, notifications requiring OS registration, encrypted storage, third-party extension execution, and a separate Project hierarchy. Displaying an email subject or opening a design URL does not require an email integration.
+**Deferred:** multiuser collaboration, cloud sync, accounts/permissions, multiple simultaneously open datasets, nested Subtask cards (a Subtask card cannot own Subtask cards), recurring tasks, dependencies/Gantt charts, attachments, email/calendar integration, automatic updates, notifications requiring OS registration, encrypted storage, third-party extension execution, and a separate Project hierarchy. Displaying an email subject or opening a design URL does not require an email integration. Creating Azure DevOps pull requests (B-18) is the one approved external integration.
 
 ### B-02. Tasks and form behavior
 
@@ -645,3 +645,14 @@ Review items record reviews of other people's work without creating a CR or task
 4. Review items have no status workflow, priority, squad, owner, Board card, Grid row, or Calendar presence. Developer rename keeps references; removing a person used as a review Developer requires a replacement or clearing.
 5. Search in Checklists covers all review text fields. Dashboard review metrics follow B-15. Review items are included in backup, full JSON, CSV, and XLSX transfer, and the simple external JSON envelope.
 6. The editor uses the B-02.8–9 draft, validation, and conflict rules and the B-02.10 limits (Title 250, CR/task numbers 100, each service 250, comments 100,000).
+
+### B-18. Azure DevOps pull requests
+
+Owner decision, Nov 2026 (ADR 0031). A narrow exception to the Deferred list: the app makes an outbound call only when the user asks it to create a pull request. Tasks stay in Jira; nothing is read from or written to Azure DevOps work items.
+
+1. Settings › Integrations › Azure DevOps has an on/off switch, off by default. When off, no pull request command is shown anywhere.
+2. Settings hold the collection URL, project, repository, default target branch (`uat`), auto-complete default (on), a pull request title template (default `PR {CRNum} {TaskNum} into {Target}`, using the Copy ID placeholder rules), and a personal access token. The settings are per-PC preferences, not dataset data: they are not exported, imported, or reset by Restore default UI preferences.
+3. The token needs Code (Read and write). It is stored in Windows Credential Manager for the current Windows user, never under `data/`, never logged, exported, or backed up. A Test connection command checks the server, token, project, and repository.
+4. "Create pull request…" is offered for saved tasks, CRs, and Subtask cards from the editors' More menus, the Board card menu, and the Grid row menu. The dialog proposes the task number as the source branch, the default target, and the title from the template; all are editable, and auto-complete can be changed per pull request.
+5. The app checks that both branches exist and that the source has commits the target lacks. With no new commits it refuses, with no override. It then creates the pull request (api-version 6.0 for Azure DevOps Server 2020) without a description and, when chosen, sets auto-complete.
+6. Results are reported in the dialog: the pull request number as a link to its page; an existing pull request with a command to open it; rejected token; missing setup; network or server errors with Try again. Nothing is retried automatically and no pull request link is stored.

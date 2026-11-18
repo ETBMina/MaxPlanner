@@ -50,6 +50,9 @@ public enum CrEditorFollowUp
 
     /// <summary>More › Move to backlog (B-08.11): the command runs after the editor closed.</summary>
     MoveToBacklog,
+
+    /// <summary>More › Create pull request… (design §5.11): the dialog opens with the saved CR after the editor closed.</summary>
+    CreatePullRequest,
 }
 
 /// <summary>
@@ -83,7 +86,7 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
 
     private static readonly string[] StateProperties =
     [
-        nameof(CreatedText), nameof(IsReadOnly), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(CanCreateTask),
+        nameof(CreatedText), nameof(IsReadOnly), nameof(CanEditFields), nameof(CanSave), nameof(CanDelete), nameof(IsMoreMenuEnabled), nameof(CanCreateTask),
         nameof(IsFormStep), nameof(IsSaveAndCreateStep), nameof(IsDeleteStep), nameof(IsConflictReviewStep), nameof(IsReloadConfirmStep),
         nameof(HasValidationSummary), nameof(HasSaveError), nameof(IsOverdue), nameof(OverdueMessage), nameof(LinkedTasksHeader),
         nameof(HasLinkedTasks), nameof(TaskNumberHelper), nameof(SaveAndCreatePrompt), nameof(ShowMakeDefaultOwner), nameof(MakeDefaultOwnerText),
@@ -313,6 +316,12 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
 
     public bool CanDelete => !IsNew && !IsReadOnly && !IsSaving;
 
+    /// <summary>Settings › Integrations › Azure DevOps is on: More shows Create pull request… (design §5.11).</summary>
+    public bool IsPullRequestAvailable => Context.IsAzureDevOpsEnabled;
+
+    /// <summary>The More button: enabled for a saved record while Delete… or Create pull request… can be used.</summary>
+    public bool IsMoreMenuEnabled => EditorControlRules.IsMoreMenuEnabled(IsNew, CanDelete, IsPullRequestAvailable);
+
     /// <summary>More › Move to backlog: offered while the CR has dates or a non-backlog status (B-08.11).</summary>
     public bool CanMoveToBacklog => CanDelete && Latest is { } cr && (cr.PlannedStart is not null || !cr.IsBacklog);
 
@@ -449,6 +458,19 @@ public sealed partial class CrEditorViewModel : ConflictEditorViewModelBase<CrEd
         if (CanMoveToBacklog)
         {
             CloseForFollowUp(CrEditorFollowUp.MoveToBacklog);
+        }
+    }
+
+    /// <summary>
+    /// More › Create pull request… (design §5.11): the editor closes like Copy… (after the dirty prompt), then the dialog
+    /// uses the saved CR. Offered for any saved CR, read-only ones included, because nothing is written.
+    /// </summary>
+    [RelayCommand]
+    public void RequestCreatePullRequest()
+    {
+        if (!IsNew)
+        {
+            CloseForFollowUp(CrEditorFollowUp.CreatePullRequest);
         }
     }
 

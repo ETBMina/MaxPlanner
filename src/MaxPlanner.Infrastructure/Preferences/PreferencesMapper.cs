@@ -27,6 +27,7 @@ internal static class PreferencesMapper
             CalendarMode = ParseEnum<CalendarModePreference>(document.CalendarMode, ref resets),
             ShowArchivedTasks = document.ShowArchivedTasks,
             ShowBoardCardTags = document.ShowBoardCardTags,
+            AzureDevOps = MapAzureDevOps(document.AzureDevOps),
         };
         resetValues = resets;
         return preferences;
@@ -59,6 +60,18 @@ internal static class PreferencesMapper
         CalendarMode = preferences.CalendarMode?.ToString(),
         ShowArchivedTasks = preferences.ShowArchivedTasks,
         ShowBoardCardTags = preferences.ShowBoardCardTags,
+        AzureDevOps = preferences.AzureDevOps is { } ado
+            ? new AzureDevOpsDocument
+            {
+                Enabled = ado.Enabled,
+                CollectionUrl = ado.CollectionUrl,
+                Project = ado.Project,
+                Repository = ado.Repository,
+                DefaultTarget = ado.DefaultTarget,
+                AutoComplete = ado.AutoComplete,
+                TitleTemplate = ado.TitleTemplate,
+            }
+            : null,
     };
 
     // Names only: Enum.TryParse would also accept numbers such as "7".
@@ -178,6 +191,24 @@ internal static class PreferencesMapper
 
         return result;
     }
+
+    // Text is kept as typed (Settings shows what the user entered and its own hint); only blanks and overlong values
+    // (not something the app wrote) are dropped.
+    private static AzureDevOpsPreferences? MapAzureDevOps(AzureDevOpsDocument? ado) => ado is null
+        ? null
+        : new AzureDevOpsPreferences
+        {
+            Enabled = ado.Enabled ?? false,
+            CollectionUrl = Text(ado.CollectionUrl),
+            Project = Text(ado.Project),
+            Repository = Text(ado.Repository),
+            DefaultTarget = Text(ado.DefaultTarget),
+            AutoComplete = ado.AutoComplete,
+            TitleTemplate = Text(ado.TitleTemplate),
+        };
+
+    private static string? Text(string? value) =>
+        string.IsNullOrWhiteSpace(value) || value.Length > MaxTextLength ? null : value.Trim();
 
     private static RectDocument ToRect(PixelRect rect) => new() { X = rect.X, Y = rect.Y, Width = rect.Width, Height = rect.Height };
 }

@@ -72,12 +72,15 @@ internal static class GridMenus
         return root;
     }
 
-    /// <summary>The row menu (design §4.3): Open, Open CR, Copy…, Copy ID, Link to CR…, Add Subtask card, Archive/Restore, Delete….</summary>
+    /// <summary>
+    /// The row menu (design §4.3): Open, Open CR, Copy…, Copy ID, Link to CR…, Add Subtask card, Archive/Restore, Create pull
+    /// request… (when the Azure DevOps integration is on, §5.11), Delete….
+    /// </summary>
     public static MenuFlyout RowMenu(GridPageViewModel viewModel, GridRowViewModel row)
     {
         var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        foreach (var item in RowMenuItemsFor(row.Model))
+        foreach (var item in RowMenuItemsFor(row.Model, viewModel.IsPullRequestAvailable))
         {
             switch (item)
             {
@@ -105,6 +108,9 @@ internal static class GridMenus
                 case GridRowMenuItem.Archive:
                     menu.Items.AddItem(strings.GetString("Board_MenuArchive"), "Grid_RowMenuArchiveItem", () => viewModel.ArchiveRowAsync(row).Forget());
                     break;
+                case GridRowMenuItem.CreatePullRequest:
+                    menu.Items.AddItem(strings.GetString("Board_MenuCreatePullRequest"), "Grid_RowMenuCreatePullRequestItem", () => viewModel.CreatePullRequestAsync(row).Forget());
+                    break;
                 case GridRowMenuItem.Delete:
                     menu.Items.AddSeparator();
                     menu.Items.AddItem(strings.GetString("Board_MenuDelete"), "Grid_RowMenuDeleteItem", () => viewModel.DeleteRowAsync(row).Forget());
@@ -120,9 +126,11 @@ internal static class GridMenus
     /// <summary>
     /// The row menu's items in order. Open CR needs a linked CR; Copy… is for tasks; Link to CR… is offered for every
     /// unlinked task, archived ones included (B-03.6/B-05); an archived task offers Restore, an active one Add Subtask
-    /// card and Archive. Delete… is last, after a separator.
+    /// card and Archive. Create pull request… follows for tasks and Subtask cards while the integration is on, and Delete… is
+    /// last, after a separator.
     /// </summary>
-    internal static IReadOnlyList<GridRowMenuItem> RowMenuItemsFor(WorkItemRecord model)
+    /// <param name="isPullRequestAvailable">Settings › Integrations › Azure DevOps is on.</param>
+    internal static IReadOnlyList<GridRowMenuItem> RowMenuItemsFor(WorkItemRecord model, bool isPullRequestAvailable = false)
     {
         ArgumentNullException.ThrowIfNull(model);
         var items = new List<GridRowMenuItem> { GridRowMenuItem.Open };
@@ -153,6 +161,11 @@ internal static class GridMenus
                 items.Add(GridRowMenuItem.AddSubtaskCard);
                 items.Add(GridRowMenuItem.Archive);
             }
+        }
+
+        if (isPullRequestAvailable)
+        {
+            items.Add(GridRowMenuItem.CreatePullRequest);
         }
 
         items.Add(GridRowMenuItem.Delete);

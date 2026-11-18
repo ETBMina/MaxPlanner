@@ -4302,4 +4302,280 @@
   <data name="TaskEditor_ChecklistDeleteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Delete item</value>
   </data>
+  <data name="TaskEditor_MoreCreatePullRequest.Text" xml:space="preserve">
+    <value>Create pull request…</value>
+  </data>
+  <data name="CrEditor_MoreCreatePullRequest.Text" xml:space="preserve">
+    <value>Create pull request…</value>
+  </data>
+  <data name="SubtaskEditor_MoreCreatePullRequest.Text" xml:space="preserve">
+    <value>Create pull request…</value>
+  </data>
+  <data name="Board_MenuCreatePullRequest" xml:space="preserve">
+    <value>Create pull request…</value>
+  </data>
+  <data name="PullRequest_Title" xml:space="preserve">
+    <value>Create pull request</value>
+  </data>
+  <data name="PullRequest_Caption" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="PullRequest_DialogName" xml:space="preserve">
+    <value>Create pull request for {0}</value>
+  </data>
+  <data name="PullRequest_NoTaskNumberHelper" xml:space="preserve">
+    <value>This task has no task number. Type the branch name.</value>
+  </data>
+  <data name="PullRequest_SourceBranchBox.Header" xml:space="preserve">
+    <value>Source branch</value>
+  </data>
+  <data name="PullRequest_TargetBranchBox.Header" xml:space="preserve">
+    <value>Target branch</value>
+  </data>
+  <data name="PullRequest_TitleBox.Header" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="PullRequest_AutoCompleteCheckBox.Content" xml:space="preserve">
+    <value>Auto-complete when policies pass</value>
+  </data>
+  <data name="PullRequest_OpenExistingButton.Content" xml:space="preserve">
+    <value>Open existing PR</value>
+  </data>
+  <data name="PullRequest_OpenSettingsButton.Content" xml:space="preserve">
+    <value>Open Settings</value>
+  </data>
+  <data name="PullRequest_TryAgainButton.Content" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="PullRequest_CreateButton" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="PullRequest_CloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="PullRequest_BranchRequiredError" xml:space="preserve">
+    <value>Enter a branch name.</value>
+  </data>
+  <data name="PullRequest_BranchInvalidError" xml:space="preserve">
+    <value>Not a valid branch name. Use no spaces or ~ ^ : ? * [ \, no "..", and don't end with / or .lock.</value>
+  </data>
+  <data name="PullRequest_SameBranchError" xml:space="preserve">
+    <value>The target branch must be different from the source branch.</value>
+  </data>
+  <data name="PullRequest_TitleRequiredError" xml:space="preserve">
+    <value>Enter a title.</value>
+  </data>
+  <data name="PullRequest_StepCheckingBranches" xml:space="preserve">
+    <value>Checking branches</value>
+  </data>
+  <data name="PullRequest_StepCheckingCommits" xml:space="preserve">
+    <value>Checking for new commits</value>
+  </data>
+  <data name="PullRequest_StepCreating" xml:space="preserve">
+    <value>Creating pull request</value>
+  </data>
+  <data name="PullRequest_StepSettingAutoComplete" xml:space="preserve">
+    <value>Setting auto-complete</value>
+  </data>
+  <data name="PullRequest_Created" xml:space="preserve">
+    <value>Pull request {0} created.</value>
+  </data>
+  <data name="PullRequest_CreatedAutoCompleteFailed" xml:space="preserve">
+    <value>Pull request {0} created, but auto-complete couldn't be set: {1}.</value>
+  </data>
+  <data name="PullRequest_LinkName" xml:space="preserve">
+    <value>Open pull request {0} in browser</value>
+  </data>
+  <data name="PullRequest_NoNewCommits" xml:space="preserve">
+    <value>{0} has no new commits compared with {1}. Push your work first.</value>
+  </data>
+  <data name="PullRequest_BranchNotFound" xml:space="preserve">
+    <value>Branch {0} doesn't exist in {1}.</value>
+  </data>
+  <data name="PullRequest_AlreadyExists" xml:space="preserve">
+    <value>A pull request from {0} to {1} already exists.</value>
+  </data>
+  <data name="PullRequest_TokenRejected" xml:space="preserve">
+    <value>Azure DevOps rejected the token. It may have expired or lack Code (Read and write).</value>
+  </data>
+  <data name="PullRequest_Unreachable" xml:space="preserve">
+    <value>Couldn't reach {0}: {1}.</value>
+  </data>
+  <data name="PullRequest_ServerError" xml:space="preserve">
+    <value>Azure DevOps returned an error: {0}.</value>
+  </data>
+  <data name="PullRequest_OutcomeUnknown" xml:space="preserve">
+    <value>Azure DevOps may have created the pull request, but its answer didn't come through. Use Open existing PR to check before trying again.</value>
+  </data>
+  <data name="PullRequest_SetupIncomplete" xml:space="preserve">
+    <value>Azure DevOps isn't set up yet. Missing: {0}.</value>
+  </data>
+  <data name="PullRequest_ExistingNotFound" xml:space="preserve">
+    <value>No active pull request from this source to this target was found.</value>
+  </data>
+  <data name="AzureDevOps_ReasonTimeout" xml:space="preserve">
+    <value>no answer within 30 seconds</value>
+  </data>
+  <data name="AzureDevOps_ReasonNameResolution" xml:space="preserve">
+    <value>the server name couldn't be found</value>
+  </data>
+  <data name="AzureDevOps_ReasonConnection" xml:space="preserve">
+    <value>the connection failed</value>
+  </data>
+  <data name="AzureDevOps_ReasonSecureConnection" xml:space="preserve">
+    <value>the secure connection (TLS) failed</value>
+  </data>
+  <data name="AzureDevOps_ReasonProxy" xml:space="preserve">
+    <value>the proxy refused the connection</value>
+  </data>
+  <data name="AzureDevOps_ReasonUnknown" xml:space="preserve">
+    <value>the request failed</value>
+  </data>
+  <data name="AzureDevOps_HttpStatus" xml:space="preserve">
+    <value>HTTP {0}</value>
+  </data>
+  <data name="AzureDevOps_MissingCollectionUrl" xml:space="preserve">
+    <value>collection URL</value>
+  </data>
+  <data name="AzureDevOps_MissingProject" xml:space="preserve">
+    <value>project</value>
+  </data>
+  <data name="AzureDevOps_MissingRepository" xml:space="preserve">
+    <value>repository</value>
+  </data>
+  <data name="AzureDevOps_MissingToken" xml:space="preserve">
+    <value>personal access token</value>
+  </data>
+  <data name="Settings_IntegrationsHeading.Text" xml:space="preserve">
+    <value>Integrations</value>
+  </data>
+  <data name="Settings_AdoExpander.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Azure DevOps</value>
+  </data>
+  <data name="Settings_AdoTitle.Text" xml:space="preserve">
+    <value>Azure DevOps</value>
+  </data>
+  <data name="Settings_AdoDescription.Text" xml:space="preserve">
+    <value>Create pull requests from tasks and CRs.</value>
+  </data>
+  <data name="Settings_AdoEnabledSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Enable Azure DevOps integration</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlCard.Header" xml:space="preserve">
+    <value>Collection URL</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlCard.Description" xml:space="preserve">
+    <value>The server and collection, without a project.</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Collection URL</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlBox.PlaceholderText" xml:space="preserve">
+    <value>https://server/collection</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlHttpsHint" xml:space="preserve">
+    <value>Enter an address that starts with https://.</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlCollectionHint" xml:space="preserve">
+    <value>Use the collection address, without /_git/ or /_apis/ (for example https://server/collection).</value>
+  </data>
+  <data name="Settings_AdoCollectionUrlPartsHint" xml:space="preserve">
+    <value>Use the collection address only, without a user name, password, ? or # (for example https://server/collection).</value>
+  </data>
+  <data name="Settings_AdoProjectCard.Header" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Settings_AdoProjectBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Settings_AdoRepositoryCard.Header" xml:space="preserve">
+    <value>Repository</value>
+  </data>
+  <data name="Settings_AdoRepositoryBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Repository</value>
+  </data>
+  <data name="Settings_AdoTokenCard.Header" xml:space="preserve">
+    <value>Personal access token</value>
+  </data>
+  <data name="Settings_AdoTokenCard.Description" xml:space="preserve">
+    <value>Needs Code (Read and write). Kept in Windows Credential Manager for this Windows user. Not exported or backed up.</value>
+  </data>
+  <data name="Settings_AdoTokenBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Personal access token</value>
+  </data>
+  <data name="Settings_AdoTokenBox.PlaceholderText" xml:space="preserve">
+    <value>Paste the token and press Enter</value>
+  </data>
+  <data name="Settings_AdoTokenSaved.Text" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Settings_AdoTokenChangeButton.Content" xml:space="preserve">
+    <value>Change…</value>
+  </data>
+  <data name="Settings_AdoTokenChangeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Change personal access token</value>
+  </data>
+  <data name="Settings_AdoTokenRemoveButton.Content" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_AdoTokenRemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Remove personal access token</value>
+  </data>
+  <data name="Settings_AdoTokenSavedAnnouncement" xml:space="preserve">
+    <value>Personal access token saved.</value>
+  </data>
+  <data name="Settings_AdoTokenRemovedAnnouncement" xml:space="preserve">
+    <value>Personal access token removed.</value>
+  </data>
+  <data name="Settings_AdoRemoveTokenTitle" xml:space="preserve">
+    <value>Remove the personal access token?</value>
+  </data>
+  <data name="Settings_AdoRemoveTokenMessage" xml:space="preserve">
+    <value>The token is deleted from Windows Credential Manager. Pull requests can't be created until a token is saved again.</value>
+  </data>
+  <data name="Settings_AdoRemoveTokenButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_AdoTestConnectionCard.Header" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="Settings_AdoTestConnectionCard.Description" xml:space="preserve">
+    <value>Checks the server, the token, the project, and the repository.</value>
+  </data>
+  <data name="Settings_AdoTestConnectionButton.Content" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="Settings_AdoTestConnected" xml:space="preserve">
+    <value>Connected as {0} · {1} found</value>
+  </data>
+  <data name="Settings_AdoTestNotFound" xml:space="preserve">
+    <value>Project {0} or repository {1} wasn't found.</value>
+  </data>
+  <data name="Settings_AdoTestCollectionNotFound" xml:space="preserve">
+    <value>No collection was found at this address. Check the collection URL.</value>
+  </data>
+  <data name="Settings_AdoDefaultTargetCard.Header" xml:space="preserve">
+    <value>Default target branch</value>
+  </data>
+  <data name="Settings_AdoDefaultTargetBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Default target branch</value>
+  </data>
+  <data name="Settings_AdoAutoCompleteCard.Header" xml:space="preserve">
+    <value>Auto-complete by default</value>
+  </data>
+  <data name="Settings_AdoAutoCompleteCard.Description" xml:space="preserve">
+    <value>Completes a pull request when its policies pass. Can be changed for each pull request.</value>
+  </data>
+  <data name="Settings_AdoAutoCompleteSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Auto-complete by default</value>
+  </data>
+  <data name="Settings_AdoTitleTemplateCard.Header" xml:space="preserve">
+    <value>Pull request title</value>
+  </data>
+  <data name="Settings_AdoTitleTemplateCard.Description" xml:space="preserve">
+    <value>Placeholders: {CRNum}, {TaskNum}, {Title}, {Source}, {Target}. Empty uses the default.</value>
+  </data>
+  <data name="Settings_AdoTitleTemplateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pull request title</value>
+  </data>
 </root>

@@ -52,7 +52,7 @@
                     Grid.Column="1"
                     Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="CrEditor_MoreMenu"
-                    IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
+                    IsEnabled="{x:Bind ViewModel.IsMoreMenuEnabled, Mode=OneWay}">
                     <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
@@ -65,7 +65,21 @@
                                     <FontIcon Glyph="&#xE72B;" />
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Uid="CrEditor_MoreDelete" AutomationProperties.AutomationId="CrEditor_MoreDeleteItem" Command="{x:Bind ViewModel.BeginDeleteCommand}">
+                            <MenuFlyoutItem
+                                x:Uid="CrEditor_MoreCreatePullRequest"
+                                AutomationProperties.AutomationId="CrEditor_MoreCreatePullRequestItem"
+                                Command="{x:Bind ViewModel.RequestCreatePullRequestCommand}"
+                                Visibility="{x:Bind ViewModel.IsPullRequestAvailable, Mode=OneTime}">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xF003;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutSeparator Visibility="{x:Bind ViewModel.IsPullRequestAvailable, Mode=OneTime}" />
+                            <MenuFlyoutItem
+                                x:Uid="CrEditor_MoreDelete"
+                                AutomationProperties.AutomationId="CrEditor_MoreDeleteItem"
+                                Command="{x:Bind ViewModel.BeginDeleteCommand}"
+                                IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE74D;" />
                                 </MenuFlyoutItem.Icon>

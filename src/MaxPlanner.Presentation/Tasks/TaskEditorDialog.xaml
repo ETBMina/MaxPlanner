@@ -110,6 +110,15 @@
                                     AutomationProperties.AutomationId="TaskEditor_MoreAddSubtaskCardItem"
                                     Command="{x:Bind ViewModel.RequestAddSubtaskCardCommand}"
                                     IsEnabled="{x:Bind ViewModel.CanAddSubtaskCard, Mode=OneWay}" />
+                                <MenuFlyoutItem
+                                    x:Uid="TaskEditor_MoreCreatePullRequest"
+                                    AutomationProperties.AutomationId="TaskEditor_MoreCreatePullRequestItem"
+                                    Command="{x:Bind ViewModel.RequestCreatePullRequestCommand}"
+                                    Visibility="{x:Bind ViewModel.IsPullRequestAvailable, Mode=OneTime}">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xF003;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
                                 <MenuFlyoutSeparator />
                                 <MenuFlyoutItem x:Uid="TaskEditor_MoreDelete" AutomationProperties.AutomationId="TaskEditor_MoreDeleteItem" Command="{x:Bind ViewModel.RequestDeleteCommand}">
                                     <MenuFlyoutItem.Icon>

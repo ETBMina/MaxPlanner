@@ -22,4 +22,14 @@ public sealed class EditorControlRulesTests
     [InlineData("CrEditor_ReloadMessage", "CrEditor_ReloadMessage")]
     public void A_missing_reload_message_key_falls_back_to_the_default(string? key, string expected) =>
         EditorControlRules.ReloadMessageKeyOrDefault(key).Should().Be(expected);
+
+    // Design §5.11: a read-only CR or Subtask card still reaches Create pull request… while the integration is on.
+    [Theory]
+    [InlineData(true, false, true, false)]
+    [InlineData(true, true, true, false)]
+    [InlineData(false, true, false, true)]
+    [InlineData(false, false, true, true)]
+    [InlineData(false, false, false, false)]
+    public void The_More_button_is_enabled_for_a_saved_record_with_a_usable_item(bool isNew, bool canDelete, bool isPullRequestAvailable, bool enabled) =>
+        EditorControlRules.IsMoreMenuEnabled(isNew, canDelete, isPullRequestAvailable).Should().Be(enabled);
 }

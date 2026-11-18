@@ -51,11 +51,25 @@
                     Grid.Column="1"
                     Style="{StaticResource SubtleButtonStyle}"
                     AutomationProperties.AutomationId="SubtaskEditor_MoreMenu"
-                    IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
+                    IsEnabled="{x:Bind ViewModel.IsMoreMenuEnabled, Mode=OneWay}">
                     <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuFlyoutItem x:Uid="SubtaskEditor_MoreDelete" AutomationProperties.AutomationId="SubtaskEditor_MoreDeleteItem" Command="{x:Bind ViewModel.RequestDeleteCommand}">
+                            <MenuFlyoutItem
+                                x:Uid="SubtaskEditor_MoreCreatePullRequest"
+                                AutomationProperties.AutomationId="SubtaskEditor_MoreCreatePullRequestItem"
+                                Command="{x:Bind ViewModel.RequestCreatePullRequestCommand}"
+                                Visibility="{x:Bind ViewModel.IsPullRequestAvailable, Mode=OneTime}">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xF003;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutSeparator Visibility="{x:Bind ViewModel.IsPullRequestAvailable, Mode=OneTime}" />
+                            <MenuFlyoutItem
+                                x:Uid="SubtaskEditor_MoreDelete"
+                                AutomationProperties.AutomationId="SubtaskEditor_MoreDeleteItem"
+                                Command="{x:Bind ViewModel.RequestDeleteCommand}"
+                                IsEnabled="{x:Bind ViewModel.CanDelete, Mode=OneWay}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE74D;" />
                                 </MenuFlyoutItem.Icon>

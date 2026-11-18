@@ -11,5 +11,6 @@ internal enum GridRowMenuItem
     Restore,
     AddSubtaskCard,
     Archive,
+    CreatePullRequest,
     Delete,
 }

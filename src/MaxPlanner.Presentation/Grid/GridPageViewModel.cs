@@ -375,6 +375,13 @@ public sealed partial class GridPageViewModel : ObservableObject, IPageViewModel
     public Task LinkRowAsync(GridRowViewModel row) =>
         row?.Model.Task is { Cr.ChangeRequestId: null } task ? _context.Tasks.LinkAsync(task.Id) : Task.CompletedTask;
 
+    /// <summary>Settings › Integrations › Azure DevOps is on: the row menu shows Create pull request… (design §5.11).</summary>
+    public bool IsPullRequestAvailable => _context.PullRequests.IsAvailable;
+
+    /// <summary>Row ⋯ › Create pull request… (B-18): a task, or a Subtask card with its parent's numbers.</summary>
+    public Task CreatePullRequestAsync(GridRowViewModel row) =>
+        row is null ? Task.CompletedTask : _context.PullRequests.CreateAsync(row.Model);
+
     /// <summary>Row ⋯ › Add Subtask card (tasks only, B-16.3).</summary>
     public Task AddSubtaskCardAsync(GridRowViewModel row) =>
         row?.Model.Task is { IsArchived: false } task ? _context.Tasks.AddSubtaskCardAsync(task) : Task.CompletedTask;

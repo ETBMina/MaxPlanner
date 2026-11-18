@@ -34,3 +34,4 @@ Each ADR records context, options considered, the decision, consequences, depend
 | [0028](0028-transfer-format-v2-single-people-and-readable-tables.md) | Transfer format 2: single Designer and Developer, readable task tables | Accepted |
 | [0029](0029-unexpected-ui-action-failures.md) | Unexpected failures of UI actions are logged and shown, and the app keeps running | Accepted |
 | [0030](0030-idle-memory-budget.md) | Idle working set budget of 600 MiB on the benchmark fixture | Accepted |
+| [0031](0031-azure-devops-pull-requests.md) | Create Azure DevOps pull requests from tasks and CRs | Accepted |

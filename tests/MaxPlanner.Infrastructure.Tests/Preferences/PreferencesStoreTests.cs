@@ -220,6 +220,50 @@ public sealed class PreferencesStoreTests : IDisposable
         File.Exists(Paths.ConfigurationFile).Should().BeFalse();
     }
 
+    [Fact]
+    [Trait("Req", "B-18")]
+    public async Task The_Azure_DevOps_settings_round_trip_without_a_token()
+    {
+        var azureDevOps = new AzureDevOpsPreferences
+        {
+            Enabled = true,
+            CollectionUrl = "https://server/value",
+            Project = "ace_bank",
+            Repository = "ace_bank",
+            DefaultTarget = "main",
+            AutoComplete = false,
+            TitleTemplate = "PR {TaskNum}",
+        };
+        using (var store = NewStore())
+        {
+            store.Load();
+            store.Update(p => p with { AzureDevOps = azureDevOps });
+            await store.FlushAsync(Ct);
+        }
+
+        using var reopened = NewStore();
+
+        reopened.Load().Preferences.AzureDevOps.Should().Be(azureDevOps);
+        File.ReadAllText(Paths.ConfigurationFile).Should().Contain("\"azureDevOps\"").And.NotContainEquivalentOf("token");
+    }
+
+    [Fact]
+    [Trait("Req", "B-18")]
+    public void Blank_Azure_DevOps_values_load_as_not_set()
+    {
+        Directory.CreateDirectory(Paths.DataDirectory);
+        File.WriteAllText(Paths.ConfigurationFile, """
+            { "configurationVersion": 1, "azureDevOps": { "enabled": true, "project": "  ", "repository": " repo ", "defaultTarget": "" } }
+            """);
+        using var store = NewStore();
+
+        var loaded = store.Load();
+
+        loaded.Recovery.Should().Be(PreferencesRecovery.None);
+        loaded.Preferences.AzureDevOps.Should().Be(new AzureDevOpsPreferences { Enabled = true, Repository = "repo" });
+        loaded.Preferences.AzureDevOps!.EffectiveDefaultTarget.Should().Be("uat");
+    }
+
     public void Dispose()
     {
         try

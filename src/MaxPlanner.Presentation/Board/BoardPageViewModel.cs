@@ -356,6 +356,12 @@ public sealed partial class BoardPageViewModel : ObservableObject, IPageViewMode
 
     public Task CopyAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.CopyAsync(task.Id) : Task.CompletedTask;
 
+    /// <summary>Settings › Integrations › Azure DevOps is on: the card menu shows Create pull request… (design §5.11).</summary>
+    public bool IsPullRequestAvailable => _context.PullRequests.IsAvailable;
+
+    /// <summary>Card menu › Create pull request… (B-18): a task, or a Subtask card with its parent's numbers.</summary>
+    public Task CreatePullRequestAsync(BoardCardViewModel card) => _context.PullRequests.CreateAsync(card.Model);
+
     public Task AddSubtaskCardAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.AddSubtaskCardAsync(task) : Task.CompletedTask;
 
     public Task<bool> ArchiveAsync(BoardCardViewModel card) => card.Model.Task is { } task ? _context.Tasks.ArchiveAsync(task) : Task.FromResult(false);
