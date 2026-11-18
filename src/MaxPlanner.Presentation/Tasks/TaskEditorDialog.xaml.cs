@@ -160,6 +160,18 @@ public sealed partial class TaskEditorDialog : ContentDialog
 
     private void OnCopyTaskNumberClick(object sender, RoutedEventArgs e) => Copy(sender, ViewModel.TaskNumberToCopy);
 
+    // More › Copy ID copies the configured Copy ID text, like the Board and Grid menus, and announces it.
+    private void OnMoreMenuOpening(object sender, object e) => CopyIdItem.IsEnabled = ViewModel.CanCopyId;
+
+    private void OnCopyIdClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.CanCopyId)
+        {
+            var text = ViewModel.CopyIdText;
+            ViewModel.ReportCopied(text, ClipboardText.Set(text));
+        }
+    }
+
     private void Copy(object sender, string text)
     {
         if (ViewModel.ReportCopied(text, ClipboardText.Set(text)) && sender is FrameworkElement button)

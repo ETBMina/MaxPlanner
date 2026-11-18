@@ -151,6 +151,13 @@ public sealed partial class ShellView : UserControl
     /// <summary>True while the NavigationView is in LeftMinimal (S), so the title bar should show its pane toggle.</summary>
     public bool IsTitleBarPaneToggleVisible { get; private set; }
 
+    /// <summary>The app icon on the startup splash (design §2.1); the app sets it from its own assets.</summary>
+    public Uri? AppIconUri
+    {
+        get => Startup.IconUri;
+        set => Startup.IconUri = value;
+    }
+
     /// <summary>Opens or closes the overlay pane from the title bar's toggle (S breakpoint).</summary>
     public void TogglePane() => Nav.IsPaneOpen = !Nav.IsPaneOpen;
 

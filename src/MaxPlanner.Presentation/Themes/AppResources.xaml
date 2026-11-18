@@ -891,6 +891,8 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
+    <!-- The record editors' fixed title area: about four heading lines; a longer title scrolls inside it. -->
+    <x:Double x:Key="EditorFixedTitleMaxHeight">144</x:Double>
     <Style x:Key="EditorTitleTextBoxStyle" BasedOn="{StaticResource EditorInlineTextBoxStyle}" TargetType="TextBox">
         <Setter Property="FontSize" Value="20" />
         <Setter Property="FontWeight" Value="SemiBold" />

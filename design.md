@@ -34,6 +34,7 @@ This file defines how Max Planner looks and behaves. [Business Requirements.md](
 | Size | First run: 1280×800 epx, centered on the primary work area. Later runs restore the bounds saved in `configuration.json` and clamp them to a visible work area (to handle a monitor removed or a DPI change). `OverlappedPresenter.PreferredMinimumWidth`/`Height` = 500×500 epx, converted with `GetDpiForWindow`. Keep the native Snap Layouts, caption buttons and system menu. |
 | Title bar | The in-box **`TitleBar`** control `[gallery-titlebar-1, -2, -3]` with `ExtendsContentIntoTitleBar = true` and `SetTitleBar(titleBar)`.<br>• `IconSource` = app icon; `Title` = "Max Planner" (resw).<br>• `IsBackButtonVisible` is bound to the drill-down return stack (§2.9).<br>• `IsPaneToggleButtonVisible` is true only when the NavigationView is in `LeftMinimal`; `PaneToggleRequested` toggles `IsPaneOpen`.<br>• No search box or commands in the title bar (T-08). |
 | Rows | TitleBar (48) → **App InfoBar region** (§2.7) → NavigationView (content frame) → **Status bar** (§2.8, 32 epx). |
+| Startup splash (owner request, Nov 2026) | Shown inside the main window (no separate splash window) while the shell is starting, and hidden as soon as the dataset is open and the first page is usable; page preloading continues in the background. Centered: app icon, "Max Planner" (resw) and version. No progress indicator and no status text (owner request). The content fades in briefly; theme transitions follow the system animation setting. Uses theme resources, so it follows light/dark, and the window keeps its restored placement. |
 
 ### 2.2 Navigation — `NavigationView` `[gallery-navigationview-1, -3, -6]`
 | Property | Value |
@@ -532,6 +533,7 @@ Visual reference: `[toolkit-settingscard-9, toolkit-settingsexpander-1, -2, -4]`
   - A press (left mouse button, pen or touch) on the smoke outside a dialog closes it **exactly like Cancel** (Esc, the Close button): an editor with unsaved changes shows §5.8, and a confirmation never takes its Primary action. Presses inside the dialog or its own flyouts and drop-downs do not close it.
   - **Header of the Task, CR and Subtask card editors** (owner decision, Nov 2026, review U-02, built on the task editor): a small record-kind caption ("Task", "Change request", "Subtask card"; "New …" for a new record) with More (⋯) on the same line, then the record's own title as a large heading edited in place (Task title, CR title, the card's Subtitle), then one read-only **info box** on a secondary card background, label over value, four columns at L and two below, with **Created** among its facts (hidden for a new record). The Review editor keeps the older title row below.
   - The title row is a `Grid`: the title, a secondary caption (e.g. "Created Oct 6, 2026 · last saved 2 minutes ago"), and a right-aligned **More** `DropDownButton` (⋯) for secondary record commands `[gallery-dropdownbutton-1]`.
+  - In every record editor the top line (caption, More, and Close where present) and the record's title sit above the scroll area and stay visible while the form scrolls. The fixed title area is capped at about four lines (`EditorFixedTitleMaxHeight`) and scrolls inside itself beyond that; it hides on inline steps.
   - Footer: Primary = **Save** (or a verb such as "Create task" or "Link permanently"), Close = **Cancel**, Secondary only where it is listed below. `DefaultButton = Primary` for editors and `Close` for destructive confirmations.
 - **Width:**
   - The record editors (Task, CR, Review, Subtask card) have a **fixed** width set by the window size, never by their content: `max(320, min(target, windowWidth − 48))`, so they always keep 24 epx from the window edges. Long content wraps or scrolls inside. The rule lives in `EditorDialogSizing` / `EditorDialogLayout` and is re-applied on window resize.
@@ -579,7 +581,7 @@ Layout "A3" (owner request, Nov 2026). It replaces the earlier two-column layout
 | 7 | Notes | Multiline | — |
 | 8 | Custom fields | Per definition order | Typed |
 
-- **More menu:** Copy… (§5.5), Archive / Restore, Add Subtask card, Delete… (§5.7).
+- **More menu:** Copy… (§5.5), Copy ID (the Settings › Defaults format, as on Board and Grid; disabled for a new task), Archive / Restore, Add Subtask card, Delete… (§5.7).
 - **Archived task:** an InfoBar (Informational) "Archived tasks are read-only. Restore to edit." with **Restore**. All fields, tags and checklist actions are disabled except **Link to CR…** when the task is unlinked (B-05); Open CR and the copy icons still work.
 - **Layout by width:** groups 1–3 span the dialog. At L the field rows sit side by side as listed; at M and S every field stacks in one column and the facts strip uses two columns.
 

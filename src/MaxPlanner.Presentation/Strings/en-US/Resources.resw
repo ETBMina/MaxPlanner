@@ -32,9 +32,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Shell_StartupText.Text" xml:space="preserve">
-    <value>Opening your planner…</value>
-    <comment>Shown while the dataset opens at startup.</comment>
+  <data name="Shell_StartupTitle.Text" xml:space="preserve">
+    <value>Max Planner</value>
+    <comment>Product name on the startup splash (design §2.1).</comment>
+  </data>
+  <data name="Shell_StartupVersion" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>Startup splash version line. {0} = app version, such as 0.1.0.</comment>
   </data>
   <data name="Squad_General" xml:space="preserve">
     <value>General</value>
@@ -1096,6 +1100,9 @@
   </data>
   <data name="TaskEditor_MoreCopy.Text" xml:space="preserve">
     <value>Copy…</value>
+  </data>
+  <data name="TaskEditor_MoreCopyId.Text" xml:space="preserve">
+    <value>Copy ID</value>
   </data>
   <data name="TaskEditor_MoreArchive.Text" xml:space="preserve">
     <value>Archive</value>

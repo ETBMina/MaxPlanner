@@ -8,6 +8,7 @@ using MaxPlanner.Application.ChangeRequests;
 using MaxPlanner.Application.Common;
 using MaxPlanner.Application.Lookups;
 using MaxPlanner.Application.ReadModels;
+using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.SubtaskCards;
 using MaxPlanner.Application.Tasks;
 using MaxPlanner.Application.Workflow;
@@ -324,6 +325,13 @@ public sealed partial class TaskEditorViewModel : ConflictEditorViewModelBase<Ed
     public bool CanCopyTaskNumber => TaskNumberToCopy.Length > 0;
 
     public string CopyTaskNumberName => CanCopyTaskNumber ? Context.Strings.Format("TaskEditor_CopyTaskNumberName", TaskNumberToCopy) : string.Empty;
+
+    /// <summary>More › Copy ID (design §4.6): the task's ID text from the Settings › Defaults format, as Board and Grid copy it; empty for a new task.</summary>
+    public string CopyIdText => !IsNew && (Latest ?? _base) is { } task
+        ? CopyIdFormatter.Apply(Context.Store.CurrentWorkflow?.Defaults.CopyIdFormat, CopyIdValues.From(task))
+        : string.Empty;
+
+    public bool CanCopyId => CopyFeedbackRules.CanCopyId(IsNew, CopyIdText);
 
     /// <summary>
     /// After a copy button put <paramref name="copiedText"/> on the clipboard (<paramref name="reachedClipboard"/>):

@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.SetIcon("Assets/AppIcon.ico");
+        ShellContent.AppIconUri = new Uri("ms-appx:///Assets/AppIcon.png");
         Title = new ResourceLoader().GetString("AppDisplayName");
         ApplyBackdrop();
 

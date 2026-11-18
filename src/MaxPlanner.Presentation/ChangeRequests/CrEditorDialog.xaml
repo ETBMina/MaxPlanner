@@ -26,11 +26,17 @@
         -->
         <Thickness x:Key="ContentDialogTitleMargin">0</Thickness>
     </ContentDialog.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel x:Name="Root" Padding="0,0,12,0" Spacing="12">
-            <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
+    <!-- The top line and its buttons sit above the scroll area, so they stay visible while the form scrolls. -->
+    <Grid x:Name="Root" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <!-- EditorDialogShell adds the Ctrl+Enter and Alt+Left accelerators here (design §7.2). -->
 
-            <!-- Top line: the record kind and the More menu (design §5.3: Move to backlog, Delete…; CRs are not archived). -->
+        <!-- Top line: the record kind and the More menu (design §5.3: Move to backlog, Delete…; CRs are not archived). -->
+        <!-- The title is fixed too; a long one scrolls inside its own capped area so the form keeps room. -->
+        <StackPanel Margin="0,0,12,0" Spacing="12">
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -68,31 +74,11 @@
                     </Button.Flyout>
                 </Button>
             </Grid>
-
-            <dialogs:EditorMessageBars
-                AutomationPrefix="CrEditor"
-                IsConflict="{x:Bind ViewModel.IsConflict, Mode=OneWay}"
-                ReloadCommand="{x:Bind ViewModel.BeginReloadCommand}"
-                ReviewConflictCommand="{x:Bind ViewModel.ReviewConflictCommand}"
-                SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
-                ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
-
-            <!-- Design §5.3: the same overdue predicate as the Dashboard (B-15). -->
-            <InfoBar
-                AutomationProperties.AutomationId="CrEditor_OverdueInfoBar"
-                IsClosable="False"
-                IsOpen="{x:Bind ViewModel.IsOverdue, Mode=OneWay}"
-                Message="{x:Bind ViewModel.OverdueMessage, Mode=OneWay}"
-                Severity="Warning"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsOverdue), Mode=OneWay}" />
-
-            <!-- ===== Form step ===== -->
-            <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
-
-                <!--
-                    Header (shared with the Task and Subtask card editors): the CR's title as the heading, edited in place.
-                    It comes before the CR number in reading order, but the first Tab still goes to the CR number.
-                -->
+            <!--
+                Header (shared with the Task and Subtask card editors): the CR's title as the heading, edited in place.
+                It comes before the CR number in reading order, but the first Tab still goes to the CR number.
+            -->
+            <ScrollViewer MaxHeight="{StaticResource EditorFixedTitleMaxHeight}" VerticalScrollBarVisibility="Auto" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
                 <StackPanel Spacing="4">
                     <TextBox
                         x:Name="TitleBox"
@@ -110,401 +96,427 @@
                         TextWrapping="Wrap" />
                     <fields:FieldError Text="{x:Bind ViewModel.TitleError, Mode=OneWay}" />
                 </StackPanel>
+            </ScrollViewer>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Padding="0,0,12,0" Spacing="12">
 
-                <!-- Info box: the CR's read-only facts. A new CR has none yet, so the box is left out. -->
-                <Border
-                    AutomationProperties.AutomationId="CrEditor_InfoBox"
-                    Style="{StaticResource EditorInfoBoxStyle}"
-                    Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsNew), Mode=OneTime}">
-                    <dialogs:EditorFactsPanel x:Name="FactsPanel">
-                        <StackPanel Spacing="2">
-                            <TextBlock x:Uid="EditorFacts_CreatedLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
-                            <controls:FactValue
-                                IsValueSelectable="True"
-                                LabelUid="EditorFacts_CreatedLabel"
-                                Value="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
-                                ValueAutomationId="CrEditor_Created"
-                                ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                <dialogs:EditorMessageBars
+                    AutomationPrefix="CrEditor"
+                    IsConflict="{x:Bind ViewModel.IsConflict, Mode=OneWay}"
+                    ReloadCommand="{x:Bind ViewModel.BeginReloadCommand}"
+                    ReviewConflictCommand="{x:Bind ViewModel.ReviewConflictCommand}"
+                    SaveError="{x:Bind ViewModel.SaveError, Mode=OneWay}"
+                    ValidationSummary="{x:Bind ViewModel.ValidationSummary, Mode=OneWay}" />
+
+                <!-- Design §5.3: the same overdue predicate as the Dashboard (B-15). -->
+                <InfoBar
+                    AutomationProperties.AutomationId="CrEditor_OverdueInfoBar"
+                    IsClosable="False"
+                    IsOpen="{x:Bind ViewModel.IsOverdue, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.OverdueMessage, Mode=OneWay}"
+                    Severity="Warning"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsOverdue), Mode=OneWay}" />
+
+                <!-- ===== Form step ===== -->
+                <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsFormStep), Mode=OneWay}">
+
+
+                    <!-- Info box: the CR's read-only facts. A new CR has none yet, so the box is left out. -->
+                    <Border
+                        AutomationProperties.AutomationId="CrEditor_InfoBox"
+                        Style="{StaticResource EditorInfoBoxStyle}"
+                        Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.IsNew), Mode=OneTime}">
+                        <dialogs:EditorFactsPanel x:Name="FactsPanel">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="EditorFacts_CreatedLabel" Style="{StaticResource EditorFactLabelTextStyle}" />
+                                <controls:FactValue
+                                    IsValueSelectable="True"
+                                    LabelUid="EditorFacts_CreatedLabel"
+                                    Value="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
+                                    ValueAutomationId="CrEditor_Created"
+                                    ValueStyle="{StaticResource EditorFactValueTextStyle}" />
+                            </StackPanel>
+                        </dialogs:EditorFactsPanel>
+                    </Border>
+
+                    <!-- Group 1: CR number · Task number. -->
+                    <Grid x:Name="NumberPair" ColumnSpacing="24" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBox
+                                x:Name="NumberBox"
+                                x:Uid="CrEditor_NumberBox"
+                                AutomationProperties.AutomationId="CrEditor_NumberBox"
+                                AutomationProperties.IsRequiredForForm="True"
+                                IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                MaxLength="100"
+                                Text="{x:Bind ViewModel.Number, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock x:Uid="CrEditor_NumberHelper" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.NumberError, Mode=OneWay}" />
+                            <!-- B-03.2: a duplicate names the existing CR and allows opening it. -->
+                            <HyperlinkButton
+                                Padding="0"
+                                AutomationProperties.AutomationId="CrEditor_OpenDuplicateLink"
+                                Command="{x:Bind ViewModel.OpenDuplicateCommand}"
+                                Content="{x:Bind ViewModel.OpenDuplicateText, Mode=OneWay}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDuplicate), Mode=OneWay}" />
                         </StackPanel>
-                    </dialogs:EditorFactsPanel>
-                </Border>
+                        <StackPanel x:Name="TaskNumberPanel" Grid.Column="1" Spacing="4">
+                            <TextBox
+                                x:Name="TaskNumberBox"
+                                x:Uid="CrEditor_TaskNumberBox"
+                                AutomationProperties.AutomationId="CrEditor_TaskNumberBox"
+                                IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                MaxLength="100"
+                                Text="{x:Bind ViewModel.TaskNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.TaskNumberHelper, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                            <fields:FieldError Text="{x:Bind ViewModel.TaskNumberError, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Group 1: CR number · Task number. -->
-                <Grid x:Name="NumberPair" ColumnSpacing="24" RowSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Spacing="4">
-                        <TextBox
-                            x:Name="NumberBox"
-                            x:Uid="CrEditor_NumberBox"
-                            AutomationProperties.AutomationId="CrEditor_NumberBox"
-                            AutomationProperties.IsRequiredForForm="True"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            MaxLength="100"
-                            Text="{x:Bind ViewModel.Number, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock x:Uid="CrEditor_NumberHelper" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
-                        <fields:FieldError Text="{x:Bind ViewModel.NumberError, Mode=OneWay}" />
-                        <!-- B-03.2: a duplicate names the existing CR and allows opening it. -->
-                        <HyperlinkButton
-                            Padding="0"
-                            AutomationProperties.AutomationId="CrEditor_OpenDuplicateLink"
-                            Command="{x:Bind ViewModel.OpenDuplicateCommand}"
-                            Content="{x:Bind ViewModel.OpenDuplicateText, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDuplicate), Mode=OneWay}" />
-                    </StackPanel>
-                    <StackPanel x:Name="TaskNumberPanel" Grid.Column="1" Spacing="4">
-                        <TextBox
-                            x:Name="TaskNumberBox"
-                            x:Uid="CrEditor_TaskNumberBox"
-                            AutomationProperties.AutomationId="CrEditor_TaskNumberBox"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            MaxLength="100"
-                            Text="{x:Bind ViewModel.TaskNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.TaskNumberHelper, Mode=OneWay}"
-                            TextWrapping="Wrap" />
-                        <fields:FieldError Text="{x:Bind ViewModel.TaskNumberError, Mode=OneWay}" />
-                    </StackPanel>
-                </Grid>
+                    <!-- Group 3: Owner · Squad (group 2, Title, is the header above). -->
+                    <Grid x:Name="OwnerPair" ColumnSpacing="24" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Spacing="4">
+                            <controls:TokenPicker
+                                x:Name="OwnerPicker"
+                                x:Uid="CrEditor_OwnerPicker"
+                                BoxAutomationId="CrEditor_OwnerPicker"
+                                IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                ViewModel="{x:Bind ViewModel.Owner, Mode=OneWay}" />
+                            <!-- B-11 first-CR prompt, inline (design §5.3). -->
+                            <CheckBox
+                                AutomationProperties.AutomationId="CrEditor_MakeDefaultOwnerCheck"
+                                Content="{x:Bind ViewModel.MakeDefaultOwnerText, Mode=OneWay}"
+                                IsChecked="{x:Bind ViewModel.MakeDefaultOwner, Mode=TwoWay}"
+                                IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.ShowMakeDefaultOwner), Mode=OneWay}" />
+                            <fields:FieldError Text="{x:Bind ViewModel.OwnerError, Mode=OneWay}" />
+                        </StackPanel>
+                        <StackPanel x:Name="SquadPanel" Grid.Column="1" Spacing="4">
+                            <ComboBox
+                                x:Name="SquadCombo"
+                                x:Uid="CrEditor_SquadCombo"
+                                HorizontalAlignment="Stretch"
+                                AutomationProperties.AutomationId="CrEditor_SquadCombo"
+                                IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                ItemsSource="{x:Bind ViewModel.SquadOptions, Mode=OneWay}"
+                                SelectionChanged="OnSquadSelectionChanged" />
+                            <fields:FieldError Text="{x:Bind ViewModel.SquadError, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Group 3: Owner · Squad (group 2, Title, is the header above). -->
-                <Grid x:Name="OwnerPair" ColumnSpacing="24" RowSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Spacing="4">
-                        <controls:TokenPicker
-                            x:Name="OwnerPicker"
-                            x:Uid="CrEditor_OwnerPicker"
-                            BoxAutomationId="CrEditor_OwnerPicker"
-                            IsEditable="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            ViewModel="{x:Bind ViewModel.Owner, Mode=OneWay}" />
-                        <!-- B-11 first-CR prompt, inline (design §5.3). -->
-                        <CheckBox
-                            AutomationProperties.AutomationId="CrEditor_MakeDefaultOwnerCheck"
-                            Content="{x:Bind ViewModel.MakeDefaultOwnerText, Mode=OneWay}"
-                            IsChecked="{x:Bind ViewModel.MakeDefaultOwner, Mode=TwoWay}"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.ShowMakeDefaultOwner), Mode=OneWay}" />
-                        <fields:FieldError Text="{x:Bind ViewModel.OwnerError, Mode=OneWay}" />
-                    </StackPanel>
-                    <StackPanel x:Name="SquadPanel" Grid.Column="1" Spacing="4">
-                        <ComboBox
-                            x:Name="SquadCombo"
-                            x:Uid="CrEditor_SquadCombo"
-                            HorizontalAlignment="Stretch"
-                            AutomationProperties.AutomationId="CrEditor_SquadCombo"
-                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            ItemsSource="{x:Bind ViewModel.SquadOptions, Mode=OneWay}"
-                            SelectionChanged="OnSquadSelectionChanged" />
-                        <fields:FieldError Text="{x:Bind ViewModel.SquadError, Mode=OneWay}" />
-                    </StackPanel>
-                </Grid>
+                    <!-- Group 4: Status · Priority. -->
+                    <Grid x:Name="StatusPair" ColumnSpacing="24" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Spacing="4">
+                            <ComboBox
+                                x:Name="StatusCombo"
+                                x:Uid="CrEditor_StatusCombo"
+                                HorizontalAlignment="Stretch"
+                                AutomationProperties.AutomationId="CrEditor_StatusCombo"
+                                AutomationProperties.IsRequiredForForm="True"
+                                IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                ItemsSource="{x:Bind ViewModel.StatusOptions, Mode=OneWay}"
+                                SelectionChanged="OnStatusSelectionChanged" />
+                            <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
+                        </StackPanel>
+                        <StackPanel x:Name="PriorityPanel" Grid.Column="1" Spacing="4">
+                            <ComboBox
+                                x:Name="PriorityCombo"
+                                x:Uid="CrEditor_PriorityCombo"
+                                HorizontalAlignment="Stretch"
+                                AutomationProperties.AutomationId="CrEditor_PriorityCombo"
+                                ItemTemplate="{StaticResource PriorityChoiceTemplate}"
+                                AutomationProperties.IsRequiredForForm="True"
+                                IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                                ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"
+                                SelectionChanged="OnPrioritySelectionChanged" />
+                            <fields:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Group 4: Status · Priority. -->
-                <Grid x:Name="StatusPair" ColumnSpacing="24" RowSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Spacing="4">
-                        <ComboBox
-                            x:Name="StatusCombo"
-                            x:Uid="CrEditor_StatusCombo"
-                            HorizontalAlignment="Stretch"
-                            AutomationProperties.AutomationId="CrEditor_StatusCombo"
-                            AutomationProperties.IsRequiredForForm="True"
+                    <!-- Group 5: inclusive planned range, both or neither (B-04 CR planned dates). -->
+                    <Grid x:Name="PlannedPair" ColumnSpacing="24" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <controls:ClearableDateField
+                            x:Uid="CrEditor_PlannedStart"
+                            ClearButtonAutomationId="CrEditor_ClearPlannedStartButton"
+                            ClearButtonUid="CrEditor_ClearPlannedStartButton"
+                            ClearCommand="{x:Bind ViewModel.ClearPlannedStartCommand}"
+                            Date="{x:Bind ViewModel.PlannedStart, Mode=TwoWay}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            ItemsSource="{x:Bind ViewModel.StatusOptions, Mode=OneWay}"
-                            SelectionChanged="OnStatusSelectionChanged" />
-                        <fields:FieldError Text="{x:Bind ViewModel.StatusError, Mode=OneWay}" />
-                    </StackPanel>
-                    <StackPanel x:Name="PriorityPanel" Grid.Column="1" Spacing="4">
-                        <ComboBox
-                            x:Name="PriorityCombo"
-                            x:Uid="CrEditor_PriorityCombo"
-                            HorizontalAlignment="Stretch"
-                            AutomationProperties.AutomationId="CrEditor_PriorityCombo"
-                            ItemTemplate="{StaticResource PriorityChoiceTemplate}"
-                            AutomationProperties.IsRequiredForForm="True"
+                            PickerAutomationId="CrEditor_PlannedStartDate" />
+                        <controls:ClearableDateField
+                            x:Name="PlannedEndField"
+                            x:Uid="CrEditor_PlannedEnd"
+                            Grid.Column="1"
+                            ClearButtonAutomationId="CrEditor_ClearPlannedEndButton"
+                            ClearButtonUid="CrEditor_ClearPlannedEndButton"
+                            ClearCommand="{x:Bind ViewModel.ClearPlannedEndCommand}"
+                            Date="{x:Bind ViewModel.PlannedEnd, Mode=TwoWay}"
                             IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                            ItemsSource="{x:Bind ViewModel.PriorityOptions, Mode=OneWay}"
-                            SelectionChanged="OnPrioritySelectionChanged" />
-                        <fields:FieldError Text="{x:Bind ViewModel.PriorityError, Mode=OneWay}" />
-                    </StackPanel>
-                </Grid>
+                            PickerAutomationId="CrEditor_PlannedEndDate" />
+                    </Grid>
+                    <TextBlock
+                        AutomationProperties.AutomationId="CrEditor_PlannedCaption"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.PlannedCaption, Mode=OneWay}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.PlannedError, Mode=OneWay}" />
 
-                <!-- Group 5: inclusive planned range, both or neither (B-04 CR planned dates). -->
-                <Grid x:Name="PlannedPair" ColumnSpacing="24" RowSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <controls:ClearableDateField
-                        x:Uid="CrEditor_PlannedStart"
-                        ClearButtonAutomationId="CrEditor_ClearPlannedStartButton"
-                        ClearButtonUid="CrEditor_ClearPlannedStartButton"
-                        ClearCommand="{x:Bind ViewModel.ClearPlannedStartCommand}"
-                        Date="{x:Bind ViewModel.PlannedStart, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                        PickerAutomationId="CrEditor_PlannedStartDate" />
-                    <controls:ClearableDateField
-                        x:Name="PlannedEndField"
-                        x:Uid="CrEditor_PlannedEnd"
-                        Grid.Column="1"
-                        ClearButtonAutomationId="CrEditor_ClearPlannedEndButton"
-                        ClearButtonUid="CrEditor_ClearPlannedEndButton"
-                        ClearCommand="{x:Bind ViewModel.ClearPlannedEndCommand}"
-                        Date="{x:Bind ViewModel.PlannedEnd, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                        PickerAutomationId="CrEditor_PlannedEndDate" />
-                </Grid>
-                <TextBlock
-                    AutomationProperties.AutomationId="CrEditor_PlannedCaption"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind ViewModel.PlannedCaption, Mode=OneWay}" />
-                <fields:FieldError Text="{x:Bind ViewModel.PlannedError, Mode=OneWay}" />
-
-                <!-- Group 6: email subject, solution design link (+ Open), description. -->
-                <TextBox
-                    x:Name="EmailSubjectBox"
-                    x:Uid="CrEditor_EmailSubjectBox"
-                    AutomationProperties.AutomationId="CrEditor_EmailSubjectBox"
-                    IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                    MaxLength="1000"
-                    Text="{x:Bind ViewModel.EmailSubject, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <fields:FieldError Text="{x:Bind ViewModel.EmailSubjectError, Mode=OneWay}" />
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                    <!-- Group 6: email subject, solution design link (+ Open), description. -->
                     <TextBox
-                        x:Name="UrlBox"
-                        x:Uid="CrEditor_UrlBox"
-                        AutomationProperties.AutomationId="CrEditor_UrlBox"
-                        InputScope="Url"
+                        x:Name="EmailSubjectBox"
+                        x:Uid="CrEditor_EmailSubjectBox"
+                        AutomationProperties.AutomationId="CrEditor_EmailSubjectBox"
                         IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                        MaxLength="2048"
-                        Text="{x:Bind ViewModel.SolutionDesignUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <!-- B-02.11: enabled only for an http/https link; opened only by this explicit click. -->
-                    <Button
-                        x:Uid="CrEditor_OpenUrlButton"
-                        Grid.Column="1"
-                        VerticalAlignment="Bottom"
-                        AutomationProperties.AutomationId="CrEditor_OpenUrlButton"
-                        Command="{x:Bind ViewModel.OpenUrlCommand}"
-                        IsEnabled="{x:Bind ViewModel.CanOpenUrl, Mode=OneWay}">
-                        <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE8A7;" />
-                    </Button>
-                </Grid>
-                <fields:FieldError Text="{x:Bind ViewModel.UrlError, Mode=OneWay}" />
-                <TextBox
-                    x:Name="DescriptionBox"
-                    x:Uid="CrEditor_DescriptionBox"
-                    MinHeight="96"
-                    MaxHeight="320"
-                    AcceptsReturn="True"
-                    AutomationProperties.AutomationId="CrEditor_DescriptionBox"
-                    IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
-                    Text="{x:Bind ViewModel.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    TextWrapping="Wrap" />
-                <fields:FieldError Text="{x:Bind ViewModel.DescriptionError, Mode=OneWay}" />
-
-                <!-- Custom CR fields (B-11), one typed editor per active field (design §5.0). -->
-                <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CustomFields.HasFields), Mode=OneTime}">
-                    <TextBlock x:Uid="CrEditor_CustomFieldsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <fields:CustomFieldsPanel
-                        x:Name="CustomFieldsPanel"
-                        AutomationPrefix="CrEditor"
-                        ViewModel="{x:Bind ViewModel.CustomFields, Mode=OneTime}" />
-                </StackPanel>
-
-                <!-- Group 8: Linked tasks (B-03.5). A row opens the task after this dialog closes (§5.8). -->
-                <StackPanel Spacing="8">
+                        MaxLength="1000"
+                        Text="{x:Bind ViewModel.EmailSubject, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.EmailSubjectError, Mode=OneWay}" />
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
-                            VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="CrEditor_LinkedTasksHeader"
-                            AutomationProperties.HeadingLevel="Level2"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind ViewModel.LinkedTasksHeader, Mode=OneWay}" />
+                        <TextBox
+                            x:Name="UrlBox"
+                            x:Uid="CrEditor_UrlBox"
+                            AutomationProperties.AutomationId="CrEditor_UrlBox"
+                            InputScope="Url"
+                            IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                            MaxLength="2048"
+                            Text="{x:Bind ViewModel.SolutionDesignUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <!-- B-02.11: enabled only for an http/https link; opened only by this explicit click. -->
                         <Button
+                            x:Uid="CrEditor_OpenUrlButton"
                             Grid.Column="1"
-                            AutomationProperties.AutomationId="CrEditor_CreateTaskButton"
-                            Command="{x:Bind ViewModel.BeginCreateTaskCommand}"
-                            IsEnabled="{x:Bind ViewModel.CanCreateTask, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
-                                <TextBlock x:Uid="CrEditor_CreateTaskText" />
-                            </StackPanel>
+                            VerticalAlignment="Bottom"
+                            AutomationProperties.AutomationId="CrEditor_OpenUrlButton"
+                            Command="{x:Bind ViewModel.OpenUrlCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanOpenUrl, Mode=OneWay}">
+                            <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE8A7;" />
                         </Button>
                     </Grid>
-                    <TextBlock
-                        x:Uid="CrEditor_NoLinkedTasks"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.HasLinkedTasks), Mode=OneWay}" />
-                    <ListView
-                        x:Uid="CrEditor_LinkedTasksList"
-                        MaxHeight="280"
-                        AutomationProperties.AutomationId="CrEditor_LinkedTasksList"
-                        IsItemClickEnabled="True"
-                        ItemClick="OnLinkedTaskClick"
-                        ItemsSource="{x:Bind ViewModel.LinkedTasks, Mode=OneWay}"
-                        SelectionMode="None"
-                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasLinkedTasks), Mode=OneWay}">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="local:LinkedTaskRowViewModel">
-                                <Grid
-                                    Padding="0,6"
-                                    AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('CrEditor_LinkedTask_', Id.Value), Mode=OneTime}"
-                                    AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
-                                    ColumnSpacing="8"
-                                    RowSpacing="4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border Style="{StaticResource ServiceChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneTime}">
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <controls:ServiceIcon Foreground="{ThemeResource ChipForegroundBrush}" />
-                                            <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneTime}" />
+                    <fields:FieldError Text="{x:Bind ViewModel.UrlError, Mode=OneWay}" />
+                    <TextBox
+                        x:Name="DescriptionBox"
+                        x:Uid="CrEditor_DescriptionBox"
+                        MinHeight="96"
+                        MaxHeight="320"
+                        AcceptsReturn="True"
+                        AutomationProperties.AutomationId="CrEditor_DescriptionBox"
+                        IsEnabled="{x:Bind ViewModel.CanEditFields, Mode=OneWay}"
+                        Text="{x:Bind ViewModel.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap" />
+                    <fields:FieldError Text="{x:Bind ViewModel.DescriptionError, Mode=OneWay}" />
+
+                    <!-- Custom CR fields (B-11), one typed editor per active field (design §5.0). -->
+                    <StackPanel Spacing="12" Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.CustomFields.HasFields), Mode=OneTime}">
+                        <TextBlock x:Uid="CrEditor_CustomFieldsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <fields:CustomFieldsPanel
+                            x:Name="CustomFieldsPanel"
+                            AutomationPrefix="CrEditor"
+                            ViewModel="{x:Bind ViewModel.CustomFields, Mode=OneTime}" />
+                    </StackPanel>
+
+                    <!-- Group 8: Linked tasks (B-03.5). A row opens the task after this dialog closes (§5.8). -->
+                    <StackPanel Spacing="8">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="CrEditor_LinkedTasksHeader"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind ViewModel.LinkedTasksHeader, Mode=OneWay}" />
+                            <Button
+                                Grid.Column="1"
+                                AutomationProperties.AutomationId="CrEditor_CreateTaskButton"
+                                Command="{x:Bind ViewModel.BeginCreateTaskCommand}"
+                                IsEnabled="{x:Bind ViewModel.CanCreateTask, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="{StaticResource BodyIconSize}" Glyph="&#xE710;" />
+                                    <TextBlock x:Uid="CrEditor_CreateTaskText" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock
+                            x:Uid="CrEditor_NoLinkedTasks"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Visibility="{x:Bind common:BindFunctions.Collapsed(ViewModel.HasLinkedTasks), Mode=OneWay}" />
+                        <ListView
+                            x:Uid="CrEditor_LinkedTasksList"
+                            MaxHeight="280"
+                            AutomationProperties.AutomationId="CrEditor_LinkedTasksList"
+                            IsItemClickEnabled="True"
+                            ItemClick="OnLinkedTaskClick"
+                            ItemsSource="{x:Bind ViewModel.LinkedTasks, Mode=OneWay}"
+                            SelectionMode="None"
+                            Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasLinkedTasks), Mode=OneWay}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:LinkedTaskRowViewModel">
+                                    <Grid
+                                        Padding="0,6"
+                                        AutomationProperties.AutomationId="{x:Bind common:BindFunctions.RecordId('CrEditor_LinkedTask_', Id.Value), Mode=OneTime}"
+                                        AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
+                                        ColumnSpacing="8"
+                                        RowSpacing="4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource ServiceChipStyle}" Visibility="{x:Bind common:BindFunctions.Visible(HasService), Mode=OneTime}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <controls:ServiceIcon Foreground="{ThemeResource ChipForegroundBrush}" />
+                                                <TextBlock Style="{StaticResource ChipTextStyle}" Text="{x:Bind Service, Mode=OneTime}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                            <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind StatusName, Mode=OneTime}" />
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Text="{x:Bind ChecklistText, Mode=OneTime}" />
                                         </StackPanel>
-                                    </Border>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                        <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind StatusName, Mode=OneTime}" />
-                                        <TextBlock
-                                            VerticalAlignment="Center"
-                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                            Text="{x:Bind ChecklistText, Mode=OneTime}" />
-                                    </StackPanel>
-                                    <!-- The Archived chip has text, so the state never depends on color. -->
-                                    <Border
-                                        Grid.Column="2"
-                                        Style="{StaticResource SquadChipStyle}"
-                                        Visibility="{x:Bind common:BindFunctions.Visible(IsArchived), Mode=OneTime}">
-                                        <TextBlock x:Uid="CrEditor_ArchivedChip" Style="{StaticResource ChipTextStyle}" />
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                                        <!-- The Archived chip has text, so the state never depends on color. -->
+                                        <Border
+                                            Grid.Column="2"
+                                            Style="{StaticResource SquadChipStyle}"
+                                            Visibility="{x:Bind common:BindFunctions.Visible(IsArchived), Mode=OneTime}">
+                                            <TextBlock x:Uid="CrEditor_ArchivedChip" Style="{StaticResource ChipTextStyle}" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ===== Save and create a task (T-13: never create from unsaved CR values). ===== -->
+                <StackPanel
+                    AutomationProperties.AutomationId="CrEditor_SaveAndCreateStep"
+                    Spacing="12"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSaveAndCreateStep), Mode=OneWay}">
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource SubtitleTextBlockStyle}"
+                        Text="{x:Bind ViewModel.SaveAndCreatePrompt, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <TextBlock x:Uid="CrEditor_SaveAndCreateNote" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="CrEditor_SaveAndCreateBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
+                        <Button
+                            x:Uid="CrEditor_SaveAndCreateButton"
+                            AutomationProperties.AutomationId="CrEditor_SaveAndCreateButton"
+                            Command="{x:Bind ViewModel.SaveAndCreateTaskCommand}"
+                            Style="{StaticResource AccentButtonStyle}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ===== Cascade delete (design §5.7, B-05, AC-30). Back is focused first, never Delete. ===== -->
+                <StackPanel
+                    AutomationProperties.AutomationId="CascadeDelete_Dialog"
+                    Spacing="12"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsDeleteStep), Mode=OneWay}">
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource SubtitleTextBlockStyle}"
+                        Text="{x:Bind ViewModel.DeleteHeading, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <InfoBar
+                        AutomationProperties.AutomationId="CascadeDelete_ScopeChangedInfoBar"
+                        IsClosable="False"
+                        IsOpen="{x:Bind ViewModel.HasDeleteScopeMessage, Mode=OneWay}"
+                        Message="{x:Bind ViewModel.DeleteScopeMessage, Mode=OneWay}"
+                        Severity="Warning"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDeleteScopeMessage), Mode=OneWay}" />
+                    <InfoBar
+                        AutomationProperties.AutomationId="CascadeDelete_ErrorInfoBar"
+                        IsClosable="False"
+                        IsOpen="{x:Bind ViewModel.HasDeleteError, Mode=OneWay}"
+                        Message="{x:Bind ViewModel.DeleteError, Mode=OneWay}"
+                        Severity="Error"
+                        Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDeleteError), Mode=OneWay}" />
+                    <StackPanel AutomationProperties.AutomationId="CascadeDelete_Counts" Spacing="4">
+                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteTasksLine, Mode=OneWay}" TextWrapping="Wrap" />
+                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteChecklistLine, Mode=OneWay}" TextWrapping="Wrap" />
+                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteSubtaskCardsLine, Mode=OneWay}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock x:Uid="CascadeDelete_ReviewNote" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                    <TextBlock x:Uid="CascadeDelete_Warning" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button
+                            x:Name="DeleteBackButton"
+                            x:Uid="CascadeDelete_CancelButton"
+                            AutomationProperties.AutomationId="CascadeDelete_CancelButton"
+                            Command="{x:Bind ViewModel.StepBackCommand}" />
+                        <Button
+                            AutomationProperties.AutomationId="CascadeDelete_DeleteButton"
+                            Command="{x:Bind ViewModel.ConfirmDeleteCommand}"
+                            Content="{x:Bind ViewModel.DeleteButtonText, Mode=OneWay}"
+                            IsEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsSaving), Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ===== Conflict review and reload confirmation (design §5.10). ===== -->
+                <dialogs:ConflictReviewPanel
+                    ApplyCommand="{x:Bind ViewModel.ApplyConflictReviewCommand}"
+                    BackCommand="{x:Bind ViewModel.StepBackCommand}"
+                    ConfirmReloadCommand="{x:Bind ViewModel.ConfirmReloadCommand}"
+                    IsReloadStep="{x:Bind ViewModel.IsReloadConfirmStep, Mode=OneWay}"
+                    IsReviewStep="{x:Bind ViewModel.IsConflictReviewStep, Mode=OneWay}"
+                    ReloadMessageKey="CrEditor_ReloadMessage"
+                    Rows="{x:Bind ViewModel.ConflictRows, Mode=OneWay}" />
+
+                <!-- Design §5.0 saving row. -->
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSaving), Mode=OneWay}">
+                    <ProgressRing Width="16" Height="16" IsActive="{x:Bind ViewModel.IsSaving, Mode=OneWay}" />
+                    <TextBlock x:Uid="TaskEditor_Saving" AutomationProperties.LiveSetting="Polite" />
                 </StackPanel>
             </StackPanel>
-
-            <!-- ===== Save and create a task (T-13: never create from unsaved CR values). ===== -->
-            <StackPanel
-                AutomationProperties.AutomationId="CrEditor_SaveAndCreateStep"
-                Spacing="12"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSaveAndCreateStep), Mode=OneWay}">
-                <TextBlock
-                    AutomationProperties.HeadingLevel="Level2"
-                    Style="{StaticResource SubtitleTextBlockStyle}"
-                    Text="{x:Bind ViewModel.SaveAndCreatePrompt, Mode=OneWay}"
-                    TextWrapping="Wrap" />
-                <TextBlock x:Uid="CrEditor_SaveAndCreateNote" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Uid="LinkCr_BackButton" AutomationProperties.AutomationId="CrEditor_SaveAndCreateBackButton" Command="{x:Bind ViewModel.StepBackCommand}" />
-                    <Button
-                        x:Uid="CrEditor_SaveAndCreateButton"
-                        AutomationProperties.AutomationId="CrEditor_SaveAndCreateButton"
-                        Command="{x:Bind ViewModel.SaveAndCreateTaskCommand}"
-                        Style="{StaticResource AccentButtonStyle}" />
-                </StackPanel>
-            </StackPanel>
-
-            <!-- ===== Cascade delete (design §5.7, B-05, AC-30). Back is focused first, never Delete. ===== -->
-            <StackPanel
-                AutomationProperties.AutomationId="CascadeDelete_Dialog"
-                Spacing="12"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsDeleteStep), Mode=OneWay}">
-                <TextBlock
-                    AutomationProperties.HeadingLevel="Level2"
-                    Style="{StaticResource SubtitleTextBlockStyle}"
-                    Text="{x:Bind ViewModel.DeleteHeading, Mode=OneWay}"
-                    TextWrapping="Wrap" />
-                <InfoBar
-                    AutomationProperties.AutomationId="CascadeDelete_ScopeChangedInfoBar"
-                    IsClosable="False"
-                    IsOpen="{x:Bind ViewModel.HasDeleteScopeMessage, Mode=OneWay}"
-                    Message="{x:Bind ViewModel.DeleteScopeMessage, Mode=OneWay}"
-                    Severity="Warning"
-                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDeleteScopeMessage), Mode=OneWay}" />
-                <InfoBar
-                    AutomationProperties.AutomationId="CascadeDelete_ErrorInfoBar"
-                    IsClosable="False"
-                    IsOpen="{x:Bind ViewModel.HasDeleteError, Mode=OneWay}"
-                    Message="{x:Bind ViewModel.DeleteError, Mode=OneWay}"
-                    Severity="Error"
-                    Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.HasDeleteError), Mode=OneWay}" />
-                <StackPanel AutomationProperties.AutomationId="CascadeDelete_Counts" Spacing="4">
-                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteTasksLine, Mode=OneWay}" TextWrapping="Wrap" />
-                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteChecklistLine, Mode=OneWay}" TextWrapping="Wrap" />
-                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.DeleteSubtaskCardsLine, Mode=OneWay}" TextWrapping="Wrap" />
-                </StackPanel>
-                <TextBlock x:Uid="CascadeDelete_ReviewNote" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
-                <TextBlock x:Uid="CascadeDelete_Warning" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button
-                        x:Name="DeleteBackButton"
-                        x:Uid="CascadeDelete_CancelButton"
-                        AutomationProperties.AutomationId="CascadeDelete_CancelButton"
-                        Command="{x:Bind ViewModel.StepBackCommand}" />
-                    <Button
-                        AutomationProperties.AutomationId="CascadeDelete_DeleteButton"
-                        Command="{x:Bind ViewModel.ConfirmDeleteCommand}"
-                        Content="{x:Bind ViewModel.DeleteButtonText, Mode=OneWay}"
-                        IsEnabled="{x:Bind common:BindFunctions.Not(ViewModel.IsSaving), Mode=OneWay}" />
-                </StackPanel>
-            </StackPanel>
-
-            <!-- ===== Conflict review and reload confirmation (design §5.10). ===== -->
-            <dialogs:ConflictReviewPanel
-                ApplyCommand="{x:Bind ViewModel.ApplyConflictReviewCommand}"
-                BackCommand="{x:Bind ViewModel.StepBackCommand}"
-                ConfirmReloadCommand="{x:Bind ViewModel.ConfirmReloadCommand}"
-                IsReloadStep="{x:Bind ViewModel.IsReloadConfirmStep, Mode=OneWay}"
-                IsReviewStep="{x:Bind ViewModel.IsConflictReviewStep, Mode=OneWay}"
-                ReloadMessageKey="CrEditor_ReloadMessage"
-                Rows="{x:Bind ViewModel.ConflictRows, Mode=OneWay}" />
-
-            <!-- Design §5.0 saving row. -->
-            <StackPanel
-                Orientation="Horizontal"
-                Spacing="8"
-                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSaving), Mode=OneWay}">
-                <ProgressRing Width="16" Height="16" IsActive="{x:Bind ViewModel.IsSaving, Mode=OneWay}" />
-                <TextBlock x:Uid="TaskEditor_Saving" AutomationProperties.LiveSetting="Polite" />
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </ContentDialog>

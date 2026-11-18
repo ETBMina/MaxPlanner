@@ -34,7 +34,14 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _dataFolder = dataFolder ?? throw new ArgumentNullException(nameof(dataFolder));
         _preferences = preferences ?? throw new ArgumentNullException(nameof(preferences));
         CurrentPage = AppPages.FromKey(preferences.Current.ActivePage);
+        VersionText = AppVersionText.ToVersionLine(strings, AppVersionText.EntryInformationalVersion);
     }
+
+    /// <summary>The startup splash's version line (design §2.1), such as "Version 0.1.0"; empty when the app has no version.</summary>
+    public string VersionText { get; }
+
+    /// <summary>The version line shows only with text, so no empty line takes space on the splash.</summary>
+    public bool HasVersionText => !string.IsNullOrEmpty(VersionText);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsStarting), nameof(IsReady), nameof(IsInRecovery), nameof(HasFailed))]

@@ -46,6 +46,7 @@
         </StackPanel>
 
         <local:StartupView
+            x:Name="Startup"
             Grid.Row="1"
             ViewModel="{x:Bind ViewModel, Mode=OneTime}"
             Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsStarting), Mode=OneWay}" />

@@ -22,6 +22,14 @@ public sealed class CopyFeedbackTests
     public void Feedback_follows_only_a_copy_that_reached_the_clipboard(string? text, bool reachedClipboard, bool shown) =>
         CopyFeedbackRules.ShowsFeedback(text, reachedClipboard).Should().Be(shown);
 
+    [Theory]
+    [InlineData(false, "CR-1 - 0042", true)]
+    [InlineData(true, "CR-1 - 0042", false)]
+    [InlineData(false, "", false)]
+    [InlineData(false, null, false)]
+    public void Copy_id_is_offered_only_for_a_saved_record_with_id_text(bool isNew, string? idText, bool offered) =>
+        CopyFeedbackRules.CanCopyId(isNew, idText).Should().Be(offered);
+
     [Fact]
     public void The_hint_closes_by_itself_after_one_and_a_half_seconds() =>
         CopyFeedbackRules.HintDuration.Should().Be(TimeSpan.FromSeconds(1.5));

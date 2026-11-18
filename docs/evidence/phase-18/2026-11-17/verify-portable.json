@@ -1,0 +1,53 @@
+{
+  "Date": "2026-11-17T13:35:51.9602188+02:00",
+  "Zip": "D:\\Engineering\\Projects\\C#\\MaxPlanner\\artifacts\\MaxPlanner-0.1.2-win-x64.zip",
+  "ZipHash": "a912437179475f23e06720b8c45e4a338c1b2a0c9ec3691c8b12f764e52125be",
+  "Machine": "Microsoft Windows 11 Pro build 26300; user Maximizer",
+  "Results": [
+    {
+      "Gate": "Launch",
+      "Passed": true,
+      "Details": "window=True responding=True ready=True lock=True db=True exit=0"
+    },
+    {
+      "Gate": "Checksums",
+      "Passed": true,
+      "Details": "zip=True mismatched=0 unlisted=0 notices+readme=True dataEntries=0"
+    },
+    {
+      "Gate": "Relocation",
+      "Passed": true,
+      "Details": "dataUnchangedByMove=True opened=True recreated=False recovery=False exits=0/0; same drive (pass -SecondDrive to cross drives)"
+    },
+    {
+      "Gate": "SecondLaunch",
+      "Passed": true,
+      "Details": "secondExit=0 instances=1 firstAlive=True firstExit=0"
+    },
+    {
+      "Gate": "ReadOnlyFolder",
+      "Passed": true,
+      "Details": "message=True exit=2 noDatabase=True"
+    },
+    {
+      "Gate": "LockedDataset",
+      "Passed": true,
+      "Details": "message=True exit=3"
+    },
+    {
+      "Gate": "NewerSchema",
+      "Passed": true,
+      "Details": "window=True recoveryLogged=True exit=4"
+    },
+    {
+      "Gate": "Upgrade",
+      "Passed": true,
+      "Details": "dataUnchangedByExtract=True recovery=False recreated=False exits=0/0 previous=MaxPlanner-0.1.2-win-x64.zip"
+    },
+    {
+      "Gate": "DependencyAbsence",
+      "Passed": true,
+      "Details": "newAppData= newRegistry= newPackages= runtimeOutsideApp= exit=0"
+    }
+  ]
+}

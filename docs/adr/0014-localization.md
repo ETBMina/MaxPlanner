@@ -9,7 +9,7 @@
 - Visible dates and numbers are formatted with the current culture. Serialization uses invariant formats.
 
 ## Spike 6 result (2026-10-22)
-`x:Uid` resources in the Presentation class library resolve in the published unpackaged build: `Shell_StartupText` showed "Opening your planner…".
+`x:Uid` resources in the Presentation class library resolve in the published unpackaged build: `Shell_StartupText` showed "Opening your planner…". (That string was removed in November 2026 when the startup screen became the branded splash, design §2.1; its `Shell_StartupTitle` resolves the same way.)
 
 - **Page and control strings** live in `src/MaxPlanner.Presentation/Strings/en-US/Resources.resw`.
 - **Desktop-level strings** (window title and errors shown before XAML starts) live in `src/MaxPlanner.Desktop/Strings/en-US/Resources.resw`.

@@ -15,4 +15,9 @@ public static class CopyFeedbackRules
     /// <param name="reachedClipboard">The clipboard took the text.</param>
     public static bool ShowsFeedback(string? copiedText, bool reachedClipboard) =>
         reachedClipboard && !string.IsNullOrEmpty(copiedText);
+
+    /// <summary>A record's Copy ID item is enabled only for a saved record whose ID text is not empty.</summary>
+    /// <param name="isNew">The record is a new, unsaved draft.</param>
+    /// <param name="idText">The record's Copy ID text.</param>
+    public static bool CanCopyId(bool isNew, string? idText) => !isNew && !string.IsNullOrEmpty(idText);
 }
