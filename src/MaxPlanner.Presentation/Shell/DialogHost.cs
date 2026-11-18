@@ -2,6 +2,7 @@ using System.ComponentModel;
 using MaxPlanner.Presentation.ChangeRequests;
 using MaxPlanner.Presentation.Common.Controls;
 using MaxPlanner.Presentation.Common.Dialogs;
+using MaxPlanner.Presentation.Common.PullRequests;
 using MaxPlanner.Presentation.Reviews;
 using MaxPlanner.Presentation.Settings;
 using MaxPlanner.Presentation.SubtaskCards;
@@ -331,6 +332,7 @@ internal sealed class DialogHost
         ReviewEditorViewModel review => new ReviewEditorDialog(review),
         LookupRemovalViewModel removal => new LookupRemovalDialog(removal),
         FieldDefinitionEditorViewModel field => new FieldDefinitionDialog(field),
+        CreatePullRequestViewModel pullRequest => new CreatePullRequestDialog(pullRequest),
         ConfirmationViewModel confirmation => Confirmation(confirmation),
         _ => throw new NotSupportedException($"No dialog is registered for {viewModel.GetType().Name}."),
     };

@@ -67,6 +67,9 @@ public enum EditorFollowUp
     OpenCr,
     OpenSubtaskCard,
     AddSubtaskCard,
+
+    /// <summary>More › Create pull request… (design §5.11): the dialog opens with the saved values after the editor closed.</summary>
+    CreatePullRequest,
 }
 
 /// <summary>

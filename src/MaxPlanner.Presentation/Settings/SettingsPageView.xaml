@@ -362,12 +362,15 @@
             x:Name="PageContent"
             Grid.Row="2"
             VerticalScrollBarVisibility="Auto">
+            <!--
+                The star column caps the cards at 1000 epx and keeps them on the left at L, and every card fills that
+                width whatever its content, so an expander does not widen when it opens.
+            -->
             <Grid x:Name="CapWrapper" Padding="32,0,32,32">
-                <StackPanel
-                    x:Name="CardsPanel"
-                    MaxWidth="1000"
-                    HorizontalAlignment="Left"
-                    Spacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="1000" />
+                </Grid.ColumnDefinitions>
+                <StackPanel x:Name="CardsPanel" Spacing="4">
 
                     <!-- Appearance (AC-23): applies immediately and persists until System is chosen again. -->
                     <TextBlock x:Uid="Settings_AppearanceHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
@@ -468,6 +471,180 @@
                         IsTabStop="False"
                         ItemTemplate="{StaticResource FieldSectionTemplate}"
                         ItemsSource="{x:Bind ViewModel.FieldSections, Mode=OneTime}" />
+
+                    <!--
+                        Integrations (B-18, ADR 0031): per-PC preferences, not exported and kept by a restore of default UI
+                        preferences. The switch sits in the expander header and only controls whether the Create pull
+                        request commands appear; the rows stay visible and editable while it is off. The token is typed
+                        into a PasswordBox and saved to Windows Credential Manager; a saved token shows only "Saved".
+                    -->
+                    <TextBlock x:Uid="Settings_IntegrationsHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <Expander
+                        x:Name="AdoExpander"
+                        x:Uid="Settings_AdoExpander"
+                        Margin="0,0,0,4"
+                        AutomationProperties.AutomationId="Settings_AdoExpander"
+                        Expanding="OnAdoExpanding"
+                        IsExpanded="{x:Bind Ado.IsExpanded, Mode=TwoWay}"
+                        Style="{StaticResource SettingsExpanderStyle}">
+                        <Expander.Header>
+                            <Grid Padding="0,12" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    FontSize="20"
+                                    Glyph="&#xF003;" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock x:Uid="Settings_AdoTitle" Style="{StaticResource BodyTextBlockStyle}" />
+                                    <TextBlock x:Uid="Settings_AdoDescription" Style="{StaticResource PageSubtitleTextStyle}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch
+                                    x:Uid="Settings_AdoEnabledSwitch"
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="Settings_AdoEnabledSwitch"
+                                    IsOn="{x:Bind Ado.IsEnabled, Mode=TwoWay}" />
+                            </Grid>
+                        </Expander.Header>
+                        <StackPanel>
+                            <local:SettingsCard x:Uid="Settings_AdoCollectionUrlCard" IsExpanderRow="True">
+                                <StackPanel MinWidth="280" Spacing="4">
+                                    <TextBox
+                                        x:Uid="Settings_AdoCollectionUrlBox"
+                                        AutomationProperties.AutomationId="Settings_AdoCollectionUrlBox"
+                                        AutomationProperties.FullDescription="{x:Bind Ado.CollectionUrlHint, Mode=OneWay}"
+                                        InputScope="Url"
+                                        IsSpellCheckEnabled="False"
+                                        MaxLength="500"
+                                        Text="{x:Bind Ado.CollectionUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <fields:FieldError MaxWidth="360" Text="{x:Bind Ado.CollectionUrlHint, Mode=OneWay}" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoProjectCard" IsExpanderRow="True">
+                                <TextBox
+                                    x:Uid="Settings_AdoProjectBox"
+                                    MinWidth="280"
+                                    AutomationProperties.AutomationId="Settings_AdoProjectBox"
+                                    IsSpellCheckEnabled="False"
+                                    MaxLength="250"
+                                    Text="{x:Bind Ado.Project, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoRepositoryCard" IsExpanderRow="True">
+                                <TextBox
+                                    x:Uid="Settings_AdoRepositoryBox"
+                                    MinWidth="280"
+                                    AutomationProperties.AutomationId="Settings_AdoRepositoryBox"
+                                    IsSpellCheckEnabled="False"
+                                    MaxLength="250"
+                                    Text="{x:Bind Ado.Repository, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoTokenCard" IsExpanderRow="True">
+                                <Grid MinWidth="280">
+                                    <PasswordBox
+                                        x:Name="AdoTokenBox"
+                                        x:Uid="Settings_AdoTokenBox"
+                                        AutomationProperties.AutomationId="Settings_AdoTokenBox"
+                                        KeyDown="OnAdoTokenKeyDown"
+                                        LostFocus="OnAdoTokenLostFocus"
+                                        MaxLength="1000"
+                                        Visibility="{x:Bind Ado.IsTokenBoxShown, Mode=OneWay}" />
+                                    <StackPanel
+                                        HorizontalAlignment="Right"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        Visibility="{x:Bind Ado.IsSavedTokenShown, Mode=OneWay}">
+                                        <FontIcon
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            FontSize="14"
+                                            Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                            Glyph="&#xE73E;" />
+                                        <TextBlock x:Uid="Settings_AdoTokenSaved" VerticalAlignment="Center" />
+                                        <Button
+                                            x:Uid="Settings_AdoTokenChangeButton"
+                                            AutomationProperties.AutomationId="Settings_AdoTokenChangeButton"
+                                            Command="{x:Bind Ado.ChangeTokenCommand}" />
+                                        <Button
+                                            x:Uid="Settings_AdoTokenRemoveButton"
+                                            AutomationProperties.AutomationId="Settings_AdoTokenRemoveButton"
+                                            Command="{x:Bind Ado.RemoveTokenCommand}" />
+                                    </StackPanel>
+                                </Grid>
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoTestConnectionCard" IsExpanderRow="True">
+                                <StackPanel MinWidth="280" Spacing="8">
+                                    <Button
+                                        x:Uid="Settings_AdoTestConnectionButton"
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.AutomationId="Settings_AdoTestConnectionButton"
+                                        Command="{x:Bind Ado.TestConnectionCommand}"
+                                        IsEnabled="{x:Bind Ado.CanTestConnection, Mode=OneWay}" />
+                                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind Ado.IsTesting, Mode=OneWay}" />
+                                    <!-- Design §4.6: an inline check or cross with the result text (glyph as well as color). -->
+                                    <Grid ColumnSpacing="8" Visibility="{x:Bind Ado.HasTestResult, Mode=OneWay}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon
+                                            VerticalAlignment="Top"
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            FontSize="14"
+                                            Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                            Glyph="&#xE73E;"
+                                            Visibility="{x:Bind Ado.IsTestSuccess, Mode=OneWay}" />
+                                        <FontIcon
+                                            VerticalAlignment="Top"
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            FontSize="14"
+                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                            Glyph="&#xE711;"
+                                            Visibility="{x:Bind common:BindFunctions.Collapsed(Ado.IsTestSuccess), Mode=OneWay}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            MaxWidth="360"
+                                            AutomationProperties.AutomationId="Settings_AdoTestResultText"
+                                            AutomationProperties.LiveSetting="Polite"
+                                            IsTextSelectionEnabled="True"
+                                            Text="{x:Bind Ado.TestResult, Mode=OneWay}"
+                                            TextWrapping="Wrap" />
+                                    </Grid>
+                                </StackPanel>
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoDefaultTargetCard" IsExpanderRow="True">
+                                <TextBox
+                                    x:Uid="Settings_AdoDefaultTargetBox"
+                                    MinWidth="280"
+                                    AutomationProperties.AutomationId="Settings_AdoDefaultTargetBox"
+                                    IsSpellCheckEnabled="False"
+                                    MaxLength="250"
+                                    PlaceholderText="{x:Bind local:AzureDevOpsSettingsViewModel.DefaultTargetPlaceholder, Mode=OneTime}"
+                                    Text="{x:Bind Ado.DefaultTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoAutoCompleteCard" IsExpanderRow="True">
+                                <ToggleSwitch
+                                    x:Uid="Settings_AdoAutoCompleteSwitch"
+                                    AutomationProperties.AutomationId="Settings_AdoAutoCompleteSwitch"
+                                    IsOn="{x:Bind Ado.IsAutoComplete, Mode=TwoWay}" />
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Uid="Settings_AdoTitleTemplateCard" IsExpanderRow="True">
+                                <TextBox
+                                    x:Uid="Settings_AdoTitleTemplateBox"
+                                    MinWidth="280"
+                                    AutomationProperties.AutomationId="Settings_AdoTitleTemplateBox"
+                                    IsSpellCheckEnabled="False"
+                                    MaxLength="400"
+                                    PlaceholderText="{x:Bind local:AzureDevOpsSettingsViewModel.TitlePlaceholder, Mode=OneTime}"
+                                    Text="{x:Bind Ado.TitleTemplate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </local:SettingsCard>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Data (T-09): location with Open folder, the last backup, and the Data page entry. -->
                     <TextBlock x:Uid="Settings_DataHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />

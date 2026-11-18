@@ -24,6 +24,26 @@ internal sealed class PreferencesDocument
     public bool? ShowArchivedTasks { get; set; }
 
     public bool? ShowBoardCardTags { get; set; }
+
+    public AzureDevOpsDocument? AzureDevOps { get; set; }
+}
+
+/// <summary>Settings › Integrations › Azure DevOps (ADR 0031); the token is never stored here.</summary>
+internal sealed class AzureDevOpsDocument
+{
+    public bool? Enabled { get; set; }
+
+    public string? CollectionUrl { get; set; }
+
+    public string? Project { get; set; }
+
+    public string? Repository { get; set; }
+
+    public string? DefaultTarget { get; set; }
+
+    public bool? AutoComplete { get; set; }
+
+    public string? TitleTemplate { get; set; }
 }
 
 internal sealed class RectDocument

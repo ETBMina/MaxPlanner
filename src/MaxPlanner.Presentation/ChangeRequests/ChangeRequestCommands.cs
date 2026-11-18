@@ -118,6 +118,9 @@ public sealed class ChangeRequestCommands
                 // The committed CR, never the discarded draft, supplies the revision.
                 await MoveToBacklogAsync(cr.Value).ConfigureAwait(true);
                 break;
+            case CrEditorFollowUp.CreatePullRequest when editor.SavedId is { } pullRequestCrId:
+                await _context.PullRequests.CreateForChangeRequestAsync(pullRequestCrId).ConfigureAwait(true);
+                break;
             default:
                 break;
         }

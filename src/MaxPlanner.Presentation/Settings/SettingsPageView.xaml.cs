@@ -22,12 +22,21 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
     /// <summary>The dragged row's index before the ListView moved it; -1 when no drag is in progress.</summary>
     private int _dragFromIndex = -1;
 
+    private double _width;
+
     public SettingsPageView(SettingsPageViewModel viewModel)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
         PageLayout.OnWidthChanged(this, ApplyBreakpoint);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.AzureDevOpsFocusRequested += OnAzureDevOpsFocusRequested;
+        ViewModel.AzureDevOps.TokenBoxFocusRequested += OnTokenBoxFocusRequested;
+        Unloaded += (_, _) =>
+        {
+            ViewModel.AzureDevOpsFocusRequested -= OnAzureDevOpsFocusRequested;
+            ViewModel.AzureDevOps.TokenBoxFocusRequested -= OnTokenBoxFocusRequested;
+        };
         AttachDataPage();
     }
 
@@ -35,8 +44,23 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
     public SettingsPageViewModel ViewModel { get; }
 
-    /// <summary>Gives the page title keyboard focus after navigation (design §7.7).</summary>
-    public void FocusTitle() => HeaderRoot.FocusTitle();
+    /// <summary>Settings › Integrations › Azure DevOps, bound flat (it is created with the page's view model and never null).</summary>
+    public AzureDevOpsSettingsViewModel Ado => ViewModel.AzureDevOps;
+
+    /// <summary>
+    /// Gives the page title keyboard focus after navigation (design §7.7), or the Azure DevOps expander when the pull
+    /// request dialog's Open Settings brought the user here (design §5.11).
+    /// </summary>
+    public void FocusTitle()
+    {
+        if (ViewModel.TakeAzureDevOpsFocusRequest())
+        {
+            FocusAzureDevOps();
+            return;
+        }
+
+        HeaderRoot.FocusTitle();
+    }
 
     /// <inheritdoc/>
     public FrameworkElement HeaderElement => HeaderRoot;
@@ -66,19 +90,74 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
     private void ApplyBreakpoint(double width)
     {
-        // T-08.1/design §4.6: L caps cards at 1000 epx aligned left; M and S use the full width, and at S the
-        // card's action wraps below its text.
+        _width = width;
+        // T-08.1/design §4.6: the CapWrapper column caps cards at 1000 epx aligned left (narrower windows use the
+        // full width), and at S the card's action wraps below its text.
         var window = PagePadding.WindowWidth(this, width);
         var padding = PagePadding.Side(window);
         HeaderRoot.HeaderPadding = new Thickness(padding, Math.Max(16, PagePadding.Top(window)), padding, 12);
         CapWrapper.Padding = new Thickness(padding, 0, padding, 32);
         ErrorBar.Margin = new Thickness(padding, 0, padding, 8);
-        CardsPanel.HorizontalAlignment = width >= Breakpoints.Large ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
         var wrap = width < Breakpoints.Medium;
         foreach (var card in FindDescendants<SettingsCard>(CardsPanel))
         {
             card.IsWrapped = wrap;
         }
+    }
+
+    // ----- Integrations › Azure DevOps (ADR 0031) -----
+
+    // Already on Settings, the shell does not navigate again; the request is served once the queued layout has run.
+    private void OnAzureDevOpsFocusRequested(object? sender, EventArgs e) =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (IsLoaded && ViewModel.TakeAzureDevOpsFocusRequest())
+            {
+                FocusAzureDevOps();
+            }
+        });
+
+    private void FocusAzureDevOps()
+    {
+        AdoExpander.IsExpanded = true;
+        AdoExpander.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0, AnimationDesired = false });
+        if (FocusManager.FindFirstFocusableElement(AdoExpander) is Control first)
+        {
+            first.Focus(FocusState.Keyboard);
+        }
+    }
+
+    // The rows may be realized only when the expander first opens; they take the current breakpoint then.
+    private void OnAdoExpanding(Expander sender, ExpanderExpandingEventArgs args) =>
+        DispatcherQueue.TryEnqueue(() => ApplyBreakpoint(_width));
+
+    private void OnTokenBoxFocusRequested(object? sender, EventArgs e) =>
+        DispatcherQueue.TryEnqueue(() => AdoTokenBox.Focus(FocusState.Programmatic));
+
+    // The token goes straight from the PasswordBox to Credential Manager and the box is cleared; it is never kept in a
+    // view model property.
+    private void OnAdoTokenKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Enter)
+        {
+            e.Handled = true;
+            CommitToken();
+        }
+        else if (e.Key == VirtualKey.Escape && ViewModel.AzureDevOps.HasToken)
+        {
+            e.Handled = true;
+            AdoTokenBox.Password = string.Empty;
+            CommitToken();
+        }
+    }
+
+    private void OnAdoTokenLostFocus(object sender, RoutedEventArgs e) => CommitToken();
+
+    private void CommitToken()
+    {
+        var token = AdoTokenBox.Password;
+        AdoTokenBox.Password = string.Empty;
+        ViewModel.AzureDevOps.SaveToken(token);
     }
 
     // ----- Lookup sections -----

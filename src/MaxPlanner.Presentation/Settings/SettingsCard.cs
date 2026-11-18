@@ -31,6 +31,11 @@ public sealed partial class SettingsCard : UserControl
     public static readonly DependencyProperty IsDescriptionSelectableProperty = DependencyProperty.Register(
         nameof(IsDescriptionSelectable), typeof(bool), typeof(SettingsCard), new PropertyMetadata(false, (d, _) => ((SettingsCard)d).ApplyText()));
 
+    public static readonly DependencyProperty IsExpanderRowProperty = DependencyProperty.Register(
+        nameof(IsExpanderRow), typeof(bool), typeof(SettingsCard), new PropertyMetadata(false, (d, _) => ((SettingsCard)d).ApplySurface()));
+
+    private readonly Border _surface;
+
     private readonly Microsoft.UI.Xaml.Controls.Grid _layout = new() { ColumnSpacing = 16, RowSpacing = 8 };
     private readonly FontIcon _icon = new() { FontSize = 20, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock _header = new() { TextWrapping = TextWrapping.Wrap };
@@ -58,7 +63,9 @@ public sealed partial class SettingsCard : UserControl
         _layout.Children.Add(_icon);
         _layout.Children.Add(text);
         _layout.Children.Add(_action);
-        Content = new Border { Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["SettingsCardBorderStyle"], Child = _layout };
+        _surface = new Border { Child = _layout };
+        Content = _surface;
+        ApplySurface();
         ApplyLayout();
     }
 
@@ -100,6 +107,16 @@ public sealed partial class SettingsCard : UserControl
         get => (bool)GetValue(IsDescriptionSelectableProperty);
         set => SetValue(IsDescriptionSelectableProperty, value);
     }
+
+    /// <summary>A row inside an expander (design §4.6): a divider line instead of the card surface.</summary>
+    public bool IsExpanderRow
+    {
+        get => (bool)GetValue(IsExpanderRowProperty);
+        set => SetValue(IsExpanderRowProperty, value);
+    }
+
+    private void ApplySurface() =>
+        _surface.Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources[IsExpanderRow ? "SettingsExpanderRowBorderStyle" : "SettingsCardBorderStyle"];
 
     private void ApplyText()
     {

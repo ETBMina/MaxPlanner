@@ -1,8 +1,10 @@
 using System.Reactive.Concurrency;
 using MaxPlanner.Application.Preferences;
+using MaxPlanner.Application.PullRequests;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.Startup;
 using MaxPlanner.Desktop.Startup;
+using MaxPlanner.Infrastructure.AzureDevOps;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Infrastructure.Startup;
 using MaxPlanner.Infrastructure.Storage;
@@ -48,6 +50,10 @@ internal static class AppComposition
 
         services.AddSingleton<IDataFolderLauncher, ExplorerDataFolderLauncher>();
         services.AddSingleton<IUrlLauncher, ShellUrlLauncher>();
+
+        // ADR 0031: one long-lived HttpClient for the app (disposed with the container), and the Credential Manager token.
+        services.AddSingleton<IAzureDevOpsClient>(sp => new AzureDevOpsClient(sp.GetRequiredService<ILogger<AzureDevOpsClient>>()));
+        services.AddSingleton<IAzureDevOpsTokenStore, CredentialManagerTokenStore>();
         services.AddSingleton<ThemeService>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<Maintenance.WindowFilePickers>();

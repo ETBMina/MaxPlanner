@@ -230,6 +230,10 @@ public sealed class TaskCommands
             case EditorFollowUp.AddSubtaskCard when editor.ExistingTaskId is { } parentId:
                 await NewSubtaskCardAsync(parentId).ConfigureAwait(true);
                 break;
+            case EditorFollowUp.CreatePullRequest when editor.ExistingTaskId is { } pullRequestTaskId:
+                // Design §5.11: the saved task, never the discarded draft.
+                await _context.PullRequests.CreateForTaskAsync(pullRequestTaskId).ConfigureAwait(true);
+                break;
             default:
                 break;
         }
@@ -249,6 +253,9 @@ public sealed class TaskCommands
                 break;
             case SubtaskEditorFollowUp.OpenParent when editor.Parent is not null:
                 await OpenAsync(editor.ParentTaskId).ConfigureAwait(true);
+                break;
+            case SubtaskEditorFollowUp.CreatePullRequest when editor.ExistingCardId is { } cardId:
+                await _context.PullRequests.CreateForSubtaskCardAsync(cardId).ConfigureAwait(true);
                 break;
             default:
                 break;

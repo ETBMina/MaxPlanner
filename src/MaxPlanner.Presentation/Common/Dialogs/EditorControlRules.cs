@@ -14,4 +14,12 @@ public static class EditorControlRules
 
     /// <summary>The reload message's x:Uid; none given means <see cref="DefaultReloadMessageKey"/>.</summary>
     public static string ReloadMessageKeyOrDefault(string? key) => string.IsNullOrEmpty(key) ? DefaultReloadMessageKey : key;
+
+    /// <summary>
+    /// Whether the CR and Subtask card editors' More button is enabled (design §5.11): never for a record not saved yet;
+    /// otherwise while Delete… can run, or while Create pull request… is offered, which needs no write and so also works
+    /// on a read-only record.
+    /// </summary>
+    public static bool IsMoreMenuEnabled(bool isNew, bool canDelete, bool isPullRequestAvailable) =>
+        !isNew && (canDelete || isPullRequestAvailable);
 }

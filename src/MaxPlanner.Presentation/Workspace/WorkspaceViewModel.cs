@@ -42,16 +42,18 @@ public sealed class WorkspaceViewModel : IDisposable
         TimeProvider time,
         IUrlLauncher? urlLauncher = null,
         IUiPreferencesStore? preferences = null,
-        SettingsServices? settings = null)
+        SettingsServices? settings = null,
+        Common.PullRequests.AzureDevOpsServices? azureDevOps = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         _settingsServices = settings;
         SaveStatus = new SaveStatusViewModel(strings, dispatcher, time);
-        Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher, preferences);
+        Context = new WorkspaceContext(store, useCases, uiScheduler, strings, SaveStatus, urlLauncher, preferences, azureDevOps);
         _stateSubscription = store.State.ObserveOn(uiScheduler).Subscribe(OnStoreState);
         _badgeSubscription = store.Committed.ObserveOn(uiScheduler).Subscribe(_ => UpdateOpenChecklistCount(store));
         Context.Navigator.DrillDownRequested += OnDrillDownRequested;
         Context.ExportViewRequested += OnExportViewRequested;
+        Context.AzureDevOpsSettingsRequested += OnAzureDevOpsSettingsRequested;
     }
 
     /// <summary>Raised when <see cref="OpenChecklistCount"/> changed (the Checklists nav badge, design §2.2).</summary>
@@ -103,6 +105,7 @@ public sealed class WorkspaceViewModel : IDisposable
         _badgeSubscription.Dispose();
         Context.Navigator.DrillDownRequested -= OnDrillDownRequested;
         Context.ExportViewRequested -= OnExportViewRequested;
+        Context.AzureDevOpsSettingsRequested -= OnAzureDevOpsSettingsRequested;
         foreach (var page in CreatedPages)
         {
             page.Dispose();
@@ -154,6 +157,18 @@ public sealed class WorkspaceViewModel : IDisposable
         }
 
         settings.OpenDataPage(MaxPlanner.Presentation.Settings.DataPage.DataMode.Export, view);
+        Context.Navigator.RequestNavigation(AppPage.Settings);
+    }
+
+    // Design §5.11 Open Settings: Settings with the Azure DevOps expander expanded and focused.
+    private void OnAzureDevOpsSettingsRequested(object? sender, EventArgs e)
+    {
+        if (_isDisposed || _isClosing || Settings is not { } settings)
+        {
+            return;
+        }
+
+        settings.ShowAzureDevOps();
         Context.Navigator.RequestNavigation(AppPage.Settings);
     }
 

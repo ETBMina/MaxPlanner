@@ -12,6 +12,7 @@ using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Domain.Values;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Infrastructure.Storage;
+using MaxPlanner.Presentation.Common.PullRequests;
 using MaxPlanner.Presentation.Common.Scheduling;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Workspace;
@@ -32,7 +33,7 @@ internal sealed class WorkspaceHarness : IDisposable
     private readonly SynchronizationContext? _previousContext;
     private readonly UiSynchronizationContext _uiContext;
 
-    private WorkspaceHarness(SqliteDataset dataset, DataPaths paths, UiPreferences? preferences)
+    private WorkspaceHarness(SqliteDataset dataset, DataPaths paths, UiPreferences? preferences, AzureDevOpsServices? azureDevOps)
     {
         Dataset = dataset;
         Paths = paths;
@@ -43,7 +44,7 @@ internal sealed class WorkspaceHarness : IDisposable
         _previousContext = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(_uiContext);
         Preferences = new FakePreferencesStore(preferences);
-        Workspace = new WorkspaceViewModel(Store, UseCases, new DispatcherQueueScheduler(Ui), Ui, Strings, Clock, preferences: Preferences);
+        Workspace = new WorkspaceViewModel(Store, UseCases, new DispatcherQueueScheduler(Ui), Ui, Strings, Clock, preferences: Preferences, azureDevOps: azureDevOps);
         Store.Start();
         PumpUntil(() => Store.CurrentState.Status == ProjectionStatus.Ready && !Workspace.Context.IsEditingBlocked);
     }
@@ -79,9 +80,9 @@ internal sealed class WorkspaceHarness : IDisposable
 
     /// <summary>
     /// Creates a dataset, lets <paramref name="arrange"/> add records through the real use cases, then starts the pages
-    /// with <paramref name="preferences"/> as the saved UI preferences.
+    /// with <paramref name="preferences"/> as the saved UI preferences and <paramref name="azureDevOps"/> as the pull request services.
     /// </summary>
-    public static WorkspaceHarness Create(Func<Seeder, Task>? arrange = null, UiPreferences? preferences = null)
+    public static WorkspaceHarness Create(Func<Seeder, Task>? arrange = null, UiPreferences? preferences = null, AzureDevOpsServices? azureDevOps = null)
     {
         // Arranged before the UI context is installed, on the thread pool, so no await here needs pumping.
         var (dataset, paths) = System.Threading.Tasks.Task.Run(async () =>
@@ -97,7 +98,7 @@ internal sealed class WorkspaceHarness : IDisposable
 
             return (created.Dataset!, paths);
         }).GetAwaiter().GetResult();
-        return new WorkspaceHarness(dataset, paths, preferences);
+        return new WorkspaceHarness(dataset, paths, preferences, azureDevOps);
     }
 
     /// <summary>Runs store and UI work until <paramref name="condition"/> holds (the database writer runs on its own thread).</summary>

@@ -308,20 +308,65 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
 
     private MenuFlyout BuildMenu(BoardCardViewModel card)
     {
+        var strings = ResourceStrings.Shared;
         var menu = new MenuFlyout();
-        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpen"), "Board_MenuOpenItem", () => ViewModel.OpenAsync(card).Forget(), glyph: "");
-        if (card.IsSubtaskCard)
-        {
-            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpenParent"), "Board_MenuOpenParentItem", () => ViewModel.OpenParentAsync(card).Forget());
-        }
 
         // The card's CR link is not a tab stop inside the list, so the menu is its keyboard route (design §7.3).
-        if (card.HasCrReference)
+        foreach (var item in BoardCardMenuRules.ItemsFor(card.IsTask, card.HasCrReference, ViewModel.IsPullRequestAvailable))
         {
-            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuOpenCr"), "Board_MenuOpenCrItem", () => ViewModel.OpenCrAsync(card).Forget());
+            switch (item)
+            {
+                case BoardCardMenuItem.Open:
+                    menu.Items.AddItem(strings.GetString("Board_MenuOpen"), "Board_MenuOpenItem", () => ViewModel.OpenAsync(card).Forget(), glyph: "");
+                    break;
+                case BoardCardMenuItem.OpenParent:
+                    menu.Items.AddItem(strings.GetString("Board_MenuOpenParent"), "Board_MenuOpenParentItem", () => ViewModel.OpenParentAsync(card).Forget());
+                    break;
+                case BoardCardMenuItem.OpenCr:
+                    menu.Items.AddItem(strings.GetString("Board_MenuOpenCr"), "Board_MenuOpenCrItem", () => ViewModel.OpenCrAsync(card).Forget());
+                    break;
+                case BoardCardMenuItem.MoveTo:
+                    menu.Items.Add(MoveToMenu(card));
+                    break;
+                case BoardCardMenuItem.MoveUp:
+                    menu.Items.AddItem(strings.GetString("Board_MenuMoveUp"), "Board_MenuMoveUpItem", () => ViewModel.MoveWithinBucketAsync(card, -1).Forget(), isEnabled: ViewModel.CanMoveUp(card), glyph: "");
+                    break;
+                case BoardCardMenuItem.MoveDown:
+                    menu.Items.AddItem(strings.GetString("Board_MenuMoveDown"), "Board_MenuMoveDownItem", () => ViewModel.MoveWithinBucketAsync(card, 1).Forget(), isEnabled: ViewModel.CanMoveDown(card), glyph: "");
+                    break;
+                case BoardCardMenuItem.Separator:
+                    menu.Items.AddSeparator();
+                    break;
+                case BoardCardMenuItem.Copy:
+                    menu.Items.AddItem(strings.GetString("Board_MenuCopy"), "Board_MenuCopyItem", () => ViewModel.CopyAsync(card).Forget(), glyph: "");
+                    break;
+                case BoardCardMenuItem.CopyId:
+                    menu.Items.AddItem(strings.GetString("Board_MenuCopyId"), "Board_MenuCopyIdItem", () => ViewModel.CopyId(card), glyph: "");
+                    break;
+                case BoardCardMenuItem.AddSubtaskCard:
+                    menu.Items.AddItem(strings.GetString("Board_MenuAddSubtaskCard"), "Board_MenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(card).Forget(), glyph: "");
+                    break;
+                case BoardCardMenuItem.Archive:
+                    menu.Items.AddItem(strings.GetString("Board_MenuArchive"), "Board_MenuArchiveItem", () => ViewModel.ArchiveAsync(card).Forget(), glyph: "");
+                    break;
+                case BoardCardMenuItem.CreatePullRequest:
+                    menu.Items.AddItem(strings.GetString("Board_MenuCreatePullRequest"), "Board_MenuCreatePullRequestItem", () => ViewModel.CreatePullRequestAsync(card).Forget(), glyph: "");
+                    break;
+                case BoardCardMenuItem.Delete:
+                    menu.Items.AddItem(strings.GetString("Board_MenuDelete"), "Board_MenuDeleteItem", () => ViewModel.DeleteAsync(card).Forget(), glyph: "");
+                    break;
+                default:
+                    break;
+            }
         }
 
-        var moveTo = new MenuFlyoutSubItem { Text = ResourceStrings.Shared.GetString("Board_MenuMoveTo") };
+        return menu;
+    }
+
+    private MenuFlyoutSubItem MoveToMenu(BoardCardViewModel card)
+    {
+        var strings = ResourceStrings.Shared;
+        var moveTo = new MenuFlyoutSubItem { Text = strings.GetString("Board_MenuMoveTo") };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(moveTo, "Board_MenuMoveToItem");
         foreach (var bucket in ViewModel.Buckets)
         {
@@ -329,31 +374,13 @@ public sealed partial class BoardPageView : UserControl, Shell.IPageView
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(target, "Board_MenuMoveTo_" + bucket.StatusId.Value.ToString("N"));
             // B-07: while filtered Top/Bottom address the full bucket and same-bucket reordering is off.
             var enabled = !ViewModel.IsFiltered || ViewModel.BucketOf(card) != bucket;
-            target.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuTopOfBucket"), "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top).Forget(), enabled);
-            target.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuBottomOfBucket"), "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom).Forget(), enabled);
+            target.Items.AddItem(strings.GetString("Board_MenuTopOfBucket"), "Board_MenuTop_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Top).Forget(), enabled);
+            target.Items.AddItem(strings.GetString("Board_MenuBottomOfBucket"), "Board_MenuBottom_" + bucket.StatusId.Value.ToString("N"), () => ViewModel.MoveToBucketAsync(card, bucket, BoardEdge.Bottom).Forget(), enabled);
 
             moveTo.Items.Add(target);
         }
 
-        menu.Items.Add(moveTo);
-        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuMoveUp"), "Board_MenuMoveUpItem", () => ViewModel.MoveWithinBucketAsync(card, -1).Forget(), isEnabled: ViewModel.CanMoveUp(card), glyph: "");
-        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuMoveDown"), "Board_MenuMoveDownItem", () => ViewModel.MoveWithinBucketAsync(card, 1).Forget(), isEnabled: ViewModel.CanMoveDown(card), glyph: "");
-        menu.Items.AddSeparator();
-        if (card.IsTask)
-        {
-            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuCopy"), "Board_MenuCopyItem", () => ViewModel.CopyAsync(card).Forget(), glyph: "");
-        }
-
-        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuCopyId"), "Board_MenuCopyIdItem", () => ViewModel.CopyId(card), glyph: "");
-        if (card.IsTask)
-        {
-            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuAddSubtaskCard"), "Board_MenuAddSubtaskCardItem", () => ViewModel.AddSubtaskCardAsync(card).Forget(), glyph: "");
-            menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuArchive"), "Board_MenuArchiveItem", () => ViewModel.ArchiveAsync(card).Forget(), glyph: "");
-        }
-
-        menu.Items.AddSeparator();
-        menu.Items.AddItem(ResourceStrings.Shared.GetString("Board_MenuDelete"), "Board_MenuDeleteItem", () => ViewModel.DeleteAsync(card).Forget(), glyph: "");
-        return menu;
+        return moveTo;
     }
 
     private void OnCardCrLinkClick(object sender, RoutedEventArgs e)

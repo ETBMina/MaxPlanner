@@ -1,5 +1,6 @@
 using MaxPlanner.Application.Abstractions;
 using MaxPlanner.Application.Preferences;
+using MaxPlanner.Application.PullRequests;
 using MaxPlanner.Application.Settings;
 using MaxPlanner.Application.ReadModels;
 using MaxPlanner.Application.Startup;
@@ -10,6 +11,7 @@ using MaxPlanner.Desktop.Startup;
 using MaxPlanner.Infrastructure.Backup;
 using MaxPlanner.Infrastructure.Persistence;
 using MaxPlanner.Infrastructure.Startup;
+using MaxPlanner.Presentation.Common.PullRequests;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Settings;
@@ -64,6 +66,8 @@ internal sealed class DatasetSession : IAsyncDisposable
         services.AddSingleton(app.GetRequiredService<ReadModelComposer>());
         services.AddSingleton(app.GetRequiredService<IDayBoundarySource>());
         services.AddSingleton(app.GetRequiredService<IUrlLauncher>());
+        services.AddSingleton(app.GetRequiredService<IAzureDevOpsClient>());
+        services.AddSingleton(app.GetRequiredService<IAzureDevOpsTokenStore>());
         services.AddSingleton(app.GetRequiredService<IUiPreferencesStore>());
         services.AddSingleton(app.GetRequiredService<ThemeService>());
         services.AddSingleton(app.GetRequiredService<IDataFolderLauncher>());
@@ -142,7 +146,8 @@ internal sealed class DatasetSession : IAsyncDisposable
                 _provider.GetRequiredService<ThemeService>(),
                 _provider.GetRequiredService<IDataFolderLauncher>(),
                 new BackupInfoSource(Dataset.Paths.BackupsDirectory),
-                data));
+                data),
+            new AzureDevOpsServices(_provider.GetRequiredService<IAzureDevOpsClient>(), _provider.GetRequiredService<IAzureDevOpsTokenStore>()));
         return Workspace;
     }
 

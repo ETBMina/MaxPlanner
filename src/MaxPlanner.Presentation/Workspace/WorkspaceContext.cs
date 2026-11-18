@@ -6,6 +6,7 @@ using MaxPlanner.Presentation.ChangeRequests;
 using MaxPlanner.Domain.Identifiers;
 using MaxPlanner.Presentation.Common.Dialogs;
 using MaxPlanner.Presentation.Common.Filters;
+using MaxPlanner.Presentation.Common.PullRequests;
 using MaxPlanner.Presentation.Common.Services;
 using MaxPlanner.Presentation.Common.Store;
 using MaxPlanner.Presentation.Tasks;
@@ -23,8 +24,10 @@ public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
     private ChangeRequestCommands? _changeRequests;
     private TaskFilterScopeViewModel? _taskFilters;
     private CrFilterScopeViewModel? _crFilters;
+    private PullRequestCommands? _pullRequests;
 
     /// <param name="urlLauncher">Opens design links (B-02.11); null opens nothing (tests, no window).</param>
+    /// <param name="azureDevOps">The pull request client and token store (ADR 0031); null calls nothing (tests).</param>
     public WorkspaceContext(
         WorkspaceProjectionStore store,
         WorkspaceUseCases useCases,
@@ -32,9 +35,11 @@ public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
         ILocalizedStrings strings,
         SaveStatusViewModel saveStatus,
         IUrlLauncher? urlLauncher = null,
-        IUiPreferencesStore? preferences = null)
+        IUiPreferencesStore? preferences = null,
+        AzureDevOpsServices? azureDevOps = null)
     {
         UrlLauncher = urlLauncher ?? NoUrlLauncher.Instance;
+        AzureDevOps = azureDevOps ?? AzureDevOpsServices.Unavailable;
         Preferences = preferences ?? new InMemoryUiPreferences();
         Store = store ?? throw new ArgumentNullException(nameof(store));
         UseCases = useCases ?? throw new ArgumentNullException(nameof(useCases));
@@ -56,6 +61,9 @@ public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
     /// <summary>A CR editor saved a CR (B-08.12: the Calendar says when the saved CR is hidden by its filters).</summary>
     public event EventHandler<ChangeRequestId>? ChangeRequestSaved;
 
+    /// <summary>The pull request dialog's Open Settings asked for Settings › Integrations › Azure DevOps (design §5.11).</summary>
+    public event EventHandler? AzureDevOpsSettingsRequested;
+
     /// <summary>A page's Export… asked for Settings › Data › Export preset with its current view (B-12).</summary>
     public event EventHandler<global::MaxPlanner.Application.Transfer.ViewExportScope>? ExportViewRequested;
 
@@ -73,6 +81,15 @@ public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
     public ICommandRunner Commands { get; }
 
     public IUrlLauncher UrlLauncher { get; }
+
+    /// <summary>The Azure DevOps client and token store (ADR 0031).</summary>
+    public AzureDevOpsServices AzureDevOps { get; }
+
+    /// <summary>Settings › Integrations › Azure DevOps is on (ADR 0031): the pull request commands are shown.</summary>
+    public bool IsAzureDevOpsEnabled => Preferences.Current.AzureDevOps?.Enabled == true;
+
+    /// <summary>"Create pull request…" (B-18), shared by the editors, the Board and the Grid.</summary>
+    public PullRequestCommands PullRequests => _pullRequests ??= new PullRequestCommands(this);
 
     /// <summary>UI preferences (T-09): Grid layout and sort, archive visibility. In memory when no store is given (tests).</summary>
     public IUiPreferencesStore Preferences { get; }
@@ -138,6 +155,8 @@ public sealed partial class WorkspaceContext : ObservableObject, IAnnouncer
 
     /// <summary>Called by the CR editor after a save was displayed (B-08.12).</summary>
     public void ReportChangeRequestSaved(ChangeRequestId id) => ChangeRequestSaved?.Invoke(this, id);
+
+    public void RequestAzureDevOpsSettings() => AzureDevOpsSettingsRequested?.Invoke(this, EventArgs.Empty);
 
     public void RequestExportView(global::MaxPlanner.Application.Transfer.ViewExportScope view) => ExportViewRequested?.Invoke(this, view);
 
