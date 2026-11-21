@@ -4314,6 +4314,14 @@
   <data name="Board_MenuCreatePullRequest" xml:space="preserve">
     <value>Create pull request…</value>
   </data>
+  <data name="PullRequest_SimulatorLabel.Text" xml:space="preserve">
+    <value>Simulator</value>
+    <comment>Debug builds only: the Create pull request dialog talks to the built-in Azure DevOps simulator.</comment>
+  </data>
+  <data name="Settings_AdoSimulatorLabel.Text" xml:space="preserve">
+    <value>Simulator</value>
+    <comment>Debug builds only: this collection URL goes to the built-in Azure DevOps simulator.</comment>
+  </data>
   <data name="PullRequest_Title" xml:space="preserve">
     <value>Create pull request</value>
   </data>

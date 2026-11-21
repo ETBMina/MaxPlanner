@@ -50,7 +50,11 @@ public sealed partial class AzureDevOpsSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CollectionUrlHint))]
+    [NotifyPropertyChangedFor(nameof(IsSimulator))]
     public partial string CollectionUrl { get; set; } = string.Empty;
+
+    /// <summary>The collection URL goes to the Debug-only simulator, so the "Simulator" label shows (ADR 0031).</summary>
+    public bool IsSimulator => AzureDevOpsSimulator.IsInUse(CollectionUrl);
 
     [ObservableProperty]
     public partial string Project { get; set; } = string.Empty;

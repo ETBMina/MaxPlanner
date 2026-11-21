@@ -29,6 +29,22 @@
                 Text="{x:Bind ViewModel.Caption, Mode=OneTime}"
                 TextWrapping="Wrap" />
 
+            <!-- Debug builds only: the calls go to the built-in simulator, not the server (ADR 0031). -->
+            <Border
+                Padding="8,2"
+                HorizontalAlignment="Left"
+                Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource ControlCornerRadius}"
+                Visibility="{x:Bind common:BindFunctions.Visible(ViewModel.IsSimulator), Mode=OneTime}">
+                <TextBlock
+                    x:Uid="PullRequest_SimulatorLabel"
+                    AutomationProperties.AutomationId="PullRequest_SimulatorLabel"
+                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}" />
+            </Border>
+
             <!-- Design §5.11 Results: severity, message (with the #id link), and the one action that fits. -->
             <InfoBar
                 x:Name="ResultBar"

@@ -116,6 +116,9 @@ public sealed partial class CreatePullRequestViewModel : ObservableObject, IDial
 
     public string DialogTitle => _strings.GetString("PullRequest_Title");
 
+    /// <summary>The calls go to the Debug-only simulator, so the "Simulator" label shows (ADR 0031).</summary>
+    public bool IsSimulator => AzureDevOpsSimulator.IsInUse(_settings.CollectionUrl);
+
     /// <summary>"{project} · {repository}" from Settings.</summary>
     public string Caption => _strings.Format("PullRequest_Caption", _settings.Project?.Trim() ?? string.Empty, _settings.Repository?.Trim() ?? string.Empty);
 

@@ -176,3 +176,31 @@ public static class PullRequestLinks
             UriKind.Absolute);
     }
 }
+
+/// <summary>
+/// The built-in Azure DevOps simulator (ADR 0031): Debug builds only, used when the collection URL's host is
+/// <c>simulator</c> (for example <c>https://simulator/coll</c>). Release builds have no simulator, so
+/// <see cref="IsInUse"/> is always false there and no "Simulator" label shows.
+/// </summary>
+public static class AzureDevOpsSimulator
+{
+    public const string Host = "simulator";
+
+    /// <summary>True in Debug builds, where the composition routes simulator addresses to the simulator.</summary>
+    public static bool IsBuiltIn =>
+#if DEBUG
+        true;
+#else
+        false;
+#endif
+
+    /// <summary>The address's host is <see cref="Host"/>, whatever the build.</summary>
+    public static bool IsSimulatorHost(Uri? collectionUrl) =>
+        collectionUrl is not null && string.Equals(collectionUrl.Host, Host, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>A usable collection URL (<see cref="CollectionUrls.Parse"/>) whose host is <see cref="Host"/>; null and empty are false.</summary>
+    public static bool IsSimulatorUrl(string? collectionUrl) => IsSimulatorHost(CollectionUrls.Parse(collectionUrl));
+
+    /// <summary>Calls with this collection URL go to the simulator, so the "Simulator" label shows.</summary>
+    public static bool IsInUse(string? collectionUrl) => IsBuiltIn && IsSimulatorUrl(collectionUrl);
+}

@@ -52,7 +52,13 @@ internal static class AppComposition
         services.AddSingleton<IUrlLauncher, ShellUrlLauncher>();
 
         // ADR 0031: one long-lived HttpClient for the app (disposed with the container), and the Credential Manager token.
-        services.AddSingleton<IAzureDevOpsClient>(sp => new AzureDevOpsClient(sp.GetRequiredService<ILogger<AzureDevOpsClient>>()));
+        services.AddSingleton(sp => new AzureDevOpsClient(sp.GetRequiredService<ILogger<AzureDevOpsClient>>()));
+#if DEBUG
+        // Debug only: a collection URL with the host "simulator" goes to the built-in simulator (ADR 0031).
+        services.AddSingleton<IAzureDevOpsClient>(sp => new AzureDevOpsRoutingClient(sp.GetRequiredService<AzureDevOpsClient>(), new SimulatedAzureDevOpsClient()));
+#else
+        services.AddSingleton<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>());
+#endif
         services.AddSingleton<IAzureDevOpsTokenStore, CredentialManagerTokenStore>();
         services.AddSingleton<ThemeService>();
         services.AddSingleton<ShellViewModel>();
