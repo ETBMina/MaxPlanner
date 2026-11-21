@@ -186,6 +186,10 @@ public sealed partial class CreatePullRequestViewModel : ObservableObject, IDial
     [ObservableProperty]
     public partial bool ShowsTryAgain { get; private set; }
 
+    /// <summary>Whether the result bar shows any action button; an empty button row would add space below the text.</summary>
+    [ObservableProperty]
+    public partial bool HasResultActions { get; private set; }
+
     /// <summary>The created pull request's page; the full address is never shown.</summary>
     public Uri? CreatedUrl { get; private set; }
 
@@ -493,6 +497,7 @@ public sealed partial class CreatePullRequestViewModel : ObservableObject, IDial
 
         // Design §5.11: Try again only while nothing was created.
         ShowsTryAgain = tryAgain && !IsCreated;
+        HasResultActions = ShowsOpenExisting || ShowsOpenSettings || ShowsTryAgain;
         ResultMessage = message;
         _announcer.Announce(message, isFailure: severity == PullRequestResultSeverity.Error);
     }
@@ -507,6 +512,7 @@ public sealed partial class CreatePullRequestViewModel : ObservableObject, IDial
         ShowsOpenExisting = false;
         ShowsOpenSettings = false;
         ShowsTryAgain = false;
+        HasResultActions = false;
     }
 }
 

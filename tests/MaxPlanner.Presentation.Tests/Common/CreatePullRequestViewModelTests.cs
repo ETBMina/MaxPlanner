@@ -181,6 +181,7 @@ public sealed class CreatePullRequestViewModelTests
         dialog.ResultMessage.Should().Be("12345 has no new commits compared with uat. Push your work first.");
         dialog.CanEditFields.Should().BeTrue();
         (dialog.ShowsTryAgain, dialog.ShowsOpenExisting, dialog.ShowsOpenSettings).Should().Be((false, false, false));
+        dialog.HasResultActions.Should().BeFalse("an empty button row would pad the bar");
         _client.Calls.Should().NotContain("CreatePullRequestAsync");
     }
 
@@ -209,6 +210,7 @@ public sealed class CreatePullRequestViewModelTests
         dialog.ResultSeverity.Should().Be(PullRequestResultSeverity.Informational);
         dialog.ResultMessage.Should().Be("A pull request from 12345 to uat already exists.");
         dialog.ShowsOpenExisting.Should().BeTrue();
+        dialog.HasResultActions.Should().BeTrue();
         dialog.ShowsTryAgain.Should().BeFalse();
 
         await dialog.OpenExistingCommand.ExecuteAsync(null);
