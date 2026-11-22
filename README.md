@@ -16,11 +16,19 @@
   <img alt="License: PolyForm Internal Use 1.0.0" src="https://img.shields.io/badge/license-PolyForm%20Internal%20Use%201.0.0-lightgrey">
 </p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board-dark.png">
+    <img src="docs/screenshots/board-light.png" alt="Max Planner Board page: task and Subtask cards in Backlog, Blocked, In Progress and Review columns, with CR numbers, services, squads, tags, checklist progress and assignee avatars">
+  </picture>
+</p>
+
 ---
 
 ## Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Requirements](#requirements)
 - [Getting started](#getting-started)
 - [Your data](#your-data)
@@ -58,6 +66,29 @@
 - Optional **Azure DevOps** integration: create a pull request from a task, CR or Subtask card (off by default).
 - Light, dark and High Contrast themes, Mica backdrop, and layouts that work down to a narrow Snap window.
 - A keyboard route and an accessible name for every command.
+
+## Screenshots
+
+The screenshots use a fictional demo dataset.
+
+**Dashboard**: summary cards, overdue CRs, reviews, and tasks by status and squad.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
+  <img src="docs/screenshots/dashboard-light.png" alt="Dashboard page with cards for active, completed and unscheduled tasks, overdue CRs, active Subtask cards and open reviews, above bar charts of tasks by status and by squad">
+</picture>
+
+**Calendar**: CRs on a Sunday–Thursday month view, with unscheduled CRs in the backlog.
+
+<img src="docs/screenshots/calendar-light.png" alt="Calendar month view showing CR bars across November weeks, overdue CRs marked with a warning icon, and a Backlog panel with two unscheduled CRs">
+
+**Grid**: every task and Subtask card in an editable, sortable table.
+
+<img src="docs/screenshots/grid-light.png" alt="Grid page listing tasks and Subtask cards with CR number, squad, owner, title, subtitle and service columns">
+
+**Checklists**: General to-dos, reviews, and the checklist of each active task.
+
+<img src="docs/screenshots/checklists-light.png" alt="Checklists page with a General to-dos card, a Reviews card, and checklist cards for several tasks showing progress bars and open items">
 
 ## Requirements
 

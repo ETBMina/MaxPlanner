@@ -14,6 +14,8 @@ namespace MaxPlanner.FixtureGenerator;
 /// <para>Usage:</para>
 /// <list type="bullet">
 /// <item><c>MaxPlanner.FixtureGenerator &lt;app-folder&gt; [--extra-tasks N]</c>: the small demonstration dataset.</item>
+/// <item><c>MaxPlanner.FixtureGenerator showcase &lt;app-folder&gt;</c>: a lively fictional team workspace for README
+/// screenshots, with CR planned dates relative to today so the current month's Calendar is full.</item>
 /// <item><c>MaxPlanner.FixtureGenerator benchmark &lt;app-folder&gt; [--scale F] [--seed N]</c>: the T-11 benchmark
 /// dataset (10,000 tasks, 5,000 CRs, 50,000 checklist items, 2,000 Subtask cards, 2,000 reviews, 5,000 General
 /// to-dos, 20% of tasks archived). <c>--scale 0.1</c> makes a tenth of it for a quick dry run.</item>
@@ -32,6 +34,7 @@ internal static class Program
         {
             return args switch
             {
+                ["showcase", var folder] => await RunShowcaseAsync(folder),
                 ["benchmark", var folder, .. var options] => await RunBenchmarkAsync(folder, options),
                 ["set-schema-version", var folder, var version] => SetSchemaVersion(folder, int.Parse(version, CultureInfo.InvariantCulture)),
                 [var folder] when !folder.StartsWith('-') => await RunDemoAsync(folder, 0),
@@ -53,12 +56,19 @@ internal static class Program
     {
         Console.Error.WriteLine("Usage:");
         Console.Error.WriteLine("  MaxPlanner.FixtureGenerator <app-folder> [--extra-tasks N]");
+        Console.Error.WriteLine("  MaxPlanner.FixtureGenerator showcase <app-folder>");
         Console.Error.WriteLine("  MaxPlanner.FixtureGenerator benchmark <app-folder> [--scale F] [--seed N]");
         Console.Error.WriteLine("  MaxPlanner.FixtureGenerator set-schema-version <app-folder> <version>");
         return 2;
     }
 
-    private static async Task<int> RunDemoAsync(string folder, int extraTasks)
+    private static Task<int> RunDemoAsync(string folder, int extraTasks) =>
+        CreateAsync(folder, dataset => DemoDataset.CreateAsync(dataset, extraTasks));
+
+    private static Task<int> RunShowcaseAsync(string folder) =>
+        CreateAsync(folder, dataset => ShowcaseDataset.CreateAsync(dataset, DateOnly.FromDateTime(DateTime.Today)));
+
+    private static async Task<int> CreateAsync(string folder, Func<SqliteDataset, Task> fill)
     {
         var paths = DataPaths.ForDirectory(Path.GetFullPath(folder));
         var created = await SqliteDataset.CreateNewAsync(paths);
@@ -70,7 +80,7 @@ internal static class Program
 
         await using (dataset)
         {
-            await DemoDataset.CreateAsync(dataset, extraTasks);
+            await fill(dataset);
             await PrintSummaryAsync(dataset, paths);
         }
 
