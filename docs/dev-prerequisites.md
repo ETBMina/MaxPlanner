@@ -27,7 +27,7 @@ Package versions are pinned in `Directory.Packages.props` (ADR 0002). Lock files
 ./scripts/dev-data.ps1 save <Name>              # snapshot the Debug app's current data (app must be closed)
 ./scripts/dev-data.ps1 use <Name>               # switch the Debug app to a checkpoint; the replaced data is kept as _previous
 ./scripts/dev-data.ps1 empty                    # reset the Debug app to a first-run empty dataset
-./tools/Generate-Notices.ps1                    # regenerate THIRD-PARTY-NOTICES.txt after a dependency change
+./tools/Generate-Notices.ps1                    # regenerate THIRD-PARTY-NOTICES.txt and .md after a dependency change
 dotnet run --project tools/MaxPlanner.FixtureGenerator -p:Platform=x64 -- benchmark <app-folder> [--scale 0.1]
 ```
 End-user prerequisites and the release procedure are in [deployment-guide.md](deployment-guide.md).

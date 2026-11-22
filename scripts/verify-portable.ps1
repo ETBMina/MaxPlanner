@@ -9,7 +9,7 @@
     Launch            A responsive top-level window appears; data/ with .lock and data.db is created beside the EXE;
                       the first run reaches "Startup ready"; closing exits with code 0.
     Checksums         The ZIP matches its .sha256 file; every file matches SHA256SUMS.txt and every file is listed;
-                      THIRD-PARTY-NOTICES.txt and README.txt are present; the ZIP has no data/ folder.
+                      LICENSE, THIRD-PARTY-NOTICES.txt, THIRD-PARTY-NOTICES.md and README.txt are present; the ZIP has no data/ folder.
     Relocation        Data created in one folder survives moving the whole folder (to -SecondDrive when given): the
                       moved copy opens the same dataset (no first-run creation, no recovery) and data.db is unchanged.
     SecondLaunch      A second launch of the same folder exits with code 0 (redirect) and leaves one running instance.
@@ -171,13 +171,14 @@ $gateScripts = [ordered]@{
         }
         $unlisted = Get-ChildItem $app -Recurse -File | ForEach-Object { [IO.Path]::GetRelativePath($app, $_.FullName) } |
             Where-Object { $_ -ne 'SHA256SUMS.txt' -and -not $listed.ContainsKey($_) }
-        $notices = (Test-Path (Join-Path $app 'THIRD-PARTY-NOTICES.txt')) -and (Test-Path (Join-Path $app 'README.txt'))
+        $missingDocs = @('LICENSE', 'THIRD-PARTY-NOTICES.txt', 'THIRD-PARTY-NOTICES.md', 'README.txt' | Where-Object { -not (Test-Path (Join-Path $app $_)) })
+        $notices = $missingDocs.Count -eq 0
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $archive = [IO.Compression.ZipFile]::OpenRead($Zip)
         try { $dataEntries = @($archive.Entries | Where-Object { $_.FullName -match '^MaxPlanner[\\/]data[\\/]' }).Count }
         finally { $archive.Dispose() }
         Add-Result 'Checksums' ($expected -eq $actual -and $bad.Count -eq 0 -and @($unlisted).Count -eq 0 -and $notices -and $dataEntries -eq 0) `
-            "zip=$($expected -eq $actual) mismatched=$($bad.Count) unlisted=$(@($unlisted).Count) notices+readme=$notices dataEntries=$dataEntries"
+            "zip=$($expected -eq $actual) mismatched=$($bad.Count) unlisted=$(@($unlisted).Count) license+notices+readme=$notices missing=$($missingDocs -join ',') dataEntries=$dataEntries"
     }
     Relocation = {
         $app = New-Extraction $Zip 'relocate-from'

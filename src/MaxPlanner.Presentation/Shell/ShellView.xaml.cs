@@ -250,7 +250,7 @@ public sealed partial class ShellView : UserControl
             AppPage.Grid => new GridPageView(workspace.Grid),
             AppPage.Calendar => new CalendarPageView(workspace.Calendar),
             AppPage.Checklists => new ChecklistsPageView(workspace.Checklists),
-            AppPage.Settings when workspace.Settings is { } settings => new SettingsPageView(settings),
+            AppPage.Settings when workspace.Settings is { } settings => new SettingsPageView(settings) { AppIconUri = AppIconUri },
             _ => new PlaceholderPageView(page, _viewModel!.PageTitle(page), PlaceholderGlyphs[page]),
         };
         var slot = new PageSlot(view);

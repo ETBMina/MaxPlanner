@@ -2506,6 +2506,50 @@
   <data name="Settings_DataPageButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Open the Data page</value>
   </data>
+  <data name="Settings_AboutHeading.Text" xml:space="preserve">
+    <value>About</value>
+    <comment>Settings section heading (design §4.6).</comment>
+  </data>
+  <data name="Settings_AboutCard.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>About Max Planner</value>
+  </data>
+  <data name="Settings_AboutTitle.Text" xml:space="preserve">
+    <value>Max Planner</value>
+    <comment>Product name in Settings › About.</comment>
+  </data>
+  <data name="Settings_AboutVersionLabel.Text" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Settings_AboutAuthorLabel.Text" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="Settings_AboutGitHubLabel.Text" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="Settings_AboutGitHubLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open the Max Planner repository in your browser</value>
+  </data>
+  <data name="Settings_AboutLicenseLabel.Text" xml:space="preserve">
+    <value>License</value>
+  </data>
+  <data name="Settings_AboutLicenseLink.Content" xml:space="preserve">
+    <value>View license</value>
+  </data>
+  <data name="Settings_AboutLicenseLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>View the Max Planner license</value>
+  </data>
+  <data name="Settings_AboutLicenseLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open the license text in Notepad</value>
+  </data>
+  <data name="Settings_AboutNoticesLink.Content" xml:space="preserve">
+    <value>Third-party notices</value>
+  </data>
+  <data name="Settings_AboutNoticesLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>View third-party notices</value>
+  </data>
+  <data name="Settings_AboutNoticesLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open the licenses of the components included with Max Planner in Notepad</value>
+  </data>
   <data name="BackupKind_daily" xml:space="preserve">
     <value>daily</value>
   </data>

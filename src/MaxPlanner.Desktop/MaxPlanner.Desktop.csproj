@@ -26,6 +26,12 @@
     <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
     <!-- The startup splash icon: the 256 px frame of AppIcon.ico, extracted unchanged (design §2.1). -->
     <Content Include="Assets\AppIcon.png" CopyToOutputDirectory="PreserveNewest" />
+    <!--
+      The license and the third-party notices that Settings > About opens (ADR 0032). They sit beside the EXE in a build as in
+      the portable ZIP; scripts/publish-portable.ps1 copies the same files and verify-portable.ps1 requires them.
+    -->
+    <Content Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

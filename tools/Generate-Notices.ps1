@@ -1,8 +1,9 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-  Generates THIRD-PARTY-NOTICES.txt for the portable ZIP (T-03.9) from the packages that are actually in the published
-  payload, or checks that the committed file still matches them.
+  Generates THIRD-PARTY-NOTICES.txt (full license texts) and THIRD-PARTY-NOTICES.md (a short inventory with name,
+  version, license and a link to the license text) for the portable ZIP (T-03.9) from the packages that are actually in
+  the published payload, or checks that the committed files still match them.
 .DESCRIPTION
   The package list comes from the published MaxPlanner.deps.json (every runtime package, transitive ones included,
   plus the .NET and Windows SDK projection runtime packs) and the -ExtraPackages that contribute native files outside
@@ -11,7 +12,11 @@
   tools/notices/ (MIT, Apache-2.0, BSD-2-Clause) with the package's copyright line. Notice files a package ships
   (THIRD-PARTY-NOTICES, ThirdPartyNotices, NOTICE) are appended. Output is sorted and deterministic.
 
-  -Check compares only the package list (id and version) with the committed file and exits 1 when they differ, so
+  The .md inventory takes its license and link from the same nuspec data: an SPDX expression links to its
+  licenses.nuget.org page; a package that ships its own license file points at THIRD-PARTY-NOTICES.txt, which reproduces
+  that file; a package that gives only a license URL is listed as unconfirmed with that URL, never guessed.
+
+  -Check compares only the package list (id and version) with both committed files and exits 1 when either differs, so
   publish-portable.ps1 fails when a dependency changes without regenerating the notices.
 .EXAMPLE
   ./scripts/publish-portable.ps1   # first publish (fails the notices check after a dependency change), then:
@@ -21,6 +26,7 @@
 param(
     [string]$DepsFile,
     [string]$Output,
+    [string]$InventoryOutput,
     [string[]]$ExtraPackages = @('Microsoft.WindowsAppSDK.Base'),
     [switch]$Check
 )
@@ -29,6 +35,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $DepsFile) { $DepsFile = Join-Path $root 'artifacts/publish/MaxPlanner/MaxPlanner.deps.json' }
 if (-not $Output) { $Output = Join-Path $root 'THIRD-PARTY-NOTICES.txt' }
+if (-not $InventoryOutput) { $InventoryOutput = Join-Path $root 'THIRD-PARTY-NOTICES.md' }
 if (-not (Test-Path $DepsFile)) { throw "deps.json not found: $DepsFile. Publish first (scripts/publish-portable.ps1)." }
 
 $globalPackages = ((& dotnet nuget locals global-packages --list) -replace '^global-packages:\s*', '').Trim()
@@ -57,24 +64,37 @@ foreach ($extra in $ExtraPackages) {
 $headers = $packages.GetEnumerator() | ForEach-Object { "Package: $($_.Key) $($_.Value)" }
 
 if ($Check) {
-    if (-not (Test-Path $Output)) { Write-Error "Missing $Output; run tools/Generate-Notices.ps1."; exit 1 }
-    $committed = Select-String -Path $Output -Pattern '^Package: ' | ForEach-Object { $_.Line.Trim() }
-    $missing = $headers | Where-Object { $_ -notin $committed }
-    $stale = $committed | Where-Object { $_ -notin $headers }
-    if ($missing -or $stale) {
-        $missing | ForEach-Object { Write-Host "Not in notices: $_" }
-        $stale | ForEach-Object { Write-Host "No longer in the payload: $_" }
-        Write-Error 'THIRD-PARTY-NOTICES.txt does not match the published payload; run tools/Generate-Notices.ps1.'
+    $failed = $false
+    foreach ($file in @(@{ Path = $Output; Pattern = '^Package: (.+)$' }, @{ Path = $InventoryOutput; Pattern = '^\| ([^ |]+) \| ([^ |]+) \|' })) {
+        $name = Split-Path $file.Path -Leaf
+        if (-not (Test-Path $file.Path)) { Write-Host "Missing $name."; $failed = $true; continue }
+        $committed = Select-String -Path $file.Path -Pattern $file.Pattern | ForEach-Object {
+            $match = $_.Matches[0]
+            if ($match.Groups.Count -gt 2) { "Package: $($match.Groups[1].Value) $($match.Groups[2].Value)" } else { $_.Line.Trim() }
+        } | Where-Object { $_ -notmatch '^Package: (Component|-+) ' }
+        $missing = $headers | Where-Object { $_ -notin $committed }
+        $stale = $committed | Where-Object { $_ -notin $headers }
+        if ($missing -or $stale) {
+            $missing | ForEach-Object { Write-Host "Not in ${name}: $_" }
+            $stale | ForEach-Object { Write-Host "No longer in the payload (${name}): $_" }
+            $failed = $true
+        }
+    }
+
+    if ($failed) {
+        Write-Error 'The third-party notices do not match the published payload; run tools/Generate-Notices.ps1.'
         exit 1
     }
 
-    Write-Host "THIRD-PARTY-NOTICES.txt covers all $($headers.Count) packages of the payload."
+    Write-Host "THIRD-PARTY-NOTICES.txt and .md cover all $($headers.Count) packages of the payload."
     exit 0
 }
 
 # ----- Text -----
 function Read-Text([string]$path) { (Get-Content $path -Raw) -replace "`r`n", "`n" }
 
+$inventory = [System.Collections.Generic.List[string]]::new()
+$unconfirmed = [System.Collections.Generic.List[string]]::new()
 $builder = [System.Text.StringBuilder]::new()
 $rule = '=' * 78
 [void]$builder.AppendLine('Max Planner - third-party notices')
@@ -101,6 +121,16 @@ foreach ($entry in $packages.GetEnumerator()) {
     $license = $metadata.license
     $licenseKind = if ($license) { $license.type } else { 'url' }
     $licenseValue = if ($license) { $license.'#text' } else { $metadata.licenseUrl }
+
+    $inventoryLicense, $inventoryLink = switch ($licenseKind) {
+        'expression' { $licenseValue, "[$licenseValue](https://licenses.nuget.org/$licenseValue)" }
+        'file' { "Package license file ($licenseValue)", '[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)' }
+        default {
+            $unconfirmed.Add("$id $version (license URL only: $licenseValue)")
+            'Not stated in the package metadata (unconfirmed)', "[$licenseValue]($licenseValue)"
+        }
+    }
+    $inventory.Add("| $id | $version | $inventoryLicense | $inventoryLink |")
 
     [void]$builder.AppendLine()
     [void]$builder.AppendLine($rule)
@@ -141,4 +171,30 @@ foreach ($entry in $packages.GetEnumerator()) {
 
 $text = $builder.ToString() -replace "`r`n", "`n"
 [IO.File]::WriteAllText($Output, $text, [Text.UTF8Encoding]::new($false))
-Write-Host "Wrote $Output ($($packages.Count) packages)."
+
+$md = [System.Text.StringBuilder]::new()
+[void]$md.AppendLine('# Third-party notices')
+[void]$md.AppendLine()
+[void]$md.AppendLine('Max Planner is licensed under the PolyForm Internal Use License 1.0.0 (see `LICENSE`). It includes the components')
+[void]$md.AppendLine('below, each under its own license. `THIRD-PARTY-NOTICES.txt` reproduces the license texts and the notices the')
+[void]$md.AppendLine('packages ship. Both files are generated by `tools/Generate-Notices.ps1` from the published `MaxPlanner.deps.json` and')
+[void]$md.AppendLine('the license data in each package''s own `.nuspec`.')
+[void]$md.AppendLine()
+[void]$md.AppendLine('| Component | Version | License | License text |')
+[void]$md.AppendLine('| --- | --- | --- | --- |')
+foreach ($row in $inventory) { [void]$md.AppendLine($row) }
+[void]$md.AppendLine()
+[void]$md.AppendLine('## Not a NuGet package')
+[void]$md.AppendLine()
+[void]$md.AppendLine('- SQLite (inside `e_sqlite3.dll`, from `SQLitePCLRaw.lib.e_sqlite3`) is in the public domain: <https://www.sqlite.org/copyright.html>')
+if ($unconfirmed.Count -gt 0) {
+    [void]$md.AppendLine()
+    [void]$md.AppendLine('## License not confirmed')
+    [void]$md.AppendLine()
+    [void]$md.AppendLine('The package metadata gives only a license URL and no license text or identifier, so the terms were not verified:')
+    [void]$md.AppendLine()
+    foreach ($item in $unconfirmed) { [void]$md.AppendLine("- $item") }
+}
+$mdText = $md.ToString() -replace "`r`n", "`n"
+[IO.File]::WriteAllText($InventoryOutput, $mdText, [Text.UTF8Encoding]::new($false))
+Write-Host "Wrote $Output and $InventoryOutput ($($packages.Count) packages)."

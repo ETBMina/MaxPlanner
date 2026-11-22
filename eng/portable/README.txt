@@ -65,4 +65,8 @@ Max Planner does not use the network: no account, activation, telemetry, update 
 
 Licenses
 --------
-THIRD-PARTY-NOTICES.txt lists the components included with Max Planner and their licenses.
+Max Planner is licensed under the PolyForm Internal Use License 1.0.0. The full text is in the LICENSE file in this
+folder; Settings > About shows the license and opens it.
+
+THIRD-PARTY-NOTICES.txt lists the components included with Max Planner with their licenses, and
+THIRD-PARTY-NOTICES.md is a short inventory of the same components.

@@ -1,8 +1,8 @@
 using AwesomeAssertions;
-using MaxPlanner.Presentation.Shell;
+using MaxPlanner.Presentation.Common;
 using MaxPlanner.Presentation.Tests.Testing;
 
-namespace MaxPlanner.Presentation.Tests.Shell;
+namespace MaxPlanner.Presentation.Tests.Common;
 
 public sealed class AppVersionTextTests
 {

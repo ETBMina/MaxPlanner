@@ -44,6 +44,20 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
 
     public SettingsPageViewModel ViewModel { get; }
 
+    /// <summary>
+    /// The app icon in Settings › About. The app sets it, because the icon is an asset of the app, not of this library.
+    /// </summary>
+    public Uri? AppIconUri
+    {
+        get => AboutIconImage.UriSource;
+        set => AboutIconImage.UriSource = value;
+    }
+
+    // ----- About: the license text and third-party notices (ADR 0032) -----
+    private void OnAboutLicenseLinkClick(object sender, RoutedEventArgs e) => AboutDocuments.TryOpen(AboutInfo.LicensePath);
+
+    private void OnAboutNoticesLinkClick(object sender, RoutedEventArgs e) => AboutDocuments.TryOpen(AboutInfo.NoticesPath);
+
     /// <summary>Settings › Integrations › Azure DevOps, bound flat (it is created with the page's view model and never null).</summary>
     public AzureDevOpsSettingsViewModel Ado => ViewModel.AzureDevOps;
 
@@ -103,6 +117,11 @@ public sealed partial class SettingsPageView : UserControl, Shell.IPageView
         {
             card.IsWrapped = wrap;
         }
+
+        // About: at S the details stack under the icon, like a card's action wraps below its text.
+        Microsoft.UI.Xaml.Controls.Grid.SetRow(AboutDetails, wrap ? 1 : 0);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumn(AboutDetails, wrap ? 0 : 1);
+        Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(AboutDetails, wrap ? 2 : 1);
     }
 
     // ----- Integrations › Azure DevOps (ADR 0031) -----

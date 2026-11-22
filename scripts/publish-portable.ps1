@@ -4,7 +4,8 @@
   Publishes the portable, self-contained win-x64 build and packages it as a ZIP (T-03, ADR 0003).
 .DESCRIPTION
   Output: artifacts/MaxPlanner-<Version>-win-x64.zip (root folder MaxPlanner/) plus a .sha256 file.
-  The payload carries THIRD-PARTY-NOTICES.txt (checked against the published dependencies), README.txt for end users,
+  The payload carries LICENSE (the app's PolyForm Internal Use 1.0.0 license, ADR 0032), THIRD-PARTY-NOTICES.txt and
+  THIRD-PARTY-NOTICES.md (both checked against the published dependencies), README.txt for end users,
   and SHA256SUMS.txt with the checksum of every other file. The ZIP never contains a data/ folder, so extracting an
   update cannot overwrite user records (T-03.8), and never contains the development tools (fixture generator,
   benchmarks).
@@ -49,8 +50,13 @@ Get-ChildItem $publishDir -Recurse -Include '*.user', '*.pdb' | Remove-Item -For
 
 # T-03.9: dependency notices. The committed notices must list exactly the packages in this payload.
 & (Join-Path $root 'tools/Generate-Notices.ps1') -DepsFile (Join-Path $publishDir 'MaxPlanner.deps.json') -Check
-if ($LASTEXITCODE -ne 0) { throw 'THIRD-PARTY-NOTICES.txt is out of date; run tools/Generate-Notices.ps1 and publish again.' }
-Copy-Item (Join-Path $root 'THIRD-PARTY-NOTICES.txt') $publishDir
+if ($LASTEXITCODE -ne 0) { throw 'THIRD-PARTY-NOTICES.txt or .md is out of date; run tools/Generate-Notices.ps1 and publish again.' }
+# ADR 0032: the license and the third-party notices sit beside the EXE; Settings > About opens them from there.
+foreach ($file in 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'THIRD-PARTY-NOTICES.md') {
+    $source = Join-Path $root $file
+    if (-not (Test-Path $source)) { throw "$file is missing from the repository root." }
+    Copy-Item $source $publishDir
+}
 Copy-Item (Join-Path $root 'eng/portable/README.txt') $publishDir
 
 $sums = Get-ChildItem $publishDir -Recurse -File | Sort-Object FullName | ForEach-Object {

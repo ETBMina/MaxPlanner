@@ -700,6 +700,123 @@
                             Command="{x:Bind ViewModel.OpenDataCommand}"
                             IsEnabled="{x:Bind ViewModel.HasDataServices, Mode=OneTime}" />
                     </local:SettingsCard>
+
+                    <!--
+                        About (design §4.6): the app icon (decorative), the product name, then Version, Author and the
+                        GitHub link. At S the details move under the icon (ApplyBreakpoint).
+                    -->
+                    <TextBlock x:Uid="Settings_AboutHeading" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SettingsSectionHeaderTextStyle}" />
+                    <Border
+                        x:Uid="Settings_AboutCard"
+                        AutomationProperties.AutomationId="Settings_AboutCard"
+                        Style="{StaticResource SettingsCardBorderStyle}">
+                        <Grid ColumnSpacing="16" RowSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Image
+                                Width="64"
+                                Height="64"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                AutomationProperties.AccessibilityView="Raw">
+                                <!-- The app supplies the icon (AppIconUri): the image is a Desktop asset beside AppIcon.ico. -->
+                                <Image.Source>
+                                    <BitmapImage
+                                        x:Name="AboutIconImage"
+                                        DecodePixelType="Logical"
+                                        DecodePixelWidth="64" />
+                                </Image.Source>
+                            </Image>
+                            <StackPanel
+                                x:Name="AboutDetails"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Spacing="4">
+                                <TextBlock x:Uid="Settings_AboutTitle" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                <Grid ColumnSpacing="12" RowSpacing="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock x:Uid="Settings_AboutVersionLabel" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <controls:FactValue
+                                        Grid.Column="1"
+                                        IsValueSelectable="True"
+                                        LabelUid="Settings_AboutVersionLabel"
+                                        Value="{x:Bind local:AboutInfo.Version, Mode=OneTime}"
+                                        ValueAutomationId="Settings_AboutVersionText" />
+                                    <TextBlock
+                                        x:Uid="Settings_AboutAuthorLabel"
+                                        Grid.Row="1"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        AutomationProperties.AutomationId="Settings_AboutAuthorText"
+                                        Text="{x:Bind local:AboutInfo.Author, Mode=OneTime}"
+                                        TextWrapping="Wrap" />
+                                    <TextBlock
+                                        x:Uid="Settings_AboutGitHubLabel"
+                                        Grid.Row="2"
+                                        VerticalAlignment="Center"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <!-- No padding, so the link text lines up with the values above it. -->
+                                    <HyperlinkButton
+                                        x:Uid="Settings_AboutGitHubLink"
+                                        Grid.Row="2"
+                                        Grid.Column="1"
+                                        Padding="0"
+                                        AutomationProperties.AutomationId="Settings_AboutGitHubLink"
+                                        Content="{x:Bind local:AboutInfo.GitHubText, Mode=OneTime}"
+                                        NavigateUri="{x:Bind local:AboutInfo.GitHubUri, Mode=OneTime}" />
+                                    <TextBlock
+                                        x:Uid="Settings_AboutLicenseLabel"
+                                        Grid.Row="3"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <controls:FactValue
+                                        Grid.Row="3"
+                                        Grid.Column="1"
+                                        IsValueSelectable="True"
+                                        LabelUid="Settings_AboutLicenseLabel"
+                                        Value="{x:Bind local:AboutInfo.LicenseName, Mode=OneTime}"
+                                        ValueAutomationId="Settings_AboutLicenseText" />
+                                </Grid>
+                                <!--
+                                    The license text and the third-party notices are files beside the EXE (ADR 0032). A link is
+                                    shown only when its file exists; the whole row is hidden (not just emptied) when neither does.
+                                -->
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="16"
+                                    Visibility="{x:Bind local:SettingsPageView.Show(local:AboutInfo.HasAnyDocument), Mode=OneTime}">
+                                    <HyperlinkButton
+                                        x:Uid="Settings_AboutLicenseLink"
+                                        Padding="0"
+                                        AutomationProperties.AutomationId="Settings_AboutLicenseLink"
+                                        Click="OnAboutLicenseLinkClick"
+                                        Visibility="{x:Bind local:SettingsPageView.Show(local:AboutInfo.HasLicenseFile), Mode=OneTime}" />
+                                    <HyperlinkButton
+                                        x:Uid="Settings_AboutNoticesLink"
+                                        Padding="0"
+                                        AutomationProperties.AutomationId="Settings_AboutNoticesLink"
+                                        Click="OnAboutNoticesLinkClick"
+                                        Visibility="{x:Bind local:SettingsPageView.Show(local:AboutInfo.HasNoticesFile), Mode=OneTime}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

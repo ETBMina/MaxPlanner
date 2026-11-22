@@ -23,7 +23,9 @@ artifacts/
 MaxPlanner/
   MaxPlanner.exe                            # unpackaged, self-contained (ADR 0003)
   ...                                       # .NET 10 runtime, Windows App SDK 2.x runtime, WinUI, e_sqlite3.dll, resources
-  THIRD-PARTY-NOTICES.txt                   # every package in the payload and its license (T-03.9)
+  LICENSE                                   # PolyForm Internal Use 1.0.0, unchanged (ADR 0032); Settings > About opens it
+  THIRD-PARTY-NOTICES.txt                   # every package in the payload with its license text (T-03.9); About opens it
+  THIRD-PARTY-NOTICES.md                    # short inventory: component, version, license, link to the license text
   README.txt                                # end-user instructions
   SHA256SUMS.txt                            # SHA-256 of every other file in the folder
                                             # no data/ folder: it is created beside the EXE on first start (T-03.8)
@@ -33,7 +35,8 @@ The publish script fails when:
 - a required file is missing (`MaxPlanner.exe`, `MaxPlanner.dll`, `MaxPlanner.pri`, `Microsoft.ui.xaml.dll`, `hostfxr.dll`, `e_sqlite3.dll`);
 - the output contains a `data/` folder;
 - a development file reaches the payload (fixture generator, benchmarks, BenchmarkDotNet, test assemblies);
-- `THIRD-PARTY-NOTICES.txt` does not list exactly the packages of the published `MaxPlanner.deps.json` (plus the Windows App SDK Base package).
+- `THIRD-PARTY-NOTICES.txt` or `THIRD-PARTY-NOTICES.md` does not list exactly the packages of the published `MaxPlanner.deps.json` (plus the Windows App SDK Base package);
+- `LICENSE`, `THIRD-PARTY-NOTICES.txt` or `THIRD-PARTY-NOTICES.md` is missing from the repository root. `verify-portable.ps1` (Checksums gate) fails when any of them, or `README.txt`, is missing from the ZIP.
 
 Trimming, Native AOT, single-file and ReadyToRun stay off (T-03, `Directory.Build.targets` guard). The binaries are **not signed**: no signing certificate is available, and signing is not an end-user prerequisite (T-03.9). Windows may show SmartScreen for a downloaded, unsigned EXE; users can unblock the ZIP (Properties › Unblock) before extracting.
 

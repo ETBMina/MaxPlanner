@@ -1,12 +1,12 @@
 using System.Reflection;
 using MaxPlanner.Presentation.Common.Services;
 
-namespace MaxPlanner.Presentation.Shell;
+namespace MaxPlanner.Presentation.Common;
 
 /// <summary>
-/// The app version as the startup splash shows it (design §2.1). The build stamps the informational version
-/// (<c>-p:Version=…</c> in <c>publish-portable.ps1</c>, otherwise <c>Directory.Build.props</c>) and the SDK appends
-/// <c>+commit</c>; the splash shows only the version itself.
+/// The app version as the startup splash (design §2.1) and Settings › About (design §4.6) show it. The build stamps
+/// the informational version (<c>-p:Version=…</c> in <c>publish-portable.ps1</c>, otherwise
+/// <c>Directory.Build.props</c>) and the SDK appends <c>+commit</c>; both show only the version itself.
 /// </summary>
 internal static class AppVersionText
 {
